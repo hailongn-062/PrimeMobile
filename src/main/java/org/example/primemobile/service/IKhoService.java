@@ -1,0 +1,72 @@
+package org.example.primemobile.service;
+
+import org.example.primemobile.dto.kho.TaoPhieuChuyenKhoRequest;
+import org.example.primemobile.dto.kho.TaoPhieuNhapKhoRequest;
+import org.example.primemobile.entity.PhieuChuyenKho;
+import org.example.primemobile.entity.PhieuNhapKho;
+import org.example.primemobile.entity.TonKho;
+
+import java.util.List;
+
+/**
+ * Interface định nghĩa các nghiệp vụ quản lý Kho hàng.
+ * <p>
+ * Toàn bộ luồng phụ thuộc vào 2 quy tắc cốt lõi (system_rules.md §3.1, §3.2):
+ * <ol>
+ *   <li><b>Chỉ nhập hàng vào Kho Tổng</b> — NCC → Kho Tổng</li>
+ *   <li><b>Safety Stock Rule</b> — Tồn kho sau khi trừ KHÔNG được dưới 5 đơn vị/SKU/kho.</li>
+ * </ol>
+ */
+public interface IKhoService {
+
+    /**
+     * Tạo mới phiếu nhập kho và tự động cộng tồn kho vào Kho Tổng.
+     * <p>
+     * Quy trình: Tạo {@link PhieuNhapKho} + các {@link org.example.primemobile.entity.ChiTietPhieuNhap}
+     * → Với mỗi dòng, gọi helper {@code congTonKho()} để cập nhật bảng {@link TonKho}.
+     *
+     * @param request    Thông tin phiếu nhập (khoId, danh sách SKU + số lượng + đơn giá nhập).
+     * @param nguoiTaoId ID của người dùng (NhanVien/Admin) thực hiện thao tác.
+     * @return Đối tượng {@link PhieuNhapKho} đã được lưu vào DB.
+     * @throws jakarta.persistence.EntityNotFoundException Nếu không tìm thấy kho, NCC, hoặc biến thể.
+     * @throws IllegalArgumentException                   Nếu kho đích không phải Kho Tổng, hoặc dữ liệu không hợp lệ.
+     */
+    PhieuNhapKho taoPhieuNhapKho(TaoPhieuNhapKhoRequest request, Integer nguoiTaoId);
+
+    /**
+     * Tạo mới phiếu chuyển kho giữa 2 kho, có kiểm tra Safety Stock Rule (tồn kho tối thiểu = 5).
+     * <p>
+     * Quy trình:
+     * <ol>
+     *   <li>Validate: khoNguon ≠ khoDich, danh sách chiTiets không rỗng.</li>
+     *   <li>Pre-validate (Fail-fast): Duyệt TOÀN BỘ danh sách, kiểm tra Safety Stock Rule trước.
+     *       Nếu bất kỳ dòng nào vi phạm → ném ngoại lệ NGAY, không thực hiện bất cứ thay đổi nào.</li>
+     *   <li>Execute: Lưu phiếu → Trừ kho nguồn → Cộng kho đích → Lưu chi tiết.</li>
+     * </ol>
+     *
+     * @param request    Thông tin phiếu chuyển (khoNguonId, khoDichId, danh sách SKU + số lượng).
+     * @param nguoiTaoId ID của người dùng thực hiện thao tác.
+     * @return Đối tượng {@link PhieuChuyenKho} đã được lưu.
+     * @throws jakarta.persistence.EntityNotFoundException Nếu không tìm thấy kho, biến thể, hoặc tồn kho nguồn.
+     * @throws IllegalArgumentException                   Nếu vi phạm Safety Stock Rule hoặc khoNguon trùng khoDich.
+     */
+    PhieuChuyenKho taoPhieuChuyenKho(TaoPhieuChuyenKhoRequest request, Integer nguoiTaoId);
+
+    /**
+     * Lấy danh sách tồn kho chi tiết của một kho (kèm thông tin SKU và sản phẩm).
+     *
+     * @param khoId ID kho cần xem.
+     * @return Danh sách {@link TonKho}, eager-loaded thông tin biến thể và sản phẩm.
+     */
+    List<TonKho> getTonKhoByKho(Integer khoId);
+
+    /**
+     * Lấy thông tin tồn kho của một SKU cụ thể tại một kho cụ thể.
+     *
+     * @param khoId            ID kho.
+     * @param bienTheSanPhamId ID biến thể sản phẩm.
+     * @return Đối tượng {@link TonKho} tìm thấy.
+     * @throws jakarta.persistence.EntityNotFoundException Nếu không tồn tại bản ghi tồn kho.
+     */
+    TonKho getTonKhoChiTiet(Integer khoId, Integer bienTheSanPhamId);
+}
