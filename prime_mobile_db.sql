@@ -367,176 +367,174 @@ GO
 -- =====================================================
 -- MODULE 7: ĐƠN HÀNG BÁN
 -- Bỏ lich_su_don_hang (không cần audit trail chi tiết)
--- Giữ thanh_toan, phuong_thuc_thanh_toan
--- Thêm ma_giam_gia_id vào don_hang để biết đơn dùng mã nào
--- Thêm hỗ trợ thanh toán QR động qua SePay
+-- Bỏ cau_hinh_thanh_toan (VNPay cấu hình trên Merchant Portal)
+-- Thanh toán online qua VNPay (redirect), offline qua tiền mặt/chuyển khoản
 -- =====================================================
 
 CREATE TABLE phuong_thuc_thanh_toan (
-                                        id        INT           IDENTITY(1,1) PRIMARY KEY,
-                                        ten_pttt  NVARCHAR(50)  NOT NULL,
-                                        mo_ta     NVARCHAR(255),
-                                        kich_hoat BIT           NOT NULL DEFAULT 1,
-                                        CONSTRAINT uq_pttt_ten UNIQUE (ten_pttt)
+    id INT IDENTITY (1, 1) PRIMARY KEY,
+    ten_pttt NVARCHAR(50) NOT NULL,
+    mo_ta NVARCHAR(255) NULL,
+    kich_hoat BIT NOT NULL DEFAULT 1,
+    CONSTRAINT uq_pttt_ten UNIQUE (ten_pttt)
 );
 GO
 
--- Cấu hình tài khoản ngân hàng nhận tiền (dùng để sinh QR động qua VietQR)
-CREATE TABLE cau_hinh_thanh_toan (
-                                     id INT IDENTITY (1, 1) PRIMARY KEY,
-                                     ten_ngan_hang NVARCHAR(100) NOT NULL,       -- VD: "MB Bank"
-                                     bank_id VARCHAR(20) NOT NULL,        -- Mã VietQR: "MB", "VCB", "TCB"...
-                                     so_tai_khoan VARCHAR(50) NOT NULL,        -- VD: "0123456789"
-    -- VD: "NGUYEN VAN A" (in hoa, không dấu)
-                                     ten_chu_tk NVARCHAR(100) NOT NULL,
-                                     la_mac_dinh BIT NOT NULL DEFAULT 0,
-                                     kich_hoat BIT NOT NULL DEFAULT 1,
-                                     ghi_chu NVARCHAR(255) NULL
+INSERT INTO phuong_thuc_thanh_toan (ten_pttt, mo_ta)
+VALUES
+(N'Tien mat', N'Thanh toan tien mat tai quay'),
+(N'Chuyen khoan', N'Chuyen khoan qua QR tinh tai quay, nhan vien xac nhan'),
+(N'Diem thuong', N'Thanh toan bang diem tich luy'),
+(
+    N'VNPay',
+    N'Thanh toan truc tuyen qua cong VNPay, khach redirect sang VNPay'
 );
-GO
-
--- FIX 3: chỉ cho phép tối đa 1 tài khoản là mặc định tại 1 thời điểm
-CREATE UNIQUE INDEX uq_cauhinh_macdinh
-    ON cau_hinh_thanh_toan (la_mac_dinh)
-    WHERE la_mac_dinh = 1;
 GO
 
 CREATE TABLE don_hang (
-                          id INT IDENTITY (1, 1) PRIMARY KEY,
-                          ma_don_hang VARCHAR(50) NOT NULL,
-                          khach_hang_id INT NOT NULL,
-                          nguoi_xu_ly_id INT NULL,
-                          cuoc_hoi_thoai_id INT NULL,
-                          kenh_ban VARCHAR(10) NOT NULL DEFAULT 'online',
-                          ngay_dat DATETIME2 NOT NULL DEFAULT GETDATE(),
-    -- Snapshot địa chỉ giao tại thời điểm đặt hàng (Đã chuẩn hóa cho GHN)
-                          dia_chi_giao_id INT NULL,
-                          ho_ten_nguoi_nhan NVARCHAR(100),
-                          sdt_nguoi_nhan VARCHAR(20),
-                          email_nguoi_nhan VARCHAR(100) NULL,
-                          dia_chi_giao_cu_the NVARCHAR(255),
-                          phuong_xa_giao NVARCHAR(100),
-                          quan_huyen_giao NVARCHAR(100),
-                          tinh_thanh_giao NVARCHAR(100),
-    -- Tài chính
-                          tong_tien_hang DECIMAL(15, 2) NOT NULL,
-                          tien_giam_gia DECIMAL(15, 2) NOT NULL DEFAULT 0,
-                          phi_ship DECIMAL(15, 2) NOT NULL DEFAULT 0, -- Lấy từ API GHN
-                          tong_thanh_toan AS (tong_tien_hang - tien_giam_gia + phi_ship) PERSISTED,
-                          ma_giam_gia_id INT NULL,
-    -- Vận chuyển (Đã xóa nguoi_giao_id và khoang_cach_km)
-                          ngay_giao_du_kien DATE NULL, -- Lấy từ API GHN
-                          ngay_giao_thuc_te DATETIME2 NULL,
-    -- Trạng thái đơn hàng
-                          trang_thai VARCHAR(20) NOT NULL DEFAULT 'cho_xac_nhan',
-    -- Trạng thái thanh toán (Riêng cho luồng QR động / SePay)
-                          trang_thai_thanh_toan VARCHAR(20) NOT NULL DEFAULT 'chua_thanh_toan',
-                          thoi_gian_het_han_tt DATETIME2 NULL,
-                          ghi_chu NVARCHAR(MAX),
-                          updated_at DATETIME2 NOT NULL DEFAULT GETDATE(),
-                          CONSTRAINT uq_dh_ma UNIQUE (ma_don_hang),
-                          CONSTRAINT chk_dh_kenh CHECK (kenh_ban IN ('online', 'tai_quay')),
-                          CONSTRAINT chk_dh_trang_thai CHECK (
-                              trang_thai IN (
-                                             'cho_xac_nhan', 'da_xac_nhan', 'dang_giao', 'da_giao', 'da_huy'
-                                  )
-                              ),
-                          CONSTRAINT chk_dh_trang_thai_tt CHECK (trang_thai_thanh_toan IN (
-                                                                                           'chua_thanh_toan',  -- mới tạo đơn
-                                                                                           'dang_cho_qr',      -- đang hiển thị QR, chờ khách quét
-                                                                                           'da_thanh_toan',    -- SePay webhook xác nhận OK
-                                                                                           'that_bai',         -- quá hạn hoặc lỗi
-                                                                                           'hoan_tien'         -- đã hoàn tiền
-                              )),
-    -- Chặn dữ liệu âm do lỗi nhập liệu/code
-                          CONSTRAINT chk_dh_tong_tien_hang CHECK (tong_tien_hang >= 0),
-                          CONSTRAINT chk_dh_tien_giam_gia CHECK (tien_giam_gia >= 0),
-                          CONSTRAINT chk_dh_phi_ship CHECK (phi_ship >= 0),
-                          CONSTRAINT fk_dh_kh FOREIGN KEY (khach_hang_id) REFERENCES khach_hang (id),
-                          CONSTRAINT fk_dh_nd FOREIGN KEY (nguoi_xu_ly_id) REFERENCES nguoi_dung (id),
-                          CONSTRAINT fk_dh_dc FOREIGN KEY (dia_chi_giao_id) REFERENCES dia_chi_khach_hang (id) ON DELETE SET NULL,
+    id INT IDENTITY (1, 1) PRIMARY KEY,
+    ma_don_hang VARCHAR(50) NOT NULL,
+    khach_hang_id INT NOT NULL,
+    nguoi_xu_ly_id INT NULL,
+    cuoc_hoi_thoai_id INT NULL,
+    kenh_ban VARCHAR(10) NOT NULL DEFAULT 'online',
+    ngay_dat DATETIME2 NOT NULL DEFAULT GETDATE(),
+    -- Snapshot dia chi giao tai thoi diem dat hang (chuan hoa cho GHN)
+    dia_chi_giao_id INT NULL,
+    ho_ten_nguoi_nhan NVARCHAR(100) NULL,
+    sdt_nguoi_nhan VARCHAR(20) NULL,
+    email_nguoi_nhan VARCHAR(100) NULL,
+    dia_chi_giao_cu_the NVARCHAR(255) NULL,
+    phuong_xa_giao NVARCHAR(100) NULL,
+    quan_huyen_giao NVARCHAR(100) NULL,
+    tinh_thanh_giao NVARCHAR(100) NULL,
+    -- Tai chinh
+    tong_tien_hang DECIMAL(15, 2) NOT NULL,
+    tien_giam_gia DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    phi_ship DECIMAL(15, 2) NOT NULL DEFAULT 0,   -- Lay tu API GHN
+    tong_thanh_toan AS (tong_tien_hang - tien_giam_gia + phi_ship) PERSISTED,
+    ma_giam_gia_id INT NULL,
+    -- Van chuyen (GHN quan ly nguoi giao, khong can luu noi bo)
+    ngay_giao_du_kien DATE NULL,       -- Lay tu API GHN
+    ngay_giao_thuc_te DATETIME2 NULL,
+    -- Trang thai don hang
+    trang_thai VARCHAR(20) NOT NULL DEFAULT 'cho_xac_nhan',
+    -- Trang thai thanh toan (rieng cho luong VNPay)
+    trang_thai_thanh_toan VARCHAR(20) NOT NULL DEFAULT 'chua_thanh_toan',
+    -- VNPay het han sau 15 phut -> tu dong huy don, tra kho
+    thoi_gian_het_han_tt DATETIME2 NULL,
+    ghi_chu NVARCHAR(MAX) NULL,
+    updated_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT uq_dh_ma UNIQUE (ma_don_hang),
+    CONSTRAINT chk_dh_kenh CHECK (kenh_ban IN ('online', 'tai_quay')),
+    CONSTRAINT chk_dh_trang_thai CHECK (
+        trang_thai IN (
+            'cho_xac_nhan', 'da_xac_nhan', 'dang_giao', 'da_giao', 'da_huy'
+        )
+    ),
+    CONSTRAINT chk_dh_trang_thai_tt CHECK (
+        trang_thai_thanh_toan IN (
+            'chua_thanh_toan',      -- moi tao don, chua bat dau thanh toan
+            'dang_chuyen_huong',    -- dang redirect sang trang VNPay
+            'da_thanh_toan',        -- VNPay IPN xac nhan OK
+            'that_bai'              -- qua han hoac VNPay tra loi loi
+        )
+    ),
+    -- Chan du lieu am do loi nhap lieu / code
+    CONSTRAINT chk_dh_tong_tien_hang CHECK (tong_tien_hang >= 0),
+    CONSTRAINT chk_dh_tien_giam_gia CHECK (tien_giam_gia >= 0),
+    CONSTRAINT chk_dh_phi_ship CHECK (phi_ship >= 0),
+    CONSTRAINT fk_dh_kh FOREIGN KEY (khach_hang_id) REFERENCES khach_hang (id),
+    CONSTRAINT fk_dh_nd FOREIGN KEY (nguoi_xu_ly_id) REFERENCES nguoi_dung (id),
+    CONSTRAINT fk_dh_dc FOREIGN KEY (dia_chi_giao_id)
+    REFERENCES dia_chi_khach_hang (id) ON DELETE SET NULL
 );
 GO
 
 CREATE INDEX idx_dh_kh ON don_hang (khach_hang_id, ngay_dat);
 CREATE INDEX idx_dh_tts ON don_hang (trang_thai, ngay_dat);
 CREATE INDEX idx_dh_ngay ON don_hang (ngay_dat);
-CREATE INDEX idx_dh_tttt ON don_hang (trang_thai_thanh_toan, thoi_gian_het_han_tt);
+CREATE INDEX idx_dh_tttt
+    ON don_hang (trang_thai_thanh_toan, thoi_gian_het_han_tt);
 GO
 
 ALTER TABLE may_dien_thoai
-    ADD CONSTRAINT fk_may_dh FOREIGN KEY (don_hang_id) REFERENCES don_hang(id) ON DELETE SET NULL;
+ADD CONSTRAINT fk_may_dh FOREIGN KEY (don_hang_id)
+REFERENCES don_hang (id) ON DELETE SET NULL;
 GO
 
 CREATE TABLE chi_tiet_don_hang (
-                                   id INT IDENTITY (1, 1) PRIMARY KEY,
-                                   don_hang_id INT NOT NULL,
-                                   bien_the_san_pham_id INT NOT NULL,
-                                   so_luong INT NOT NULL,
-                                   don_gia_ban DECIMAL(15, 2) NOT NULL,
-                                   thanh_tien AS (so_luong * don_gia_ban) PERSISTED,
-                                   CONSTRAINT chk_ctdh_sl CHECK (so_luong > 0),
-    -- FIX 5: chặn đơn giá âm
-                                   CONSTRAINT chk_ctdh_dongia CHECK (don_gia_ban >= 0),
-                                   CONSTRAINT fk_ctdh_dh FOREIGN KEY (don_hang_id) REFERENCES don_hang (
-                                                                                                        id
-                                       ) ON DELETE CASCADE,
-                                   CONSTRAINT fk_ctdh_bt FOREIGN KEY (
-                                                                      bien_the_san_pham_id
-                                       ) REFERENCES bien_the_san_pham (id)
+    id INT IDENTITY (1, 1) PRIMARY KEY,
+    don_hang_id INT NOT NULL,
+    bien_the_san_pham_id INT NOT NULL,
+    so_luong INT NOT NULL,
+    don_gia_ban DECIMAL(15, 2) NOT NULL,
+    thanh_tien AS (so_luong * don_gia_ban) PERSISTED,
+    CONSTRAINT chk_ctdh_sl CHECK (so_luong > 0),
+    CONSTRAINT chk_ctdh_dongia CHECK (don_gia_ban >= 0),
+    CONSTRAINT fk_ctdh_dh FOREIGN KEY (don_hang_id)
+    REFERENCES don_hang (id) ON DELETE CASCADE,
+    CONSTRAINT fk_ctdh_bt FOREIGN KEY (bien_the_san_pham_id)
+    REFERENCES bien_the_san_pham (id)
 );
 GO
 
--- FIX 4: index cho FK để join/lookup nhanh hơn (SQL Server không tự tạo)
+-- Index cho FK (SQL Server khong tu tao)
 CREATE INDEX idx_ctdh_dh ON chi_tiet_don_hang (don_hang_id);
 GO
 
 CREATE TABLE thanh_toan (
-                            id INT IDENTITY (1, 1) PRIMARY KEY,
-                            don_hang_id INT NOT NULL,
-                            phuong_thuc_thanh_toan_id INT NOT NULL,
-                            so_tien DECIMAL(15, 2) NOT NULL,
-                            so_tien_thuc_te           DECIMAL(15, 2)  NULL,     -- Tiền KHÁCH ĐÃ CHUYỂN (Nhận từ SePay)
-                            ma_giao_dich VARCHAR(100) NULL,
-                            trang_thai VARCHAR(15) NOT NULL DEFAULT 'cho',
-                            thoi_gian_tao DATETIME2 NOT NULL DEFAULT GETDATE(),
-                            thoi_gian_thanh_cong DATETIME2 NULL,
-    -- Thông tin QR động (VietQR)
-                            qr_code_url VARCHAR(500) NULL,   -- URL ảnh QR từ VietQR API
-    -- Nội dung in sẵn trong QR: "THANHTOAN DH2024001"
-                            noi_dung_chuyen_khoan VARCHAR(100) NULL,
-                            thoi_gian_het_han DATETIME2 NULL,   -- QR hết hạn sau 15 phút
-    -- Dữ liệu SePay webhook trả về
-                            sepay_transaction_id BIGINT NULL,   -- ID giao dịch trên SePay
-                            ten_ngan_hang_gui VARCHAR(50) NULL,   -- Ngân hàng khách dùng để quét
-                            noi_dung_goc NVARCHAR(255) NULL,   -- Nội dung thực tế khách nhập
-                            ma_tham_chieu VARCHAR(100) NULL,   -- referenceCode từ SePay
-                            thoi_gian_ngan_hang DATETIME2 NULL,   -- Thời gian ngân hàng xử lý
-                            raw_webhook NVARCHAR(MAX) NULL,   -- JSON gốc SePay gửi về (để debug)
-                            CONSTRAINT chk_tt_trang_thai CHECK (
-                                trang_thai IN ('cho', 'thanh_cong', 'that_bai', 'hoan_tien')
-                                ),
-    -- FIX 5: chặn số tiền âm
-                            CONSTRAINT chk_tt_so_tien CHECK (so_tien >= 0),
-                            CONSTRAINT chk_tt_so_tien_thuc_te CHECK (so_tien_thuc_te >= 0),
-                            CONSTRAINT fk_tt_dh FOREIGN KEY (don_hang_id) REFERENCES don_hang (id),
-                            CONSTRAINT fk_tt_pttt FOREIGN KEY (
-                                                               phuong_thuc_thanh_toan_id
-                                ) REFERENCES phuong_thuc_thanh_toan (id)
+    id INT IDENTITY (1, 1) PRIMARY KEY,
+    don_hang_id INT NOT NULL,
+    phuong_thuc_thanh_toan_id INT NOT NULL,
+    so_tien DECIMAL(15, 2) NOT NULL,           -- So tien don hang yeu cau
+    -- So tien khach thuc te da thanh toan (nhan tu VNPay)
+    so_tien_thuc_te DECIMAL(15, 2) NULL,
+    ma_giao_dich VARCHAR(100) NULL,
+    trang_thai VARCHAR(15) NOT NULL DEFAULT 'cho',
+    thoi_gian_tao DATETIME2 NOT NULL DEFAULT GETDATE(),
+    thoi_gian_thanh_cong DATETIME2 NULL,
+    -- Thong tin VNPay
+    -- Ma don hang gui len VNPay (= ma_don_hang)
+    vnp_txn_ref VARCHAR(100) NULL,
+    vnp_transaction_no VARCHAR(100) NULL,      -- Ma giao dich VNPay tra ve
+    -- "00" = thanh cong, con lai = loi
+    vnp_response_code VARCHAR(10) NULL,
+    -- Ngan hang khach dung (VD: "NCB")
+    vnp_bank_code VARCHAR(20) NULL,
+    vnp_bank_tran_no VARCHAR(100) NULL,        -- Ma giao dich phia ngan hang
+    vnp_card_type VARCHAR(20) NULL,            -- "ATM" / "QRCODE" / "CREDIT"
+    -- Thoi gian VNPay xac nhan (yyyyMMddHHmmss)
+    vnp_pay_date VARCHAR(20) NULL,
+    -- Checksum de verify IPN khong bi gia mao
+    vnp_secure_hash VARCHAR(256) NULL,
+    -- Toan bo query string IPN de debug
+    raw_ipn NVARCHAR(MAX) NULL,
+    CONSTRAINT chk_tt_trang_thai CHECK (
+        trang_thai IN ('cho', 'thanh_cong', 'that_bai')
+    ),
+    CONSTRAINT chk_tt_so_tien CHECK (so_tien >= 0),
+    CONSTRAINT chk_tt_so_tien_thuc_te CHECK (so_tien_thuc_te >= 0),
+    CONSTRAINT fk_tt_dh FOREIGN KEY (don_hang_id) REFERENCES don_hang (id),
+    CONSTRAINT fk_tt_pttt FOREIGN KEY (phuong_thuc_thanh_toan_id)
+    REFERENCES phuong_thuc_thanh_toan (id)
 );
 GO
 
+-- Index cho FK
 CREATE INDEX idx_tt_dh ON thanh_toan (don_hang_id);
-CREATE INDEX idx_tt_het_han
-    ON thanh_toan (thoi_gian_het_han)
-    WHERE thoi_gian_het_han IS NOT NULL;
 GO
 
--- FIX 1: chống xử lý trùng giao dịch khi SePay gọi webhook nhiều lần
--- (thay cho idx_tt_sepay thường trước đây)
-CREATE UNIQUE INDEX uq_tt_sepay_id
-    ON thanh_toan (sepay_transaction_id)
-    WHERE sepay_transaction_id IS NOT NULL;
+-- Unique index chong xu ly trung giao dich khi VNPay goi IPN nhieu lan
+CREATE UNIQUE INDEX uq_tt_vnp_txn
+    ON thanh_toan (vnp_transaction_no)
+    WHERE vnp_transaction_no IS NOT NULL;
+GO
+
+-- Filtered index de check nhanh cac thanh toan chua het han
+CREATE INDEX idx_tt_het_han
+    ON thanh_toan (thoi_gian_tao)
+    WHERE trang_thai = 'cho';
 GO
 
 -- =====================================================
