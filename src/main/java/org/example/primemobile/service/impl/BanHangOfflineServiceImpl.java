@@ -58,8 +58,8 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
     /** Loại kho phục vụ bán hàng offline. */
     private static final String LOAI_KHO_TONG = "kho_tong";
 
-    /** Trạng thái đơn hàng đang nháp, chờ thanh toán. */
-    private static final String TRANG_THAI_CHO_THANH_TOAN = "cho_thanh_toan";
+    /** Trạng thái đơn hàng đang nháp, chờ xác nhận (khớp với CHECK constraint DB). */
+    private static final String TRANG_THAI_CHO_THANH_TOAN = "cho_xac_nhan";
 
     /** Pattern sinh mã đơn hàng: DH-YYYYMM-<millis 6 chữ số cuối>. */
     private static final DateTimeFormatter MA_DON_DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
@@ -147,7 +147,7 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
      *
      * <h3>Luồng chi tiết:</h3>
      * <ol>
-     *   <li>Validate đơn hàng tồn tại và đang ở {@code "cho_thanh_toan"}.</li>
+     *   <li>Validate đơn hàng tồn tại và đang ở {@code "cho_xac_nhan"}.</li>
      *   <li>Lấy thông tin SKU (giá bán hiện tại) qua {@link IBienTheSanPhamService}.</li>
      *   <li><b>Safety Stock Check tại Kho Tổng:</b>
      *       Tồn kho sau khi trừ {@code soLuong} phải {@code >= 5}.</li>
@@ -278,7 +278,7 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
      *
      * <h3>Luồng chi tiết:</h3>
      * <ol>
-     *   <li>Validate đơn hàng đang ở {@code "cho_thanh_toan"} và có ít nhất 1 sản phẩm.</li>
+     *   <li>Validate đơn hàng đang ở {@code "cho_xac_nhan"} và có ít nhất 1 sản phẩm.</li>
      *   <li>Validate phương thức thanh toán tồn tại.</li>
      *   <li>Cập nhật trạng thái đơn hàng: {@code "da_giao"} + {@code "da_thanh_toan"}
      *       (Bán tại quầy = giao hàng tức thì theo system_rules.md §2.1).</li>

@@ -1,0 +1,50 @@
+### ====================================================================
+### KỊCH BẢN 1: ĐỒNG BỘ LUỒNG BÁN HÀNG THÀNH CÔNG (IPHONE 15 PRO MAX)
+### ====================================================================
+
+### Bước 1: Đăng nhập tài khoản Quản trị viên
+# Lưu ý: Vì mật khẩu trong DB đang để text thô là 'hash_admin', hãy chắc chắn
+# rằng hàm băm trong PasswordUtil so khớp đúng chuỗi này, hoặc bạn đã cập nhật
+# mật khẩu dạng SHA-256 vào database trước khi bấm nút chạy.
+POST http://localhost:8080/api/auth/admin/dang-nhap
+Content-Type: application/json
+
+{
+  "email": "admin@primemobile.vn",
+  "matKhau": "hash_admin"
+}
+
+### Bước 2: Khởi tạo hóa đơn trống tại quầy
+# API này tự lấy ID của Admin đăng nhập ở Bước 1 từ Session
+POST http://localhost:8080/api/admin/ban-hang/tao-don
+
+### Bước 3: Thêm sản phẩm hợp lệ vào đơn hàng nháp
+# Sử dụng bienTheSanPhamId = 1 (iPhone 15 Pro Max - Titan Tự Nhiên)
+# Hiện tại mặt hàng này đang có sẵn 50 sản phẩm trong Kho Tổng (kho_id = 1)
+# Mua số lượng = 2 (Thỏa mãn quy tắc tồn kho an toàn: 50 - 2 = 48 >= 5)
+POST http://localhost:8080/api/admin/ban-hang/them-sp
+Content-Type: application/x-www-form-urlencoded
+
+donHangId=6&bienTheSanPhamId=1&soLuong=2
+
+### Bước 4: Chốt đơn hàng và thực hiện trừ kho vật lý
+# Sử dụng phuongThucThanhToanId = 1 (Tiền mặt - COD)
+POST http://localhost:8080/api/admin/ban-hang/thanh-toan
+Content-Type: application/x-www-form-urlencoded
+
+donHangId=6&phuongThucThanhToanId=1
+
+
+### ====================================================================
+### KỊCH BẢN 2: KIỂM THỬ BẪY NGHIỆP VỤ (CHẶN SAFETY STOCK)
+### ====================================================================
+
+### Bước 5: Thử nghiệm thêm sản phẩm đã hết hàng hoặc vi phạm tồn kho tối thiểu
+# Tạo lại một đơn hàng mới hoặc dùng lại đơn hàng nháp cũ.
+# Sử dụng bienTheSanPhamId = 8 (Redmi Note 13 Pro) đang có số lượng tồn kho = 0.
+# Kỳ vọng: Hệ thống phải lập tức từ chối và trả về HTTP 400 Bad Request
+# kèm theo thông báo: "Vi phạm quy tắc tồn kho tối thiểu = 5"
+POST http://localhost:8080/api/admin/ban-hang/them-sp
+Content-Type: application/x-www-form-urlencoded
+
+donHangId=5&bienTheSanPhamId=8&soLuong=1

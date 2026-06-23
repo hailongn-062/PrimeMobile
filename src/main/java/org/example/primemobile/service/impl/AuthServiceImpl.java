@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
  *   <li>KHÔNG dùng Spring Security / JWT.</li>
  *   <li>Phiên đăng nhập được quản lý bằng {@code HttpSession} do Controller xử lý.</li>
  *   <li>Service chỉ xác thực và trả về {@link SessionUser} — không tự set session.</li>
- *   <li>Mật khẩu so sánh qua {@link PasswordUtil#checkPassword(String, String)} (SHA-256).</li>
+ *   <li>Mật khẩu so sánh qua {@link PasswordUtil#checkPassword(String, String)} (plain-text, chế độ demo).</li>
  * </ul>
  */
 @Slf4j
@@ -104,7 +104,7 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         // ------------------------------------------------------------------
-        // Bước 4: Xác minh mật khẩu bằng SHA-256
+        // Bước 4: Xác minh mật khẩu plain-text (chế độ demo — so sánh trực tiếp)
         // ------------------------------------------------------------------
         if (!PasswordUtil.checkPassword(request.getMatKhau(), nguoiDung.getMatKhau())) {
             log.warn("[AuthService] Mật khẩu không khớp — email={}", emailInput);

@@ -1076,7 +1076,7 @@ GO
 INSERT INTO khach_hang (nguoi_dung_id, ho_ten, email, so_dien_thoai, diem_tich_luy, hang_thanh_vien, tong_chi_tieu) VALUES
 (3, N'Nguyễn Văn An', 'khach1@gmail.com', '0912345678', 550, 'bac', 55000000), -- Khách VIP Hạng Bạc
 (4, N'Phạm Thị Hoa', 'khach2@gmail.com', '0987654321', 0, 'dong', 0),
-(NULL, N'Khách Vãng Lai', NULL, '0999888777', 0, 'dong', 0);
+(NULL, N'Khách Lẻ Mặc Định', NULL, '0000000000', 0, 'dong', 0);
 GO
 
 INSERT INTO dia_chi_khach_hang (khach_hang_id, loai_dia_chi, ho_ten_nguoi_nhan, so_dien_thoai_nguoi_nhan, dia_chi_chi_tiet, tinh_thanh_id, quan_huyen_id, phuong_xa_code, tinh_thanh_ten, quan_huyen_ten, phuong_xa_ten, mac_dinh) VALUES
@@ -1111,7 +1111,7 @@ INSERT INTO don_hang (ma_don_hang, khach_hang_id, kenh_ban, dia_chi_giao_id, ho_
 
 -- Đơn hàng 4: ĐÃ HỦY - Khách đổi ý
 INSERT INTO don_hang (ma_don_hang, khach_hang_id, kenh_ban, ho_ten_nguoi_nhan, sdt_nguoi_nhan, dia_chi_giao_cu_the, phuong_xa_giao, quan_huyen_giao, tinh_thanh_giao, tong_tien_hang, tien_giam_gia, phi_ship, trang_thai, trang_thai_thanh_toan, ngay_dat) VALUES
-('DH_2026_0004', 3, 'online', N'Khách Vãng Lai', '0999888777', N'Tạm vắng', N'Phường X', N'Quận Y', N'Tỉnh Z', 10490000, 0, 30000, 'da_huy', 'that_bai', '2026-06-01');
+('DH_2026_0004', 3, 'online', N'Khách Lẻ Mặc Định', '0000000000', N'Tạm vắng', N'Phường X', N'Quận Y', N'Tỉnh Z', 10490000, 0, 30000, 'da_huy', 'that_bai', '2026-06-01');
 GO
 
 -- Chi tiết đơn hàng
