@@ -12,18 +12,12 @@ import java.time.LocalDateTime;
  * Lịch sử các giao dịch thanh toán của một đơn hàng.
  * 1 đơn hàng có thể có nhiều bản ghi ThanhToan (ví dụ: thanh toán thất bại → thử lại).
  * <p>
- * Ghi chú (system_rules.md §7 – Tính năng hoãn lại):
- *  Phương thức COD đang là DUY NHẤT được sử dụng.
- *  Các trường QR động (qrCodeUrl, noiDungChuyenKhoan...) và SePay webhook
- *  (sepayTransactionId, rawWebhook...) được map đầy đủ để không phải refactor
- *  khi bỏ tạm hoãn, nhưng sẽ để NULL trong giai đoạn hiện tại.
- * <p>
  * ⚠️ Filtered Unique Index trong SQL Server (không thể map qua JPA):
- *  {@code CREATE UNIQUE INDEX uq_tt_sepay_id ON thanh_toan (sepay_transaction_id) WHERE sepay_transaction_id IS NOT NULL}
- *  → Service Layer phải kiểm tra trùng sepayTransactionId trước khi xử lý webhook SePay.
+ *  {@code CREATE UNIQUE INDEX uq_tt_vnp_txn_ref ON thanh_toan (vnp_txn_ref) WHERE vnp_txn_ref IS NOT NULL}
+ *  → Service Layer phải kiểm tra trùng vnpTxnRef trước khi xử lý IPN VNPay.
  * <p>
  * Trạng thái hợp lệ (CHECK chk_tt_trang_thai):
- *  "cho" | "thanh_cong" | "that_bai" | "hoan_tien"
+ *  "cho" | "thanh_cong" | "that_bai"
  * <p>
  * Quan hệ:
  *  - N:1 với {@link DonHang}              (FK don_hang_id)
@@ -60,7 +54,7 @@ public class ThanhToan {
 
     /**
      * Phương thức thanh toán được sử dụng.
-     * Hiện tại mặc định là COD (system_rules.md §7).
+     * Ví dụ: COD, Chuyển khoản, VNPay.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -75,8 +69,8 @@ public class ThanhToan {
     private BigDecimal soTien;
 
     /**
-     * Số tiền khách THỰC TẾ đã chuyển (nhận từ SePay webhook).
-     * NULL với COD, có giá trị sau khi SePay xác nhận chuyển khoản.
+     * Số tiền khách THỰC TẾ đã thanh toán (nhận từ VNPay IPN).
+     * NULL với COD, có giá trị sau khi VNPay xác nhận giao dịch.
      */
     @Column(name = "so_tien_thuc_te", precision = 15, scale = 2)
     private BigDecimal soTienThucTe;
@@ -87,7 +81,7 @@ public class ThanhToan {
 
     /**
      * Trạng thái giao dịch (DEFAULT 'cho').
-     * Giá trị hợp lệ: "cho" | "thanh_cong" | "that_bai" | "hoan_tien"
+     * Giá trị hợp lệ: "cho" | "thanh_cong" | "that_bai"
      */
     @Column(name = "trang_thai", nullable = false, length = 15)
     @Builder.Default
@@ -103,59 +97,45 @@ public class ThanhToan {
     private LocalDateTime thoiGianThanhCong;
 
     // -------------------------------------------------------------------------
-    // THÔNG TIN QR ĐỘNG (VietQR) — Tạm hoãn theo system_rules.md §7
+    // THÔNG TIN VNPAY
     // -------------------------------------------------------------------------
 
-    /** URL ảnh mã QR sinh bởi VietQR API. NULL với COD. */
-    @Column(name = "qr_code_url", length = 500)
-    private String qrCodeUrl;
+    /** Mã tham chiếu giao dịch do hệ thống tạo, gửi sang VNPay. UNIQUE khi NOT NULL. */
+    @Column(name = "vnp_txn_ref", length = 100)
+    private String vnpTxnRef;
+
+    /** Mã giao dịch do VNPay cấp sau khi thanh toán thành công. */
+    @Column(name = "vnp_transaction_no", length = 100)
+    private String vnpTransactionNo;
+
+    /** Mã phản hồi từ VNPay (00 = thành công). */
+    @Column(name = "vnp_response_code", length = 10)
+    private String vnpResponseCode;
+
+    /** Mã ngân hàng khách dùng để thanh toán qua VNPay. */
+    @Column(name = "vnp_bank_code", length = 20)
+    private String vnpBankCode;
+
+    /** Mã giao dịch tại ngân hàng. */
+    @Column(name = "vnp_bank_tran_no", length = 100)
+    private String vnpBankTranNo;
+
+    /** Loại thẻ/tài khoản khách dùng (ví dụ: ATM, QRCODE). */
+    @Column(name = "vnp_card_type", length = 20)
+    private String vnpCardType;
+
+    /** Thời điểm thanh toán theo VNPay (định dạng yyyyMMddHHmmss). */
+    @Column(name = "vnp_pay_date", length = 20)
+    private String vnpPayDate;
+
+    /** Chữ ký bảo mật VNPay gửi về trong IPN để xác thực tính toàn vẹn. */
+    @Column(name = "vnp_secure_hash", length = 256)
+    private String vnpSecureHash;
 
     /**
-     * Nội dung in sẵn trong QR chuyển khoản (ví dụ: "THANHTOAN DH2024001").
-     * Dùng để đối chiếu tự động qua SePay webhook.
+     * JSON gốc VNPay gửi về qua IPN (dùng để debug khi cần).
+     * NULL với COD / Chuyển khoản.
      */
-    @Column(name = "noi_dung_chuyen_khoan", length = 100)
-    private String noiDungChuyenKhoan;
-
-    /**
-     * Thời điểm mã QR hết hạn (thường sau 15 phút).
-     * NULL với COD.
-     */
-    @Column(name = "thoi_gian_het_han")
-    private LocalDateTime thoiGianHetHan;
-
-    // -------------------------------------------------------------------------
-    // DỮ LIỆU SEPAY WEBHOOK — Tạm hoãn theo system_rules.md §7
-    // -------------------------------------------------------------------------
-
-    /**
-     * ID giao dịch trên hệ thống SePay.
-     * ⚠️ Filtered Unique Index ở DB: UNIQUE khi NOT NULL.
-     * Service Layer phải kiểm tra trùng trước khi xử lý webhook.
-     */
-    @Column(name = "sepay_transaction_id")
-    private Long sepayTransactionId;
-
-    /** Tên ngân hàng khách dùng để quét QR. */
-    @Column(name = "ten_ngan_hang_gui", length = 50)
-    private String tenNganHangGui;
-
-    /** Nội dung chuyển khoản thực tế khách nhập (có thể khác noiDungChuyenKhoan). */
-    @Column(name = "noi_dung_goc", length = 255)
-    private String noiDungGoc;
-
-    /** referenceCode từ SePay để tra cứu giao dịch. */
-    @Column(name = "ma_tham_chieu", length = 100)
-    private String maThamChieu;
-
-    /** Thời điểm ngân hàng xử lý giao dịch. */
-    @Column(name = "thoi_gian_ngan_hang")
-    private LocalDateTime thoiGianNganHang;
-
-    /**
-     * JSON gốc SePay gửi về qua webhook (dùng để debug khi cần).
-     * NULL với COD.
-     */
-    @Column(name = "raw_webhook", columnDefinition = "NVARCHAR(MAX)")
-    private String rawWebhook;
+    @Column(name = "raw_ipn", columnDefinition = "NVARCHAR(MAX)")
+    private String rawIpn;
 }
