@@ -1,0 +1,108 @@
+package org.example.primemobile.service.impl;
+
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.example.primemobile.entity.KhachHang;
+import org.example.primemobile.repository.KhachHangRepository;
+import org.example.primemobile.service.IKhachHangService;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * Triển khai phân hệ Quản lý Khách hàng — dành cho Admin tra cứu và cập nhật.
+ * <p>
+ * Lưu ý (system_rules.md §4): Logic tích điểm và thăng hạng thành viên TẠM HOÃN.
+ * Service này chỉ cập nhật thông tin hồ sơ cơ bản của khách hàng.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class KhachHangServiceImpl implements IKhachHangService {
+
+    private final KhachHangRepository khachHangRepository;
+
+    // =========================================================================
+    // PUBLIC METHODS
+    // =========================================================================
+
+    /** {@inheritDoc} */
+    @Override
+    @Transactional(readOnly = true)
+    public List<KhachHang> timKiem(String tuKhoa) {
+        String keyword = (tuKhoa == null || tuKhoa.isBlank()) ? null : tuKhoa.trim();
+        return khachHangRepository.timKiemTheoSdtHoacEmail(keyword);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    @Transactional(readOnly = true)
+    public KhachHang layTheoId(Integer id) {
+        return khachHangRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Không tìm thấy khách hàng có ID: " + id));
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Luồng xử lý:
+     * <ol>
+     *   <li>Load entity hiện tại.</li>
+     *   <li>Validate SĐT mới không trùng với khách khác.</li>
+     *   <li>Validate email mới không trùng với khách khác (nếu có).</li>
+     *   <li>Ghi đè các trường được phép cập nhật.</li>
+     * </ol>
+     * Các trường KHÔNG được cập nhật ở đây:
+     * {@code diemTichLuy}, {@code hangThanhVien}, {@code tongChiTieu}
+     * — do logic thăng hạng đang TẠM HOÃN (system_rules.md §4).
+     */
+    @Override
+    @Transactional
+    public KhachHang capNhat(Integer id, KhachHang khachHangMoi) {
+        KhachHang existing = layTheoId(id);
+
+        // Validate SĐT mới không trùng với khách khác
+        if (khachHangMoi.getSoDienThoai() != null && !khachHangMoi.getSoDienThoai().isBlank()) {
+            String sdtMoi = khachHangMoi.getSoDienThoai().trim();
+            khachHangRepository.findBySoDienThoai(sdtMoi)
+                    .ifPresent(other -> {
+                        if (!other.getId().equals(id)) {
+                            throw new IllegalArgumentException(
+                                    "Số điện thoại \"" + sdtMoi + "\" đã được sử dụng bởi khách hàng khác.");
+                        }
+                    });
+            existing.setSoDienThoai(sdtMoi);
+        }
+
+        // Validate email mới không trùng với khách khác (nếu có giá trị)
+        if (khachHangMoi.getEmail() != null && !khachHangMoi.getEmail().isBlank()) {
+            String emailMoi = khachHangMoi.getEmail().trim().toLowerCase();
+            khachHangRepository.findByEmailIgnoreCase(emailMoi)
+                    .ifPresent(other -> {
+                        if (!other.getId().equals(id)) {
+                            throw new IllegalArgumentException(
+                                    "Email \"" + emailMoi + "\" đã được sử dụng bởi khách hàng khác.");
+                        }
+                    });
+            existing.setEmail(emailMoi);
+        } else {
+            existing.setEmail(null); // Cho phép xóa email
+        }
+
+        // Cập nhật các trường thông tin cơ bản
+        if (khachHangMoi.getHoTen() != null && !khachHangMoi.getHoTen().isBlank()) {
+            existing.setHoTen(khachHangMoi.getHoTen().trim());
+        }
+        existing.setGioiTinh(khachHangMoi.getGioiTinh());
+        existing.setNgaySinh(khachHangMoi.getNgaySinh());
+        existing.setUpdatedAt(LocalDateTime.now());
+
+        KhachHang updated = khachHangRepository.save(existing);
+        log.info("[KhachHang] Đã cập nhật thông tin — id={}, hoTen={}", updated.getId(), updated.getHoTen());
+        return updated;
+    }
+}

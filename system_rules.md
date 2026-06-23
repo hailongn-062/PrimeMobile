@@ -34,7 +34,7 @@
     2. Điền thông tin giao hàng: chọn địa chỉ nhận hàng từ danh sách `dia_chi_khach_hang` để lấy thông số ID địa chỉ phục vụ tính phí ship.
     3. Áp dụng mã giảm giá/khuyến mãi (nếu có).
     4. Ấn "Đặt hàng online": Đơn hàng được tạo với trạng thái mặc định là `cho_xac_nhan`, trạng thái thanh toán là `chua_thanh_toan`.
-    5. **Cập nhật tồn kho:** Trừ trực tiếp số lượng tồn kho khả dụng trong bảng `ton_kho` của **Kho Online**.
+    5. **Cập nhật tồn kho:** Trừ trực tiếp số lượng tồn kho khả dụng trong bảng `ton_kho` của **Kho Online** trừ kho khi đơn hàng có trạng thái `da_xac_nhan`.
     6. **Quy tắc Hủy đơn hàng phía Khách hàng:** Khách hàng chỉ có quyền ấn HỦY đơn hàng khi trạng thái đơn hàng đang là `cho_xac_nhan`. Khi nhân viên đã duyệt chuyển trạng thái sang `da_xac_nhan` hoặc `dang_giao`, nút Hủy phía khách hàng phải bị vô hiệu hóa (Disable).
     7. **Logic hoàn kho khi hủy đơn:** Khi đơn hàng bị hủy thành công, hệ thống bắt buộc phải cộng hoàn lại số lượng sản phẩm tương ứng vào **Kho Online**.
 
@@ -99,7 +99,7 @@ Toàn bộ quy tắc tính toán tài chính và phân hạng thành viên dư�
 ## 7. CÁC TÍNH NĂNG HOÃN LẠI (POSTPONED FEATURES)
 Để tập trung tối ưu hóa các phân hệ cốt lõi lấy điểm tối đa từ hội đồng chấm đồ án, các tính năng sau đây tạm thời **ĐÃ ĐƯỢC LOẠI BỎ khỏi mã nguồn Backend**, AI Agent tuyệt đối không sinh code cho các phần này cho đến khi có lệnh mới:
 1. **Phân hệ Chatbot AI:** Tích hợp API Gemini để tư vấn tự động sẽ được làm sau. Hiện tại không tạo Service hay Controller cho phân hệ này.
-2. **Phương thức thanh toán:** Tạm hoãn cổng thanh toán tự động bằng SePay Webhook cũng như chuyển khoản ngân hàng. Phương thức thanh toán (PTTT) hiện tại mặc định sử dụng duy nhất một phương thức là Nhận hàng trả tiền mặt (COD).
+2. **Phương thức thanh toán:** Tạm hoãn cổng thanh toán tự động bằng VNpay cũng như chuyển khoản ngân hàng. Phương thức thanh toán (PTTT) hiện tại mặc định sử dụng duy nhất một phương thức là Nhận hàng trả tiền mặt (COD).
 3. **Phân hệ Bảo hành:** Tạm thời hoãn việc xây dựng luồng tiếp nhận máy lỗi, tạo phiếu bảo hành và gửi nhà cung cấp.
 4. **Tích điểm & Hạng thành viên:** Tạm hoãn các logic tính toán cộng điểm thưởng, lưu lịch sử biến động điểm và xét thăng hạng thành viên. Hệ thống tạm thời tính giá bán bình thường (chưa áp dụng phần trăm giảm giá tự động theo hạng) cho đến khi có yêu cầu mới.
 5. **Phân hệ Đánh giá & Hỏi đáp:** Tạm hoãn tính năng cho phép khách hàng viết đánh giá sản phẩm, chấm điểm sao, đính kèm hình ảnh dạng JSON và luồng nhân viên phản hồi lại các đánh giá/câu hỏi đó.
