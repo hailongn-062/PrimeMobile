@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+    Fragment: footer
+    Nhúng bằng: th:replace="~{fragments/footer :: footer}"
+-->
+<footer th:fragment="footer" class="pm-footer mt-5 pt-5 pb-3">
+    <div class="container">
+        <div class="row g-4">
+
+            <!-- Cột 1: Về PrimeMobile -->
+            <div class="col-12 col-md-4">
+                <p class="pm-footer-title fs-5 mb-2">
+                    <span class="bg-white text-primary rounded-2 px-2 py-1 fw-bold me-1" style="font-size:.9rem;">P</span>
+                    PrimeMobile
+                </p>
+                <p class="small opacity-75 mb-2">
+                    Hệ thống bán điện thoại chính hãng, uy tín hàng đầu Việt Nam. Cam kết giá tốt nhất, giao hàng trong 2–4 giờ.
+                </p>
+                <div class="d-flex gap-3 mt-3">
+                    <a href="#" class="text-white opacity-75" title="Facebook"><i class="fab fa-facebook-square fa-xl"></i></a>
+                    <a href="#" class="text-white opacity-75" title="Zalo"><i class="fas fa-comment-dots fa-xl"></i></a>
+                    <a href="#" class="text-white opacity-75" title="YouTube"><i class="fab fa-youtube fa-xl"></i></a>
+                    <a href="#" class="text-white opacity-75" title="Instagram"><i class="fab fa-instagram fa-xl"></i></a>
+                </div>
+            </div>
+
+            <!-- Cột 2: Hỗ trợ khách hàng -->
+            <div class="col-6 col-md-2">
+                <p class="pm-footer-title small">Hỗ trợ khách hàng</p>
+                <ul class="list-unstyled small">
+                    <li class="mb-1"><a href="/tra-cuu-don-hang">Tra cứu đơn hàng</a></li>
+                    <li class="mb-1"><a href="/chinh-sach-bao-hanh">Chính sách bảo hành</a></li>
+                    <li class="mb-1"><a href="/chinh-sach-doi-tra">Chính sách đổi trả</a></li>
+                    <li class="mb-1"><a href="/huong-dan-mua-hang">Hướng dẫn mua hàng</a></li>
+                    <li class="mb-1"><a href="/lien-he">Liên hệ</a></li>
+                </ul>
+            </div>
+
+            <!-- Cột 3: Sản phẩm nổi bật -->
+            <div class="col-6 col-md-2">
+                <p class="pm-footer-title small">Danh mục</p>
+                <ul class="list-unstyled small">
+                    <li class="mb-1"><a href="/san-pham?danhMuc=iphone">iPhone</a></li>
+                    <li class="mb-1"><a href="/san-pham?danhMuc=samsung">Samsung</a></li>
+                    <li class="mb-1"><a href="/san-pham?danhMuc=xiaomi">Xiaomi</a></li>
+                    <li class="mb-1"><a href="/san-pham?danhMuc=oppo">OPPO</a></li>
+                    <li class="mb-1"><a href="/san-pham?danhMuc=vivo">Vivo</a></li>
+                </ul>
+            </div>
+
+            <!-- Cột 4: Thông tin liên hệ -->
+            <div class="col-12 col-md-4">
+                <p class="pm-footer-title small">Thông tin cửa hàng</p>
+                <ul class="list-unstyled small">
+                    <li class="mb-2 d-flex gap-2">
+                        <i class="fa fa-map-marker-alt mt-1 text-warning"></i>
+                        <span>123 Đường Láng, Đống Đa, Hà Nội</span>
+                    </li>
+                    <li class="mb-2 d-flex gap-2">
+                        <i class="fa fa-phone mt-1 text-warning"></i>
+                        <span>Hotline: <a href="tel:19001234" class="fw-bold">1900 1234</a> (8:00 – 22:00)</span>
+                    </li>
+                    <li class="mb-2 d-flex gap-2">
+                        <i class="fa fa-envelope mt-1 text-warning"></i>
+                        <span><a href="mailto:support@primemobile.vn">support@primemobile.vn</a></span>
+                    </li>
+                    <li class="mb-2 d-flex gap-2">
+                        <i class="fa fa-clock mt-1 text-warning"></i>
+                        <span>Giờ mở cửa: 8:00 – 22:00 (Thứ 2 – CN)</span>
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+
+        <!-- ── Divider & Copyright ───────────────────────────────── -->
+        <hr class="mt-4 opacity-25">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 small opacity-75">
+            <span>© 2024 PrimeMobile. Tất cả quyền được bảo lưu.</span>
+            <div class="d-flex gap-3">
+                <a href="/chinh-sach-bao-mat">Chính sách bảo mật</a>
+                <a href="/dieu-khoan-su-dung">Điều khoản sử dụng</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>

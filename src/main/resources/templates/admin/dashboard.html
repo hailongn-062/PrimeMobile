@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin-layout :: adminHead}">
+    <title>Dashboard | PrimeMobile Admin</title>
+</head>
+
+<body>
+
+<!-- Sidebar -->
+<div th:replace="~{layout/admin-layout :: sidebar}"></div>
+
+<!-- Topbar -->
+<div th:replace="~{layout/admin-layout :: topbar}"></div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  MAIN CONTENT                                                   -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<main id="pmContent">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0" style="font-size:.82rem;">
+            <li class="breadcrumb-item"><a href="/admin/dashboard" class="text-decoration-none">PrimeMobile</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Tổng quan</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-1" style="font-size:1.4rem;">Tổng quan hệ thống</h1>
+            <p class="text-muted mb-0" style="font-size:.85rem;">
+                <i class="fa fa-calendar-alt me-1"></i>
+                <span id="currentDateTime">Đang tải...</span>
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/san-pham" target="_blank" class="btn btn-outline-secondary btn-sm rounded-pill">
+                <i class="fa fa-external-link-alt me-1"></i> Xem website
+            </a>
+        </div>
+    </div>
+
+    <!-- ── KPI CARDS ────────────────────────────────────────────── -->
+    <div class="row g-3 mb-4">
+
+        <!-- Đơn hàng hôm nay -->
+        <div class="col-6 col-md-3">
+            <div class="pm-stat-card">
+                <div class="pm-stat-icon" style="background:#EEF2FF;">📦</div>
+                <div>
+                    <div class="pm-stat-value text-primary">—</div>
+                    <div class="pm-stat-label">Đơn hàng mới</div>
+                    <div class="pm-stat-change text-muted">Hôm nay</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Doanh thu -->
+        <div class="col-6 col-md-3">
+            <div class="pm-stat-card">
+                <div class="pm-stat-icon" style="background:#F0FDF4;">💰</div>
+                <div>
+                    <div class="pm-stat-value text-success">—</div>
+                    <div class="pm-stat-label">Doanh thu</div>
+                    <div class="pm-stat-change text-muted">Tháng này</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sản phẩm -->
+        <div class="col-6 col-md-3">
+            <div class="pm-stat-card">
+                <div class="pm-stat-icon" style="background:#FFF7ED;">📱</div>
+                <div>
+                    <div class="pm-stat-value text-warning">—</div>
+                    <div class="pm-stat-label">Sản phẩm</div>
+                    <div class="pm-stat-change text-muted">Đang bán</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cần xử lý -->
+        <div class="col-6 col-md-3">
+            <div class="pm-stat-card">
+                <div class="pm-stat-icon" style="background:#FFF0F0;">⚠️</div>
+                <div>
+                    <div class="pm-stat-value text-danger">—</div>
+                    <div class="pm-stat-label">Chờ xác nhận</div>
+                    <div class="pm-stat-change text-muted">Cần xử lý</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── QUICK ACTIONS ─────────────────────────────────────── -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="pm-card">
+                <div class="pm-card-header">
+                    <span><i class="fa fa-bolt me-2 text-warning"></i>Thao tác nhanh</span>
+                </div>
+                <div class="p-3 d-flex flex-wrap gap-2">
+                    <a href="/admin/don-hang" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                        <i class="fa fa-shopping-bag me-1"></i> Xem đơn hàng
+                    </a>
+                    <a href="/admin/phieu-nhap" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                        <i class="fa fa-plus me-1"></i> Tạo phiếu nhập
+                    </a>
+                    <a href="/admin/san-pham" class="btn btn-sm btn-outline-warning rounded-pill px-3">
+                        <i class="fa fa-mobile-alt me-1"></i> Quản lý sản phẩm
+                    </a>
+                    <a href="/admin/khuyen-mai" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                        <i class="fa fa-tags me-1"></i> Tạo khuyến mãi
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── 2 PANELS: Đơn hàng gần đây + Trạng thái hệ thống ── -->
+    <div class="row g-3">
+
+        <!-- Đơn hàng gần đây (placeholder) -->
+        <div class="col-12 col-lg-7">
+            <div class="pm-card h-100">
+                <div class="pm-card-header">
+                    <span><i class="fa fa-list-alt me-2"></i>Đơn hàng gần đây</span>
+                    <a href="/admin/don-hang" class="btn btn-sm btn-outline-primary rounded-pill px-3" style="font-size:.76rem;">
+                        Xem tất cả
+                    </a>
+                </div>
+                <div class="p-4 text-center text-muted">
+                    <i class="fa fa-clock fa-3x mb-3 d-block opacity-25"></i>
+                    <p class="mb-1 fw-semibold">Dữ liệu sẽ được hiển thị ở đây</p>
+                    <p class="small">Kết nối module Quản lý Đơn hàng để xem danh sách đơn hàng gần đây.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trạng thái hệ thống -->
+        <div class="col-12 col-lg-5">
+            <div class="pm-card h-100">
+                <div class="pm-card-header">
+                    <span><i class="fa fa-info-circle me-2"></i>Trạng thái hệ thống</span>
+                </div>
+                <div class="p-3">
+                    <ul class="list-unstyled mb-0">
+                        <li class="d-flex justify-content-between align-items-center py-2 border-bottom" style="font-size:.85rem;">
+                            <span><i class="fa fa-database me-2 text-primary"></i>Kết nối Database</span>
+                            <span class="badge bg-success rounded-pill">Online</span>
+                        </li>
+                        <li class="d-flex justify-content-between align-items-center py-2 border-bottom" style="font-size:.85rem;">
+                            <span><i class="fa fa-shipping-fast me-2 text-warning"></i>API GHN</span>
+                            <span class="badge bg-warning text-dark rounded-pill">Chờ test</span>
+                        </li>
+                        <li class="d-flex justify-content-between align-items-center py-2 border-bottom" style="font-size:.85rem;">
+                            <span><i class="fa fa-warehouse me-2 text-info"></i>Kho Online</span>
+                            <span class="badge bg-success rounded-pill">Hoạt động</span>
+                        </li>
+                        <li class="d-flex justify-content-between align-items-center py-2" style="font-size:.85rem;">
+                            <span><i class="fa fa-shield-alt me-2 text-success"></i>Phiên Admin</span>
+                            <span class="badge bg-success rounded-pill">Bảo mật</span>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Thông tin người dùng đăng nhập -->
+                <div class="px-3 pb-3" th:if="${currentUser != null}">
+                    <div class="rounded-3 p-3" style="background:#F8FAFF; font-size:.8rem;">
+                        <div class="fw-semibold mb-1 text-primary">
+                            <i class="fa fa-user-circle me-1"></i>Đang đăng nhập
+                        </div>
+                        <div class="text-muted" th:text="${currentUser.hoTen}">Họ tên</div>
+                        <div class="text-muted" th:text="${currentUser.email}">Email</div>
+                        <div class="mt-1">
+                            <span class="badge bg-primary rounded-pill" th:text="${currentUser.role}">Admin</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<!-- Admin Scripts (Bootstrap JS + Toggle sidebar) -->
+<div th:replace="~{layout/admin-layout :: adminScripts}"></div>
+
+<script>
+    // Hiển thị ngày giờ hiện tại
+    function updateDateTime() {
+        const now = new Date();
+        const options = {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        };
+        const el = document.getElementById('currentDateTime');
+        if (el) el.textContent = now.toLocaleDateString('vi-VN', options);
+    }
+    updateDateTime();
+    setInterval(updateDateTime, 60000);
+</script>
+
+</body>
+</html>

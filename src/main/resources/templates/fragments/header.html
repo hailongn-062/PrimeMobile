@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+    Fragment: navbar
+    Nhúng bằng: th:replace="~{fragments/header :: navbar}"
+-->
+<nav th:fragment="navbar" class="navbar navbar-expand-lg pm-navbar sticky-top shadow-sm py-2">
+    <div class="container">
+
+        <!-- ── Logo ──────────────────────────────────────────────── -->
+        <a class="navbar-brand text-white d-flex align-items-center gap-2" href="/">
+            <span class="d-flex align-items-center justify-content-center rounded-2 bg-white text-primary fw-bold"
+                  style="width:32px;height:32px;font-size:.9rem;">P</span>
+            PrimeMobile
+        </a>
+
+        <!-- ── Hamburger (mobile) ─────────────────────────────────── -->
+        <button class="navbar-toggler border-0 text-white" type="button"
+                data-bs-toggle="collapse" data-bs-target="#pmNavbar"
+                aria-controls="pmNavbar" aria-expanded="false">
+            <i class="fa fa-bars"></i>
+        </button>
+
+        <div class="collapse navbar-collapse" id="pmNavbar">
+
+            <!-- ── Search Bar (center) ──────────────────────────── -->
+            <form class="d-flex mx-auto pm-search-bar w-100" style="max-width:460px;"
+                  action="/san-pham" method="get">
+                <input class="form-control form-control-sm"
+                       type="search" name="tuKhoa"
+                       placeholder="Tìm điện thoại, hãng, model..."
+                       aria-label="Tìm kiếm sản phẩm">
+                <button class="btn btn-sm px-3 text-white" type="submit">
+                    <i class="fa fa-search"></i>
+                </button>
+            </form>
+
+            <!-- ── Right nav ─────────────────────────────────────── -->
+            <ul class="navbar-nav ms-3 align-items-center gap-1">
+
+                <!-- Giỏ hàng -->
+                <li class="nav-item">
+                    <a class="nav-link position-relative pm-cart-badge px-2" href="/gio-hang"
+                       id="nav-gio-hang" title="Giỏ hàng">
+                        <i class="fa fa-shopping-cart fa-lg"></i>
+                        <span class="badge rounded-pill bg-danger" id="cart-count">0</span>
+                    </a>
+                </li>
+
+                <!-- Đăng nhập / Tài khoản -->
+                <li class="nav-item">
+                    <a class="nav-link px-2" href="/dang-nhap" id="nav-dang-nhap" title="Đăng nhập">
+                        <i class="fa fa-user-circle fa-lg"></i>
+                        <span class="d-none d-lg-inline ms-1" style="font-size:.88rem;">Đăng nhập</span>
+                    </a>
+                </li>
+
+                <!-- Tra cứu đơn hàng -->
+                <li class="nav-item">
+                    <a class="nav-link px-2" href="/tra-cuu-don-hang" title="Tra cứu đơn hàng">
+                        <i class="fa fa-receipt fa-lg"></i>
+                        <span class="d-none d-lg-inline ms-1" style="font-size:.88rem;">Đơn hàng</span>
+                    </a>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+
+    <!-- ── Sub-nav: Danh mục nhanh ──────────────────────────────── -->
+    <div class="w-100 border-top border-white border-opacity-25 mt-1 d-none d-lg-block">
+        <div class="container d-flex gap-3 py-1" style="font-size:.83rem; overflow-x:auto; flex-wrap:nowrap;">
+            <a href="/san-pham?danhMuc=iphone"  class="text-white text-decoration-none opacity-85 text-nowrap fw-500 hover-text-white">📱 iPhone</a>
+            <a href="/san-pham?danhMuc=samsung"  class="text-white text-decoration-none opacity-85 text-nowrap">📱 Samsung</a>
+            <a href="/san-pham?danhMuc=xiaomi"   class="text-white text-decoration-none opacity-85 text-nowrap">📱 Xiaomi</a>
+            <a href="/san-pham?danhMuc=oppo"     class="text-white text-decoration-none opacity-85 text-nowrap">📱 OPPO</a>
+            <a href="/san-pham?danhMuc=vivo"     class="text-white text-decoration-none opacity-85 text-nowrap">📱 Vivo</a>
+            <a href="/khuyen-mai"                 class="text-warning text-decoration-none text-nowrap fw-bold">🔥 Khuyến mãi</a>
+        </div>
+    </div>
+</nav>
+
+</body>
+</html>

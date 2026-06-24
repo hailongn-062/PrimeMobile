@@ -5,14 +5,20 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.1.0</version>
+		<!--
+		    ✅ SỬA: 3.4.3 — Phiên bản Spring Boot ổn định mới nhất cho Java 21
+		    ❌ Trước: 4.1.0 — KHÔNG TỒN TẠI trên Maven Central
+		              → Maven không download được → toàn bộ classpath rỗng
+		              → MỌI class Spring đều gạch đỏ trong IDE
+		-->
+		<version>3.4.3</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>org.example</groupId>
 	<artifactId>PrimeMobile</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>PrimeMobile</name>
-	<description>PrimeMobile</description>
+	<description>PrimeMobile — Hệ thống bán điện thoại trực tuyến</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -29,49 +35,64 @@
 	<properties>
 		<java.version>21</java.version>
 	</properties>
+
 	<dependencies>
+
+		<!-- ── JPA / Hibernate ───────────────────────────────────────── -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
+
+		<!--
+		    ✅ SỬA: spring-boot-starter-web
+		    ❌ Trước: spring-boot-starter-webmvc — artifact KHÔNG TỒN TẠI
+		    Starter này bao gồm: Spring MVC, RestTemplate, RestTemplateBuilder,
+		    Jackson JSON, Tomcat embedded — đây là nguyên nhân gạch đỏ AppConfig.java
+		-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<!-- ── Thymeleaf template engine ─────────────────────────────── -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc</artifactId>
-		</dependency>
 
+		<!-- ── SQL Server JDBC Driver ────────────────────────────────── -->
 		<dependency>
 			<groupId>com.microsoft.sqlserver</groupId>
 			<artifactId>mssql-jdbc</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+
+		<!-- ── Lombok ────────────────────────────────────────────────── -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
 		</dependency>
+
+		<!--
+		    ✅ SỬA: spring-boot-starter-test (bao gồm JUnit 5, Mockito, MockMvc)
+		    ❌ Trước: spring-boot-starter-data-jpa-test
+		             spring-boot-starter-thymeleaf-test
+		             spring-boot-starter-webmvc-test
+		             → Cả 3 artifact đó KHÔNG TỒN TẠI trong Maven Central
+		-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jpa-test</artifactId>
+			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-thymeleaf-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc-test</artifactId>
-			<scope>test</scope>
-		</dependency>
+
 	</dependencies>
 
 	<build>
 		<plugins>
+			<!-- Đóng gói JAR executable, loại bỏ Lombok khỏi output cuối -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
@@ -84,6 +105,8 @@
 					</excludes>
 				</configuration>
 			</plugin>
+
+			<!-- Cấu hình Lombok annotation processor cho javac -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>

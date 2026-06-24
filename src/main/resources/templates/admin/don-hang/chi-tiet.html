@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin-layout :: adminHead}">
+    <title>Chi tiết Đơn hàng | PrimeMobile Admin</title>
+</head>
+<body>
+
+<div th:replace="~{layout/admin-layout :: sidebar}"></div>
+<div th:replace="~{layout/admin-layout :: topbar}"></div>
+
+<!-- SweetAlert2 CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+<main id="pmContent">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0" style="font-size:.82rem;">
+            <li class="breadcrumb-item"><a href="/admin/dashboard" class="text-decoration-none">Tổng quan</a></li>
+            <li class="breadcrumb-item"><a href="/admin/don-hang" class="text-decoration-none">Đơn hàng</a></li>
+            <li class="breadcrumb-item active" th:text="${donHang.maDonHang}">DH001</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="fw-bold mb-1" style="font-size:1.3rem;">
+                <i class="fa fa-file-invoice me-2" style="color:var(--pm-primary)"></i>
+                Đơn hàng <span th:text="${donHang.maDonHang}" class="text-primary">DH001</span>
+            </h1>
+            <small class="text-muted">
+                Đặt lúc <span th:text="${#temporals.format(donHang.ngayDat, 'HH:mm dd/MM/yyyy')}">08:00 01/01/2024</span>
+                &nbsp;·&nbsp; Kênh:
+                <span th:text="${donHang.kenhBan == 'online' ? '🌐 Online' : '🏪 Tại quầy'}" class="fw-semibold">Online</span>
+            </small>
+        </div>
+
+        <!-- ══ ACTION BUTTONS (ẩn/hiện theo trạng thái) ══ -->
+        <div class="d-flex flex-wrap gap-2" id="action-buttons">
+
+            <!-- CHO_XAC_NHAN: Nút Xác nhận + Hủy -->
+            <th:block th:if="${donHang.trangThai == 'cho_xac_nhan'}">
+                <button class="btn btn-success px-3" id="btn-xac-nhan"
+                        th:data-id="${donHang.id}">
+                    <i class="fa fa-check-circle me-1"></i>Xác nhận & Trừ kho
+                </button>
+                <button class="btn btn-outline-danger px-3" id="btn-huy"
+                        th:data-id="${donHang.id}">
+                    <i class="fa fa-times-circle me-1"></i>Hủy đơn
+                </button>
+            </th:block>
+
+            <!-- DA_XAC_NHAN: Nút Giao hàng + Hủy -->
+            <th:block th:if="${donHang.trangThai == 'da_xac_nhan'}">
+                <button class="btn btn-primary px-3" id="btn-giao-hang"
+                        th:data-id="${donHang.id}">
+                    <i class="fa fa-shipping-fast me-1"></i>Bắt đầu giao hàng
+                </button>
+                <button class="btn btn-outline-danger px-3" id="btn-huy"
+                        th:data-id="${donHang.id}">
+                    <i class="fa fa-times-circle me-1"></i>Hủy đơn
+                </button>
+            </th:block>
+
+            <!-- DANG_GIAO: Nút Hoàn thành + Hủy -->
+            <th:block th:if="${donHang.trangThai == 'dang_giao'}">
+                <button class="btn btn-success px-3" id="btn-hoan-thanh"
+                        th:data-id="${donHang.id}">
+                    <i class="fa fa-check-double me-1"></i>Hoàn thành giao hàng
+                </button>
+                <button class="btn btn-outline-danger px-3" id="btn-huy"
+                        th:data-id="${donHang.id}">
+                    <i class="fa fa-times-circle me-1"></i>Hủy đơn
+                </button>
+            </th:block>
+
+            <!-- DA_GIAO: Chỉ thông báo -->
+            <th:block th:if="${donHang.trangThai == 'da_giao'}">
+                <span class="badge bg-success fs-6 px-3 py-2 rounded-pill">
+                    <i class="fa fa-check me-1"></i>Đơn hàng đã hoàn tất
+                </span>
+            </th:block>
+
+            <!-- DA_HUY: Chỉ thông báo -->
+            <th:block th:if="${donHang.trangThai == 'da_huy'}">
+                <span class="badge bg-danger fs-6 px-3 py-2 rounded-pill">
+                    <i class="fa fa-ban me-1"></i>Đơn hàng đã hủy
+                </span>
+            </th:block>
+
+            <!-- Nút quay lại -->
+            <a href="/admin/don-hang" class="btn btn-outline-secondary px-3">
+                <i class="fa fa-arrow-left me-1"></i>Quay lại
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- ══ CỘT TRÁI: Thông tin đơn ══ -->
+        <div class="col-12 col-lg-8">
+
+            <!-- Danh sách sản phẩm -->
+            <div class="pm-card mb-4">
+                <div class="pm-card-header">
+                    <span><i class="fa fa-box me-2"></i>Sản phẩm trong đơn</span>
+                    <span class="badge bg-primary rounded-pill"
+                          th:text="${#lists.size(donHang.chiTietDonHangs)} + ' sản phẩm'">0 sp</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0" style="font-size:.875rem;">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3" style="width:50px;">#</th>
+                                <th>Sản phẩm / SKU</th>
+                                <th class="text-center" style="width:80px;">SL</th>
+                                <th class="text-end" style="width:130px;">Đơn giá</th>
+                                <th class="text-end pe-3" style="width:130px;">Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="ct, stat : ${donHang.chiTietDonHangs}">
+                                <td class="ps-3 text-muted" th:text="${stat.index + 1}">1</td>
+                                <td>
+                                    <div class="fw-semibold"
+                                         th:text="${ct.bienTheSanPham != null ? ct.bienTheSanPham.sanPham.tenSanPham : 'Sản phẩm'}">
+                                        Tên SP
+                                    </div>
+                                    <div class="text-muted small"
+                                         th:if="${ct.bienTheSanPham != null}"
+                                         th:text="${ct.bienTheSanPham.maSku + ' · ' + ct.bienTheSanPham.mauSac + ' · ' + ct.bienTheSanPham.dungLuongRam + 'GB/' + ct.bienTheSanPham.dungLuongRom + 'GB'}">
+                                        SKU · Màu · RAM/ROM
+                                    </div>
+                                </td>
+                                <td class="text-center fw-bold" th:text="${ct.soLuong}">1</td>
+                                <td class="text-end"
+                                    th:text="${#numbers.formatDecimal(ct.giaBanTaiThoiDiem, 0, 'COMMA', 0, 'POINT')} + '₫'">
+                                    0₫
+                                </td>
+                                <td class="text-end pe-3 fw-bold text-primary"
+                                    th:text="${#numbers.formatDecimal(ct.thanhTien, 0, 'COMMA', 0, 'POINT')} + '₫'">
+                                    0₫
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="4" class="text-end pe-3 fw-semibold">Tổng tiền hàng:</td>
+                                <td class="text-end pe-3 fw-bold"
+                                    th:text="${#numbers.formatDecimal(donHang.tongTienHang, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
+                            </tr>
+                            <tr th:if="${donHang.tienGiamGia != null and donHang.tienGiamGia.compareTo(0B) > 0}">
+                                <td colspan="4" class="text-end pe-3 text-success fw-semibold">Giảm giá:</td>
+                                <td class="text-end pe-3 fw-bold text-success"
+                                    th:text="'- ' + ${#numbers.formatDecimal(donHang.tienGiamGia, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="text-end pe-3 fw-semibold">Phí vận chuyển:</td>
+                                <td class="text-end pe-3 fw-bold"
+                                    th:text="${#numbers.formatDecimal(donHang.phiShip, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
+                            </tr>
+                            <tr class="table-primary">
+                                <td colspan="4" class="text-end pe-3 fw-bold fs-6">Tổng thanh toán:</td>
+                                <td class="text-end pe-3 fw-bold fs-6 text-primary"
+                                    th:text="${#numbers.formatDecimal(donHang.tongThanhToan, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Ghi chú -->
+            <div class="pm-card" th:if="${donHang.ghiChu != null and !#strings.isEmpty(donHang.ghiChu)}">
+                <div class="pm-card-header"><span><i class="fa fa-comment-alt me-2"></i>Ghi chú của khách</span></div>
+                <div class="p-3 text-muted" th:text="${donHang.ghiChu}">Ghi chú...</div>
+            </div>
+        </div>
+
+        <!-- ══ CỘT PHẢI: Thông tin tổng hợp ══ -->
+        <div class="col-12 col-lg-4">
+
+            <!-- Trạng thái -->
+            <div class="pm-card mb-3">
+                <div class="pm-card-header"><span><i class="fa fa-info-circle me-2"></i>Trạng thái</span></div>
+                <div class="p-3">
+                    <div class="d-flex justify-content-between mb-2" style="font-size:.87rem;">
+                        <span class="text-muted">Đơn hàng:</span>
+                        <span th:if="${donHang.trangThai == 'cho_xac_nhan'}" class="badge bg-warning text-dark">⏳ Chờ xác nhận</span>
+                        <span th:if="${donHang.trangThai == 'da_xac_nhan'}"  class="badge bg-info text-dark">✅ Đã xác nhận</span>
+                        <span th:if="${donHang.trangThai == 'dang_giao'}"    class="badge bg-primary">🚚 Đang giao</span>
+                        <span th:if="${donHang.trangThai == 'da_giao'}"      class="badge bg-success">📦 Đã giao</span>
+                        <span th:if="${donHang.trangThai == 'da_huy'}"       class="badge bg-danger">❌ Đã hủy</span>
+                    </div>
+                    <div class="d-flex justify-content-between" style="font-size:.87rem;">
+                        <span class="text-muted">Thanh toán:</span>
+                        <span th:if="${donHang.trangThaiThanhToan == 'da_thanh_toan'}"      class="badge bg-success">Đã thanh toán</span>
+                        <span th:if="${donHang.trangThaiThanhToan == 'chua_thanh_toan'}"    class="badge bg-secondary">Chưa thanh toán</span>
+                        <span th:if="${donHang.trangThaiThanhToan == 'that_bai'}"           class="badge bg-danger">Thất bại</span>
+                        <span th:if="${donHang.trangThaiThanhToan == 'dang_chuyen_huong'}"  class="badge bg-warning text-dark">Đang xử lý</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thông tin giao hàng -->
+            <div class="pm-card mb-3">
+                <div class="pm-card-header"><span><i class="fa fa-map-marker-alt me-2"></i>Thông tin giao hàng</span></div>
+                <div class="p-3">
+                    <ul class="list-unstyled mb-0" style="font-size:.87rem;">
+                        <li class="mb-2">
+                            <span class="text-muted d-block" style="font-size:.75rem;">Người nhận</span>
+                            <span class="fw-semibold" th:text="${donHang.hoTenNguoiNhan ?: '—'}">Tên</span>
+                        </li>
+                        <li class="mb-2">
+                            <span class="text-muted d-block" style="font-size:.75rem;">Điện thoại</span>
+                            <span th:text="${donHang.sdtNguoiNhan ?: '—'}">SĐT</span>
+                        </li>
+                        <li class="mb-2">
+                            <span class="text-muted d-block" style="font-size:.75rem;">Địa chỉ</span>
+                            <span th:text="${(donHang.diaChiGiaCuThe ?: '') + ', ' + (donHang.phuongXaGiao ?: '') + ', ' + (donHang.quanHuyenGiao ?: '') + ', ' + (donHang.tinhThanhGiao ?: '')}">
+                                Địa chỉ
+                            </span>
+                        </li>
+                        <li th:if="${donHang.ngayGiaoDuKien != null}">
+                            <span class="text-muted d-block" style="font-size:.75rem;">Ngày giao dự kiến</span>
+                            <span th:text="${#temporals.format(donHang.ngayGiaoDuKien, 'dd/MM/yyyy')}">01/01/2024</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Thông tin khách hàng -->
+            <div class="pm-card" th:if="${donHang.khachHang != null}">
+                <div class="pm-card-header"><span><i class="fa fa-user me-2"></i>Khách hàng</span></div>
+                <div class="p-3">
+                    <ul class="list-unstyled mb-0" style="font-size:.87rem;">
+                        <li class="mb-1">
+                            <span class="text-muted">Tên: </span>
+                            <span class="fw-semibold" th:text="${donHang.khachHang.hoTen}">Tên KH</span>
+                        </li>
+                        <li class="mb-1">
+                            <span class="text-muted">Email: </span>
+                            <span th:text="${donHang.khachHang.email ?: '—'}">Email</span>
+                        </li>
+                        <li class="mb-1">
+                            <span class="text-muted">Hạng: </span>
+                            <span class="badge bg-warning text-dark"
+                                  th:text="${donHang.khachHang.hangThanhVien ?: 'Đồng'}">Bạc</span>
+                        </li>
+                        <li>
+                            <span class="text-muted">Điểm tích lũy: </span>
+                            <span class="fw-semibold text-success"
+                                  th:text="${donHang.khachHang.diemTichLuy ?: 0} + ' điểm'">0 điểm</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</main>
+
+<div th:replace="~{layout/admin-layout :: adminScripts}"></div>
+
+<!-- SweetAlert2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- ════════════════════════════════════════════════════════════
+     JAVASCRIPT: Gọi REST API qua fetch() + SweetAlert2
+════════════════════════════════════════════════════════════ -->
+<script th:inline="javascript">
+    const DON_HANG_ID = /*[[${donHang.id}]]*/ 0;
+    const TRANG_THAI  = /*[[${donHang.trangThai}]]*/ '';
+
+    // ── Helper: Gọi API ────────────────────────────────────────
+    async function callApi(url, method = 'POST', body = null) {
+        const opts = {
+            method,
+            headers: { 'Content-Type': 'application/json' }
+        };
+        if (body) opts.body = JSON.stringify(body);
+        const res = await fetch(url, opts);
+        return res.json();
+    }
+
+    // ── Helper: Hiển thị kết quả ───────────────────────────────
+    function showSuccess(msg) {
+        Swal.fire({
+            icon: 'success', title: 'Thành công!', text: msg,
+            confirmButtonColor: '#1565C0', confirmButtonText: 'OK'
+        }).then(() => location.reload());
+    }
+
+    function showError(msg) {
+        Swal.fire({
+            icon: 'error', title: 'Lỗi!',
+            text: msg || 'Đã xảy ra lỗi. Vui lòng thử lại.',
+            confirmButtonColor: '#C0392B'
+        });
+    }
+
+    function showLoading(title = 'Đang xử lý...') {
+        Swal.fire({ title, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    }
+
+    // ── 1. Xác nhận đơn hàng (POST /xac-nhan) ─────────────────
+    document.getElementById('btn-xac-nhan')?.addEventListener('click', async function () {
+        const result = await Swal.fire({
+            icon: 'question',
+            title: 'Xác nhận đơn hàng?',
+            html: 'Thao tác này sẽ <strong>trừ kho Online</strong> tương ứng.<br>Vui lòng kiểm tra tồn kho trước khi xác nhận.',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Xác nhận & Trừ kho',
+            cancelButtonText: 'Hủy bỏ',
+            confirmButtonColor: '#1565C0'
+        });
+        if (!result.isConfirmed) return;
+
+        showLoading('Đang xác nhận đơn hàng...');
+        try {
+            const data = await callApi(`/api/admin/don-hang/${DON_HANG_ID}/xac-nhan`);
+            if (data.success) showSuccess(data.message || 'Xác nhận đơn hàng thành công.');
+            else showError(data.message);
+        } catch (e) {
+            showError('Lỗi kết nối đến server.');
+        }
+    });
+
+    // ── 2. Giao hàng (PUT /trang-thai?trangThaiMoi=dang_giao) ─
+    document.getElementById('btn-giao-hang')?.addEventListener('click', async function () {
+        const result = await Swal.fire({
+            icon: 'question', title: 'Bắt đầu giao hàng?',
+            text: 'Trạng thái đơn sẽ chuyển thành "Đang giao".',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-shipping-fast"></i> Bắt đầu giao',
+            cancelButtonText: 'Hủy bỏ',
+            confirmButtonColor: '#1565C0'
+        });
+        if (!result.isConfirmed) return;
+
+        showLoading('Đang cập nhật...');
+        try {
+            const data = await callApi(
+                `/api/admin/don-hang/${DON_HANG_ID}/trang-thai?trangThaiMoi=dang_giao`,
+                'PUT'
+            );
+            if (data.success) showSuccess(data.message || 'Đã cập nhật trạng thái giao hàng.');
+            else showError(data.message);
+        } catch (e) {
+            showError('Lỗi kết nối đến server.');
+        }
+    });
+
+    // ── 3. Hoàn thành giao hàng (PUT /trang-thai?trangThaiMoi=da_giao)
+    document.getElementById('btn-hoan-thanh')?.addEventListener('click', async function () {
+        const result = await Swal.fire({
+            icon: 'success', title: 'Xác nhận hoàn thành?',
+            text: 'Đơn hàng sẽ được đánh dấu là "Đã giao thành công".',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check-double"></i> Hoàn thành',
+            cancelButtonText: 'Hủy bỏ',
+            confirmButtonColor: '#2E7D32'
+        });
+        if (!result.isConfirmed) return;
+
+        showLoading('Đang cập nhật...');
+        try {
+            const data = await callApi(
+                `/api/admin/don-hang/${DON_HANG_ID}/trang-thai?trangThaiMoi=da_giao`,
+                'PUT'
+            );
+            if (data.success) showSuccess(data.message || 'Giao hàng hoàn thành!');
+            else showError(data.message);
+        } catch (e) {
+            showError('Lỗi kết nối đến server.');
+        }
+    });
+
+    // ── 4. Hủy đơn (POST /huy) ────────────────────────────────
+    document.getElementById('btn-huy')?.addEventListener('click', async function () {
+        const result = await Swal.fire({
+            icon: 'warning',
+            title: 'Xác nhận hủy đơn?',
+            html: '<p>Thao tác này <strong>không thể hoàn tác</strong>.</p>' +
+                  '<textarea id="ly-do-huy" class="form-control mt-2" rows="2" ' +
+                  'placeholder="Lý do hủy (tùy chọn)..."></textarea>',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-times"></i> Xác nhận hủy',
+            cancelButtonText: 'Quay lại',
+            confirmButtonColor: '#C0392B',
+            preConfirm: () => {
+                const lyDo = document.getElementById('ly-do-huy')?.value?.trim();
+                return { lyDoHuy: lyDo || 'Nhân viên hủy đơn' };
+            }
+        });
+        if (!result.isConfirmed) return;
+
+        showLoading('Đang hủy đơn hàng...');
+        try {
+            const data = await callApi(
+                `/api/admin/don-hang/${DON_HANG_ID}/huy`,
+                'POST',
+                result.value
+            );
+            if (data.success) showSuccess(data.message || 'Hủy đơn hàng thành công.');
+            else showError(data.message);
+        } catch (e) {
+            showError('Lỗi kết nối đến server.');
+        }
+    });
+</script>
+
+</body>
+</html>

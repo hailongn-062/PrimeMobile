@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<!--
+    admin-layout.html — Template tham khảo cho toàn bộ trang Admin.
+
+    CÁCH DÙNG ĐÚNG (Thymeleaf thuần, không dùng Layout Dialect):
+    ─────────────────────────────────────────────────────────────
+    Mỗi trang admin (vd: dashboard.html) là file standalone hoàn chỉnh.
+    Các phần dùng lại (sidebar, topbar) được nhúng qua fragment:
+
+        th:replace="~{layout/admin-layout :: sidebar}"
+        th:replace="~{layout/admin-layout :: topbar}"
+
+    File này khai báo các fragment: sidebar, topbar, adminHead.
+    Trang con include từng fragment theo nhu cầu.
+-->
+<head th:fragment="adminHead">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+          crossorigin="anonymous">
+    <!-- Font Awesome 6 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+          rel="stylesheet" crossorigin="anonymous">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* ── Design System ─────────────────────────────────────── */
+        :root {
+            --pm-primary:        #1565C0;
+            --pm-primary-dark:   #0D47A1;
+            --pm-accent:         #FF6F00;
+            --pm-sidebar-bg:     #1A1F2E;
+            --pm-sidebar-hover:  rgba(255,255,255,.07);
+            --pm-sidebar-active: rgba(21,101,192,.55);
+            --pm-sidebar-width:  260px;
+            --pm-topbar-h:       60px;
+            --pm-bg:             #F0F4F8;
+            --pm-radius:         12px;
+            --pm-shadow:         0 2px 12px rgba(0,0,0,.08);
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--pm-bg); margin: 0; }
+
+        /* ── SIDEBAR ─────────────────────────────────────────── */
+        #pmSidebar {
+            position: fixed; top: 0; left: 0; height: 100vh;
+            width: var(--pm-sidebar-width);
+            background: var(--pm-sidebar-bg);
+            display: flex; flex-direction: column;
+            z-index: 1040; transition: transform .3s ease;
+            overflow-y: auto;
+        }
+        #pmSidebar::-webkit-scrollbar { width: 4px; }
+        #pmSidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 4px; }
+
+        .sidebar-brand {
+            padding: 1.25rem 1.25rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+        }
+        .sidebar-brand .brand-name {
+            font-weight: 800; font-size: 1.15rem; color: #fff; letter-spacing: -.3px;
+        }
+        .sidebar-brand .brand-sub {
+            font-size: .7rem; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .sidebar-user {
+            padding: .9rem 1.25rem;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+            display: flex; align-items: center; gap: .75rem;
+        }
+        .sidebar-user .avatar {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--pm-primary), var(--pm-accent));
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; color: #fff; font-size: .9rem; flex-shrink: 0;
+        }
+        .sidebar-user .user-name { font-weight: 600; color: #fff; font-size: .88rem; }
+        .sidebar-user .user-role {
+            font-size: .7rem; color: rgba(255,255,255,.45);
+            background: rgba(255,255,255,.08); border-radius: 10px;
+            padding: 1px 8px; display: inline-block; margin-top: 2px;
+        }
+
+        .sidebar-section-label {
+            font-size: .65rem; font-weight: 700; color: rgba(255,255,255,.3);
+            text-transform: uppercase; letter-spacing: 1.5px;
+            padding: 1rem 1.25rem .4rem;
+        }
+
+        .sidebar-nav { padding: 0 .75rem; flex: 1; }
+        .sidebar-nav .nav-item { margin-bottom: 2px; }
+        .sidebar-nav .nav-link {
+            display: flex; align-items: center; gap: .75rem;
+            padding: .6rem .8rem; border-radius: 10px;
+            color: rgba(255,255,255,.65); font-size: .88rem; font-weight: 500;
+            text-decoration: none; transition: all .2s;
+        }
+        .sidebar-nav .nav-link:hover {
+            background: var(--pm-sidebar-hover); color: #fff;
+        }
+        .sidebar-nav .nav-link.active {
+            background: var(--pm-sidebar-active); color: #fff; font-weight: 600;
+            box-shadow: 0 2px 8px rgba(21,101,192,.3);
+        }
+        .sidebar-nav .nav-link .nav-icon {
+            width: 20px; text-align: center; font-size: .95rem; opacity: .75;
+        }
+        .sidebar-nav .nav-link.active .nav-icon { opacity: 1; }
+        .sidebar-badge {
+            margin-left: auto; background: var(--pm-accent);
+            border-radius: 20px; padding: 1px 8px; font-size: .65rem; font-weight: 700;
+        }
+
+        /* ── TOPBAR ──────────────────────────────────────────── */
+        #pmTopbar {
+            position: fixed; top: 0; left: var(--pm-sidebar-width); right: 0;
+            height: var(--pm-topbar-h);
+            background: #fff; border-bottom: 1px solid #E8EDF5;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 1.5rem; z-index: 1030;
+            box-shadow: 0 1px 8px rgba(0,0,0,.06);
+            transition: left .3s ease;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 1rem; }
+        .btn-toggle-sidebar {
+            background: none; border: none; width: 36px; height: 36px;
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            color: #6B7280; cursor: pointer; transition: all .2s;
+        }
+        .btn-toggle-sidebar:hover { background: #F0F4F8; color: #1A1A2E; }
+        .topbar-title { font-weight: 700; color: #1A1A2E; font-size: 1rem; }
+        .topbar-right { display: flex; align-items: center; gap: .75rem; }
+        .btn-logout {
+            display: flex; align-items: center; gap: .5rem;
+            padding: .4rem .9rem; border-radius: 8px;
+            background: #FFF0F0; color: #C0392B; border: 1px solid #FECDD3;
+            font-size: .82rem; font-weight: 600; text-decoration: none; transition: all .2s;
+        }
+        .btn-logout:hover { background: #C0392B; color: #fff; border-color: #C0392B; }
+
+        /* ── MAIN CONTENT ────────────────────────────────────── */
+        #pmContent {
+            margin-left: var(--pm-sidebar-width);
+            margin-top: var(--pm-topbar-h);
+            padding: 1.75rem;
+            min-height: calc(100vh - var(--pm-topbar-h));
+            transition: margin-left .3s ease;
+        }
+
+        /* ── Sidebar collapsed (mobile) ──────────────────────── */
+        body.sidebar-collapsed #pmSidebar  { transform: translateX(-100%); }
+        body.sidebar-collapsed #pmTopbar   { left: 0; }
+        body.sidebar-collapsed #pmContent  { margin-left: 0; }
+
+        /* ── Stat cards ──────────────────────────────────────── */
+        .pm-stat-card {
+            background: #fff; border-radius: var(--pm-radius);
+            box-shadow: var(--pm-shadow); padding: 1.25rem 1.5rem;
+            display: flex; align-items: center; gap: 1.25rem;
+            border: none; transition: transform .2s, box-shadow .2s;
+        }
+        .pm-stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+        .pm-stat-icon {
+            width: 52px; height: 52px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0;
+        }
+        .pm-stat-value { font-size: 1.5rem; font-weight: 800; color: #1A1A2E; }
+        .pm-stat-label { font-size: .8rem; color: #6B7280; font-weight: 500; }
+        .pm-stat-change { font-size: .75rem; font-weight: 600; }
+
+        /* ── Section card ────────────────────────────────────── */
+        .pm-card {
+            background: #fff; border-radius: var(--pm-radius);
+            box-shadow: var(--pm-shadow); border: none;
+        }
+        .pm-card-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #F0F4F8;
+            font-weight: 700; color: #1A1A2E; font-size: .95rem;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════
+     FRAGMENT: sidebar
+     Nhúng bằng: th:replace="~{layout/admin-layout :: sidebar}"
+════════════════════════════════════════════════════════════════ -->
+<aside id="pmSidebar" th:fragment="sidebar">
+
+    <!-- Brand -->
+    <div class="sidebar-brand">
+        <div class="d-flex align-items-center gap-2">
+            <div style="width:34px;height:34px;background:linear-gradient(135deg,#1565C0,#FF6F00);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">📱</div>
+            <div>
+                <div class="brand-name">PrimeMobile</div>
+                <div class="brand-sub">Admin Panel</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thông tin nhân viên -->
+    <div class="sidebar-user" th:if="${currentUser != null}">
+        <div class="avatar"
+             th:text="${currentUser.hoTen != null and #strings.length(currentUser.hoTen) > 0 ? #strings.substring(currentUser.hoTen, 0, 1).toUpperCase() : 'A'}">
+            A
+        </div>
+        <div>
+            <div class="user-name" th:text="${currentUser.hoTen ?: currentUser.email}">Admin</div>
+            <div class="user-role" th:text="${currentUser.role}">Admin</div>
+        </div>
+    </div>
+
+    <!-- Nav chính -->
+    <nav class="sidebar-nav mt-2">
+        <div class="sidebar-section-label">Tổng quan</div>
+
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a href="/admin/dashboard"
+                   th:class="${activePage == 'dashboard'} ? 'nav-link active' : 'nav-link'">
+                    <span class="nav-icon"><i class="fa fa-chart-pie"></i></span>
+                    Tổng quan
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-section-label">Kinh doanh</div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a href="/admin/don-hang"
+                   th:class="${activePage == 'don-hang'} ? 'nav-link active' : 'nav-link'">
+                    <span class="nav-icon"><i class="fa fa-shopping-bag"></i></span>
+                    Quản lý Đơn hàng
+                    <span class="sidebar-badge" id="badge-don-hang">0</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/san-pham"
+                   th:class="${activePage == 'san-pham'} ? 'nav-link active' : 'nav-link'">
+                    <span class="nav-icon"><i class="fa fa-mobile-alt"></i></span>
+                    Quản lý Sản phẩm
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/khuyen-mai"
+                   th:class="${activePage == 'khuyen-mai'} ? 'nav-link active' : 'nav-link'">
+                    <span class="nav-icon"><i class="fa fa-tags"></i></span>
+                    Khuyến mãi & Mã
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-section-label">Kho & Nhập hàng</div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a href="/admin/kho"
+                   th:class="${activePage == 'kho'} ? 'nav-link active' : 'nav-link'">
+                    <span class="nav-icon"><i class="fa fa-warehouse"></i></span>
+                    Quản lý Kho
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/phieu-nhap"
+                   th:class="${activePage == 'phieu-nhap'} ? 'nav-link active' : 'nav-link'">
+                    <span class="nav-icon"><i class="fa fa-arrow-circle-down"></i></span>
+                    Phiếu Nhập Kho
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/phieu-chuyen"
+                   th:class="${activePage == 'phieu-chuyen'} ? 'nav-link active' : 'nav-link'">
+                    <span class="nav-icon"><i class="fa fa-exchange-alt"></i></span>
+                    Phiếu Chuyển Kho
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/imei"
+                   th:class="${activePage == 'imei'} ? 'nav-link active' : 'nav-link'">
+                    <span class="nav-icon"><i class="fa fa-barcode"></i></span>
+                    Kiểm soát IMEI
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-section-label">Hệ thống</div>
+        <ul class="nav flex-column mb-3">
+            <li class="nav-item">
+                <a href="/admin/nha-cung-cap"
+                   th:class="${activePage == 'nha-cung-cap'} ? 'nav-link active' : 'nav-link'">
+                    <span class="nav-icon"><i class="fa fa-truck"></i></span>
+                    Nhà Cung Cấp
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/nhan-vien"
+                   th:class="${activePage == 'nhan-vien'} ? 'nav-link active' : 'nav-link'">
+                    <span class="nav-icon"><i class="fa fa-users"></i></span>
+                    Nhân viên
+                </a>
+            </li>
+        </ul>
+    </nav>
+</aside>
+
+<!-- ════════════════════════════════════════════════════════════════
+     FRAGMENT: topbar
+     Nhúng bằng: th:replace="~{layout/admin-layout :: topbar}"
+════════════════════════════════════════════════════════════════ -->
+<header id="pmTopbar" th:fragment="topbar">
+    <div class="topbar-left">
+        <button class="btn-toggle-sidebar" id="btnToggleSidebar" title="Thu gọn menu">
+            <i class="fa fa-bars"></i>
+        </button>
+        <span class="topbar-title" th:text="${pageTitle != null ? pageTitle : 'Dashboard'}">Dashboard</span>
+    </div>
+    <div class="topbar-right">
+        <!-- Tên người dùng -->
+        <span class="text-muted small d-none d-md-inline"
+              th:if="${currentUser != null}"
+              th:text="'Xin chào, ' + ${currentUser.hoTen ?: currentUser.email}">Xin chào</span>
+        <!-- Nút đăng xuất -->
+        <a href="/dang-xuat" class="btn-logout" id="btn-dang-xuat"
+           onclick="return confirm('Bạn có chắc muốn đăng xuất không?')">
+            <i class="fa fa-sign-out-alt"></i>
+            <span class="d-none d-sm-inline">Đăng xuất</span>
+        </a>
+    </div>
+</header>
+
+<!-- Bootstrap JS + Toggle Script (nhúng qua fragment adminScripts) -->
+<th:block th:fragment="adminScripts">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmFbPuXAkC1Fa8zy5GZZQ+43jkl4"
+            crossorigin="anonymous"></script>
+    <script>
+        // Toggle sidebar
+        document.getElementById('btnToggleSidebar')?.addEventListener('click', function () {
+            document.body.classList.toggle('sidebar-collapsed');
+        });
+
+        // Auto-collapse sidebar trên mobile
+        if (window.innerWidth < 768) {
+            document.body.classList.add('sidebar-collapsed');
+        }
+    </script>
+</th:block>
+
+</body>
+</html>

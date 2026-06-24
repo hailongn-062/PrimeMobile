@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin-layout :: adminHead}">
+    <title>Quản lý Đơn hàng | PrimeMobile Admin</title>
+</head>
+<body>
+
+<div th:replace="~{layout/admin-layout :: sidebar}"></div>
+<div th:replace="~{layout/admin-layout :: topbar}"></div>
+
+<main id="pmContent">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0" style="font-size:.82rem;">
+            <li class="breadcrumb-item"><a href="/admin/dashboard" class="text-decoration-none">Tổng quan</a></li>
+            <li class="breadcrumb-item active">Đơn hàng</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-1" style="font-size:1.4rem;">
+                <i class="fa fa-shopping-bag me-2" style="color:var(--pm-primary)"></i>Quản lý Đơn hàng
+            </h1>
+            <p class="text-muted mb-0" style="font-size:.83rem;">
+                Tổng cộng <strong th:text="${tongSoDonHang}">0</strong> đơn hàng trong hệ thống.
+            </p>
+        </div>
+    </div>
+
+    <!-- ── BỘ LỌC ──────────────────────────────────────────────── -->
+    <div class="pm-card mb-4">
+        <div class="p-3">
+            <form action="/admin/don-hang" method="get" class="row g-2 align-items-end">
+                <!-- Trạng thái -->
+                <div class="col-12 col-sm-6 col-md-3">
+                    <label class="form-label small fw-semibold mb-1">Trạng thái</label>
+                    <select class="form-select form-select-sm" name="trangThai" id="filter-trang-thai">
+                        <option value="" th:selected="${filterTrangThai == null or filterTrangThai == ''}">Tất cả</option>
+                        <option value="cho_xac_nhan"  th:selected="${filterTrangThai == 'cho_xac_nhan'}">⏳ Chờ xác nhận</option>
+                        <option value="da_xac_nhan"   th:selected="${filterTrangThai == 'da_xac_nhan'}">✅ Đã xác nhận</option>
+                        <option value="dang_giao"     th:selected="${filterTrangThai == 'dang_giao'}">🚚 Đang giao</option>
+                        <option value="da_giao"       th:selected="${filterTrangThai == 'da_giao'}">📦 Đã giao</option>
+                        <option value="da_huy"        th:selected="${filterTrangThai == 'da_huy'}">❌ Đã hủy</option>
+                    </select>
+                </div>
+                <!-- Mã đơn -->
+                <div class="col-12 col-sm-6 col-md-3">
+                    <label class="form-label small fw-semibold mb-1">Mã đơn hàng</label>
+                    <input type="text" class="form-control form-control-sm" name="maDonHang"
+                           th:value="${filterMaDonHang}" placeholder="VD: DH2024001" id="filter-ma-don">
+                </div>
+                <!-- SĐT -->
+                <div class="col-12 col-sm-6 col-md-3">
+                    <label class="form-label small fw-semibold mb-1">Số điện thoại</label>
+                    <input type="text" class="form-control form-control-sm" name="soDienThoai"
+                           th:value="${filterSoDienThoai}" placeholder="0912345678" id="filter-sdt">
+                </div>
+                <!-- Nút -->
+                <div class="col-12 col-sm-6 col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-pm-primary btn-sm px-3 flex-fill" id="btn-loc">
+                        <i class="fa fa-search me-1"></i>Lọc
+                    </button>
+                    <a href="/admin/don-hang" class="btn btn-outline-secondary btn-sm px-3 flex-fill" id="btn-reset">
+                        <i class="fa fa-redo me-1"></i>Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ── BẢNG DANH SÁCH ─────────────────────────────────────── -->
+    <div class="pm-card">
+        <div class="pm-card-header">
+            <span><i class="fa fa-list me-2"></i>Danh sách đơn hàng</span>
+            <span class="badge bg-primary rounded-pill" th:text="${tongSoDonHang} + ' đơn'">0 đơn</span>
+        </div>
+
+        <!-- Responsive table wrapper -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="font-size:.875rem;">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3" style="width:140px;">Mã đơn hàng</th>
+                        <th>Khách hàng</th>
+                        <th style="width:160px;">Ngày đặt</th>
+                        <th class="text-end" style="width:140px;">Tổng thanh toán</th>
+                        <th class="text-center" style="width:140px;">Trạng thái</th>
+                        <th class="text-center" style="width:120px;">Thanh toán</th>
+                        <th class="text-center" style="width:110px;">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Hàng dữ liệu -->
+                    <tr th:each="dh : ${danhSachDonHang}">
+                        <td class="ps-3">
+                            <span class="fw-semibold text-primary" th:text="${dh.maDonHang}">DH001</span>
+                        </td>
+                        <td>
+                            <div class="fw-semibold"
+                                 th:text="${dh.hoTenNguoiNhan ?: (dh.khachHang != null ? dh.khachHang.hoTen : 'Khách lẻ')}">
+                                Tên khách
+                            </div>
+                            <div class="text-muted small" th:text="${dh.sdtNguoiNhan}">SĐT</div>
+                        </td>
+                        <td>
+                            <div th:text="${#temporals.format(dh.ngayDat, 'dd/MM/yyyy')}">01/01/2024</div>
+                            <div class="text-muted small" th:text="${#temporals.format(dh.ngayDat, 'HH:mm')}">08:00</div>
+                        </td>
+                        <td class="text-end fw-bold text-primary">
+                            <span th:if="${dh.tongThanhToan != null}"
+                                  th:text="${#numbers.formatDecimal(dh.tongThanhToan, 0, 'COMMA', 0, 'POINT')} + '₫'">
+                                0₫
+                            </span>
+                            <span th:unless="${dh.tongThanhToan != null}" class="text-muted">—</span>
+                        </td>
+                        <td class="text-center">
+                            <!-- Badge trạng thái đơn hàng -->
+                            <span th:if="${dh.trangThai == 'cho_xac_nhan'}"
+                                  class="badge rounded-pill bg-warning text-dark">⏳ Chờ xác nhận</span>
+                            <span th:if="${dh.trangThai == 'da_xac_nhan'}"
+                                  class="badge rounded-pill bg-info text-dark">✅ Đã xác nhận</span>
+                            <span th:if="${dh.trangThai == 'dang_giao'}"
+                                  class="badge rounded-pill bg-primary">🚚 Đang giao</span>
+                            <span th:if="${dh.trangThai == 'da_giao'}"
+                                  class="badge rounded-pill bg-success">📦 Đã giao</span>
+                            <span th:if="${dh.trangThai == 'da_huy'}"
+                                  class="badge rounded-pill bg-danger">❌ Đã hủy</span>
+                        </td>
+                        <td class="text-center">
+                            <span th:if="${dh.trangThaiThanhToan == 'da_thanh_toan'}"
+                                  class="badge rounded-pill bg-success">Đã TT</span>
+                            <span th:if="${dh.trangThaiThanhToan == 'chua_thanh_toan'}"
+                                  class="badge rounded-pill bg-secondary">Chưa TT</span>
+                            <span th:if="${dh.trangThaiThanhToan == 'that_bai'}"
+                                  class="badge rounded-pill bg-danger">Thất bại</span>
+                            <span th:if="${dh.trangThaiThanhToan == 'dang_chuyen_huong'}"
+                                  class="badge rounded-pill bg-warning text-dark">Đang TT</span>
+                        </td>
+                        <td class="text-center">
+                            <a th:href="@{/admin/don-hang/{id}(id=${dh.id})}"
+                               class="btn btn-outline-primary btn-sm rounded-pill px-3"
+                               title="Xem chi tiết">
+                                <i class="fa fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+
+                    <!-- Empty state -->
+                    <tr th:if="${#lists.isEmpty(danhSachDonHang)}">
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa fa-inbox fa-3x d-block mb-3 opacity-25"></i>
+                            Không có đơn hàng nào phù hợp với bộ lọc.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Phân trang -->
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top"
+             th:if="${tongSoTrang > 1}">
+            <small class="text-muted"
+                   th:text="'Trang ' + (${trangHienTai} + 1) + ' / ' + ${tongSoTrang}">Trang 1/1</small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" th:classappend="${trangHienTai == 0} ? 'disabled'">
+                        <a class="page-link" th:href="@{/admin/don-hang(page=${trangHienTai - 1}, trangThai=${filterTrangThai}, maDonHang=${filterMaDonHang}, soDienThoai=${filterSoDienThoai})}">
+                            &laquo;
+                        </a>
+                    </li>
+                    <li class="page-item" th:each="i : ${#numbers.sequence(0, tongSoTrang - 1)}"
+                        th:classappend="${i == trangHienTai} ? 'active'">
+                        <a class="page-link"
+                           th:href="@{/admin/don-hang(page=${i}, trangThai=${filterTrangThai}, maDonHang=${filterMaDonHang}, soDienThoai=${filterSoDienThoai})}"
+                           th:text="${i + 1}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${trangHienTai >= tongSoTrang - 1} ? 'disabled'">
+                        <a class="page-link" th:href="@{/admin/don-hang(page=${trangHienTai + 1}, trangThai=${filterTrangThai}, maDonHang=${filterMaDonHang}, soDienThoai=${filterSoDienThoai})}">
+                            &raquo;
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+</main>
+
+<div th:replace="~{layout/admin-layout :: adminScripts}"></div>
+</body>
+</html>
