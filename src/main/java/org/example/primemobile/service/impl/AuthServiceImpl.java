@@ -7,7 +7,6 @@ import org.example.primemobile.dto.auth.SessionUser;
 import org.example.primemobile.entity.NguoiDung;
 import org.example.primemobile.repository.NguoiDungRepository;
 import org.example.primemobile.service.IAuthService;
-import org.example.primemobile.util.PasswordUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,8 +22,7 @@ import java.time.LocalDateTime;
  * lý.</li>
  * <li>Service chỉ xác thực và trả về {@link SessionUser} — không tự set
  * session.</li>
- * <li>Mật khẩu so sánh qua {@link PasswordUtil#checkPassword(String, String)}
- * (plain-text, chế độ demo).</li>
+ * <li>Mật khẩu so sánh trực tiếp bằng {@code .equals()} (plain-text, chế độ demo).</li>
  * </ul>
  */
 @Slf4j
@@ -61,7 +59,7 @@ public class AuthServiceImpl implements IAuthService {
          * <li>Email tồn tại trong database?</li>
          * <li>Tài khoản đang {@code hoat_dong} (không bị khóa)?</li>
          * <li>Vai trò có phải {@code Admin} hoặc {@code NhanVien}?</li>
-         * <li>Mật khẩu có khớp với hash trong DB?</li>
+         * <li>Mật khẩu có khớp với chuỗi lưu trong DB?</li>
          * </ol>
          * Sau khi xác thực thành công, cập nhật {@code lanDangNhapCuoi} vào DB.
          */
@@ -106,9 +104,10 @@ public class AuthServiceImpl implements IAuthService {
                 }
 
                 // ------------------------------------------------------------------
-                // Bước 4: Xác minh mật khẩu plain-text (chế độ demo — so sánh trực tiếp)
+                // Bước 4: Xác minh mật khẩu bằng so sánh trực tiếp (plain-text, chế độ demo)
                 // ------------------------------------------------------------------
-                if (!PasswordUtil.checkPassword(request.getMatKhau(), nguoiDung.getMatKhau())) {
+                String rawPassword = request.getMatKhau();
+                if (rawPassword == null || !rawPassword.equals(nguoiDung.getMatKhau())) {
                         log.warn("[AuthService] Mật khẩu không khớp — email={}", emailInput);
                         throw new IllegalArgumentException("Email hoặc mật khẩu không chính xác.");
                 }

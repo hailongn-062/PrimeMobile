@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin-layout :: adminHead}">
+    <title>Quản lý Nhân viên | PrimeMobile Admin</title>
+</head>
+<body>
+
+<div th:replace="~{layout/admin-layout :: sidebar}"></div>
+<div th:replace="~{layout/admin-layout :: topbar}"></div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  MAIN CONTENT                                                   -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<main id="pmContent">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0" style="font-size:.82rem;">
+            <li class="breadcrumb-item"><a href="/admin/dashboard" class="text-decoration-none">Tổng quan</a></li>
+            <li class="breadcrumb-item active">Nhân viên</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-1" style="font-size:1.4rem;">
+                <i class="fa fa-users me-2" style="color:var(--pm-primary)"></i>Quản lý Nhân viên
+            </h1>
+            <p class="text-muted mb-0" style="font-size:.83rem;">
+                Tổng cộng <strong th:text="${tongSoNhanVien}">0</strong> nhân viên trong hệ thống.
+            </p>
+        </div>
+        <!-- Nút Thêm nhân viên -->
+        <button class="btn btn-pm-primary rounded-pill px-4"
+                id="btn-mo-modal-them"
+                data-bs-toggle="modal"
+                data-bs-target="#modalNhanVien"
+                onclick="moModalThem()">
+            <i class="fa fa-plus me-2"></i>Thêm nhân viên
+        </button>
+    </div>
+
+    <!-- ── BẢNG DANH SÁCH ─────────────────────────────────────── -->
+    <div class="pm-card">
+        <div class="pm-card-header">
+            <span><i class="fa fa-id-card me-2"></i>Danh sách nhân viên</span>
+            <span class="badge bg-primary rounded-pill" th:text="${tongSoNhanVien} + ' nhân viên'">0 nhân viên</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tbl-nhan-vien" style="font-size:.875rem;">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3" style="width:50px;">#</th>
+                        <th>Họ tên</th>
+                        <th style="width:160px;">Số điện thoại</th>
+                        <th style="width:220px;">Email</th>
+                        <th style="width:160px;">Mật khẩu</th>
+                        <th class="text-center" style="width:140px;">Trạng thái</th>
+                        <th class="text-center" style="width:180px;">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-nhan-vien">
+                    <!-- Hàng dữ liệu render bởi Thymeleaf -->
+                    <tr th:each="nv, stat : ${danhSachNhanVien}"
+                        th:id="'row-' + ${nv.id}">
+                        <td class="ps-3 text-muted" th:text="${stat.count}">1</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="avatar-circle"
+                                     th:text="${#strings.substring(nv.hoTen, 0, 1).toUpperCase()}">N</div>
+                                <div>
+                                    <div class="fw-semibold" th:text="${nv.hoTen}">Nguyễn Văn A</div>
+                                    <div class="text-muted small"
+                                         th:text="'Tạo: ' + ${#temporals.format(nv.ngayTao, 'dd/MM/yyyy')}">
+                                        Tạo: 01/01/2024
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td th:text="${nv.soDienThoai ?: '—'}">0912345678</td>
+                        <td>
+                            <span class="text-truncate d-inline-block" style="max-width:200px;"
+                                  th:text="${nv.email}">email@primemobile.vn</span>
+                        </td>
+                        <!-- Cột Mật khẩu (plain-text, chế độ demo) -->
+                        <td>
+                            <code class="text-danger small fw-semibold"
+                                  th:text="${nv.matKhau}">password123</code>
+                        </td>
+                        <td class="text-center">
+                            <span th:if="${nv.trangThai == 'hoat_dong'}"
+                                  class="badge rounded-pill bg-success">
+                                <i class="fa fa-check-circle me-1"></i>Hoạt động
+                            </span>
+                            <span th:if="${nv.trangThai == 'khoa'}"
+                                  class="badge rounded-pill bg-danger">
+                                <i class="fa fa-ban me-1"></i>Đã khóa
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex gap-1 justify-content-center">
+                                <!-- Nút Sửa -->
+                                <button class="btn btn-outline-primary btn-sm rounded-pill px-2"
+                                        title="Chỉnh sửa thông tin"
+                                        th:onclick="'moModalSua(' + ${nv.id} + ', \'' + ${nv.hoTen} + '\', \'' + ${nv.email} + '\', \'' + (${nv.soDienThoai} ?: '') + '\', \'' + ${nv.matKhau} + '\')'">
+                                    <i class="fa fa-edit"></i>
+                                </button>
+                                <!-- Nút Khóa / Mở khóa -->
+                                <button th:if="${nv.trangThai == 'hoat_dong'}"
+                                        class="btn btn-outline-danger btn-sm rounded-pill px-2"
+                                        title="Khóa tài khoản"
+                                        th:onclick="'doiTrangThai(' + ${nv.id} + ', \'khoa\')'">
+                                    <i class="fa fa-lock"></i>
+                                </button>
+                                <button th:if="${nv.trangThai == 'khoa'}"
+                                        class="btn btn-outline-success btn-sm rounded-pill px-2"
+                                        title="Mở khóa tài khoản"
+                                        th:onclick="'doiTrangThai(' + ${nv.id} + ', \'hoat_dong\')'">
+                                    <i class="fa fa-lock-open"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Empty state -->
+                    <tr th:if="${#lists.isEmpty(danhSachNhanVien)}" id="row-empty">
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa fa-users fa-3x d-block mb-3 opacity-25"></i>
+                            <p class="mb-1 fw-semibold">Chưa có nhân viên nào</p>
+                            <p class="small">Nhấn "Thêm nhân viên" để tạo tài khoản đầu tiên.</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  MODAL THÊM / SỬA NHÂN VIÊN                                    -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalNhanVien" tabindex="-1"
+     aria-labelledby="modalNhanVienLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+
+            <!-- Modal Header -->
+            <div class="modal-header border-0 pb-0"
+                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <h5 class="modal-title fw-bold text-white" id="modalNhanVienLabel">
+                    <i class="fa fa-user-plus me-2"></i>
+                    <span id="modal-title-text">Thêm nhân viên mới</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body p-4">
+                <form id="form-nhan-vien" novalidate>
+                    <!-- Hidden ID (dùng khi sửa) -->
+                    <input type="hidden" id="nv-id" value="">
+
+                    <!-- Họ tên -->
+                    <div class="mb-3">
+                        <label for="nv-ho-ten" class="form-label fw-semibold small">
+                            Họ và tên <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="nv-ho-ten"
+                               placeholder="Nguyễn Văn A" required maxlength="100">
+                        <div class="invalid-feedback">Vui lòng nhập họ tên nhân viên.</div>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="mb-3">
+                        <label for="nv-email" class="form-label fw-semibold small">
+                            Email <span class="text-danger">*</span>
+                        </label>
+                        <input type="email" class="form-control" id="nv-email"
+                               placeholder="nhanvien@primemobile.vn" required maxlength="100">
+                        <div class="invalid-feedback">Vui lòng nhập email hợp lệ.</div>
+                    </div>
+
+                    <!-- Số điện thoại -->
+                    <div class="mb-3">
+                        <label for="nv-sdt" class="form-label fw-semibold small">
+                            Số điện thoại
+                        </label>
+                        <input type="tel" class="form-control" id="nv-sdt"
+                               placeholder="0912345678" maxlength="20">
+                    </div>
+
+                    <!-- Mật khẩu -->
+                    <!-- Chế độ THÊMMỚI: input nhập bình thường -->
+                    <div class="mb-3" id="wrap-mat-khau-them">
+                        <label for="nv-mat-khau" class="form-label fw-semibold small">
+                            Mật khẩu <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="nv-mat-khau"
+                                   placeholder="Tối thiểu 6 ký tự" minlength="6">
+                            <button class="btn btn-outline-secondary" type="button"
+                                    id="btn-toggle-pwd" onclick="togglePassword()">
+                                <i class="fa fa-eye" id="icon-pwd"></i>
+                            </button>
+                        </div>
+                        <div class="form-text text-muted small">
+                            Mật khẩu được lưu dạng plain-text (chế độ demo).
+                        </div>
+                    </div>
+
+                    <!-- Chế độ SỬa: hiển thị mật khẩu hiện tại, READONLY (Admin xem nhưng không đổi được) -->
+                    <div class="mb-3 d-none" id="wrap-mat-khau-sua">
+                        <label class="form-label fw-semibold small">Mật khẩu hiện tại</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control bg-light text-danger fw-semibold"
+                                   id="nv-mat-khau-hien-thi" readonly
+                                   title="Admin chỉ xem — không được thay đổi mật khẩu qua form này">
+                            <span class="input-group-text bg-light text-muted" title="Chỉ đọc">
+                                <i class="fa fa-lock"></i>
+                            </span>
+                        </div>
+                        <div class="form-text text-warning small">
+                            <i class="fa fa-info-circle me-1"></i>
+                            Mật khẩu chỉ có thể xem, không được phép sửa qua form này.
+                        </div>
+                    </div>
+
+                    <!-- Thông báo lỗi từ API -->
+                    <div class="alert alert-danger d-none py-2 small" id="alert-modal-error" role="alert">
+                        <i class="fa fa-exclamation-circle me-1"></i>
+                        <span id="modal-error-text"></span>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
+                        data-bs-dismiss="modal" id="btn-modal-huy">
+                    <i class="fa fa-times me-1"></i>Hủy
+                </button>
+                <button type="button" class="btn btn-pm-primary rounded-pill px-4"
+                        id="btn-modal-luu" onclick="submitFormNhanVien()">
+                    <i class="fa fa-save me-1"></i>Lưu
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Admin Layout Scripts (Bootstrap JS, etc.) -->
+<div th:replace="~{layout/admin-layout :: adminScripts}"></div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  JAVASCRIPT — Quản lý Nhân Viên                                -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<script>
+    // ─── Constants ────────────────────────────────────────────────
+    const API_BASE = '/api/admin/nhan-vien';
+
+    // ─── Modal helpers ────────────────────────────────────────────
+
+    /**
+     * Mở modal ở chế độ Thêm mới.
+     */
+    function moModalThem() {
+        // Reset form
+        document.getElementById('nv-id').value       = '';
+        document.getElementById('nv-ho-ten').value   = '';
+        document.getElementById('nv-email').value    = '';
+        document.getElementById('nv-sdt').value      = '';
+        document.getElementById('nv-mat-khau').value = '';
+
+        // Tiêu đề modal
+        document.getElementById('modal-title-text').textContent = 'Thêm nhân viên mới';
+
+        // Hiện khối Thêm mới, ẩn khối Sửa (readonly)
+        document.getElementById('wrap-mat-khau-them').classList.remove('d-none');
+        document.getElementById('nv-mat-khau').required = true;
+        document.getElementById('wrap-mat-khau-sua').classList.add('d-none');
+        document.getElementById('nv-mat-khau-hien-thi').value = '';
+
+        // Ẩn lỗi cũ
+        document.getElementById('alert-modal-error').classList.add('d-none');
+
+        // Xóa class validation cũ
+        document.getElementById('form-nhan-vien').classList.remove('was-validated');
+    }
+
+    /**
+     * Mở modal ở chế độ Sửa, điền sẵn thông tin nhân viên.
+     * Mật khẩu hiển thị dưới dạng readonly — Admin chỉ xem, không nhập được.
+     *
+     * @param {number} id          - ID nhân viên
+     * @param {string} hoTen       - Họ tên
+     * @param {string} email       - Email
+     * @param {string} soDienThoai - Số điện thoại
+     * @param {string} matKhau     - Mật khẩu hiện tại (plain-text)
+     */
+    function moModalSua(id, hoTen, email, soDienThoai, matKhau) {
+        // Điền dữ liệu
+        document.getElementById('nv-id').value     = id;
+        document.getElementById('nv-ho-ten').value = hoTen;
+        document.getElementById('nv-email').value  = email;
+        document.getElementById('nv-sdt').value    = soDienThoai || '';
+
+        // Tiêu đề modal
+        document.getElementById('modal-title-text').textContent = 'Chỉnh sửa nhân viên';
+
+        // Ẩn khối Thêm mới, hiện khối Sửa (readonly)
+        document.getElementById('wrap-mat-khau-them').classList.add('d-none');
+        document.getElementById('nv-mat-khau').required = false;
+        document.getElementById('nv-mat-khau').value    = '';
+        document.getElementById('wrap-mat-khau-sua').classList.remove('d-none');
+        // Hiển thị mật khẩu hiện tại — chỉ đọc
+        document.getElementById('nv-mat-khau-hien-thi').value = matKhau || '(không có mật khẩu)';
+
+        // Ẩn lỗi cũ
+        document.getElementById('alert-modal-error').classList.add('d-none');
+
+        // Xóa class validation cũ
+        document.getElementById('form-nhan-vien').classList.remove('was-validated');
+
+        // Mở modal
+        const modal = new bootstrap.Modal(document.getElementById('modalNhanVien'));
+        modal.show();
+    }
+
+    /**
+     * Toggle hiển thị mật khẩu.
+     */
+    function togglePassword() {
+        const input = document.getElementById('nv-mat-khau');
+        const icon  = document.getElementById('icon-pwd');
+        if (input.type === 'password') {
+            input.type  = 'text';
+            icon.className = 'fa fa-eye-slash';
+        } else {
+            input.type  = 'password';
+            icon.className = 'fa fa-eye';
+        }
+    }
+
+    /**
+     * Hiển thị thông báo lỗi trong modal.
+     *
+     * @param {string} message - Nội dung lỗi
+     */
+    function hienThiLoiModal(message) {
+        const alertEl = document.getElementById('alert-modal-error');
+        document.getElementById('modal-error-text').textContent = message;
+        alertEl.classList.remove('d-none');
+    }
+
+    // ─── Submit Form (Thêm mới / Sửa) ─────────────────────────────
+
+    /**
+     * Xử lý submit form nhân viên:
+     * - Nếu có ID → PUT (cập nhật)
+     * - Nếu không có ID → POST (thêm mới)
+     */
+    async function submitFormNhanVien() {
+        // Validate HTML5 native
+        const form = document.getElementById('form-nhan-vien');
+        form.classList.add('was-validated');
+        if (!form.checkValidity()) return;
+
+        const id         = document.getElementById('nv-id').value;
+        const isEdit     = id !== '';
+        const hoTen      = document.getElementById('nv-ho-ten').value.trim();
+        const email      = document.getElementById('nv-email').value.trim();
+        const soDienThoai = document.getElementById('nv-sdt').value.trim();
+        const matKhau    = document.getElementById('nv-mat-khau').value;
+
+        // Validate mật khẩu chỉ khi thêm mới
+        if (!isEdit && matKhau.length < 6) {
+            hienThiLoiModal('Mật khẩu phải có ít nhất 6 ký tự.');
+            return;
+        }
+
+        // Build payload
+        const payload = { hoTen, email, soDienThoai };
+        if (!isEdit) payload.matKhau = matKhau;
+
+        const url    = isEdit ? `${API_BASE}/${id}` : API_BASE;
+        const method = isEdit ? 'PUT' : 'POST';
+
+        // Disable nút lưu tránh double-click
+        const btnLuu = document.getElementById('btn-modal-luu');
+        btnLuu.disabled = true;
+        btnLuu.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Đang lưu...';
+
+        try {
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Đóng modal
+                bootstrap.Modal.getInstance(document.getElementById('modalNhanVien')).hide();
+
+                // Thông báo thành công bằng SweetAlert2
+                await Swal.fire({
+                    icon: 'success',
+                    title: isEdit ? 'Cập nhật thành công!' : 'Thêm mới thành công!',
+                    text: isEdit
+                        ? `Đã cập nhật thông tin nhân viên ${hoTen}.`
+                        : `Đã tạo tài khoản nhân viên ${hoTen} thành công.`,
+                    confirmButtonColor: '#4F46E5',
+                    timer: 2000,
+                    timerProgressBar: true,
+                    showConfirmButton: false
+                });
+
+                location.reload();
+            } else {
+                // Hiển thị lỗi từ API trong modal
+                hienThiLoiModal(data.message || 'Có lỗi xảy ra. Vui lòng thử lại.');
+            }
+        } catch (err) {
+            console.error('[NhanVien] submitFormNhanVien error:', err);
+            hienThiLoiModal('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+        } finally {
+            btnLuu.disabled = false;
+            btnLuu.innerHTML = '<i class="fa fa-save me-1"></i>Lưu';
+        }
+    }
+
+    // ─── Khóa / Mở khóa tài khoản ────────────────────────────────
+
+    /**
+     * Gửi yêu cầu đổi trạng thái tài khoản nhân viên.
+     * Hiển thị confirm dialog trước khi thực thi.
+     *
+     * @param {number} id         - ID nhân viên
+     * @param {string} trangThaiHienTai - Trạng thái hiện tại ('hoat_dong' | 'khoa')
+     */
+    async function doiTrangThai(id, trangThaiHienTai) {
+        const isKhoa       = trangThaiHienTai === 'hoat_dong';
+        const actionText   = isKhoa ? 'khóa' : 'mở khóa';
+        const confirmColor = isKhoa ? '#EF4444' : '#22C55E';
+        const confirmIcon  = isKhoa ? 'warning' : 'question';
+
+        // Confirm dialog
+        const result = await Swal.fire({
+            icon: confirmIcon,
+            title: `Xác nhận ${actionText} tài khoản?`,
+            text: isKhoa
+                ? 'Tài khoản sẽ bị khóa và nhân viên không thể đăng nhập vào hệ thống.'
+                : 'Tài khoản sẽ được mở khóa và nhân viên có thể đăng nhập trở lại.',
+            showCancelButton: true,
+            confirmButtonColor: confirmColor,
+            cancelButtonColor: '#6B7280',
+            confirmButtonText: `Vâng, ${actionText}!`,
+            cancelButtonText: 'Hủy bỏ'
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const response = await fetch(`${API_BASE}/${id}/trang-thai`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Thành công!',
+                    text: data.message || `Đã ${actionText} tài khoản thành công.`,
+                    confirmButtonColor: '#4F46E5',
+                    timer: 2000,
+                    timerProgressBar: true,
+                    showConfirmButton: false
+                });
+                location.reload();
+            } else {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Thất bại!',
+                    text: data.message || 'Có lỗi xảy ra. Vui lòng thử lại.',
+                    confirmButtonColor: '#EF4444'
+                });
+            }
+        } catch (err) {
+            console.error('[NhanVien] doiTrangThai error:', err);
+            await Swal.fire({
+                icon: 'error',
+                title: 'Lỗi kết nối!',
+                text: 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau.',
+                confirmButtonColor: '#EF4444'
+            });
+        }
+    }
+
+    // ─── Reset modal khi đóng ─────────────────────────────────────
+    document.getElementById('modalNhanVien').addEventListener('hidden.bs.modal', function () {
+        document.getElementById('alert-modal-error').classList.add('d-none');
+        document.getElementById('form-nhan-vien').classList.remove('was-validated');
+    });
+</script>
+
+<!-- CSS bổ sung cho trang này -->
+<style>
+    .avatar-circle {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+        font-weight: 700;
+        font-size: .9rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+</style>
+
+</body>
+</html>

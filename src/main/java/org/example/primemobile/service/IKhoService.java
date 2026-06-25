@@ -5,6 +5,8 @@ import org.example.primemobile.dto.kho.TaoPhieuNhapKhoRequest;
 import org.example.primemobile.entity.PhieuChuyenKho;
 import org.example.primemobile.entity.PhieuNhapKho;
 import org.example.primemobile.entity.TonKho;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -69,4 +71,52 @@ public interface IKhoService {
      * @throws jakarta.persistence.EntityNotFoundException Nếu không tồn tại bản ghi tồn kho.
      */
     TonKho getTonKhoChiTiet(Integer khoId, Integer bienTheSanPhamId);
+
+    // =========================================================================
+    // LỊCH SỬ PHIẾU NHẬP KHO
+    // =========================================================================
+
+    /**
+     * Lấy danh sách phiếu nhập kho có phân trang — dùng cho màn hình lịch sử nhập kho.
+     * <p>
+     * Kết quả JOIN FETCH kho, NCC, người tạo để tránh N+1.
+     * Sắp xếp mặc định: mới nhất lên đầu (truyền qua {@code Pageable}).
+     *
+     * @param pageable Phân trang và sắp xếp.
+     * @return Trang {@link PhieuNhapKho} có đủ thông tin để hiển thị bảng danh sách.
+     */
+    Page<PhieuNhapKho> layDanhSachPhieuNhap(Pageable pageable);
+
+    /**
+     * Lấy chi tiết 1 phiếu nhập kho kèm toàn bộ dòng chi tiết (eager-load).
+     *
+     * @param id ID phiếu nhập kho.
+     * @return {@link PhieuNhapKho} kèm danh sách {@code ChiTietPhieuNhap} → biến thể → sản phẩm.
+     * @throws jakarta.persistence.EntityNotFoundException Nếu ID không tồn tại.
+     */
+    PhieuNhapKho layChiTietPhieuNhap(Integer id);
+
+    // =========================================================================
+    // LỊCH SỬ PHIẾU CHUYỂN KHO
+    // =========================================================================
+
+    /**
+     * Lấy danh sách phiếu chuyển kho có phân trang — dùng cho màn hình lịch sử chuyển kho.
+     * <p>
+     * Kết quả JOIN FETCH kho nguồn, kho đích, người tạo để tránh N+1.
+     *
+     * @param pageable Phân trang và sắp xếp.
+     * @return Trang {@link PhieuChuyenKho} có đủ thông tin để hiển thị bảng danh sách.
+     */
+    Page<PhieuChuyenKho> layDanhSachPhieuChuyen(Pageable pageable);
+
+    /**
+     * Lấy chi tiết 1 phiếu chuyển kho kèm toàn bộ dòng chi tiết (eager-load).
+     *
+     * @param id ID phiếu chuyển kho.
+     * @return {@link PhieuChuyenKho} kèm danh sách {@code ChiTietChuyenKho} → biến thể → sản phẩm.
+     * @throws jakarta.persistence.EntityNotFoundException Nếu ID không tồn tại.
+     */
+    PhieuChuyenKho layChiTietPhieuChuyen(Integer id);
 }
+

@@ -31,4 +31,12 @@ public interface KhachHangRepository extends JpaRepository<KhachHang, Integer> {
            "(:tuKhoa IS NULL OR k.soDienThoai LIKE %:tuKhoa% OR " +
            "LOWER(k.email) LIKE LOWER(CONCAT('%', :tuKhoa, '%')))")
     List<KhachHang> timKiemTheoSdtHoacEmail(@Param("tuKhoa") String tuKhoa);
+
+    /**
+     * Tìm bản ghi KhachHang liên kết với NguoiDung theo nguoiDung.id.
+     * Dùng trong {@code KhachHangAuthServiceImpl.dangNhap()} để resolve
+     * từ NguoiDung → KhachHang sau khi xác thực thành công.
+     */
+    Optional<KhachHang> findByNguoiDung_Id(Integer nguoiDungId);
 }
+

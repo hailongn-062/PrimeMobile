@@ -57,6 +57,17 @@ public class SanPhamServiceImpl implements ISanPhamService {
         return sanPhamRepository.timKiemVaLocSanPham(danhMucId, hangSanXuatId, pageable);
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Chỉ trả sản phẩm {@code trangThai = 'dang_ban'} — dùng cho trang public Frontend.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Page<SanPham> layDanhSachCongKhai(Integer danhMucId, Integer hangSanXuatId, Pageable pageable) {
+        return sanPhamRepository.timKiemSanPhamPublic(danhMucId, hangSanXuatId, pageable);
+    }
+
     /** {@inheritDoc} */
     @Override
     @Transactional(readOnly = true)

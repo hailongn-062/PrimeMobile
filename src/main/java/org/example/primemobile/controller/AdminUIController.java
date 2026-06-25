@@ -40,4 +40,25 @@ public class AdminUIController {
         log.info("[AdminUI] Dashboard — user={}", currentUser != null ? currentUser.getEmail() : "unknown");
         return "admin/dashboard";
     }
+
+    /**
+     * Trang báo lỗi 403 — Không có quyền truy cập.
+     * <p>
+     * Được redirect đến từ {@code AuthInterceptor} khi NhanVien cố truy cập
+     * các module độc quyền của Admin (ví dụ: Quản lý Nhân Viên).
+     *
+     * @param model   Spring Model.
+     * @param session HttpSession để lấy thông tin người dùng.
+     * @return View "admin/error-403".
+     */
+    @GetMapping("/error-403")
+    public String error403(Model model, HttpSession session) {
+        SessionUser currentUser = (SessionUser) session.getAttribute(SESSION_KEY);
+        model.addAttribute("currentUser", currentUser);
+        model.addAttribute("pageTitle",   "Không có quyền truy cập");
+        model.addAttribute("activePage",  "");
+        log.warn("[AdminUI] 403 Error Page — user={}",
+                currentUser != null ? currentUser.getEmail() : "unknown");
+        return "admin/error-403";
+    }
 }

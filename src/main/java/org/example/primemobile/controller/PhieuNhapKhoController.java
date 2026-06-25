@@ -8,6 +8,8 @@ import org.example.primemobile.entity.PhieuNhapKho;
 import org.example.primemobile.service.IKhoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,8 +32,10 @@ import java.util.Map;
  *
  * <h3>Endpoints:</h3>
  * <pre>
- *   POST /api/admin/phieu-nhap       → Tạo phiếu nhập kho mới (cộng kho_tong ngay)
- *   GET  /api/admin/phieu-nhap/{id}  → Xem chi tiết 1 phiếu nhập
+ *   POST /api/admin/phieu-nhap        → Tạo phiếu nhập kho mới (cộng kho_tong ngay)
+ *   GET  /api/admin/phieu-nhap        → Danh sách phiếu nhập (phân trang, mới nhất lên đầu)
+ *   GET  /api/admin/phieu-nhap/{id}   → Chi tiết 1 phiếu nhập (kèm danh sách dòng)
+ *   GET  /api/admin/phieu-nhap/ton-kho/{khoId}  → Xem tồn kho của 1 kho
  * </pre>
  */
 @RestController
@@ -102,6 +106,65 @@ public class PhieuNhapKhoController {
     }
 
     // =========================================================================
+    // GET /api/admin/phieu-nhap — Danh sách phiếu nhập (phân trang)
+    // =========================================================================
+
+    /**
+     * Lấy danh sách phiếu nhập kho có phân trang — dùng cho màn hình lịch sử nhập kho.
+     * <p>
+     * Ví dụ:
+     * <ul>
+     *   <li>{@code GET /api/admin/phieu-nhap?page=0&size=10} — Trang đầu, 10 bản ghi</li>
+     *   <li>{@code GET /api/admin/phieu-nhap?page=1&size=20&sort=ngayNhap,asc}</li>
+     * </ul>
+     *
+     * @param page        Số trang, bắt đầu từ 0 (mặc định 0).
+     * @param size        Số bản ghi mỗi trang (mặc định 10).
+     * @param sort        Sắp xếp — ví dụ {@code "ngayNhap,desc"} (mặc định mới nhất lên đầu).
+     * @param sessionUser NhanVien/Admin đang đăng nhập (xác thực qua session).
+     * @return HTTP 200 kèm Page&lt;PhieuNhapKho&gt;.
+     */
+    @GetMapping
+    public ResponseEntity<?> layDanhSachPhieuNhap(
+            @RequestParam(defaultValue = "0")             int    page,
+            @RequestParam(defaultValue = "10")            int    size,
+            @RequestParam(defaultValue = "ngayNhap,desc") String sort,
+            @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
+
+        log.info("[PhieuNhapKho] Lấy danh sách — page={}, size={}, nhanVienId={}",
+                page, size, sessionUser.getId());
+
+        Sort sortObj = buildSort(sort);
+        return ResponseEntity.ok(khoService.layDanhSachPhieuNhap(
+                PageRequest.of(page, size, sortObj)));
+    }
+
+    // =========================================================================
+    // GET /api/admin/phieu-nhap/{id} — Chi tiết phiếu nhập
+    // =========================================================================
+
+    /**
+     * Lấy chi tiết một phiếu nhập kho kèm toàn bộ dòng chi tiết sản phẩm.
+     *
+     * @param id          ID phiếu nhập kho cần xem.
+     * @param sessionUser NhanVien/Admin đang đăng nhập.
+     * @return HTTP 200 kèm {@link PhieuNhapKho} chi tiết; HTTP 404 nếu không tìm thấy.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<?> layChiTietPhieuNhap(
+            @PathVariable Integer id,
+            @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
+
+        log.info("[PhieuNhapKho] Lấy chi tiết — id={}, nhanVienId={}", id, sessionUser.getId());
+        try {
+            PhieuNhapKho phieu = khoService.layChiTietPhieuNhap(id);
+            return ResponseEntity.ok(buildSuccessResponse("OK", phieu));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(buildErrorResponse(e.getMessage()));
+        }
+    }
+
+    // =========================================================================
     // GET /api/admin/phieu-nhap/ton-kho/{khoId} — Xem tồn kho của 1 kho
     // =========================================================================
 
@@ -138,6 +201,21 @@ public class PhieuNhapKhoController {
     // =========================================================================
     // PRIVATE HELPERS
     // =========================================================================
+
+    /**
+     * Parse chuỗi sort "field,direction" thành {@link Sort}.
+     * Mặc định sort theo {@code ngayNhap DESC} nếu format không hợp lệ.
+     */
+    private Sort buildSort(String sortParam) {
+        try {
+            String[] parts = sortParam.split(",");
+            Sort.Direction dir = (parts.length > 1 && "asc".equalsIgnoreCase(parts[1]))
+                    ? Sort.Direction.ASC : Sort.Direction.DESC;
+            return Sort.by(dir, parts[0].trim());
+        } catch (Exception e) {
+            return Sort.by(Sort.Direction.DESC, "ngayNhap");
+        }
+    }
 
     private Map<String, Object> buildSuccessResponse(String message, Object data) {
         Map<String, Object> res = new LinkedHashMap<>();

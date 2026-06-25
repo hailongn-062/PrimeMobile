@@ -387,6 +387,82 @@ public class KhoService implements IKhoService {
                         "Không tìm thấy tồn kho — khoId=%d, bienTheId=%d.", khoId, bienTheSanPhamId)));
     }
 
+    // -----------------------------------------------------------------------
+    // HÀM 5: DANH SÁCH PHIẾU NHẬP KHO (phân trang)
+    // -----------------------------------------------------------------------
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Ủy quyền cho {@link PhieuNhapKhoRepository#layDanhSachPhanTrang(Pageable)}.
+     * Query đã JOIN FETCH kho, NCC, người tạo để tránh N+1.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<PhieuNhapKho> layDanhSachPhieuNhap(
+            org.springframework.data.domain.Pageable pageable) {
+        log.debug("[KhoService] layDanhSachPhieuNhap — page={}, size={}",
+                pageable.getPageNumber(), pageable.getPageSize());
+        return phieuNhapKhoRepository.layDanhSachPhanTrang(pageable);
+    }
+
+    // -----------------------------------------------------------------------
+    // HÀM 6: CHI TIẾT PHIẾU NHẬP KHO
+    // -----------------------------------------------------------------------
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Dùng {@link PhieuNhapKhoRepository#findByIdWithDetails(Integer)} để
+     * eager-load toàn bộ chi tiết dòng trong 1 query duy nhất.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public PhieuNhapKho layChiTietPhieuNhap(Integer id) {
+        log.debug("[KhoService] layChiTietPhieuNhap — id={}", id);
+        return phieuNhapKhoRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Không tìm thấy phiếu nhập kho có ID: " + id));
+    }
+
+    // -----------------------------------------------------------------------
+    // HÀM 7: DANH SÁCH PHIẾU CHUYỂN KHO (phân trang)
+    // -----------------------------------------------------------------------
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Ủy quyền cho {@link PhieuChuyenKhoRepository#layDanhSachPhanTrang(Pageable)}.
+     * Query đã JOIN FETCH kho nguồn, kho đích, người tạo để tránh N+1.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<PhieuChuyenKho> layDanhSachPhieuChuyen(
+            org.springframework.data.domain.Pageable pageable) {
+        log.debug("[KhoService] layDanhSachPhieuChuyen — page={}, size={}",
+                pageable.getPageNumber(), pageable.getPageSize());
+        return phieuChuyenKhoRepository.layDanhSachPhanTrang(pageable);
+    }
+
+    // -----------------------------------------------------------------------
+    // HÀM 8: CHI TIẾT PHIẾU CHUYỂN KHO
+    // -----------------------------------------------------------------------
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Dùng {@link PhieuChuyenKhoRepository#findByIdWithDetails(Integer)} để
+     * eager-load toàn bộ chi tiết dòng trong 1 query duy nhất.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public PhieuChuyenKho layChiTietPhieuChuyen(Integer id) {
+        log.debug("[KhoService] layChiTietPhieuChuyen — id={}", id);
+        return phieuChuyenKhoRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Không tìm thấy phiếu chuyển kho có ID: " + id));
+    }
+
     // =======================================================================
     // PRIVATE HELPER METHODS
     // =======================================================================

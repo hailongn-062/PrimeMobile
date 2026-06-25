@@ -14,5 +14,10 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, Integer> {
      * Dùng trong {@code AuthServiceImpl.dangNhapAdmin()}.
      */
     Optional<NguoiDung> findByEmail(String email);
-}
 
+    java.util.List<NguoiDung> findByVaiTroOrderByNgayTaoDesc(String vaiTro);
+
+    boolean existsByEmail(String email);
+
+    Optional<NguoiDung> findBySoDienThoai(String soDienThoai);
+}

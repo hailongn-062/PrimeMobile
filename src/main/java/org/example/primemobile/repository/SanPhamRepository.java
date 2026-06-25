@@ -20,11 +20,25 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
     /**
      * Phân trang + lọc linh hoạt theo danh mục và/hoặc hãng sản xuất.
      * Tham số null = bỏ qua điều kiện đó (lọc tất cả).
+     * Dùng cho Admin Dashboard — bao gồm cả sản phẩm ngừng bán.
      */
     @Query("SELECT s FROM SanPham s WHERE " +
            "(:danhMucId IS NULL OR s.danhMuc.id = :danhMucId) AND " +
            "(:hangSanXuatId IS NULL OR s.hangSanXuat.id = :hangSanXuatId)")
     Page<SanPham> timKiemVaLocSanPham(
+            @Param("danhMucId")      Integer danhMucId,
+            @Param("hangSanXuatId") Integer hangSanXuatId,
+            Pageable pageable);
+
+    /**
+     * Phân trang + lọc dành cho Frontend công khai — chỉ lấy sản phẩm {@code trangThai = 'dang_ban'}.
+     * Khách vãng lai và khách hàng không được thấy hàng ngừng bán.
+     */
+    @Query("SELECT s FROM SanPham s WHERE " +
+           "s.trangThai = 'dang_ban' AND " +
+           "(:danhMucId IS NULL OR s.danhMuc.id = :danhMucId) AND " +
+           "(:hangSanXuatId IS NULL OR s.hangSanXuat.id = :hangSanXuatId)")
+    Page<SanPham> timKiemSanPhamPublic(
             @Param("danhMucId")      Integer danhMucId,
             @Param("hangSanXuatId") Integer hangSanXuatId,
             Pageable pageable);

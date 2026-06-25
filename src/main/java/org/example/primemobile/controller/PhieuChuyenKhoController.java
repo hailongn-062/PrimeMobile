@@ -8,6 +8,8 @@ import org.example.primemobile.entity.PhieuChuyenKho;
 import org.example.primemobile.service.IKhoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,6 +34,8 @@ import java.util.Map;
  * <h3>Endpoints:</h3>
  * <pre>
  *   POST /api/admin/phieu-chuyen       → Tạo phiếu chuyển kho (kiểm tra Safety Stock, trừ nguồn, cộng đích)
+ *   GET  /api/admin/phieu-chuyen       → Danh sách phiếu chuyển (phân trang, mới nhất lên đầu)
+ *   GET  /api/admin/phieu-chuyen/{id}  → Chi tiết 1 phiếu chuyển (kèm danh sách dòng)
  *   GET  /api/admin/phieu-chuyen/ton-kho/{khoId}/{bienTheId}  → Xem tồn kho 1 SKU tại 1 kho
  * </pre>
  */
@@ -105,6 +109,65 @@ public class PhieuChuyenKhoController {
     }
 
     // =========================================================================
+    // GET /api/admin/phieu-chuyen — Danh sách phiếu chuyển (phân trang)
+    // =========================================================================
+
+    /**
+     * Lấy danh sách phiếu chuyển kho có phân trang — dùng cho màn hình lịch sử chuyển kho.
+     * <p>
+     * Ví dụ:
+     * <ul>
+     *   <li>{@code GET /api/admin/phieu-chuyen?page=0&size=10}</li>
+     *   <li>{@code GET /api/admin/phieu-chuyen?page=0&size=20&sort=ngayChuyen,asc}</li>
+     * </ul>
+     *
+     * @param page        Số trang, bắt đầu từ 0 (mặc định 0).
+     * @param size        Số bản ghi mỗi trang (mặc định 10).
+     * @param sort        Sắp xếp — ví dụ {@code "ngayChuyen,desc"} (mặc định mới nhất lên đầu).
+     * @param sessionUser NhanVien/Admin đang đăng nhập.
+     * @return HTTP 200 kèm Page&lt;PhieuChuyenKho&gt;.
+     */
+    @GetMapping
+    public ResponseEntity<?> layDanhSachPhieuChuyen(
+            @RequestParam(defaultValue = "0")               int    page,
+            @RequestParam(defaultValue = "10")              int    size,
+            @RequestParam(defaultValue = "ngayChuyen,desc") String sort,
+            @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
+
+        log.info("[PhieuChuyenKho] Lấy danh sách — page={}, size={}, nhanVienId={}",
+                page, size, sessionUser.getId());
+
+        Sort sortObj = buildSort(sort, "ngayChuyen");
+        return ResponseEntity.ok(khoService.layDanhSachPhieuChuyen(
+                PageRequest.of(page, size, sortObj)));
+    }
+
+    // =========================================================================
+    // GET /api/admin/phieu-chuyen/{id} — Chi tiết phiếu chuyển
+    // =========================================================================
+
+    /**
+     * Lấy chi tiết một phiếu chuyển kho kèm toàn bộ dòng chi tiết sản phẩm.
+     *
+     * @param id          ID phiếu chuyển kho cần xem.
+     * @param sessionUser NhanVien/Admin đang đăng nhập.
+     * @return HTTP 200 kèm {@link PhieuChuyenKho} chi tiết; HTTP 404 nếu không tìm thấy.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<?> layChiTietPhieuChuyen(
+            @PathVariable Integer id,
+            @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
+
+        log.info("[PhieuChuyenKho] Lấy chi tiết — id={}, nhanVienId={}", id, sessionUser.getId());
+        try {
+            PhieuChuyenKho phieu = khoService.layChiTietPhieuChuyen(id);
+            return ResponseEntity.ok(buildSuccessResponse("OK", phieu));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(buildErrorResponse(e.getMessage()));
+        }
+    }
+
+    // =========================================================================
     // GET /api/admin/phieu-chuyen/ton-kho/{khoId}/{bienTheId} — Kiểm tra tồn kho
     // =========================================================================
 
@@ -143,6 +206,21 @@ public class PhieuChuyenKhoController {
     // =========================================================================
     // PRIVATE HELPERS
     // =========================================================================
+
+    /**
+     * Parse chuỗi sort "field,direction" thành {@link Sort}.
+     * Fallback về {@code defaultField DESC} nếu format không hợp lệ.
+     */
+    private Sort buildSort(String sortParam, String defaultField) {
+        try {
+            String[] parts = sortParam.split(",");
+            Sort.Direction dir = (parts.length > 1 && "asc".equalsIgnoreCase(parts[1]))
+                    ? Sort.Direction.ASC : Sort.Direction.DESC;
+            return Sort.by(dir, parts[0].trim());
+        } catch (Exception e) {
+            return Sort.by(Sort.Direction.DESC, defaultField);
+        }
+    }
 
     private Map<String, Object> buildSuccessResponse(String message, Object data) {
         Map<String, Object> res = new LinkedHashMap<>();

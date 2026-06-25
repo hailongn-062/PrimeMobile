@@ -24,6 +24,7 @@ public interface ISanPhamService {
      * Lấy danh sách sản phẩm có phân trang và lọc theo danh mục / hãng.
      * <p>
      * Tham số lọc nếu {@code null} = bỏ qua điều kiện đó (trả về tất cả).
+     * <b>Dùng cho Admin Dashboard</b> — bao gồm cả sản phẩm ngừng bán.
      *
      * @param danhMucId      ID danh mục để lọc. Null = tất cả danh mục.
      * @param hangSanXuatId  ID hãng sản xuất để lọc. Null = tất cả hãng.
@@ -31,6 +32,19 @@ public interface ISanPhamService {
      * @return Trang {@link SanPham} phù hợp với điều kiện lọc.
      */
     Page<SanPham> layDanhSach(Integer danhMucId, Integer hangSanXuatId, Pageable pageable);
+
+    /**
+     * Lấy danh sách sản phẩm <b>công khai</b> dành cho Frontend (Khách vãng lai / KhachHang).
+     * <p>
+     * Chỉ trả về sản phẩm có {@code trangThai = 'dang_ban'}.
+     * Sản phẩm {@code ngung_ban} và {@code sap_ra_mat} được ẩn khỏi kết quả.
+     *
+     * @param danhMucId      ID danh mục để lọc. Null = tất cả danh mục.
+     * @param hangSanXuatId  ID hãng sản xuất để lọc. Null = tất cả hãng.
+     * @param pageable       Thông tin phân trang và sắp xếp.
+     * @return Trang {@link SanPham} chỉ chứa sản phẩm đang bán.
+     */
+    Page<SanPham> layDanhSachCongKhai(Integer danhMucId, Integer hangSanXuatId, Pageable pageable);
 
     /**
      * Lấy thông tin chi tiết một sản phẩm theo ID.

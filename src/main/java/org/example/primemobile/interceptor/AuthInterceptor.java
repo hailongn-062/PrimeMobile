@@ -22,6 +22,14 @@ import org.springframework.web.servlet.HandlerInterceptor;
  *       → Trả về HTTP {@code 401 Unauthorized}.</li>
  *   <li>Role không phải {@code "Admin"} hoặc {@code "NhanVien"}
  *       → Trả về HTTP {@code 403 Forbidden}.</li>
+ *   <li><b>Admin-only:</b> NhanVien cố truy cập các route sau sẽ nhận 403:
+ *       <ul>
+ *         <li>{@code /admin/nhan-vien/**} và {@code /api/admin/nhan-vien/**}</li>
+ *         <li>{@code /api/admin/khuyen-mai/**} (tạo/sửa KM)</li>
+ *         <li>{@code /api/admin/nha-cung-cap/**} (quản lý NCC)</li>
+ *         <li>{@code /api/admin/flash-sale/**} (quản lý Flash Sale)</li>
+ *       </ul>
+ *   </li>
  *   <li>Hợp lệ → Cho phép request đi qua ({@code return true}).</li>
  * </ol>
  *
@@ -110,10 +118,64 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
 
         // ------------------------------------------------------------------
+        // Kiểm tra 3b: Phân quyền độc quyền Admin — các module chỉ dành riêng cho Admin
+        // NhanVien KHÔNG được phép truy cập các route dưới đây:
+        //   /admin/nhan-vien/**              — Quản lý Nhân viên
+        //   /api/admin/nhan-vien/**           — API Nhân viên
+        //   /api/admin/khuyen-mai/**          — Tạo/sửa Chương trình KM
+        //   /api/admin/nha-cung-cap/**        — Quản lý NCC
+        //   /api/admin/flash-sale/**          — Quản lý Flash Sale
+        // ------------------------------------------------------------------
+        if (ROLE_NHAN_VIEN.equals(role) && isAdminOnlyRoute(requestUri)) {
+            log.warn("[AuthInterceptor] 403 Forbidden — NhanVien cố truy cập module độc quyền Admin. " +
+                     "userId={}, URI={}", currentUser.getId(), requestUri);
+
+            String acceptHeader  = request.getHeader("Accept");
+            String requestedWith = request.getHeader("X-Requested-With");
+            boolean isApiRequest = requestUri.startsWith("/api/")
+                    || "XMLHttpRequest".equals(requestedWith)
+                    || (acceptHeader != null && acceptHeader.contains("application/json"));
+
+            if (isApiRequest) {
+                response.setContentType("application/json;charset=UTF-8");
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.getWriter().write(
+                        "{\"status\":403,\"error\":\"Forbidden\"," +
+                        "\"message\":\"Chức năng này chỉ dành riêng cho Admin.\"," +
+                        "\"path\":\"" + requestUri + "\"}"
+                );
+            } else {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.sendRedirect("/admin/error-403");
+            }
+            return false;
+        }
+
+        // ------------------------------------------------------------------
         // Hợp lệ — Cho phép request tiếp tục đến Controller
         // ------------------------------------------------------------------
         log.debug("[AuthInterceptor] Cho phép — userId={}, role={}, URI={}",
                 currentUser.getId(), role, requestUri);
         return true;
+    }
+
+    // ------------------------------------------------------------------
+    // PRIVATE HELPER: kiểm tra route chỉ dành riêng cho Admin
+    // ------------------------------------------------------------------
+
+    /**
+     * Kiểm tra xem URI có thuộc nhóm route chỉ dành riêng cho Admin không.
+     * <p>
+     * NhanVien sẽ nhận 403 Forbidden khi cố truy cập bất kỳ URI nào thuộc danh sách.
+     *
+     * @param uri URI của request hiện tại.
+     * @return {@code true} nếu URI thuộc module Admin-only.
+     */
+    private boolean isAdminOnlyRoute(String uri) {
+        return uri.startsWith("/admin/nhan-vien")           // UI module nhân viên
+            || uri.startsWith("/api/admin/nhan-vien")       // API module nhân viên
+            || uri.startsWith("/api/admin/khuyen-mai")      // Quản lý khuyến mãi
+            || uri.startsWith("/api/admin/nha-cung-cap")    // Quản lý nhà cung cấp
+            || uri.startsWith("/api/admin/flash-sale");      // Quản lý flash sale
     }
 }
