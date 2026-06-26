@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${pageTitle} + ' - PrimeMobile'">Thêm Sửa Danh Mục</title>
+    <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
+</head>
+<body>
+    <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
+    <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
+
+    <main id="pmContent">
+        <div class="pm-card" style="max-width: 600px; margin: 0 auto;">
+            <div class="pm-card-header" th:text="${pageTitle}">
+                Thêm/Sửa Danh mục
+            </div>
+            <div class="card-body p-4">
+                <form th:action="@{/admin/danh-muc/save}" th:object="${danhMuc}" method="post">
+                    <!-- ID (hidden) -->
+                    <input type="hidden" th:field="*{id}" />
+
+                    <!-- Tên danh mục -->
+                    <div class="mb-3">
+                        <label for="tenDanhMuc" class="form-label fw-bold">Tên danh mục <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="tenDanhMuc" th:field="*{tenDanhMuc}" required placeholder="Nhập tên danh mục..." />
+                    </div>
+
+                    <!-- Slug -->
+                    <div class="mb-3">
+                        <label for="slug" class="form-label fw-bold">Slug <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="slug" th:field="*{slug}" required placeholder="dien-thoai-iphone..." />
+                        <div class="form-text">Đường dẫn thân thiện cho SEO. Hệ thống tự động tạo từ tên.</div>
+                    </div>
+
+                    <!-- Mô tả -->
+                    <div class="mb-3">
+                        <label for="moTa" class="form-label fw-bold">Mô tả</label>
+                        <textarea class="form-control" id="moTa" th:field="*{moTa}" rows="3" placeholder="Mô tả ngắn gọn..."></textarea>
+                    </div>
+
+                    <!-- Thứ tự -->
+                    <div class="mb-3">
+                        <label for="thuTu" class="form-label fw-bold">Thứ tự hiển thị <span class="text-danger">*</span></label>
+                        <select class="form-select" id="thuTu" th:field="*{thuTu}" required>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                        </select>
+                    </div>
+
+                    <!-- Kích hoạt -->
+                    <div class="mb-4 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="kichHoat" th:field="*{kichHoat}" />
+                        <label class="form-check-label fw-bold" for="kichHoat">Kích hoạt (Hiển thị)</label>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="d-flex justify-content-end gap-2">
+                        <a th:href="@{/admin/danh-muc}" class="btn btn-light">Hủy bỏ</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-save"></i> Lưu dữ liệu
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+
+    <!-- JS Tự động tạo Slug -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const tenInput = document.getElementById('tenDanhMuc');
+            const slugInput = document.getElementById('slug');
+
+            function toSlug(str) {
+                str = str.toLowerCase();     
+                str = str.replace(/(à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ)/g, 'a');
+                str = str.replace(/(è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ)/g, 'e');
+                str = str.replace(/(ì|í|ị|ỉ|ĩ)/g, 'i');
+                str = str.replace(/(ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ)/g, 'o');
+                str = str.replace(/(ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ)/g, 'u');
+                str = str.replace(/(ỳ|ý|ỵ|ỷ|ỹ)/g, 'y');
+                str = str.replace(/(đ)/g, 'd');
+                str = str.replace(/([^0-9a-z-\s])/g, '');
+                str = str.replace(/(\s+)/g, '-');
+                str = str.replace(/-+/g, '-');
+                str = str.replace(/^-+/g, '');
+                str = str.replace(/-+$/g, '');
+                return str;
+            }
+
+            tenInput.addEventListener('keyup', function() {
+                slugInput.value = toSlug(this.value);
+            });
+        });
+    </script>
+</body>
+</html>

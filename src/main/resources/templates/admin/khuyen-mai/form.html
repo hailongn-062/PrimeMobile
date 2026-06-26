@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${pageTitle} + ' - PrimeMobile'">Thêm/Sửa Khuyến Mãi</title>
+    <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
+</head>
+<body>
+    <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
+    <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
+
+    <main id="pmContent">
+        <div class="pm-card" style="max-width: 750px; margin: 0 auto;">
+            <div class="pm-card-header" th:text="${pageTitle}">Thêm/Sửa Khuyến Mãi</div>
+            <div class="card-body p-4">
+
+                <div th:if="${errorMessage}" class="alert alert-danger p-2 mb-3" th:text="${errorMessage}"></div>
+
+                <form th:action="@{/admin/khuyen-mai/save}" th:object="${ctkm}" method="post">
+                    <input type="hidden" th:field="*{id}" />
+
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label fw-bold">Tên Chương trình <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" th:field="*{tenCtkm}" required placeholder="VD: Sale mùa hè 2024" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Loại <span class="text-danger">*</span></label>
+                            <select class="form-select" th:field="*{loai}" required>
+                                <option value="">-- Chọn loại --</option>
+                                <option value="giam_gia_truc_tiep">Giảm giá trực tiếp</option>
+                                <option value="phan_tram">Phần trăm (%)</option>
+                                <option value="ma_code">Mã giảm giá (Code)</option>
+                                <option value="flash_sale">Flash Sale</option>
+                                <option value="don_hang_toi_thieu">Đơn hàng tối thiểu</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Giá trị ưu đãi</label>
+                            <input type="number" class="form-control" th:field="*{giaTriUuDai}" placeholder="VD: 50000 hoặc 10" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Giảm tối đa (đ)</label>
+                            <input type="number" class="form-control" th:field="*{giamToiDa}" placeholder="Để trống nếu không giới hạn" />
+                        </div>
+                        <div class="col-md-4 mb-3 d-flex align-items-end pb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" th:field="*{laPhanTram}" id="laPhanTram" />
+                                <label class="form-check-label" for="laPhanTram">Tính theo phần trăm (%)</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Ngày bắt đầu <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" th:field="*{ngayBatDau}" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Ngày kết thúc <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" th:field="*{ngayKetThuc}" required />
+                        </div>
+                    </div>
+
+                    <!-- Flash Sale fields (không dùng required để tránh lỗi khi loại khác) -->
+                    <div class="row border rounded p-3 mb-3 bg-light">
+                        <p class="text-muted small mb-2"><i class="fa fa-bolt text-danger"></i> Các trường sau chỉ áp dụng cho loại <strong>Flash Sale</strong>. Backend sẽ kiểm tra tính hợp lệ.</p>
+                        <div class="col-md-4 mb-2">
+                            <label class="form-label small fw-bold">Giờ Flash bắt đầu</label>
+                            <input type="datetime-local" class="form-control form-control-sm" th:field="*{gioFlashBatDau}" />
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label class="form-label small fw-bold">Giờ Flash kết thúc</label>
+                            <input type="datetime-local" class="form-control form-control-sm" th:field="*{gioFlashKetThuc}" />
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label class="form-label small fw-bold">SL tối đa (Flash)</label>
+                            <input type="number" class="form-control form-control-sm" th:field="*{soLuongToiDa}" placeholder="Tổng SL Flash" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Mô tả</label>
+                        <textarea class="form-control" th:field="*{moTa}" rows="2" placeholder="Mô tả ngắn về chương trình..."></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <a href="/admin/khuyen-mai" class="btn btn-light">Hủy bỏ</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-save"></i> Lưu dữ liệu
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+</body>
+</html>

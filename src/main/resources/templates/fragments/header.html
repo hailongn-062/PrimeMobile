@@ -50,11 +50,25 @@
                 </li>
 
                 <!-- Đăng nhập / Tài khoản -->
-                <li class="nav-item">
+                <!-- Khách vãng lai -->
+                <li class="nav-item" th:if="${session.CURRENT_CUSTOMER == null}">
                     <a class="nav-link px-2" href="/dang-nhap" id="nav-dang-nhap" title="Đăng nhập">
                         <i class="fa fa-user-circle fa-lg"></i>
                         <span class="d-none d-lg-inline ms-1" style="font-size:.88rem;">Đăng nhập</span>
                     </a>
+                </li>
+                <!-- Khách hàng đã đăng nhập -->
+                <li class="nav-item dropdown" th:if="${session.CURRENT_CUSTOMER != null}">
+                    <button class="btn btn-link nav-link px-2 dropdown-toggle text-warning text-decoration-none border-0" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa fa-user-check fa-lg"></i>
+                        <span class="d-none d-lg-inline ms-1 fw-bold" style="font-size:.88rem;" th:text="${session.CURRENT_CUSTOMER.hoTen}">Tên</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="userDropdown" style="font-size: 0.9rem; border-radius: 8px; z-index: 1050 !important; position: absolute;">
+                        <li><a class="dropdown-item py-2" href="/toi"><i class="fa fa-user me-2 text-muted"></i>Tài khoản</a></li>
+                        <li><a class="dropdown-item py-2" href="/tra-cuu-don-hang"><i class="fa fa-box me-2 text-muted"></i>Đơn hàng của tôi</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item py-2 text-danger" href="/dang-xuat"><i class="fa fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
+                    </ul>
                 </li>
 
                 <!-- Tra cứu đơn hàng -->

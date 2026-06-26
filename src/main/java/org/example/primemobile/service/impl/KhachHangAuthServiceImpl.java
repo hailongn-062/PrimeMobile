@@ -60,34 +60,34 @@ public class KhachHangAuthServiceImpl implements IKhachHangAuthService {
     @Override
     @Transactional
     public SessionKhachHang dangNhap(String email, String matKhau) {
-        String emailInput = email == null ? "" : email.trim();
-        log.info("[KhachHangAuth] Đăng nhập — email={}", emailInput);
+        String identifier = email == null ? "" : email.trim();
+        log.info("[KhachHangAuth] Đăng nhập — identifier={}", identifier);
 
-        // Bước 1: Tìm NguoiDung theo email
-        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(emailInput)
+        // Bước 1: Tìm NguoiDung theo email hoặc SĐT
+        NguoiDung nguoiDung = nguoiDungRepository.findByEmailOrSoDienThoai(identifier, identifier)
                 .orElseThrow(() -> {
-                    log.warn("[KhachHangAuth] Email không tồn tại: {}", emailInput);
+                    log.warn("[KhachHangAuth] Email/SĐT không tồn tại: {}", identifier);
                     // Thông báo chung để tránh user enumeration
-                    return new IllegalArgumentException("Email hoặc mật khẩu không chính xác.");
+                    return new IllegalArgumentException("Thông tin đăng nhập không chính xác.");
                 });
 
         // Bước 2: Kiểm tra vai trò phải là KhachHang
         if (!ROLE_KHACH_HANG.equals(nguoiDung.getVaiTro())) {
-            log.warn("[KhachHangAuth] Tài khoản không phải KhachHang — email={}, vaiTro={}",
-                    emailInput, nguoiDung.getVaiTro());
-            throw new IllegalArgumentException("Email hoặc mật khẩu không chính xác.");
+            log.warn("[KhachHangAuth] Tài khoản không phải KhachHang — identifier={}, vaiTro={}",
+                    identifier, nguoiDung.getVaiTro());
+            throw new IllegalArgumentException("Thông tin đăng nhập không chính xác.");
         }
 
         // Bước 3: Kiểm tra tài khoản không bị khóa
         if (!TRANG_THAI_HOAT_DONG.equals(nguoiDung.getTrangThai())) {
-            log.warn("[KhachHangAuth] Tài khoản bị khóa — email={}", emailInput);
+            log.warn("[KhachHangAuth] Tài khoản bị khóa — identifier={}", identifier);
             throw new IllegalArgumentException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ hỗ trợ.");
         }
 
         // Bước 4: Kiểm tra mật khẩu (plain-text, chế độ demo)
         if (matKhau == null || !matKhau.equals(nguoiDung.getMatKhau())) {
-            log.warn("[KhachHangAuth] Mật khẩu không khớp — email={}", emailInput);
-            throw new IllegalArgumentException("Email hoặc mật khẩu không chính xác.");
+            log.warn("[KhachHangAuth] Mật khẩu không khớp — identifier={}", identifier);
+            throw new IllegalArgumentException("Thông tin đăng nhập không chính xác.");
         }
 
         // Bước 5: Tìm bản ghi KhachHang liên kết với NguoiDung này

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${pageTitle} + ' - PrimeMobile'">Chi tiết Khuyến Mãi</title>
+    <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
+</head>
+<body>
+    <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
+    <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
+
+    <main id="pmContent">
+        <!-- Flash Alerts -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fa fa-check-circle me-1"></i> <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa fa-exclamation-circle me-1"></i> <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Breadcrumb nav -->
+        <div class="mb-3">
+            <a href="/admin/khuyen-mai" class="btn btn-sm btn-outline-secondary">
+                <i class="fa fa-arrow-left"></i> Quay lại danh sách
+            </a>
+            <a th:href="@{/admin/khuyen-mai/form(id=${ctkm.id})}" class="btn btn-sm btn-outline-primary ms-2">
+                <i class="fa fa-edit"></i> Sửa thông tin
+            </a>
+        </div>
+
+        <!-- Nửa trên: Tóm tắt CTKM -->
+        <div class="pm-card mb-4">
+            <div class="pm-card-header d-flex justify-content-between align-items-center">
+                <span th:text="${ctkm.tenCtkm}">Tên chương trình</span>
+                <th:block th:switch="${ctkm.trangThai}">
+                    <span th:case="'chua_bat_dau'" class="badge bg-secondary fs-6">Chưa bắt đầu</span>
+                    <span th:case="'dang_dien_ra'" class="badge bg-success fs-6">Đang diễn ra</span>
+                    <span th:case="'da_ket_thuc'" class="badge bg-dark fs-6">Đã kết thúc</span>
+                    <span th:case="'tam_dung'" class="badge bg-warning text-dark fs-6">Tạm dừng</span>
+                </th:block>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <p class="mb-1 text-muted small">Loại KM</p>
+                        <th:block th:switch="${ctkm.loai}">
+                            <strong th:case="'ma_code'"><i class="fa fa-ticket-alt text-info"></i> Mã giảm giá</strong>
+                            <strong th:case="'flash_sale'"><i class="fa fa-bolt text-danger"></i> Flash Sale</strong>
+                            <strong th:case="'giam_gia_truc_tiep'">Giảm trực tiếp</strong>
+                            <strong th:case="'phan_tram'">Phần trăm</strong>
+                            <strong th:case="*" th:text="${ctkm.loai}"></strong>
+                        </th:block>
+                    </div>
+                    <div class="col-md-3">
+                        <p class="mb-1 text-muted small">Giá trị ưu đãi</p>
+                        <strong>
+                            <span th:if="${ctkm.laPhanTram}" th:text="${ctkm.giaTriUuDai} + '%'"></span>
+                            <span th:if="${!ctkm.laPhanTram}" th:text="${#numbers.formatDecimal(ctkm.giaTriUuDai ?: 0, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                        </strong>
+                    </div>
+                    <div class="col-md-3">
+                        <p class="mb-1 text-muted small">Bắt đầu</p>
+                        <strong th:text="${#temporals.format(ctkm.ngayBatDau, 'dd/MM/yyyy HH:mm')}"></strong>
+                    </div>
+                    <div class="col-md-3">
+                        <p class="mb-1 text-muted small">Kết thúc</p>
+                        <strong th:text="${#temporals.format(ctkm.ngayKetThuc, 'dd/MM/yyyy HH:mm')}"></strong>
+                    </div>
+                </div>
+                <p class="mb-0 mt-3 text-muted small" th:if="${ctkm.moTa != null}" th:text="${ctkm.moTa}"></p>
+            </div>
+        </div>
+
+        <!-- Nửa dưới: Chi tiết theo loại -->
+        <th:block th:switch="${ctkm.loai}">
+
+            <!-- ═══════════════════════ MÃ GIẢM GIÁ ════════════════════════ -->
+            <th:block th:case="'ma_code'">
+                <div class="pm-card">
+                    <div class="pm-card-header"><i class="fa fa-ticket-alt me-1"></i> Quản lý Mã Giảm Giá</div>
+                    <div class="card-body">
+                        <!-- Form sinh mã -->
+                        <form th:action="@{/admin/khuyen-mai/{id}/ma-giam-gia/sinh-ma(id=${ctkm.id})}" method="post" class="bg-light p-3 rounded mb-4 border">
+                            <h6 class="fw-bold mb-3">Sinh Mã Tự Động</h6>
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Số lượng mã <span class="text-danger">*</span></label>
+                                    <input type="number" name="soLuong" class="form-control form-control-sm" required value="10" min="1" max="500" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Tiền tố (Prefix)</label>
+                                    <input type="text" name="prefix" class="form-control form-control-sm" value="CODE" placeholder="VD: SUMMER24" />
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="submit" class="btn btn-sm btn-success w-100">
+                                        <i class="fa fa-magic"></i> Sinh Mã
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <!-- Bảng mã giảm giá -->
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Mã Code</th>
+                                        <th class="text-end">Đơn tối thiểu</th>
+                                        <th class="text-center">Đã dùng / Tổng</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="ma : ${maGiamGias}">
+                                        <td class="fw-bold font-monospace" th:text="${ma.maCode}"></td>
+                                        <td class="text-end" th:text="${#numbers.formatDecimal(ma.donHangToiThieu, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
+                                        <td class="text-center">
+                                            <span th:text="${ma.daSuDung} + ' / ' + ${ma.soLuongToiDa}"></span>
+                                            <span th:if="${ma.daSuDung >= ma.soLuongToiDa}" class="badge bg-danger ms-1">Hết lượt</span>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(maGiamGias)}">
+                                        <td colspan="3" class="text-center text-muted py-3">Chưa có mã nào. Hãy sinh mã!</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </th:block>
+
+            <!-- ═══════════════════════ FLASH SALE ══════════════════════════ -->
+            <th:block th:case="'flash_sale'">
+                <div class="pm-card">
+                    <div class="pm-card-header"><i class="fa fa-bolt me-1 text-danger"></i> Biến thể Flash Sale</div>
+                    <div class="card-body">
+                        <!-- Form thêm biến thể -->
+                        <form th:action="@{/admin/khuyen-mai/{id}/flash-sale/them(id=${ctkm.id})}" method="post" class="bg-light p-3 rounded mb-4 border">
+                            <h6 class="fw-bold mb-3">Thêm Biến thể vào Flash Sale</h6>
+                            <div class="row g-2">
+                                <div class="col-md-4 mb-2">
+                                    <label class="form-label small fw-bold">ID Biến thể (SKU) <span class="text-danger">*</span></label>
+                                    <input type="number" name="bienTheSanPhamId" class="form-control form-control-sm" required placeholder="Nhập ID biến thể" />
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <label class="form-label small fw-bold">Giá Flash <span class="text-danger">*</span></label>
+                                    <input type="number" name="giaFlash" class="form-control form-control-sm" required placeholder="VD: 25990000" />
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <label class="form-label small fw-bold">Số lượng giới hạn <span class="text-danger">*</span></label>
+                                    <input type="number" name="soLuongGioiHan" class="form-control form-control-sm" required placeholder="VD: 50" />
+                                </div>
+                            </div>
+                            <div class="text-end mt-2">
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="fa fa-plus"></i> Thêm vào Flash Sale
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Bảng chi tiết flash sale -->
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Biến thể (SKU)</th>
+                                        <th>Tên SP</th>
+                                        <th class="text-end">Giá Flash</th>
+                                        <th class="text-center">Đã bán / Giới hạn</th>
+                                        <th class="text-center">Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="ct : ${chiTietFlashSales}">
+                                        <td class="font-monospace fw-bold" th:text="${ct.bienTheSanPham.maSku}"></td>
+                                        <td th:text="${ct.bienTheSanPham.sanPham.tenSanPham}"></td>
+                                        <td class="text-end text-danger fw-bold" th:text="${#numbers.formatDecimal(ct.giaFlash, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
+                                        <td class="text-center" th:text="${ct.daBan} + ' / ' + ${ct.soLuongGioiHan}"></td>
+                                        <td class="text-center">
+                                            <a th:href="@{/admin/khuyen-mai/{id}/flash-sale/xoa/{fsId}(id=${ctkm.id}, fsId=${ct.id})}"
+                                               class="text-danger" onclick="return confirm('Xóa biến thể này khỏi Flash Sale?')">
+                                                <i class="fa fa-trash"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(chiTietFlashSales)}">
+                                        <td colspan="5" class="text-center text-muted py-3">Chưa có biến thể nào trong Flash Sale.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </th:block>
+
+            <!-- ═══════ CÁC LOẠI CÒN LẠI: Phạm vi áp dụng ════════════════ -->
+            <th:block th:case="*">
+                <div class="pm-card">
+                    <div class="pm-card-header"><i class="fa fa-sitemap me-1"></i> Phạm vi Áp dụng</div>
+                    <div class="card-body">
+                        <!-- Form thêm phạm vi -->
+                        <form th:action="@{/admin/khuyen-mai/{id}/pham-vi/them(id=${ctkm.id})}" method="post" class="bg-light p-3 rounded mb-4 border">
+                            <h6 class="fw-bold mb-3">Thêm Phạm vi Áp dụng (chọn 1 trong 3)</h6>
+                            <div class="row g-2">
+                                <div class="col-md-4 mb-2">
+                                    <label class="form-label small fw-bold">Theo Sản phẩm</label>
+                                    <select name="sanPhamId" class="form-select form-select-sm">
+                                        <option value="">-- Không theo SP --</option>
+                                        <option th:each="sp : ${danhSachSanPham?.content}" th:value="${sp.id}" th:text="${sp.tenSanPham}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <label class="form-label small fw-bold">Theo Danh mục</label>
+                                    <select name="danhMucId" class="form-select form-select-sm">
+                                        <option value="">-- Không theo DM --</option>
+                                        <option th:each="dm : ${danhMucs}" th:value="${dm.id}" th:text="${dm.tenDanhMuc}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <label class="form-label small fw-bold">Theo Hãng SX</label>
+                                    <select name="hangSanXuatId" class="form-select form-select-sm">
+                                        <option value="">-- Không theo hãng --</option>
+                                        <option th:each="hsx : ${hangSanXuats}" th:value="${hsx.id}" th:text="${hsx.tenHang}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="text-end mt-2">
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="fa fa-plus"></i> Thêm Phạm vi
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Bảng phạm vi -->
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Sản phẩm</th>
+                                        <th>Danh mục</th>
+                                        <th>Hãng SX</th>
+                                        <th class="text-center">Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="pv : ${phamViKhuyenMais}">
+                                        <td th:text="${pv.sanPham != null ? pv.sanPham.tenSanPham : '---'}"></td>
+                                        <td th:text="${pv.danhMuc != null ? pv.danhMuc.tenDanhMuc : '---'}"></td>
+                                        <td th:text="${pv.hangSanXuat != null ? pv.hangSanXuat.tenHang : '---'}"></td>
+                                        <td class="text-center">
+                                            <a th:href="@{/admin/khuyen-mai/{id}/pham-vi/xoa/{pvId}(id=${ctkm.id}, pvId=${pv.id})}"
+                                               class="text-danger" onclick="return confirm('Xóa phạm vi này?')">
+                                                <i class="fa fa-trash"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(phamViKhuyenMais)}">
+                                        <td colspan="4" class="text-center text-muted py-3">Áp dụng cho toàn bộ sản phẩm (không giới hạn phạm vi).</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </th:block>
+
+        </th:block>
+    </main>
+
+    <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+</body>
+</html>

@@ -15,6 +15,8 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, Integer> {
      */
     Optional<NguoiDung> findByEmail(String email);
 
+    Optional<NguoiDung> findByEmailOrSoDienThoai(String email, String soDienThoai);
+
     java.util.List<NguoiDung> findByVaiTroOrderByNgayTaoDesc(String vaiTro);
 
     boolean existsByEmail(String email);

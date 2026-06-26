@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Quản lý Hãng Sản Xuất - PrimeMobile</title>
+    <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
+</head>
+<body>
+    <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
+    <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
+
+    <main id="pmContent">
+        <!-- Hiển thị thông báo lỗi nếu có -->
+        <div th:if="${error != null}" class="alert alert-danger" role="alert" th:text="${error}">
+            Lỗi khi xóa hãng sản xuất.
+        </div>
+
+        <div class="pm-card">
+            <div class="pm-card-header">
+                Danh sách Hãng Sản Xuất
+                <a href="/admin/hang-san-xuat/form" class="btn btn-primary btn-sm">
+                    <i class="fa fa-plus"></i> Thêm mới
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Logo</th>
+                            <th>Tên hãng</th>
+                            <th>Quốc gia</th>
+                            <th class="text-end pe-4">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="hsx : ${hangSanXuats}">
+                            <td th:text="${hsx.id}">1</td>
+                            <td>
+                                <img th:if="${hsx.logo != null and !#strings.isEmpty(hsx.logo)}" 
+                                     th:src="${hsx.logo}" alt="Logo" 
+                                     style="height: 40px; object-fit: contain;">
+                            </td>
+                            <td class="fw-bold" th:text="${hsx.tenHang}">Apple</td>
+                            <td th:text="${hsx.quocGia}">Mỹ</td>
+                            <td class="text-end pe-4">
+                                <a th:href="@{/admin/hang-san-xuat/form(id=${hsx.id})}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fa fa-edit"></i> Sửa
+                                </a>
+                                <a th:href="@{/admin/hang-san-xuat/delete/{id}(id=${hsx.id})}" 
+                                   class="btn btn-sm btn-outline-danger ms-1"
+                                   onclick="return confirm('Bạn có chắc muốn xóa hãng sản xuất này?');">
+                                    <i class="fa fa-trash"></i> Xóa
+                                </a>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(hangSanXuats)}">
+                            <td colspan="5" class="text-center py-3 text-muted">Chưa có hãng sản xuất nào.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+</body>
+</html>

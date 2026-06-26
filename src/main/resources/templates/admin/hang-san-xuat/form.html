@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${pageTitle} + ' - PrimeMobile'">Thêm Sửa Hãng Sản Xuất</title>
+    <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
+</head>
+<body>
+    <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
+    <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
+
+    <main id="pmContent">
+        <div class="pm-card" style="max-width: 600px; margin: 0 auto;">
+            <div class="pm-card-header" th:text="${pageTitle}">
+                Thêm/Sửa Hãng Sản Xuất
+            </div>
+            <div class="card-body p-4">
+                <form th:action="@{/admin/hang-san-xuat/save}" th:object="${hangSanXuat}" method="post">
+                    <!-- ID (hidden) -->
+                    <input type="hidden" th:field="*{id}" />
+
+                    <!-- Tên hãng -->
+                    <div class="mb-3">
+                        <label for="tenHang" class="form-label fw-bold">Tên hãng <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="tenHang" th:field="*{tenHang}" required placeholder="VD: Apple, Samsung..." />
+                    </div>
+
+                    <!-- Logo -->
+                    <div class="mb-3">
+                        <label for="logo" class="form-label fw-bold">Đường dẫn Logo</label>
+                        <input type="text" class="form-control" id="logo" th:field="*{logo}" placeholder="Nhập đường dẫn URL ảnh logo..." />
+                    </div>
+
+                    <!-- Quốc gia -->
+                    <div class="mb-4">
+                        <label for="quocGia" class="form-label fw-bold">Quốc gia</label>
+                        <select class="form-select" id="quocGia" th:field="*{quocGia}">
+                            <option value="">-- Chọn quốc gia --</option>
+                            <option value="Mỹ">Mỹ</option>
+                            <option value="Hàn Quốc">Hàn Quốc</option>
+                            <option value="Trung Quốc">Trung Quốc</option>
+                            <option value="Nhật Bản">Nhật Bản</option>
+                            <option value="Đài Loan">Đài Loan</option>
+                            <option value="Phần Lan">Phần Lan</option>
+                            <option value="Việt Nam">Việt Nam</option>
+                        </select>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="d-flex justify-content-end gap-2">
+                        <a th:href="@{/admin/hang-san-xuat}" class="btn btn-light">Hủy bỏ</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-save"></i> Lưu dữ liệu
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+</body>
+</html>

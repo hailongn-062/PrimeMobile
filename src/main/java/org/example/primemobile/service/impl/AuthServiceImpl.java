@@ -71,23 +71,23 @@ public class AuthServiceImpl implements IAuthService {
                                 request.getEmail());
 
                 // ------------------------------------------------------------------
-                // Bước 1: Tìm người dùng theo email
+                // Bước 1: Tìm người dùng theo email hoặc số điện thoại
                 // ------------------------------------------------------------------
-                String emailInput = request.getEmail() == null ? "" : request.getEmail().trim();
+                String identifier = request.getEmail() == null ? "" : request.getEmail().trim();
 
-                NguoiDung nguoiDung = nguoiDungRepository.findByEmail(emailInput)
+                NguoiDung nguoiDung = nguoiDungRepository.findByEmailOrSoDienThoai(identifier, identifier)
                                 .orElseThrow(() -> {
-                                        log.warn("[AuthService] Email không tồn tại: {}", emailInput);
+                                        log.warn("[AuthService] Email/SĐT không tồn tại: {}", identifier);
                                         // Trả về thông báo chung — không tiết lộ "email không tồn tại"
                                         // để tránh user enumeration attack
-                                        return new IllegalArgumentException("Email hoặc mật khẩu không chính xác.");
+                                        return new IllegalArgumentException("Thông tin đăng nhập không chính xác.");
                                 });
 
                 // ------------------------------------------------------------------
                 // Bước 2: Kiểm tra tài khoản không bị khóa
                 // ------------------------------------------------------------------
                 if (!TRANG_THAI_HOAT_DONG.equals(nguoiDung.getTrangThai())) {
-                        log.warn("[AuthService] Tài khoản bị khóa — email={}", emailInput);
+                        log.warn("[AuthService] Tài khoản bị khóa — identifier={}", identifier);
                         throw new IllegalArgumentException(
                                         "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
                 }
@@ -97,8 +97,8 @@ public class AuthServiceImpl implements IAuthService {
                 // ------------------------------------------------------------------
                 String vaiTro = nguoiDung.getVaiTro();
                 if (!ROLE_ADMIN.equals(vaiTro) && !ROLE_NHAN_VIEN.equals(vaiTro)) {
-                        log.warn("[AuthService] Tài khoản không có quyền Admin/NhanVien — email={}, vaiTro={}",
-                                        emailInput, vaiTro);
+                        log.warn("[AuthService] Tài khoản không có quyền Admin/NhanVien — identifier={}, vaiTro={}",
+                                        identifier, vaiTro);
                         throw new IllegalArgumentException(
                                         "Tài khoản không có quyền truy cập vào khu vực quản trị.");
                 }
@@ -108,8 +108,8 @@ public class AuthServiceImpl implements IAuthService {
                 // ------------------------------------------------------------------
                 String rawPassword = request.getMatKhau();
                 if (rawPassword == null || !rawPassword.equals(nguoiDung.getMatKhau())) {
-                        log.warn("[AuthService] Mật khẩu không khớp — email={}", emailInput);
-                        throw new IllegalArgumentException("Email hoặc mật khẩu không chính xác.");
+                        log.warn("[AuthService] Mật khẩu không khớp — identifier={}", identifier);
+                        throw new IllegalArgumentException("Thông tin đăng nhập không chính xác.");
                 }
 
                 // ------------------------------------------------------------------

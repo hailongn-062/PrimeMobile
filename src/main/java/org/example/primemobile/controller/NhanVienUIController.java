@@ -9,23 +9,10 @@ import org.example.primemobile.service.INhanVienService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 
-/**
- * Controller UI (Thymeleaf) cho phân hệ Quản lý Nhân Viên — Admin only.
- * Base path: {@code /admin/nhan-vien}
- *
- * <p>Tách biệt hoàn toàn với {@link NhanVienController} (REST API).
- * Controller này chỉ render HTML — mọi thao tác nghiệp vụ (thêm, sửa,
- * khóa tài khoản) được thực hiện qua JavaScript fetch() gọi đến REST API.
- *
- * <p>Ghi chú (system_rules.md §1):
- * <ul>
- *   <li>Không dùng Spring Security. Phân quyền Admin kiểm soát bởi AuthInterceptor.</li>
- *   <li>Session key: {@code "CURRENT_ADMIN"} — chứa {@link SessionUser}.</li>
- * </ul>
- */
 @Slf4j
 @Controller
 @RequestMapping("/admin/nhan-vien")
@@ -36,34 +23,58 @@ public class NhanVienUIController {
 
     private final INhanVienService nhanVienService;
 
-    // =========================================================================
-    // GET /admin/nhan-vien — Trang danh sách nhân viên
-    // =========================================================================
-
-    /**
-     * Render trang danh sách nhân viên.
-     * <p>
-     * Tải sẵn danh sách nhân viên từ Service để render server-side bằng Thymeleaf.
-     * Giao diện cũng hỗ trợ fetch() để làm mới dữ liệu sau khi thêm/sửa/khóa.
-     *
-     * @param model   Model truyền dữ liệu sang Thymeleaf template.
-     * @param session HTTP session để lấy thông tin người dùng đang đăng nhập.
-     * @return View path: {@code admin/nhan-vien/danh-sach}.
-     */
     @GetMapping
     public String danhSach(Model model, HttpSession session) {
         SessionUser currentUser = (SessionUser) session.getAttribute(SESSION_KEY);
-        log.info("[NhanVienUI] Danh sách nhân viên — user={}",
-                currentUser != null ? currentUser.getEmail() : "?");
-
         List<NguoiDung> danhSach = nhanVienService.layDanhSachNhanVien();
 
-        model.addAttribute("currentUser",      currentUser);
-        model.addAttribute("pageTitle",        "Quản lý Nhân viên");
-        model.addAttribute("activePage",       "nhan-vien");
+        model.addAttribute("currentUser", currentUser);
+        model.addAttribute("pageTitle", "Quản lý Nhân viên");
+        model.addAttribute("activePage", "nhan-vien");
         model.addAttribute("danhSachNhanVien", danhSach);
-        model.addAttribute("tongSoNhanVien",   danhSach.size());
 
         return "admin/nhan-vien/danh-sach";
+    }
+
+    @GetMapping("/form")
+    public String form(@RequestParam(value = "id", required = false) Integer id, Model model) {
+        if (!model.containsAttribute("nguoiDung")) {
+            NguoiDung nguoiDung;
+            if (id != null) {
+                nguoiDung = nhanVienService.layTheoId(id);
+            } else {
+                nguoiDung = new NguoiDung();
+            }
+            model.addAttribute("nguoiDung", nguoiDung);
+        }
+        
+        model.addAttribute("pageTitle", id != null ? "Sửa Nhân Viên" : "Thêm mới Nhân Viên");
+        model.addAttribute("activePage", "nhan-vien");
+        return "admin/nhan-vien/form";
+    }
+
+    @PostMapping("/save")
+    public String save(@ModelAttribute("nguoiDung") NguoiDung nguoiDung, RedirectAttributes redirectAttributes) {
+        try {
+            if (nguoiDung.getId() != null) {
+                nhanVienService.capNhat(nguoiDung.getId(), nguoiDung);
+                redirectAttributes.addFlashAttribute("successMessage", "Cập nhật nhân viên thành công.");
+            } else {
+                nhanVienService.themMoi(nguoiDung);
+                redirectAttributes.addFlashAttribute("successMessage", "Thêm mới nhân viên thành công.");
+            }
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            redirectAttributes.addFlashAttribute("nguoiDung", nguoiDung);
+            return "redirect:/admin/nhan-vien/form" + (nguoiDung.getId() != null ? "?id=" + nguoiDung.getId() : "");
+        }
+        return "redirect:/admin/nhan-vien";
+    }
+
+    @GetMapping("/toggle-status/{id}")
+    public String toggleStatus(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+        nhanVienService.doiTrangThai(id);
+        redirectAttributes.addFlashAttribute("successMessage", "Đổi trạng thái tài khoản thành công.");
+        return "redirect:/admin/nhan-vien";
     }
 }

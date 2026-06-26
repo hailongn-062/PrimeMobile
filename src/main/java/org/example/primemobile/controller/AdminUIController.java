@@ -6,6 +6,7 @@ import org.example.primemobile.dto.auth.SessionUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 /**
@@ -61,4 +62,68 @@ public class AdminUIController {
                 currentUser != null ? currentUser.getEmail() : "unknown");
         return "admin/error-403";
     }
+
+    /**
+     * Trang Quản lý Sản phẩm
+     */
+//    @GetMapping("/san-pham")
+//    public String sanPham(Model model, HttpSession session) {
+//        SessionUser currentUser = (SessionUser) session.getAttribute(SESSION_KEY);
+//        model.addAttribute("currentUser", currentUser);
+//        model.addAttribute("pageTitle",   "Quản lý Sản phẩm");
+//        model.addAttribute("activePage",  "san-pham");
+//        return "admin/san-pham/index";
+//    }
+//
+//    /**
+//     * Trang Quản lý Biến thể (SKU)
+//     */
+//    @GetMapping("/bien-the-san-pham")
+//    public String bienTheSanPham(Model model, HttpSession session) {
+//        SessionUser currentUser = (SessionUser) session.getAttribute(SESSION_KEY);
+//        model.addAttribute("currentUser", currentUser);
+//        model.addAttribute("pageTitle",   "Quản lý Biến thể Sản phẩm");
+//        model.addAttribute("activePage",  "san-pham");
+//        return "admin/san-pham/bien-the";
+//    }
+//
+//    /**
+//     * Quản lý biến thể của một sản phẩm cụ thể
+//     */
+//    @GetMapping("/san-pham/{id}/bien-the")
+//    public String chiTietBienThe(@PathVariable Integer id, Model model, HttpSession session) {
+//        SessionUser currentUser = (SessionUser) session.getAttribute(SESSION_KEY);
+//        model.addAttribute("currentUser", currentUser);
+//        model.addAttribute("pageTitle",   "Quản lý Biến thể");
+//        model.addAttribute("activePage",  "san-pham");
+//        model.addAttribute("sanPhamId", id);
+//        return "admin/san-pham/bien-the-chi-tiet";
+//    }
+//
+//    @GetMapping("/thong-so-ky-thuat")
+//    public String thongSoKyThuat(Model model, HttpSession session) {
+//        SessionUser currentUser = (SessionUser) session.getAttribute(SESSION_KEY);
+//        model.addAttribute("currentUser", currentUser);
+//        model.addAttribute("pageTitle",   "Thông số kỹ thuật");
+//        model.addAttribute("activePage",  "san-pham");
+//        return "admin/san-pham/thong-so";
+//    }
+
+//    @GetMapping("/hang-san-xuat")
+//    public String hangSanXuat(Model model, HttpSession session) {
+//        SessionUser currentUser = (SessionUser) session.getAttribute(SESSION_KEY);
+//        model.addAttribute("currentUser", currentUser);
+//        model.addAttribute("pageTitle",   "Hãng sản xuất");
+//        model.addAttribute("activePage",  "san-pham");
+//        return "admin/san-pham/hang-san-xuat";
+//    }
+
+//    @GetMapping("/danh-muc")
+//    public String danhMuc(Model model, HttpSession session) {
+//        SessionUser currentUser = (SessionUser) session.getAttribute(SESSION_KEY);
+//        model.addAttribute("currentUser", currentUser);
+//        model.addAttribute("pageTitle",   "Danh mục Sản phẩm");
+//        model.addAttribute("activePage",  "san-pham");
+//        return "admin/san-pham/danh-muc";
+//    }
 }

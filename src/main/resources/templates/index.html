@@ -231,12 +231,12 @@
                         <!-- Ảnh sản phẩm -->
                         <a th:href="@{/san-pham/{id}(id=${sp.id})}" class="text-decoration-none">
                             <div class="pm-img-wrap">
-                                <img th:if="${sp.hinhAnhSanPhams != null and !#lists.isEmpty(sp.hinhAnhSanPhams)}"
-                                     th:src="${sp.hinhAnhSanPhams[0].duongDan}"
+                                <img th:if="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams) and sp.bienTheSanPhams[0].hinhAnhSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams[0].hinhAnhSanPhams)}"
+                                     th:src="${sp.bienTheSanPhams[0].hinhAnhSanPhams[0].duongDan}"
                                      th:alt="${sp.tenSanPham}"
                                      loading="lazy">
                                 <!-- Placeholder khi chưa có ảnh -->
-                                <i th:unless="${sp.hinhAnhSanPhams != null and !#lists.isEmpty(sp.hinhAnhSanPhams)}"
+                                <i th:unless="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams) and sp.bienTheSanPhams[0].hinhAnhSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams[0].hinhAnhSanPhams)}"
                                    class="fa fa-mobile-alt fa-5x text-muted opacity-25"></i>
                             </div>
                         </a>

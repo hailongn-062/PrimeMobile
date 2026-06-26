@@ -49,4 +49,14 @@ public interface ChuongTrinhKhuyenMaiRepository extends JpaRepository<ChuongTrin
             WHERE c.id = :id AND c.loai = 'flash_sale'
             """)
     Optional<ChuongTrinhKhuyenMai> findFlashSaleByIdWithDetails(@Param("id") Integer id);
+
+    /**
+     * Lấy các chương trình khuyến mãi (không phải flash_sale) đang diễn ra.
+     * Dùng cho public API để hiển thị banner, coupon.
+     */
+    @Query("""
+            SELECT c FROM ChuongTrinhKhuyenMai c
+            WHERE c.loai != 'flash_sale' AND c.trangThai = 'dang_dien_ra'
+            """)
+    List<ChuongTrinhKhuyenMai> layKhuyenMaiDangDienRa();
 }

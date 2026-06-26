@@ -144,6 +144,77 @@ public class DonHangKhachHangController {
     }
 
     // =========================================================================
+    // PUT /api/public/don-hang-cua-toi/{donHangId}/huy — Tự hủy đơn hàng
+    // =========================================================================
+
+    /**
+     * Khách hàng tự hủy đơn hàng của mình.
+     * <p>
+     * Điều kiện bắt buộc (system_rules.md §2.2):
+     * - Đơn hàng phải đang ở trạng thái 'cho_xac_nhan'.
+     * - Không áp dụng hoàn kho vì lúc này kho_online chưa bị trừ.
+     *
+     * @param donHangId ID đơn hàng cần hủy.
+     * @param httpRequest Servlet request để lấy session.
+     * @return HTTP 200 kèm đơn hàng đã hủy.
+     */
+    @PutMapping("/{donHangId}/huy")
+    public ResponseEntity<?> huyDonHang(
+            @PathVariable Integer donHangId,
+            HttpServletRequest httpRequest) {
+
+        SessionKhachHang session = requireLogin(httpRequest);
+        if (session == null) {
+            return ResponseEntity.status(401)
+                    .body(buildErrorResponse("Bạn cần đăng nhập để thực hiện thao tác này."));
+        }
+
+        log.info("[DonHangKhachHang] Khách yêu cầu hủy đơn — donHangId={}, khachHangId={}",
+                donHangId, session.getKhachHangId());
+
+        DonHang donHang = donHangRepository.findById(donHangId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Không tìm thấy đơn hàng #" + donHangId));
+
+        // Bảo vệ IDOR
+        if (!donHang.getKhachHang().getId().equals(session.getKhachHangId())) {
+            log.warn("[DonHangKhachHang] 403 IDOR — donHangId={} không thuộc khachHangId={}",
+                    donHangId, session.getKhachHangId());
+            return ResponseEntity.status(403)
+                    .body(buildErrorResponse("Bạn không có quyền thao tác trên đơn hàng này."));
+        }
+
+        // Kiểm tra trạng thái cho phép hủy
+        if (!"cho_xac_nhan".equals(donHang.getTrangThai())) {
+            return ResponseEntity.badRequest()
+                    .body(buildErrorResponse("Chỉ có thể hủy đơn hàng khi đang chờ xác nhận. " +
+                            "Đơn hàng của bạn đang ở trạng thái: " + donHang.getTrangThai()));
+        }
+
+        // Cập nhật trạng thái
+        donHang.setTrangThai("da_huy");
+        donHang.setUpdatedAt(java.time.LocalDateTime.now());
+        
+        String ghiChuCu = (donHang.getGhiChu() != null) ? donHang.getGhiChu() + " | " : "";
+        donHang.setGhiChu(ghiChuCu + "[KHÁCH HÀNG TỰ HỦY " + donHang.getUpdatedAt().toLocalDate() + "]");
+
+        // Nếu thanh toán VNPay đang treo thì chuyển thành thất bại
+        if ("dang_chuyen_huong".equals(donHang.getTrangThaiThanhToan())) {
+            donHang.setTrangThaiThanhToan("that_bai");
+        }
+
+        donHangRepository.save(donHang);
+        log.info("[DonHangKhachHang] ✅ Hủy đơn thành công — maDonHang={}", donHang.getMaDonHang());
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+        response.put("message", "Hủy đơn hàng thành công.");
+        response.put("donHang", donHang);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================================
     // PRIVATE HELPERS
     // =========================================================================
 

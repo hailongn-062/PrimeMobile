@@ -3,10 +3,8 @@ package org.example.primemobile.service.impl;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.primemobile.entity.ChuongTrinhKhuyenMai;
-import org.example.primemobile.entity.MaGiamGia;
-import org.example.primemobile.repository.ChuongTrinhKhuyenMaiRepository;
-import org.example.primemobile.repository.MaGiamGiaRepository;
+import org.example.primemobile.entity.*;
+import org.example.primemobile.repository.*;
 import org.example.primemobile.service.IKhuyenMaiService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +23,12 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
 
     private final ChuongTrinhKhuyenMaiRepository ctkmRepo;
     private final MaGiamGiaRepository            maGiamGiaRepo;
+    private final ChiTietFlashSaleRepository      chiTietFlashSaleRepo;
+    private final PhamViKhuyenMaiRepository       phamViKhuyenMaiRepo;
+    private final BienTheSanPhamRepository        bienTheSanPhamRepo;
+    private final SanPhamRepository               sanPhamRepo;
+    private final DanhMucRepository               danhMucRepo;
+    private final HangSanXuatRepository           hangSanXuatRepo;
 
     // ── ADMIN: Chương trình khuyến mãi ──────────────────────────────────
 
@@ -32,6 +36,12 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
     @Transactional(readOnly = true)
     public List<ChuongTrinhKhuyenMai> layDanhSach() {
         return ctkmRepo.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ChuongTrinhKhuyenMai> layKhuyenMaiDangDienRa() {
+        return ctkmRepo.layKhuyenMaiDangDienRa();
     }
 
     @Override
@@ -176,6 +186,84 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
         BigDecimal soTienGiam = tinhSoTienGiam(ctkm, ma, tongTien);
         log.info("[KhuyenMai] checkMa='{}' | tongTien={} | giảm={}", maCode, tongTien, soTienGiam);
         return soTienGiam;
+    }
+
+    // ── ADMIN: Phương thức bổ sung phục vụ UI ───────────────────────────
+
+    @Override
+    @Transactional(readOnly = true)
+    public ChuongTrinhKhuyenMai layTheoId(Integer id) {
+        return ctkmRepo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy chương trình KM ID: " + id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MaGiamGia> layMaGiamGia(Integer ctkmId) {
+        return maGiamGiaRepo.findByChuongTrinhKhuyenMaiId(ctkmId);
+    }
+
+    @Override
+    @Transactional
+    public void themChiTietFlashSale(Integer ctkmId, Integer bienTheId, BigDecimal giaFlash, Integer soLuongGioiHan) {
+        ChuongTrinhKhuyenMai ctkm = ctkmRepo.findById(ctkmId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy CTKM ID: " + ctkmId));
+        BienTheSanPham bt = bienTheSanPhamRepo.findById(bienTheId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy biến thể ID: " + bienTheId));
+        ChiTietFlashSale ct = ChiTietFlashSale.builder()
+                .chuongTrinhKhuyenMai(ctkm)
+                .bienTheSanPham(bt)
+                .giaFlash(giaFlash)
+                .soLuongGioiHan(soLuongGioiHan)
+                .daBan(0)
+                .build();
+        chiTietFlashSaleRepo.save(ct);
+    }
+
+    @Override
+    @Transactional
+    public void xoaChiTietFlashSale(Integer chiTietId) {
+        chiTietFlashSaleRepo.deleteById(chiTietId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ChiTietFlashSale> layChiTietFlashSale(Integer ctkmId) {
+        return chiTietFlashSaleRepo.findByChuongTrinhKhuyenMaiId(ctkmId);
+    }
+
+    @Override
+    @Transactional
+    public void themPhamVi(Integer ctkmId, Integer sanPhamId, Integer danhMucId, Integer hangSanXuatId) {
+        ChuongTrinhKhuyenMai ctkm = ctkmRepo.findById(ctkmId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy CTKM ID: " + ctkmId));
+        PhamViKhuyenMai pv = new PhamViKhuyenMai();
+        pv.setChuongTrinhKhuyenMai(ctkm);
+        if (sanPhamId != null) {
+            pv.setSanPham(sanPhamRepo.findById(sanPhamId)
+                    .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy sản phẩm ID: " + sanPhamId)));
+        }
+        if (danhMucId != null) {
+            pv.setDanhMuc(danhMucRepo.findById(danhMucId)
+                    .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy danh mục ID: " + danhMucId)));
+        }
+        if (hangSanXuatId != null) {
+            pv.setHangSanXuat(hangSanXuatRepo.findById(hangSanXuatId)
+                    .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy hãng SX ID: " + hangSanXuatId)));
+        }
+        phamViKhuyenMaiRepo.save(pv);
+    }
+
+    @Override
+    @Transactional
+    public void xoaPhamVi(Integer phamViId) {
+        phamViKhuyenMaiRepo.deleteById(phamViId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PhamViKhuyenMai> layPhamVi(Integer ctkmId) {
+        return phamViKhuyenMaiRepo.findByChuongTrinhKhuyenMaiId(ctkmId);
     }
 
     // ── PRIVATE HELPERS ──────────────────────────────────────────────────

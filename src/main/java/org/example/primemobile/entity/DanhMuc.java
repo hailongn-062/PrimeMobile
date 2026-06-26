@@ -1,10 +1,10 @@
 package org.example.primemobile.entity;
-
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Entity mapping bảng danh_muc (Module 2: Sản phẩm & Biến thể).
@@ -69,5 +69,6 @@ public class DanhMuc {
     // -------------------------------------------------------------------------
     @OneToMany(mappedBy = "danhMuc", fetch = FetchType.LAZY)
     @Builder.Default
+    @JsonIgnore
     private List<SanPham> sanPhams = new ArrayList<>();
 }

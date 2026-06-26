@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${pageTitle} + ' - PrimeMobile'">Quản lý Ảnh Biến Thể</title>
+    <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
+</head>
+<body>
+    <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
+    <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
+
+    <main id="pmContent">
+        <div class="mb-3">
+            <a th:href="@{/admin/san-pham/{id}/chi-tiet(id=${bienThe.sanPham.id})}" class="btn btn-sm btn-outline-secondary">
+                <i class="fa fa-arrow-left"></i> Quay lại Chi tiết Sản phẩm
+            </a>
+        </div>
+
+        <div class="pm-card mb-4" style="max-width: 800px; margin: 0 auto;">
+            <div class="pm-card-header d-flex justify-content-between align-items-center">
+                <span>Thông tin Biến thể</span>
+                <span class="badge bg-primary" th:text="${bienThe.maSku}">SKU</span>
+            </div>
+            <div class="card-body bg-light">
+                <div class="row">
+                    <div class="col-md-4">
+                        <p class="mb-1"><strong>Sản phẩm:</strong> <span th:text="${bienThe.sanPham.tenSanPham}"></span></p>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-1"><strong>Màu sắc:</strong> 
+                            <span class="d-inline-block rounded-circle me-1 border" 
+                                  th:style="'width:12px;height:12px;background-color:' + (${bienThe.maMauHex} ?: '#ddd')"></span>
+                            <span th:text="${bienThe.mauSac}"></span>
+                        </p>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-1"><strong>RAM/ROM:</strong> <span th:text="${bienThe.ramGb} + 'GB / ' + ${bienThe.luuTruGb} + 'GB'"></span></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body border-top">
+                <!-- Form thêm ảnh -->
+                <form th:action="@{/admin/san-pham/bien-the/hinh-anh/save}" method="post" class="mb-4 bg-white p-3 border rounded shadow-sm">
+                    <input type="hidden" name="bienTheSanPham.id" th:value="${bienThe.id}" />
+                    <h6 class="fw-bold mb-3">Thêm Ảnh mới</h6>
+                    
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-9 mb-2">
+                            <label class="form-label small fw-bold">Đường dẫn Ảnh (URL) <span class="text-danger">*</span></label>
+                            <input type="text" name="duongDan" class="form-control form-control-sm" required placeholder="VD: https://example.com/image.jpg" />
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <button type="submit" class="btn btn-sm btn-primary w-100">
+                                <i class="fa fa-upload"></i> Thêm Ảnh
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Grid hiển thị ảnh -->
+                <h6 class="fw-bold mb-3 mt-4">Danh sách Hình Ảnh</h6>
+                <div class="row g-3">
+                    <div class="col-md-3 col-sm-4 col-6" th:each="anh : ${hinhAnhs}">
+                        <div class="card h-100 position-relative shadow-sm" th:classappend="${anh.laAnhChinh} ? 'border-primary border-2' : ''">
+                            <img th:src="${anh.duongDan}" class="card-img-top p-2" style="height: 150px; object-fit: contain;" alt="Ảnh sản phẩm">
+                            
+                            <div th:if="${anh.laAnhChinh}" class="position-absolute top-0 start-0 badge bg-primary m-1">
+                                Ảnh chính
+                            </div>
+
+                            <div class="card-footer bg-white p-2 d-flex justify-content-between align-items-center border-top-0">
+                                <a th:if="${!anh.laAnhChinh}" th:href="@{/admin/san-pham/bien-the/hinh-anh/set-primary/{id}(id=${anh.id}, bienTheId=${bienThe.id})}" 
+                                   class="btn btn-xs btn-outline-success py-0 px-1" title="Đặt làm ảnh chính" style="font-size: 0.75rem;">
+                                    <i class="fa fa-star"></i> Đặt chính
+                                </a>
+                                <span th:if="${anh.laAnhChinh}"></span> <!-- Spacer -->
+                                
+                                <a th:href="@{/admin/san-pham/bien-the/hinh-anh/delete/{id}(id=${anh.id}, bienTheId=${bienThe.id})}" 
+                                   class="text-danger" title="Xóa ảnh"
+                                   onclick="return confirm('Bạn có chắc muốn xóa ảnh này?');">
+                                    <i class="fa fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div th:if="${#lists.isEmpty(hinhAnhs)}" class="col-12 text-center text-muted py-4 border rounded bg-light">
+                        Chưa có hình ảnh nào cho biến thể này.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+</body>
+</html>

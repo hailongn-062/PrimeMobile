@@ -21,4 +21,7 @@ public interface INhaCungCapService {
 
     /** Đổi trạng thái hợp tác của NCC (dang_hop_tac ↔ ngung_hop_tac). */
     NhaCungCap doiTrangThai(Integer id, String trangThaiMoi);
+
+    /** Lấy chi tiết NCC theo ID */
+    NhaCungCap layTheoId(Integer id);
 }

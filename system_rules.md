@@ -7,7 +7,7 @@
     - **Customer Site (Giao diện khách hàng):** Áp dụng cho Khách vãng lai và Khách hàng đã đăng nhập. Phong cách thiết kế sang trọng, hiện đại với tone màu chủ đạo là **Xanh dương và Trắng bạc** (Tham khảo cấu trúc layout của HoangHaMobile).
     - **Admin Dashboard (Giao diện quản trị):** Áp dụng cho Admin và Nhân viên để thực hiện các thao tác quản lý nội bộ.
 - **Cơ chế Đăng nhập / Đăng ký:**
-    - **Đăng nhập:** Xác thực bằng một trong hai trường (`email` HOẶC `so_dien_thoai`) kết hợp với mật khẩu băm (`mat_khau`).
+    - **Đăng nhập:** Xác thực bằng một trong hai trường (`email` HOẶC `so_dien_thoai`) kết hợp với mật khẩu (`mat_khau`).
     - **Đăng ký:** Bắt buộc người dùng nhập đầy đủ: `ho_ten`, `email`, `so_dien_thoai`, và `mat_khau`.
 - **Cơ chế phân quyền người dùng (Role Management):**
     - `KhachVangLai` (Mặc định khi vào hệ thống): Chỉ được xem sản phẩm, biến thể, thông số kỹ thuật, đánh giá, chương trình khuyến mãi, thêm sản phẩm vào giỏ hàng và sử dụng Chatbot tư vấn. KHÔNG ĐƯỢC ĐẶT HÀNG ONLINE, KHÔNG ĐƯỢC YÊU CẦU BẢO HÀNH, KHÔNG ĐƯỢC ĐÁNH GIÁ.

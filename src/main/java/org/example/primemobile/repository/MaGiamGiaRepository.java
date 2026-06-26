@@ -21,4 +21,7 @@ public interface MaGiamGiaRepository extends JpaRepository<MaGiamGia, Integer> {
 
     /** Kiểm tra maCode đã tồn tại chưa (dùng khi sinh mã hàng loạt). */
     boolean existsByMaCode(String maCode);
+
+    /** Lấy danh sách mã giảm giá theo ID chương trình KM. */
+    java.util.List<MaGiamGia> findByChuongTrinhKhuyenMaiId(Integer ctkmId);
 }

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${pageTitle} + ' - PrimeMobile'">Thêm/Sửa Nhân Viên</title>
+    <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
+</head>
+<body>
+    <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
+    <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
+
+    <main id="pmContent">
+        <div class="pm-card" style="max-width: 600px; margin: 0 auto;">
+            <div class="pm-card-header" th:text="${pageTitle}">
+                Thêm/Sửa Nhân Viên
+            </div>
+            <div class="card-body p-4">
+                
+                <div th:if="${errorMessage}" class="alert alert-danger p-2 mb-4" th:text="${errorMessage}"></div>
+
+                <form th:action="@{/admin/nhan-vien/save}" th:object="${nguoiDung}" method="post">
+                    <!-- ID (hidden) -->
+                    <input type="hidden" th:field="*{id}" />
+
+                    <!-- Họ tên -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Họ Tên <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" th:field="*{hoTen}" required placeholder="VD: Nguyễn Văn A" />
+                    </div>
+
+                    <!-- Email -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Email <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" th:field="*{email}" required placeholder="VD: nguyenvan.a@example.com" />
+                    </div>
+
+                    <!-- Số điện thoại -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Số điện thoại</label>
+                        <input type="text" class="form-control" th:field="*{soDienThoai}" placeholder="VD: 0912345678" />
+                    </div>
+
+                    <!-- Mật khẩu (Chỉ hiển thị khi thêm mới) -->
+                    <div class="mb-3" th:if="*{id == null}">
+                        <label class="form-label fw-bold">Mật khẩu <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" name="matKhau" required placeholder="Nhập mật khẩu cho nhân viên mới" />
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a th:href="@{/admin/nhan-vien}" class="btn btn-light">Hủy bỏ</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-save"></i> Lưu dữ liệu
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+</body>
+</html>

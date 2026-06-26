@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${pageTitle} + ' - PrimeMobile'">Thêm Sửa Sản Phẩm</title>
+    <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
+</head>
+<body>
+    <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
+    <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
+
+    <main id="pmContent">
+        <div class="pm-card" style="max-width: 800px; margin: 0 auto;">
+            <div class="pm-card-header" th:text="${pageTitle}">
+                Thêm/Sửa Sản Phẩm
+            </div>
+            <div class="card-body p-4">
+                <form th:action="@{/admin/san-pham/save}" th:object="${sanPham}" method="post">
+                    <!-- ID (hidden) -->
+                    <input type="hidden" th:field="*{id}" />
+
+                    <div class="row">
+                        <!-- Tên SP -->
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label fw-bold">Tên sản phẩm <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" th:field="*{tenSanPham}" required placeholder="VD: iPhone 15 Pro Max..." />
+                        </div>
+                        
+                        <!-- Mã SP -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Mã sản phẩm <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" th:field="*{maSanPham}" required placeholder="VD: IP15PM" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Danh mục -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Danh mục <span class="text-danger">*</span></label>
+                            <select class="form-select" th:field="*{danhMuc.id}" required>
+                                <option value="">-- Chọn Danh mục --</option>
+                                <option th:each="dm : ${danhMucs}" th:value="${dm.id}" th:text="${dm.tenDanhMuc}"></option>
+                            </select>
+                        </div>
+                        
+                        <!-- Hãng SX -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Hãng Sản xuất <span class="text-danger">*</span></label>
+                            <select class="form-select" th:field="*{hangSanXuat.id}" required>
+                                <option value="">-- Chọn Hãng SX --</option>
+                                <option th:each="hsx : ${hangSanXuats}" th:value="${hsx.id}" th:text="${hsx.tenHang}"></option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Năm ra mắt -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Năm ra mắt</label>
+                            <input type="number" class="form-control" th:field="*{namRaMat}" placeholder="VD: 2024" />
+                        </div>
+                        
+                        <!-- Bảo hành -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Bảo hành (Tháng) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" th:field="*{baoHanhThang}" required min="0" value="12" />
+                        </div>
+
+                        <!-- Trạng thái -->
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Trạng thái <span class="text-danger">*</span></label>
+                            <select class="form-select" th:field="*{trangThai}" required>
+                                <option value="dang_ban">Đang bán</option>
+                                <option value="ngung_ban">Ngừng bán</option>
+                                <option value="sap_ra_mat">Sắp ra mắt</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Mô tả ngắn -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Mô tả ngắn</label>
+                        <textarea class="form-control" th:field="*{moTaNgan}" rows="3" placeholder="Đoạn văn ngắn giới thiệu..."></textarea>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a th:href="@{/admin/san-pham}" class="btn btn-light">Hủy bỏ</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-save"></i> Lưu dữ liệu
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+</body>
+</html>

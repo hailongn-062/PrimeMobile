@@ -224,13 +224,17 @@
     <!-- Nav chính -->
     <nav class="sidebar-nav mt-2">
         <div class="sidebar-section-label">Tổng quan</div>
-
         <ul class="nav flex-column">
             <li class="nav-item">
-                <a href="/admin/dashboard"
-                   th:class="${activePage == 'dashboard'} ? 'nav-link active' : 'nav-link'">
+                <a href="/admin/dashboard" th:class="${activePage == 'dashboard'} ? 'nav-link active' : 'nav-link'">
                     <span class="nav-icon"><i class="fa fa-chart-pie"></i></span>
-                    Tổng quan
+                    Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/ban-hang-offline" th:class="${activePage == 'ban-hang-offline'} ? 'nav-link active' : 'nav-link'">
+                    <span class="nav-icon"><i class="fa fa-cash-register"></i></span>
+                    Bán hàng Offline (POS)
                 </a>
             </li>
         </ul>
@@ -238,78 +242,87 @@
         <div class="sidebar-section-label">Kinh doanh</div>
         <ul class="nav flex-column">
             <li class="nav-item">
-                <a href="/admin/don-hang"
-                   th:class="${activePage == 'don-hang'} ? 'nav-link active' : 'nav-link'">
+                <a href="/admin/khach-hang" th:class="${activePage == 'khach-hang'} ? 'nav-link active' : 'nav-link'">
+                    <span class="nav-icon"><i class="fa fa-users"></i></span>
+                    Khách hàng
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/don-hang" th:class="${activePage == 'don-hang'} ? 'nav-link active' : 'nav-link'">
                     <span class="nav-icon"><i class="fa fa-shopping-bag"></i></span>
-                    Quản lý Đơn hàng
+                    Đơn hàng Online
                     <span class="sidebar-badge" id="badge-don-hang">0</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="/admin/san-pham"
-                   th:class="${activePage == 'san-pham'} ? 'nav-link active' : 'nav-link'">
+                <a href="/admin/san-pham" th:class="${activePage == 'san-pham'} ? 'nav-link active' : 'nav-link'">
                     <span class="nav-icon"><i class="fa fa-mobile-alt"></i></span>
-                    Quản lý Sản phẩm
+                    Sản phẩm & Biến thể
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="/admin/khuyen-mai"
-                   th:class="${activePage == 'khuyen-mai'} ? 'nav-link active' : 'nav-link'">
-                    <span class="nav-icon"><i class="fa fa-tags"></i></span>
-                    Khuyến mãi & Mã
-                </a>
-            </li>
+            
+            <!-- Độc quyền Admin -->
+            <th:block th:if="${currentUser != null and currentUser.role == 'Admin'}">
+                <li class="nav-item">
+                    <a href="/admin/khuyen-mai" th:class="${activePage == 'khuyen-mai'} ? 'nav-link active' : 'nav-link'">
+                        <span class="nav-icon"><i class="fa fa-tags"></i></span>
+                        Khuyến mãi & Mã giảm giá
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin/flash-sale" th:class="${activePage == 'flash-sale'} ? 'nav-link active' : 'nav-link'">
+                        <span class="nav-icon"><i class="fa fa-bolt"></i></span>
+                        Flash Sale
+                    </a>
+                </li>
+            </th:block>
         </ul>
 
         <div class="sidebar-section-label">Kho & Nhập hàng</div>
         <ul class="nav flex-column">
             <li class="nav-item">
-                <a href="/admin/kho"
-                   th:class="${activePage == 'kho'} ? 'nav-link active' : 'nav-link'">
+                <a href="/admin/kho" th:class="${activePage == 'kho'} ? 'nav-link active' : 'nav-link'">
                     <span class="nav-icon"><i class="fa fa-warehouse"></i></span>
                     Quản lý Kho
                 </a>
             </li>
             <li class="nav-item">
-                <a href="/admin/phieu-nhap"
-                   th:class="${activePage == 'phieu-nhap'} ? 'nav-link active' : 'nav-link'">
+                <a href="/admin/phieu-nhap" th:class="${activePage == 'phieu-nhap'} ? 'nav-link active' : 'nav-link'">
                     <span class="nav-icon"><i class="fa fa-arrow-circle-down"></i></span>
                     Phiếu Nhập Kho
                 </a>
             </li>
             <li class="nav-item">
-                <a href="/admin/phieu-chuyen"
-                   th:class="${activePage == 'phieu-chuyen'} ? 'nav-link active' : 'nav-link'">
+                <a href="/admin/phieu-chuyen" th:class="${activePage == 'phieu-chuyen'} ? 'nav-link active' : 'nav-link'">
                     <span class="nav-icon"><i class="fa fa-exchange-alt"></i></span>
                     Phiếu Chuyển Kho
                 </a>
             </li>
             <li class="nav-item">
-                <a href="/admin/imei"
-                   th:class="${activePage == 'imei'} ? 'nav-link active' : 'nav-link'">
+                <a href="/admin/imei" th:class="${activePage == 'imei'} ? 'nav-link active' : 'nav-link'">
                     <span class="nav-icon"><i class="fa fa-barcode"></i></span>
                     Kiểm soát IMEI
                 </a>
             </li>
         </ul>
 
-        <div class="sidebar-section-label">Hệ thống</div>
-        <ul class="nav flex-column mb-3">
-            <li class="nav-item">
-                <a href="/admin/nha-cung-cap"
-                   th:class="${activePage == 'nha-cung-cap'} ? 'nav-link active' : 'nav-link'">
-                    <span class="nav-icon"><i class="fa fa-truck"></i></span>
-                    Nhà Cung Cấp
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/admin/nhan-vien"
-                   th:class="${activePage == 'nhan-vien'} ? 'nav-link active' : 'nav-link'">
-                    <span class="nav-icon"><i class="fa fa-users"></i></span>
-                    Nhân viên
-                </a>
-            </li>
-        </ul>
+        <th:block th:if="${currentUser != null and currentUser.role == 'Admin'}">
+            <div class="sidebar-section-label">Hệ thống</div>
+            <ul class="nav flex-column mb-3">
+                <li class="nav-item">
+                    <a href="/admin/nha-cung-cap" th:class="${activePage == 'nha-cung-cap'} ? 'nav-link active' : 'nav-link'">
+                        <span class="nav-icon"><i class="fa fa-truck"></i></span>
+                        Nhà Cung Cấp
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin/nhan-vien" th:class="${activePage == 'nhan-vien'} ? 'nav-link active' : 'nav-link'">
+                        <span class="nav-icon"><i class="fa fa-user-shield"></i></span>
+                        Tài khoản Nhân viên
+                    </a>
+                </li>
+            </ul>
+        </th:block>
     </nav>
 </aside>
 

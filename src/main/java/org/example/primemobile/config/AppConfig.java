@@ -1,11 +1,9 @@
 package org.example.primemobile.config;
 
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
-
-import java.time.Duration;
 
 /**
  * Cấu hình Bean dùng chung cho ứng dụng PrimeMobile.
@@ -26,14 +24,13 @@ public class AppConfig {
      *       {@code ResourceAccessException} (timeout) và kích hoạt Fail-Safe §6.</li>
      * </ul>
      *
-     * @param builder Builder do Spring Boot tự-configure, hỗ trợ timeout chaining.
      * @return RestTemplate bean singleton dùng toàn ứng dụng.
      */
     @Bean
-    public RestTemplate restTemplate(RestTemplateBuilder builder) {
-        return builder
-                .connectTimeout(Duration.ofSeconds(5))  // Timeout kết nối TCP
-                .readTimeout(Duration.ofSeconds(5))      // Timeout đọc response
-                .build();
+    public RestTemplate restTemplate() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5000); // Timeout kết nối TCP (5 giây)
+        factory.setReadTimeout(5000);    // Timeout đọc response (5 giây)
+        return new RestTemplate(factory);
     }
 }

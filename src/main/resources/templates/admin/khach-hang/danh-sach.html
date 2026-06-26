@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Quản lý Khách Hàng - PrimeMobile</title>
+    <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
+</head>
+<body>
+    <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
+    <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
+
+    <main id="pmContent">
+        <div class="pm-card">
+            <div class="pm-card-header">
+                Danh sách Khách hàng
+            </div>
+            
+            <div class="card-body p-3 bg-light border-bottom">
+                <!-- Phần A: Bộ lọc tìm kiếm (Form GET) -->
+                <form method="get" action="/admin/khach-hang" class="row g-3 align-items-center mb-0">
+                    <div class="col-md-6">
+                        <input type="text" name="tuKhoa" th:value="${tuKhoa}" class="form-control form-control-sm" placeholder="Tìm theo Tên, SĐT, Email..." />
+                    </div>
+                    <div class="col-md-6">
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="fa fa-search"></i> Tìm kiếm
+                        </button>
+                        <a href="/admin/khach-hang" class="btn btn-sm btn-outline-secondary ms-2">
+                            <i class="fa fa-sync-alt"></i> Làm mới
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card-body p-0">
+                <!-- Phần B: Bảng dữ liệu Khách hàng -->
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID & Họ Tên</th>
+                            <th>Liên hệ</th>
+                            <th>Giới tính & Ngày sinh</th>
+                            <th>Hạng thành viên</th>
+                            <th class="text-end pe-4">Chi tiêu & Điểm</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="kh : ${khachHangs}">
+                            <td>
+                                <span class="text-muted small">#[[${kh.id}]]</span><br>
+                                <span class="fw-bold" th:text="${kh.hoTen}"></span>
+                            </td>
+                            <td>
+                                <div><i class="fa fa-envelope text-muted small"></i> <span th:text="${kh.email}"></span></div>
+                                <div><i class="fa fa-phone text-muted small"></i> <span th:text="${kh.soDienThoai}"></span></div>
+                            </td>
+                            <td>
+                                <span th:text="${kh.gioiTinh}"></span><br>
+                                <span class="text-muted small" th:text="${#temporals.format(kh.ngaySinh, 'dd/MM/yyyy')}"></span>
+                            </td>
+                            <td>
+                                <th:block th:switch="${kh.hangThanhVien}">
+                                    <span th:case="'dong'" class="badge bg-secondary">Đồng</span>
+                                    <span th:case="'bac'" class="badge text-dark" style="background-color: #e0e0e0;">Bạc</span>
+                                    <span th:case="'vang'" class="badge text-dark" style="background-color: #ffd700;">Vàng</span>
+                                    <span th:case="'kim_cuong'" class="badge bg-primary">Kim Cương</span>
+                                    <span th:case="*" class="badge bg-secondary" th:text="${kh.hangThanhVien}"></span>
+                                </th:block>
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="fw-bold text-success" th:text="${#numbers.formatDecimal(kh.tongChiTieu, 0, 'COMMA', 0, 'POINT')} + ' đ'"></div>
+                                <div class="small text-muted"><i class="fa fa-star text-warning"></i> <span th:text="${kh.diemTichLuy}"></span> điểm</div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(khachHangs)}">
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                Không tìm thấy khách hàng nào phù hợp.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+</body>
+</html>

@@ -6,6 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Entity mapping bảng san_pham (Module 2: Sản phẩm & Biến thể).
@@ -125,6 +126,7 @@ public class SanPham {
     // -------------------------------------------------------------------------
     @OneToMany(mappedBy = "sanPham", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    @JsonIgnore
     private List<BienTheSanPham> bienTheSanPhams = new ArrayList<>();
 
     // -------------------------------------------------------------------------
@@ -132,5 +134,6 @@ public class SanPham {
     // -------------------------------------------------------------------------
     @OneToMany(mappedBy = "sanPham", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    @JsonIgnore
     private List<ThongSoKyThuat> thongSoKyThuats = new ArrayList<>();
 }

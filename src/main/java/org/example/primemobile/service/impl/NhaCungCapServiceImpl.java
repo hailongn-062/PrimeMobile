@@ -101,4 +101,10 @@ public class NhaCungCapServiceImpl implements INhaCungCapService {
         return nhaCungCapRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy nhà cung cấp ID: " + id));
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public NhaCungCap layTheoId(Integer id) {
+        return layHoacNemLoi(id);
+    }
 }

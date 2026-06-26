@@ -36,6 +36,12 @@ public class FlashSaleServiceImpl implements IFlashSaleService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<ChuongTrinhKhuyenMai> layFlashSaleDangDienRa() {
+        return ctkmRepository.layFlashSaleDangDienRa();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public ChuongTrinhKhuyenMai layChiTietFlashSale(Integer id) {
         return ctkmRepository.findFlashSaleByIdWithDetails(id)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Flash Sale ID: " + id));

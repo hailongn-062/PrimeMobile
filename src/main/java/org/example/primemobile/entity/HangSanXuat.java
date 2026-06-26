@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Entity mapping bảng hang_san_xuat (Module 2: Sản phẩm & Biến thể).
@@ -50,5 +51,6 @@ public class HangSanXuat {
     // -------------------------------------------------------------------------
     @OneToMany(mappedBy = "hangSanXuat", fetch = FetchType.LAZY)
     @Builder.Default
+    @JsonIgnore
     private List<SanPham> sanPhams = new ArrayList<>();
 }
