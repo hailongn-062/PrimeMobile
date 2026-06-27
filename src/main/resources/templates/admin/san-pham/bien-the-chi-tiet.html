@@ -14,7 +14,7 @@
 
 <!-- MAIN CONTENT -->
 <main id="pmContent">
-    
+
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb mb-0" style="font-size:.82rem;">
@@ -42,23 +42,23 @@
                 <i class="fa fa-plus me-1"></i> Thêm mới
             </button>
         </div>
-        
+
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0" style="font-size: .88rem;">
                 <thead class="table-light">
-                    <tr>
-                        <th class="ps-4">Mã SKU</th>
-                        <th>Hình ảnh</th>
-                        <th>Màu sắc</th>
-                        <th>Cấu hình</th>
-                        <th>Giá nhập</th>
-                        <th>Giá bán</th>
-                        <th>Trạng thái</th>
-                        <th class="text-end pe-4">Thao tác</th>
-                    </tr>
+                <tr>
+                    <th class="ps-4">Mã SKU</th>
+                    <th>Hình ảnh</th>
+                    <th>Màu sắc</th>
+                    <th>Cấu hình</th>
+                    <!-- Đã ẩn cột Giá nhập -->
+                    <th>Giá bán</th>
+                    <th>Trạng thái</th>
+                    <th class="text-end pe-4">Thao tác</th>
+                </tr>
                 </thead>
                 <tbody id="dataTableBody">
-                    <tr><td colspan="8" class="text-center py-4 text-muted">Đang tải dữ liệu...</td></tr>
+                <tr><td colspan="8" class="text-center py-4 text-muted">Đang tải dữ liệu...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -78,7 +78,7 @@
                 <form id="bienTheForm">
                     <input type="hidden" id="btId">
                     <input type="hidden" id="spId" th:value="${sanPhamId}">
-                    
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold small">Mã SKU <span class="text-danger">*</span></label>
@@ -89,7 +89,7 @@
                             <input type="text" class="form-control" id="btMau" required placeholder="Vd: Titan Đen">
                         </div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold small">RAM (GB)</label>
@@ -100,19 +100,13 @@
                             <input type="number" class="form-control" id="btRom" placeholder="Vd: 256">
                         </div>
                     </div>
-                    
+
+                    <!-- Đã ẩn trường Giá nhập -->
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold small">Giá nhập (VNĐ) <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="btGiaNhap" required>
-                        </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold small">Giá bán (VNĐ) <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" id="btGiaBan" required>
                         </div>
-                    </div>
-                    
-                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold small">Giá khuyến mãi (VNĐ)</label>
                             <input type="number" class="form-control" id="btGiaKm">
@@ -147,17 +141,17 @@
             const response = await fetch(`${API_URL}/san-pham/${sanPhamId}`);
             if (!response.ok) throw new Error("Lỗi API");
             const data = await response.json(); // List<BienTheSanPham>
-            
+
             if (data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Chưa có biến thể nào. Hãy thêm mới!</td></tr>';
             } else {
                 tbody.innerHTML = data.map(bt => {
-                    let statusBadge = bt.trangThai === 'con_hang' 
+                    let statusBadge = bt.trangThai === 'con_hang'
                         ? '<span class="badge bg-success-subtle text-success px-2 py-1 rounded-pill">Còn hàng</span>'
                         : bt.trangThai === 'het_hang'
                             ? '<span class="badge bg-danger-subtle text-danger px-2 py-1 rounded-pill">Hết hàng</span>'
                             : '<span class="badge bg-secondary-subtle text-secondary px-2 py-1 rounded-pill">Ngừng kinh doanh</span>';
-                            
+
                     let formatCurrency = (val) => new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(val);
 
                     return `
@@ -166,7 +160,7 @@
                             <td><img src="${bt.hinhAnh || '/images/placeholder.jpg'}" width="40" class="rounded"></td>
                             <td class="fw-semibold">${bt.mauSac}</td>
                             <td>RAM: ${bt.ramGb || '-'}GB | ROM: ${bt.luuTruGb || '-'}GB</td>
-                            <td>${formatCurrency(bt.giaNhap)}</td>
+                            <!-- Đã ẩn cột Giá nhập -->
                             <td>${formatCurrency(bt.giaBan)}</td>
                             <td>${statusBadge}</td>
                             <td class="text-end pe-4">
@@ -196,10 +190,10 @@
         document.getElementById('btMau').value = bt.mauSac;
         document.getElementById('btRam').value = bt.ramGb || '';
         document.getElementById('btRom').value = bt.luuTruGb || '';
-        document.getElementById('btGiaNhap').value = bt.giaNhap;
+        // Không gán giá nhập nữa
         document.getElementById('btGiaBan').value = bt.giaBan;
         document.getElementById('btGiaKm').value = bt.giaKhuyenMai || '';
-        
+
         document.getElementById('bienTheModalLabel').innerText = 'Cập nhật Biến thể';
         bienTheModal.show();
     }
@@ -211,13 +205,16 @@
             mauSac: document.getElementById('btMau').value,
             ramGb: parseInt(document.getElementById('btRam').value) || null,
             luuTruGb: parseInt(document.getElementById('btRom').value) || null,
-            giaNhap: parseInt(document.getElementById('btGiaNhap').value),
+            // Không gửi giaNhap nữa (hoặc gửi null nếu API yêu cầu)
+            giaNhap: null,
             giaBan: parseInt(document.getElementById('btGiaBan').value),
             giaKhuyenMai: parseInt(document.getElementById('btGiaKm').value) || null
         };
 
-        if(!payload.maSku || !payload.mauSac || !payload.giaNhap || !payload.giaBan) {
-            alert('Vui lòng điền đủ các trường bắt buộc!'); return;
+        // Chỉ validate các trường bắt buộc: maSku, mauSac, giaBan
+        if(!payload.maSku || !payload.mauSac || !payload.giaBan) {
+            alert('Vui lòng điền đủ các trường bắt buộc (Mã SKU, Màu sắc, Giá bán)!');
+            return;
         }
 
         try {
@@ -246,7 +243,7 @@
 
     async function toggleStatus(id, newStatus) {
         if(!confirm('Bạn có chắc chắn muốn ngừng kinh doanh biến thể này?')) return;
-        
+
         try {
             const res = await fetch(`${API_URL}/${id}/trang-thai?trangThai=${newStatus}`, { method: 'PATCH' });
             if (res.ok) {

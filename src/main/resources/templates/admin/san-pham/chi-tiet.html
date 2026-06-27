@@ -5,213 +5,216 @@
     <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
 </head>
 <body>
-    <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
-    <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
+<th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
+<th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
 
-    <main id="pmContent">
-        <!-- Khung trên: Thông tin sản phẩm gốc -->
-        <div class="pm-card mb-4">
-            <div class="pm-card-header d-flex justify-content-between align-items-center">
-                <span>Thông tin Sản phẩm Gốc</span>
-                <a th:href="@{/admin/san-pham/form(id=${sanPham.id})}" class="btn btn-sm btn-outline-primary">
-                    <i class="fa fa-edit"></i> Sửa Sản Phẩm
-                </a>
+<main id="pmContent">
+    <!-- Khung trên: Thông tin sản phẩm gốc -->
+    <div class="pm-card mb-4">
+        <div class="pm-card-header d-flex justify-content-between align-items-center">
+            <span>Thông tin Sản phẩm Gốc</span>
+            <a th:href="@{/admin/san-pham/form(id=${sanPham.id})}" class="btn btn-sm btn-outline-primary">
+                <i class="fa fa-edit"></i> Sửa Sản Phẩm
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <p><strong>Tên SP:</strong> <span th:text="${sanPham.tenSanPham}"></span></p>
+                    <p><strong>Mã SP:</strong> <span th:text="${sanPham.maSanPham}"></span></p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Danh mục:</strong> <span th:text="${sanPham.danhMuc.tenDanhMuc}"></span></p>
+                    <p><strong>Hãng SX:</strong> <span th:text="${sanPham.hangSanXuat.tenHang}"></span></p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Trạng thái:</strong>
+                        <span th:if="${sanPham.trangThai == 'dang_ban'}" class="badge bg-success">Đang bán</span>
+                        <span th:if="${sanPham.trangThai == 'ngung_ban'}" class="badge bg-danger">Ngừng bán</span>
+                        <span th:if="${sanPham.trangThai == 'sap_ra_mat'}" class="badge bg-warning text-dark">Sắp ra mắt</span>
+                    </p>
+                    <p><strong>Bảo hành:</strong> <span th:text="${sanPham.baoHanhThang}"></span> tháng</p>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <p><strong>Tên SP:</strong> <span th:text="${sanPham.tenSanPham}"></span></p>
-                        <p><strong>Mã SP:</strong> <span th:text="${sanPham.maSanPham}"></span></p>
-                    </div>
-                    <div class="col-md-4">
-                        <p><strong>Danh mục:</strong> <span th:text="${sanPham.danhMuc.tenDanhMuc}"></span></p>
-                        <p><strong>Hãng SX:</strong> <span th:text="${sanPham.hangSanXuat.tenHang}"></span></p>
-                    </div>
-                    <div class="col-md-4">
-                        <p><strong>Trạng thái:</strong> 
-                            <span th:if="${sanPham.trangThai == 'dang_ban'}" class="badge bg-success">Đang bán</span>
-                            <span th:if="${sanPham.trangThai == 'ngung_ban'}" class="badge bg-danger">Ngừng bán</span>
-                            <span th:if="${sanPham.trangThai == 'sap_ra_mat'}" class="badge bg-warning text-dark">Sắp ra mắt</span>
-                        </p>
-                        <p><strong>Bảo hành:</strong> <span th:text="${sanPham.baoHanhThang}"></span> tháng</p>
+        </div>
+    </div>
+
+    <!-- Khung dưới: Chia 2 cột -->
+    <div class="row">
+        <!-- Cột trái: Thông số kỹ thuật -->
+        <div class="col-lg-5 mb-4">
+            <div class="pm-card h-100">
+                <div class="pm-card-header bg-light">
+                    <i class="fa fa-cogs"></i> Thông số kỹ thuật
+                </div>
+                <div class="card-body">
+                    <!-- Form thêm Thông số -->
+                    <form th:action="@{/admin/san-pham/thong-so/save}" method="post" class="mb-4 bg-white p-3 border rounded shadow-sm">
+                        <input type="hidden" name="sanPham.id" th:value="${sanPham.id}" />
+                        <h6 class="fw-bold mb-3">Thêm Thông số mới</h6>
+
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold">Nhóm</label>
+                            <input type="text" name="nhom" class="form-control form-control-sm" required placeholder="VD: Màn hình, Camera..." value="Thông tin chung" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold">Tên thông số <span class="text-danger">*</span></label>
+                            <input type="text" name="tenThongSo" class="form-control form-control-sm" required placeholder="VD: Kích thước, Độ phân giải..." />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold">Giá trị <span class="text-danger">*</span></label>
+                            <input type="text" name="giaTri" class="form-control form-control-sm" required placeholder="VD: 6.7 inch, 12MP..." />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold">Thứ tự hiển thị <span class="text-danger">*</span></label>
+                            <input type="number" name="thuTu" class="form-control form-control-sm" required value="1" />
+                        </div>
+                        <div class="text-end mt-3">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="fa fa-plus"></i> Thêm Thông Số
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Bảng Thông số -->
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Nhóm</th>
+                                <th>Tên</th>
+                                <th>Giá trị</th>
+                                <th>TT</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="ts : ${thongSoKyThuats}">
+                                <td th:text="${ts.nhom}"></td>
+                                <td th:text="${ts.tenThongSo}"></td>
+                                <td th:text="${ts.giaTri}"></td>
+                                <td th:text="${ts.thuTu}"></td>
+                                <td class="text-center">
+                                    <a th:href="@{/admin/san-pham/thong-so/delete/{id}(id=${ts.id}, sanPhamId=${sanPham.id})}"
+                                       class="text-danger" title="Xóa"
+                                       onclick="return confirm('Bạn có chắc muốn xóa thông số này?');">
+                                        <i class="fa fa-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(thongSoKyThuats)}">
+                                <td colspan="5" class="text-center text-muted">Chưa có thông số.</td>
+                            </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Khung dưới: Chia 2 cột -->
-        <div class="row">
-            <!-- Cột trái: Thông số kỹ thuật -->
-            <div class="col-lg-5 mb-4">
-                <div class="pm-card h-100">
-                    <div class="pm-card-header bg-light">
-                        <i class="fa fa-cogs"></i> Thông số kỹ thuật
-                    </div>
-                    <div class="card-body">
-                        <!-- Form thêm Thông số -->
-                        <form th:action="@{/admin/san-pham/thong-so/save}" method="post" class="mb-4 bg-white p-3 border rounded shadow-sm">
-                            <input type="hidden" name="sanPham.id" th:value="${sanPham.id}" />
-                            <h6 class="fw-bold mb-3">Thêm Thông số mới</h6>
-                            
-                            <div class="mb-2">
-                                <label class="form-label small fw-bold">Nhóm</label>
-                                <input type="text" name="nhom" class="form-control form-control-sm" required placeholder="VD: Màn hình, Camera..." value="Thông tin chung" />
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label small fw-bold">Tên thông số <span class="text-danger">*</span></label>
-                                <input type="text" name="tenThongSo" class="form-control form-control-sm" required placeholder="VD: Kích thước, Độ phân giải..." />
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label small fw-bold">Giá trị <span class="text-danger">*</span></label>
-                                <input type="text" name="giaTri" class="form-control form-control-sm" required placeholder="VD: 6.7 inch, 12MP..." />
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label small fw-bold">Thứ tự hiển thị <span class="text-danger">*</span></label>
-                                <input type="number" name="thuTu" class="form-control form-control-sm" required value="1" />
-                            </div>
-                            <div class="text-end mt-3">
-                                <button type="submit" class="btn btn-sm btn-primary">
-                                    <i class="fa fa-plus"></i> Thêm Thông Số
-                                </button>
-                            </div>
-                        </form>
-
-                        <!-- Bảng Thông số -->
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Nhóm</th>
-                                        <th>Tên</th>
-                                        <th>Giá trị</th>
-                                        <th>TT</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr th:each="ts : ${thongSoKyThuats}">
-                                        <td th:text="${ts.nhom}"></td>
-                                        <td th:text="${ts.tenThongSo}"></td>
-                                        <td th:text="${ts.giaTri}"></td>
-                                        <td th:text="${ts.thuTu}"></td>
-                                        <td class="text-center">
-                                            <a th:href="@{/admin/san-pham/thong-so/delete/{id}(id=${ts.id}, sanPhamId=${sanPham.id})}" 
-                                               class="text-danger" title="Xóa"
-                                               onclick="return confirm('Bạn có chắc muốn xóa thông số này?');">
-                                                <i class="fa fa-trash"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    <tr th:if="${#lists.isEmpty(thongSoKyThuats)}">
-                                        <td colspan="5" class="text-center text-muted">Chưa có thông số.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+        <!-- Cột phải: Biến thể Sản phẩm -->
+        <div class="col-lg-7 mb-4">
+            <div class="pm-card h-100">
+                <div class="pm-card-header bg-light">
+                    <i class="fa fa-cubes"></i> Biến thể (SKU)
                 </div>
-            </div>
+                <div class="card-body">
+                    <!-- Form thêm Biến thể - Đã ẩn trường Giá nhập, giữ nguyên Mã màu Hex -->
+                    <div th:if="${errorBienThe != null}" class="alert alert-danger p-2 mb-3" th:text="${errorBienThe}"></div>
+                    <form th:action="@{/admin/san-pham/bien-the/save}" method="post" class="mb-4 bg-white p-3 border rounded shadow-sm">
+                        <input type="hidden" name="sanPham.id" th:value="${sanPham.id}" />
+                        <h6 class="fw-bold mb-3">Thêm Biến thể mới</h6>
 
-            <!-- Cột phải: Biến thể Sản phẩm -->
-            <div class="col-lg-7 mb-4">
-                <div class="pm-card h-100">
-                    <div class="pm-card-header bg-light">
-                        <i class="fa fa-cubes"></i> Biến thể (SKU)
-                    </div>
-                    <div class="card-body">
-                        <!-- Form thêm Biến thể -->
-                        <div th:if="${errorBienThe != null}" class="alert alert-danger p-2 mb-3" th:text="${errorBienThe}"></div>
-                        <form th:action="@{/admin/san-pham/bien-the/save}" method="post" class="mb-4 bg-white p-3 border rounded shadow-sm">
-                            <input type="hidden" name="sanPham.id" th:value="${sanPham.id}" />
-                            <h6 class="fw-bold mb-3">Thêm Biến thể mới</h6>
-                            
-                            <div class="row g-2">
-                                <div class="col-md-4 mb-2">
-                                    <label class="form-label small fw-bold">Mã SKU <span class="text-danger">*</span></label>
-                                    <input type="text" name="maSku" class="form-control form-control-sm" required placeholder="VD: IP15PM-DEN-256" />
-                                </div>
-                                <div class="col-md-4 mb-2">
-                                    <label class="form-label small fw-bold">Màu sắc <span class="text-danger">*</span></label>
-                                    <input type="text" name="mauSac" class="form-control form-control-sm" required placeholder="VD: Titan Đen" />
-                                </div>
-                                <div class="col-md-4 mb-2">
-                                    <label class="form-label small fw-bold">Mã màu (Hex)</label>
-                                    <input type="color" name="maMauHex" class="form-control form-control-sm form-control-color w-100" value="#000000" />
-                                </div>
+                        <div class="row g-2">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label small fw-bold">Mã SKU <span class="text-danger">*</span></label>
+                                <input type="text" name="maSku" class="form-control form-control-sm" required placeholder="VD: IP15PM-DEN-256" />
                             </div>
-                            
-                            <div class="row g-2">
-                                <div class="col-md-3 mb-2">
-                                    <label class="form-label small fw-bold">RAM (GB) <span class="text-danger">*</span></label>
-                                    <input type="number" name="ramGb" class="form-control form-control-sm" required value="8" />
-                                </div>
-                                <div class="col-md-3 mb-2">
-                                    <label class="form-label small fw-bold">ROM (GB) <span class="text-danger">*</span></label>
-                                    <input type="number" name="luuTruGb" class="form-control form-control-sm" required value="256" />
-                                </div>
-                                <div class="col-md-3 mb-2">
-                                    <label class="form-label small fw-bold">Giá bán <span class="text-danger">*</span></label>
-                                    <input type="number" name="giaBan" class="form-control form-control-sm" required placeholder="VD: 34990000" />
-                                </div>
-                                <div class="col-md-3 mb-2">
-                                    <label class="form-label small fw-bold">Giá nhập <span class="text-danger">*</span></label>
-                                    <input type="number" name="giaNhap" class="form-control form-control-sm" required placeholder="VD: 32000000" />
-                                </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label small fw-bold">Màu sắc <span class="text-danger">*</span></label>
+                                <input type="text" name="mauSac" class="form-control form-control-sm" required placeholder="VD: Titan Đen" />
                             </div>
-                            
-                            <div class="text-end mt-2">
-                                <button type="submit" class="btn btn-sm btn-primary">
-                                    <i class="fa fa-plus"></i> Thêm Biến Thể
-                                </button>
-                            </div>
-                        </form>
+                        </div>
 
-                        <!-- Bảng Biến thể -->
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered table-hover align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>SKU</th>
-                                        <th>Màu</th>
-                                        <th>RAM/ROM</th>
-                                        <th>Giá bán</th>
-                                        <th>Trạng thái</th>
-                                        <th class="text-end pe-2">Thao tác</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr th:each="bt : ${bienTheSanPhams}">
-                                        <td th:text="${bt.maSku}" class="fw-bold"></td>
-                                        <td>
-                                            <span class="d-inline-block rounded-circle me-1 border" 
+                        <div class="row g-2">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label small fw-bold">Mã màu Hex</label>
+                                <input type="color" name="maMauHex" class="form-control form-control-sm form-control-color w-100" value="#000000" />
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label small fw-bold">RAM (GB) <span class="text-danger">*</span></label>
+                                <input type="number" name="ramGb" class="form-control form-control-sm" required value="8" min="1" step="1" />
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label small fw-bold">ROM (GB) <span class="text-danger">*</span></label>
+                                <input type="number" name="luuTruGb" class="form-control form-control-sm" required value="256" min="1" step="1" />
+                            </div>
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label small fw-bold">Giá bán (VNĐ) <span class="text-danger">*</span></label>
+                                <input type="number" name="giaBan" class="form-control form-control-sm" required placeholder="VD: 34990000" min="0" step="1000" />
+                            </div>
+                            <!-- Đã xóa trường Giá nhập -->
+                            <div class="col-md-6 mb-2">
+                                <!-- Giữ trống để cân bằng layout -->
+                            </div>
+                        </div>
+
+                        <div class="text-end mt-2">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="fa fa-plus"></i> Thêm Biến Thể
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Bảng Biến thể -->
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered table-hover align-middle">
+                            <thead class="table-light">
+                            <tr>
+                                <th>SKU</th>
+                                <th>Màu</th>
+                                <th>RAM/ROM</th>
+                                <th>Giá bán</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end pe-2">Thao tác</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="bt : ${bienTheSanPhams}">
+                                <td th:text="${bt.maSku}" class="fw-bold"></td>
+                                <td>
+                                            <span class="d-inline-block rounded-circle me-1 border"
                                                   th:style="'width:12px;height:12px;background-color:' + (${bt.maMauHex} ?: '#ddd')"></span>
-                                            <span th:text="${bt.mauSac}"></span>
-                                        </td>
-                                        <td th:text="${bt.ramGb} + 'GB / ' + ${bt.luuTruGb} + 'GB'"></td>
-                                        <td th:text="${#numbers.formatDecimal(bt.giaBan, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
-                                        <td>
-                                            <span th:if="${bt.trangThai == 'con_hang'}" class="text-success small"><i class="fa fa-check-circle"></i> Còn hàng</span>
-                                            <span th:if="${bt.trangThai == 'het_hang'}" class="text-danger small"><i class="fa fa-times-circle"></i> Hết hàng</span>
-                                            <span th:if="${bt.trangThai == 'ngung_kinh_doanh'}" class="text-secondary small"><i class="fa fa-ban"></i> Ngừng KD</span>
-                                        </td>
-                                        <td class="text-end">
-                                            <a th:href="@{/admin/san-pham/bien-the/{id}/hinh-anh(id=${bt.id})}" class="btn btn-sm btn-outline-secondary py-0" title="Quản lý Ảnh">
-                                                <i class="fa fa-image"></i> Ảnh
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    <tr th:if="${#lists.isEmpty(bienTheSanPhams)}">
-                                        <td colspan="6" class="text-center text-muted">Chưa có biến thể nào.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                                    <span th:text="${bt.mauSac}"></span>
+                                </td>
+                                <td th:text="${bt.ramGb} + 'GB / ' + ${bt.luuTruGb} + 'GB'"></td>
+                                <td th:text="${#numbers.formatDecimal(bt.giaBan, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
+                                <td>
+                                    <span th:if="${bt.trangThai == 'con_hang'}" class="text-success small"><i class="fa fa-check-circle"></i> Còn hàng</span>
+                                    <span th:if="${bt.trangThai == 'het_hang'}" class="text-danger small"><i class="fa fa-times-circle"></i> Hết hàng</span>
+                                    <span th:if="${bt.trangThai == 'ngung_kinh_doanh'}" class="text-secondary small"><i class="fa fa-ban"></i> Ngừng KD</span>
+                                </td>
+                                <td class="text-end">
+                                    <a th:href="@{/admin/san-pham/bien-the/{id}/hinh-anh(id=${bt.id})}" class="btn btn-sm btn-outline-secondary py-0" title="Quản lý Ảnh">
+                                        <i class="fa fa-image"></i> Ảnh
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(bienTheSanPhams)}">
+                                <td colspan="6" class="text-center text-muted">Chưa có biến thể nào.</td>
+                            </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
-    </main>
+    </div>
+</main>
 
-    <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+<th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
 </body>
 </html>

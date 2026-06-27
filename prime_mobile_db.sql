@@ -744,6 +744,13 @@ CREATE UNIQUE NONCLUSTERED INDEX idx_uq_may_imei2
 ON may_dien_thoai(imei2) 
 WHERE imei2 IS NOT NULL;
 
+USE PrimeMobile;
+ALTER TABLE bien_the_san_pham ALTER COLUMN gia_nhap DECIMAL(15,2) NULL;
+
+USE PrimeMobile;
+SELECT COLUMN_NAME, IS_NULLABLE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'bien_the_san_pham' AND COLUMN_NAME = 'gia_nhap';
 
 USE PrimeMobile;
 GO
