@@ -63,7 +63,6 @@ public class DatHangOnlineServiceImpl implements IDatHangOnlineService {
     private final TonKhoRepository              tonKhoRepository;
     private final DiaChiKhachHangRepository     diaChiKhachHangRepository;
     private final PhuongThucThanhToanRepository phuongThucThanhToanRepository;
-    private final MaGiamGiaRepository           maGiamGiaRepository;
 
     // =========================================================================
     // PUBLIC METHOD
@@ -141,42 +140,9 @@ public class DatHangOnlineServiceImpl implements IDatHangOnlineService {
                         "Không tìm thấy phương thức thanh toán ID: "
                         + request.phuongThucThanhToanId()));
 
-        // --- Xử lý mã giảm giá (optional) ---
-        MaGiamGia maGiamGia    = null;
+        // --- Xử lý mã giảm giá ---
+        // (Đã loại bỏ mã giảm giá, tiền giảm mặc định là 0 cho đến khi logic khuyến mãi mới được tích hợp)
         BigDecimal tienGiamGia = BigDecimal.ZERO;
-
-        if (request.maGiamGiaId() != null) {
-            maGiamGia = maGiamGiaRepository.findById(request.maGiamGiaId())
-                    .orElseThrow(() -> new EntityNotFoundException(
-                            "Không tìm thấy mã giảm giá ID: " + request.maGiamGiaId()));
-
-            // Validate lượt sử dụng
-            if (maGiamGia.getDaSuDung() >= maGiamGia.getSoLuongToiDa()) {
-                throw new IllegalArgumentException(
-                        "Mã giảm giá [" + maGiamGia.getMaCode() + "] đã hết lượt sử dụng.");
-            }
-
-            // Validate giá trị đơn hàng tối thiểu
-            if (tongTienHang.compareTo(maGiamGia.getDonHangToiThieu()) < 0) {
-                throw new IllegalArgumentException(String.format(
-                        "Đơn hàng chưa đạt giá trị tối thiểu để áp mã [%s]. " +
-                        "Yêu cầu tối thiểu: %.0f VND, hiện tại: %.0f VND.",
-                        maGiamGia.getMaCode(),
-                        maGiamGia.getDonHangToiThieu().doubleValue(),
-                        tongTienHang.doubleValue()));
-            }
-
-            // Lấy mức giảm (dùng giamToiDa nếu có, logic chi tiết hơn sẽ mở rộng sau)
-            tienGiamGia = (maGiamGia.getGiamToiDa() != null)
-                    ? maGiamGia.getGiamToiDa().min(tongTienHang)
-                    : BigDecimal.ZERO;
-
-            // Tăng lượt đã dùng
-            maGiamGia.setDaSuDung(maGiamGia.getDaSuDung() + 1);
-            maGiamGiaRepository.save(maGiamGia);
-
-            log.info("[DatHangOnline] Áp mã [{}] — tienGiam={}", maGiamGia.getMaCode(), tienGiamGia);
-        }
 
         // --- Xác định trạng thái thanh toán theo phương thức ---
         boolean isVnPay = TEN_PTTT_VNPAY.equalsIgnoreCase(pttt.getTenPttt());
@@ -202,7 +168,6 @@ public class DatHangOnlineServiceImpl implements IDatHangOnlineService {
                 .trangThaiThanhToan(trangThaiThanhToan)
                 .thoiGianHetHanTt(thoiGianHetHanTt)
                 .ghiChu(request.ghiChu())
-                .maGiamGia(maGiamGia)
                 .updatedAt(now);
 
         // --- Snapshot địa chỉ giao hàng ---

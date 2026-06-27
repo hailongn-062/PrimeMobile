@@ -80,6 +80,7 @@ public class NhaCungCap {
     // -------------------------------------------------------------------------
     // Quan hệ 1-N: 1 NhaCungCap → nhiều PhieuNhapKho
     // -------------------------------------------------------------------------
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @OneToMany(mappedBy = "nhaCungCap", fetch = FetchType.LAZY)
     @Builder.Default
     private List<PhieuNhapKho> phieuNhapKhos = new ArrayList<>();

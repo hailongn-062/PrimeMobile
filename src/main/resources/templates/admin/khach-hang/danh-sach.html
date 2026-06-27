@@ -39,8 +39,6 @@
                             <th>ID & Họ Tên</th>
                             <th>Liên hệ</th>
                             <th>Giới tính & Ngày sinh</th>
-                            <th>Hạng thành viên</th>
-                            <th class="text-end pe-4">Chi tiêu & Điểm</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -57,22 +55,9 @@
                                 <span th:text="${kh.gioiTinh}"></span><br>
                                 <span class="text-muted small" th:text="${#temporals.format(kh.ngaySinh, 'dd/MM/yyyy')}"></span>
                             </td>
-                            <td>
-                                <th:block th:switch="${kh.hangThanhVien}">
-                                    <span th:case="'dong'" class="badge bg-secondary">Đồng</span>
-                                    <span th:case="'bac'" class="badge text-dark" style="background-color: #e0e0e0;">Bạc</span>
-                                    <span th:case="'vang'" class="badge text-dark" style="background-color: #ffd700;">Vàng</span>
-                                    <span th:case="'kim_cuong'" class="badge bg-primary">Kim Cương</span>
-                                    <span th:case="*" class="badge bg-secondary" th:text="${kh.hangThanhVien}"></span>
-                                </th:block>
-                            </td>
-                            <td class="text-end pe-4">
-                                <div class="fw-bold text-success" th:text="${#numbers.formatDecimal(kh.tongChiTieu, 0, 'COMMA', 0, 'POINT')} + ' đ'"></div>
-                                <div class="small text-muted"><i class="fa fa-star text-warning"></i> <span th:text="${kh.diemTichLuy}"></span> điểm</div>
-                            </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(khachHangs)}">
-                            <td colspan="5" class="text-center py-4 text-muted">
+                            <td colspan="3" class="text-center py-4 text-muted">
                                 Không tìm thấy khách hàng nào phù hợp.
                             </td>
                         </tr>

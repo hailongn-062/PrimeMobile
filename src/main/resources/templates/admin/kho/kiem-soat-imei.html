@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Kiểm soát IMEI - PrimeMobile</title>
+    <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
+    <!-- SweetAlert2 for notifications -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .imei-row:nth-child(even) {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 8px 0;
+        }
+        .imei-row:nth-child(odd) {
+            padding: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
+    <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
+
+    <main id="pmContent">
+        <div class="pm-card" style="max-width: 900px; margin: 0 auto;">
+            <div class="pm-card-header">
+                <i class="fa fa-barcode me-2 text-primary"></i>
+                <span th:text="${pageTitle != null ? pageTitle : 'Quản lý IMEI'}">Kiểm soát IMEI</span>
+            </div>
+            <div class="card-body p-4">
+                
+                <!-- Phần 1: Form chọn Kho và Biến thể -->
+                <div class="row g-3 mb-4 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold">Kho lưu trữ <span class="text-danger">*</span></label>
+                        <select id="khoSelect" class="form-select">
+                            <option value="">-- Chọn Kho --</option>
+                            <option th:each="kho : ${danhSachKho}" 
+                                    th:value="${kho.id}" 
+                                    th:text="${kho.tenKho}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold">Biến thể sản phẩm (SKU) <span class="text-danger">*</span></label>
+                        <select id="bienTheSelect" class="form-select">
+                            <option value="">-- Chọn Biến thể (SKU) --</option>
+                            <option th:each="bt : ${danhSachBienThe}" 
+                                    th:value="${bt.id}" 
+                                    th:text="${bt.maSku + (bt.sanPham != null ? ' - ' + bt.sanPham.tenSanPham : '')}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button id="btnCheckStatus" class="btn btn-primary w-100">
+                            <i class="fa fa-search me-1"></i> Kiểm tra
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Vùng thông báo trạng thái IMEI -->
+                <div id="statusMessage" class="d-none alert mb-4 fw-semibold shadow-sm text-center"></div>
+
+                <!-- Phần 2: Form động nhập IMEI -->
+                <div id="imeiFormContainer" class="d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                        <h6 class="fw-bold mb-0 text-primary"><i class="fa fa-list-ol me-2"></i>Nhập danh sách mã IMEI</h6>
+                        <span class="badge bg-danger" id="badgeSoLuong"></span>
+                    </div>
+                    
+                    <form id="imeiForm" class="px-2">
+                        <!-- Vùng render input -->
+                        <div id="imeiRows" class="mb-4"></div>
+                        
+                        <div class="d-flex justify-content-end pt-3 border-top">
+                            <button type="button" id="btnSubmitImei" class="btn btn-success px-4">
+                                <i class="fa fa-save me-2"></i>Lưu danh sách IMEI
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+
+    <!-- JS Logic cho Quản lý IMEI -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const btnCheckStatus = document.getElementById("btnCheckStatus");
+            const khoSelect = document.getElementById("khoSelect");
+            const bienTheSelect = document.getElementById("bienTheSelect");
+            
+            const statusMessage = document.getElementById("statusMessage");
+            const imeiFormContainer = document.getElementById("imeiFormContainer");
+            const imeiRows = document.getElementById("imeiRows");
+            const badgeSoLuong = document.getElementById("badgeSoLuong");
+            const btnSubmitImei = document.getElementById("btnSubmitImei");
+
+            let currentSoImeiCanNhap = 0;
+
+            // Hành động 1: Nút Kiểm tra trạng thái
+            btnCheckStatus.addEventListener("click", async function() {
+                const khoId = khoSelect.value;
+                const bienTheId = bienTheSelect.value;
+
+                if (!khoId || !bienTheId) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Thông tin chưa đủ',
+                        text: 'Vui lòng chọn đầy đủ Kho và Biến thể sản phẩm!'
+                    });
+                    return;
+                }
+
+                // Xóa form nhập cũ & reset UI
+                statusMessage.classList.add("d-none");
+                statusMessage.classList.remove("alert-success", "alert-danger");
+                imeiFormContainer.classList.add("d-none");
+                imeiRows.innerHTML = '';
+                currentSoImeiCanNhap = 0;
+
+                try {
+                    // Trạng thái loading
+                    btnCheckStatus.disabled = true;
+                    btnCheckStatus.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Đang xử lý...';
+
+                    // Gọi API GET
+                    const response = await fetch(`/api/admin/imei/can-them/${khoId}/${bienTheId}`);
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.message || 'Lỗi hệ thống hoặc không kết nối được server');
+                    }
+
+                    currentSoImeiCanNhap = data.soImeiCanNhapThem;
+
+                    // Xử lý logic hiển thị
+                    statusMessage.classList.remove("d-none");
+                    if (currentSoImeiCanNhap === 0) {
+                        statusMessage.classList.add("alert-success");
+                        statusMessage.innerHTML = '<i class="fa fa-check-circle fa-lg me-2"></i> SKU này đã định danh đủ IMEI trong kho';
+                    } else if (currentSoImeiCanNhap > 0) {
+                        statusMessage.classList.add("alert-danger");
+                        statusMessage.innerHTML = `<i class="fa fa-exclamation-triangle fa-lg me-2"></i> Còn thiếu ${currentSoImeiCanNhap} mã IMEI`;
+                        
+                        badgeSoLuong.textContent = `Cần nhập: ${currentSoImeiCanNhap}`;
+                        renderImeiRows(currentSoImeiCanNhap);
+                        imeiFormContainer.classList.remove("d-none");
+                    }
+
+                } catch (error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi tra cứu',
+                        text: error.message
+                    });
+                } finally {
+                    btnCheckStatus.disabled = false;
+                    btnCheckStatus.innerHTML = '<i class="fa fa-search me-1"></i> Kiểm tra';
+                }
+            });
+
+            // Hàm sinh form HTML động
+            function renderImeiRows(count) {
+                let html = '';
+                for (let i = 0; i < count; i++) {
+                    html += `
+                        <div class="row g-2 align-items-center imei-row">
+                            <div class="col-md-1 text-center">
+                                <span class="badge bg-secondary rounded-circle p-2">${i + 1}</span>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" class="form-control form-control-sm imei1-input shadow-sm" placeholder="Mã IMEI 1 (Bắt buộc)" required>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" class="form-control form-control-sm imei2-input shadow-sm" placeholder="Mã IMEI 2 (Tùy chọn)">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" class="form-control form-control-sm serial-input shadow-sm" placeholder="Số Serial (Tùy chọn)">
+                            </div>
+                        </div>
+                    `;
+                }
+                imeiRows.innerHTML = html;
+            }
+
+            // Hành động 2: Nút Lưu / Submit Form
+            btnSubmitImei.addEventListener("click", async function() {
+                const rows = document.querySelectorAll(".imei-row");
+                const payload = [];
+                const imei1Set = new Set();
+                let hasValidationError = false;
+
+                // Validate Front-end
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    const imei1 = row.querySelector(".imei1-input").value.trim();
+                    const imei2 = row.querySelector(".imei2-input").value.trim();
+                    const serial = row.querySelector(".serial-input").value.trim();
+
+                    // Bắt buộc IMEI 1
+                    if (!imei1) {
+                        Swal.fire('Thiếu dữ liệu', `Dòng số ${i + 1}: Mã IMEI 1 không được để trống`, 'error');
+                        hasValidationError = true;
+                        break;
+                    }
+
+                    // Chặn trùng lặp IMEI 1 trên giao diện
+                    if (imei1Set.has(imei1)) {
+                        Swal.fire('Trùng dữ liệu', `Mã IMEI 1 "${imei1}" bị nhập trùng ở dòng số ${i + 1}`, 'error');
+                        hasValidationError = true;
+                        break;
+                    }
+                    imei1Set.add(imei1);
+
+                    payload.push({
+                        imei1: imei1,
+                        imei2: imei2 || null, // Nếu rỗng thì truyền null (hoặc chuỗi rỗng tùy BE)
+                        serial: serial || null
+                    });
+                }
+
+                if (hasValidationError) return;
+
+                // Đảm bảo độ dài khớp với số lượng cần nhập
+                if (payload.length !== currentSoImeiCanNhap) {
+                    Swal.fire('Lỗi logic', `Số lượng dữ liệu gom được (${payload.length}) không khớp với yêu cầu (${currentSoImeiCanNhap})`, 'error');
+                    return;
+                }
+
+                const khoId = khoSelect.value;
+                const bienTheId = bienTheSelect.value;
+
+                try {
+                    // Loading state
+                    btnSubmitImei.disabled = true;
+                    btnSubmitImei.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>Đang lưu dữ liệu...';
+
+                    // Gọi API POST
+                    const response = await fetch(`/api/admin/imei/nhap?khoId=${khoId}&bienTheSanPhamId=${bienTheId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    // Xử lý Response
+                    if (response.status === 201) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công!',
+                            text: 'Đã lưu danh sách IMEI vào hệ thống',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        
+                        // Xóa form & reset UI
+                        imeiFormContainer.classList.add("d-none");
+                        imeiRows.innerHTML = '';
+                        statusMessage.classList.add("d-none");
+                        currentSoImeiCanNhap = 0;
+                        
+                        // Tùy chọn: Tự động trigger lại nút "Kiểm tra" để hiển thị màu xanh
+                        setTimeout(() => {
+                            btnCheckStatus.click();
+                        }, 2000);
+                        
+                    } else {
+                        // Backend ném lỗi (400, 404, ...)
+                        const errorData = await response.json();
+                        const errorMsg = errorData.message || 'Có lỗi xảy ra khi lưu';
+                        Swal.fire('Lỗi từ hệ thống', errorMsg, 'error');
+                    }
+
+                } catch (error) {
+                    Swal.fire('Lỗi kết nối', 'Không thể kết nối đến máy chủ', 'error');
+                } finally {
+                    btnSubmitImei.disabled = false;
+                    btnSubmitImei.innerHTML = '<i class="fa fa-save me-2"></i>Lưu danh sách IMEI';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

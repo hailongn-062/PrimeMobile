@@ -51,9 +51,9 @@ public class ChiTietFlashSale {
     )
     private BienTheSanPham bienTheSanPham;
 
-    /** Giá flash sale đặc biệt (thường thấp hơn giaBan trong bien_the_san_pham). */
+    /** Phần trăm giảm giá (VD: 10 cho 10%). */
     @Column(name = "gia_flash", nullable = false, precision = 15, scale = 2)
-    private BigDecimal giaFlash;
+    private BigDecimal phanTramGiam;
 
     /**
      * Số lượng tối đa được bán với giá flash.

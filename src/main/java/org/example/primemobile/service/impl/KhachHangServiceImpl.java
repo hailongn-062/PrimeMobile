@@ -15,7 +15,6 @@ import java.util.List;
 /**
  * Triển khai phân hệ Quản lý Khách hàng — dành cho Admin tra cứu và cập nhật.
  * <p>
- * Lưu ý (system_rules.md §4): Logic tích điểm và thăng hạng thành viên TẠM HOÃN.
  * Service này chỉ cập nhật thông tin hồ sơ cơ bản của khách hàng.
  */
 @Slf4j
@@ -56,9 +55,6 @@ public class KhachHangServiceImpl implements IKhachHangService {
      *   <li>Validate email mới không trùng với khách khác (nếu có).</li>
      *   <li>Ghi đè các trường được phép cập nhật.</li>
      * </ol>
-     * Các trường KHÔNG được cập nhật ở đây:
-     * {@code diemTichLuy}, {@code hangThanhVien}, {@code tongChiTieu}
-     * — do logic thăng hạng đang TẠM HOÃN (system_rules.md §4).
      */
     @Override
     @Transactional

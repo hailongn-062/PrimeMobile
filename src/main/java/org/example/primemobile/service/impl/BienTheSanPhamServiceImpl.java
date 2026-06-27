@@ -80,7 +80,6 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
      * <ol>
      *   <li>Validate sản phẩm cha tồn tại.</li>
      *   <li>Validate {@code maSku} không trùng.</li>
-     *   <li>Validate {@code barcode} không trùng (nếu có).</li>
      *   <li>Lưu biến thể vào DB.</li>
      *   <li><b>[LUẬT BẮT BUỘC]</b> Tìm tất cả kho đang hoạt động →
      *       tạo bản ghi {@code TonKho(soLuong=0)} cho biến thể tại mỗi kho.</li>
@@ -97,13 +96,7 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
         // Bước 2: Validate mã SKU
         validateMaSku(bienTheSanPham.getMaSku(), null);
 
-        // Bước 3: Validate barcode (chỉ kiểm tra nếu không null và không rỗng)
-        if (bienTheSanPham.getBarcode() != null && !bienTheSanPham.getBarcode().isBlank()) {
-            validateBarcode(bienTheSanPham.getBarcode().trim(), null);
-            bienTheSanPham.setBarcode(bienTheSanPham.getBarcode().trim());
-        } else {
-            bienTheSanPham.setBarcode(null); // Chuẩn hóa chuỗi rỗng về null
-        }
+
 
         // Bước 4: Gán sản phẩm cha và giá trị mặc định, lưu biến thể
         bienTheSanPham.setSanPham(sanPham);
@@ -155,7 +148,7 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
     /**
      * {@inheritDoc}
      * <p>
-     * Các trường được phép cập nhật: {@code maSku}, {@code barcode}, {@code mauSac},
+     * Các trường được phép cập nhật: {@code maSku}, {@code mauSac},
      * {@code maMauHex}, {@code ramGb}, {@code luuTruGb}, {@code loaiLuuTru},
      * {@code giaNhap}, {@code giaBan}, {@code giaKhuyenMai}, {@code trongLuongGram}, {@code pinMah}.
      */
@@ -168,14 +161,7 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
         validateMaSku(bienTheMoi.getMaSku(), id);
         existing.setMaSku(bienTheMoi.getMaSku().trim().toUpperCase());
 
-        // Validate barcode mới (loại trừ chính nó, chỉ nếu có giá trị)
-        String barcodeM = bienTheMoi.getBarcode();
-        if (barcodeM != null && !barcodeM.isBlank()) {
-            validateBarcode(barcodeM.trim(), id);
-            existing.setBarcode(barcodeM.trim());
-        } else {
-            existing.setBarcode(null);
-        }
+
 
         // Ghi đè các trường thông tin biến thể
         if (bienTheMoi.getMauSac() != null && !bienTheMoi.getMauSac().isBlank()) {
@@ -235,14 +221,5 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
         }
     }
 
-    /** Validate barcode không trùng (chỉ gọi khi barcode có giá trị). {@code excludeId} null = thêm mới. */
-    private void validateBarcode(String barcode, Integer excludeId) {
-        boolean trung = (excludeId == null)
-                ? bienTheSanPhamRepository.existsByBarcode(barcode)
-                : bienTheSanPhamRepository.existsByBarcodeAndIdNot(barcode, excludeId);
-        if (trung) {
-            throw new IllegalArgumentException(
-                    "Barcode \"" + barcode + "\" đã tồn tại trong hệ thống.");
-        }
-    }
+
 }

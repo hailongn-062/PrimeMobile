@@ -11,9 +11,9 @@
     - **Đăng ký:** Bắt buộc người dùng nhập đầy đủ: `ho_ten`, `email`, `so_dien_thoai`, và `mat_khau`.
 - **Cơ chế phân quyền người dùng (Role Management):**
     - `KhachVangLai` (Mặc định khi vào hệ thống): Chỉ được xem sản phẩm, biến thể, thông số kỹ thuật, đánh giá, chương trình khuyến mãi, thêm sản phẩm vào giỏ hàng và sử dụng Chatbot tư vấn. KHÔNG ĐƯỢC ĐẶT HÀNG ONLINE, KHÔNG ĐƯỢC YÊU CẦU BẢO HÀNH, KHÔNG ĐƯỢC ĐÁNH GIÁ.
-    - `KhachHang` (Đã đăng nhập): Kế thừa toàn bộ quyền của Khách vãng lai và được quyền thực hiện: Đặt hàng online, xem lịch sử và chi tiết đơn hàng, hủy đơn (nếu hợp lệ), quản lý địa chỉ giao hàng, tích điểm thăng hạng, viết yêu cầu bảo hành và đánh giá sản phẩm đã mua.
+    - `KhachHang` (Đã đăng nhập): Kế thừa toàn bộ quyền của Khách vãng lai và được quyền thực hiện: Đặt hàng online, xem lịch sử và chi tiết đơn hàng, hủy đơn (nếu hợp lệ), quản lý địa chỉ giao hàng, viết yêu cầu bảo hành và đánh giá sản phẩm đã mua.
     - `NhanVien`: Sử dụng Admin Dashboard để quản lý tài khoản khách hàng, xử lý/xác nhận đơn hàng online, lập phiếu nhập kho, phiếu chuyển kho, quản lý IMEI máy vật lý, tiếp nhận và xử lý bảo hành, thực hiện bán hàng offline tại quầy, phản hồi hỏi đáp/đánh giá của khách hàng.
-    - `Admin`: Nắm toàn quyền tối cao (`Root`). Kế thừa toàn bộ chức năng của nhân viên, đồng thời độc quyền các tính năng: Quản lý tài khoản nhân viên, cấu hình tài khoản ngân hàng nhận tiền, tạo chương trình khuyến mãi/mã giảm giá/Flash Sale, và xem báo cáo thống kê/doanh thu.
+    - `Admin`: Nắm toàn quyền tối cao (`Root`). Kế thừa toàn bộ chức năng của nhân viên, đồng thời độc quyền các tính năng: Quản lý tài khoản nhân viên, cấu hình tài khoản ngân hàng nhận tiền, tạo chương trình khuyến mãi/ Flash Sale / ..., và xem báo cáo thống kê/doanh thu.
 
 ## 2. QUY TẮC PHÂN HỆ BÁN HÀNG (SALES PROCESSES)
 ### 2.1. Phân hệ Bán hàng Offline (Tại quầy)
@@ -55,30 +55,13 @@
     - Nhân viên bắt buộc phải nhập tay/quét mã đủ 3 cụm `imei1`, `imei2`, `serial` khác nhau vào hệ thống.
     - **Chặn thêm thừa:** Nếu số lượng bản ghi IMEI của một SKU trong bảng `may_dien_thoai` (có trạng thái `trong_kho`) đã bằng đúng số lượng ghi nhận trong bảng `ton_kho`, hệ thống phải CHẶN hoàn toàn không cho phép nhân viên thêm bất kỳ mã IMEI nào khác cho SKU đó.
 
-## 4. QUY TẮC CỨNG PHÂN HỆ TÍCH ĐIỂM & HẠNG THÀNH VIÊN (LOYALTY PROGRAM)
-Toàn bộ quy tắc tính toán tài chính và phân hạng thành viên dưới đây bắt buộc phải được **viết trực tiếp (Hardcode) trong mã nguồn Logic Backend (Service Layer)**, tuyệt đối không tạo thêm bảng cấu hình trong database.
-
-### 4.1. Quy tắc Tích lũy điểm (Earning Points)
-- Điểm số được lưu trữ tại trường `khach_hang.diem_tich_luy` và lịch sử biến động ghi vào `lich_su_diem`.
-- **Mục đích:** Điểm tích lũy chỉ dùng để hiển thị mức độ thân thiết và làm căn cứ xét thăng hạng thành viên. **TUYỆT ĐỐI KHÔNG dùng điểm để quy đổi thành tiền mặt hoặc làm giảm trừ trực tiếp hóa đơn khi thanh toán.**
-- **Công thức tính điểm thưởng khi đơn hàng giao thành công (`trang_thai = 'da_giao'`):**
-  $$\text{diem\_cong} = \text{FLOOR}\left(\frac{\text{tong\_thanh\_toan}}{100000}\right) \times \text{he\_so\_hang}$$
-- **Hệ số tích điểm tương ứng với từng hạng thành viên hiện tại:**
-    - Hạng `dong` (Đồng): Hệ số = `1.0` (Mỗi 100.000đ chi tiêu thực tế tích được 1 điểm cơ bản).
-    - Hạng `bac` (Bạc): Hệ số = `1.2`.
-    - Hạng `vang` (Vàng): Hệ số = `1.5`.
-    - Hạng `kim_cuong` (Kim Cương): Hệ số = `2.0`.
-
-### 4.2. Quy tắc Thăng hạng & Ưu đãi Hạng thành viên (Tiering Perks)
-- Việc xét thăng hạng thành viên dựa trên tổng số tiền cộng dồn mà khách hàng đã chi tiêu thành công tại hệ thống, lưu ở trường `khach_hang.tong_chi_tieu`.
-- Khi `tong_chi_tieu` đạt các cột mốc quy định, trường `hang_thanh_vien` phải tự động cập nhật và áp dụng mức ưu đãi giảm giá mặc định cho tất cả các đơn hàng tiếp theo:
-    - Hạng `dong`: Mốc chi tiêu `0đ` -> Ưu đãi: Giảm giá **0%** trên tổng tiền hàng.
-    - Hạng `bac`: Mốc chi tiêu `>= 50.000.000đ` -> Ưu đãi: Tự động giảm giá **3%** trên tổng tiền hàng.
-    - Hạng `vang`: Mốc chi tiêu `>= 100.000.000đ` -> Ưu đãi: Tự động giảm giá **5%** trên tổng tiền hàng.
-    - Hạng `kim_cuong`: Mốc chi tiêu `>= 250.000.000đ` -> Ưu đãi: Tự động giảm giá **7%** trên tổng tiền hàng.
-
 ## 5. CÁC QUY TẮC PHỤ TRỢ KHÁC (PROMOTIONS, REVIEWS, WARRANTY, WISHLIST)
-- **Khuyến mãi:** Phân loại rõ ràng 4 hình thức gồm Giảm giá trực tiếp bằng số tiền cụ thể trên sản phẩm, Giảm giá theo tỷ lệ %, Mã coupon voucher giảm giá áp dụng vào tổng hóa đơn đơn hàng, và Flash Sale giới hạn khung giờ vàng.
+- **Khuyến mãi:** Phân loại rõ ràng 4 loại giảm giá còn lại là 'giam_gia_truc_tiep','phan_tram','flash_sale','don_hang_toi_thieu' và cả 4 loại giảm giá này đều là giảm theo %
+chỉ khác nhau là:
+- 'phan_tram': không có điều kiện gì đặc biệt đến thời gian đang diễn ra là được áp dụng giảm giá %
+- 'giam_gia_truc_tiep': khi chọn loại này sẽ hiện thêm chỗ chọn sản phẩm và sản phẩm đó sẽ được giảm giá % (đây chính là chức năng của bảng pham_vi_khuyen_mai) (bỏ ko giảm theo danh mục và hãng nữa)
+- 'flash_sale': khi chọn loại này sẽ hiện lên các trường để nhập cho flash sale (giờ kết thúc, bắt đầu, số lượng) Nếu trong khoảng thời gian diễn ra flash sale và số lượng còn (>0) thì sẽ được áp dụng giảm giá %
+- 'don_hang_toi_thieu': khi chọn loại này sẽ hiện thêm trường đơn hàng tối thiểu nhập số tiền vào đấy nếu khách hàng có tổng tiền đơn hàng >= số tiền đó sẽ được áp dụng mã giảm giá
 - **Ràng buộc Đánh giá sản phẩm:** Chỉ những tài khoản khách hàng nào có lịch sử mua sản phẩm đó với trạng thái đơn hàng tương ứng là `da_giao` (đã đối khớp trong `chi_tiet_don_hang`) mới có quyền viết đánh giá sản phẩm. Bài đánh giá hỗ trợ đính kèm hình ảnh dạng mảng chuỗi JSON lưu vào database. Nhân viên có quyền viết phản hồi trả lời khách.
 - **Bảo hành:** Cửa hàng đóng vai trò trung gian tiếp nhận thiết bị từ khách hàng. Nhân viên kiểm tra mã IMEI đầu vào xem có tồn tại phiếu bảo hành hợp lệ và còn hạn sử dụng không (`phieu_bao_hanh.trang_thai = 'con_hieu_luc'`). Luồng xử lý bảo hành là hoàn toàn **0 đồng** (không phát sinh chi phí thương mại), chỉ ghi nhận trạng thái luân chuyển thiết bị: Nhận từ khách -> Gửi hãng/NCC -> Nhận lại từ hãng -> Trả lại khách.
 - **Yêu Thích (Wishlist):** Khi khách hàng thêm sản phẩm vào mục yêu thích, mã nguồn API Tìm kiếm sản phẩm bắt buộc phải ưu tiên đẩy các sản phẩm này lên các vị trí đầu tiên trong danh sách kết quả trả về của tài khoản đó.
@@ -101,6 +84,5 @@ Toàn bộ quy tắc tính toán tài chính và phân hạng thành viên dư�
 1. **Phân hệ Chatbot AI:** Tích hợp API Gemini để tư vấn tự động sẽ được làm sau. Hiện tại không tạo Service hay Controller cho phân hệ này.
 2. **Phương thức thanh toán:** Tạm hoãn cổng thanh toán tự động bằng VNpay cũng như chuyển khoản ngân hàng. Phương thức thanh toán (PTTT) hiện tại mặc định sử dụng duy nhất một phương thức là Nhận hàng trả tiền mặt (COD).
 3. **Phân hệ Bảo hành:** Tạm thời hoãn việc xây dựng luồng tiếp nhận máy lỗi, tạo phiếu bảo hành và gửi nhà cung cấp.
-4. **Tích điểm & Hạng thành viên:** Tạm hoãn các logic tính toán cộng điểm thưởng, lưu lịch sử biến động điểm và xét thăng hạng thành viên. Hệ thống tạm thời tính giá bán bình thường (chưa áp dụng phần trăm giảm giá tự động theo hạng) cho đến khi có yêu cầu mới.
 5. **Phân hệ Đánh giá & Hỏi đáp:** Tạm hoãn tính năng cho phép khách hàng viết đánh giá sản phẩm, chấm điểm sao, đính kèm hình ảnh dạng JSON và luồng nhân viên phản hồi lại các đánh giá/câu hỏi đó.
 6. **Tính năng Yêu thích (Wishlist):** Tạm hoãn việc xây dựng tính năng lưu sản phẩm vào danh sách yêu thích (`yeu_thich`) cũng như thuật toán ưu tiên đẩy sản phẩm yêu thích lên đầu khi tìm kiếm.

@@ -19,11 +19,9 @@ import java.util.List;
  *   "ngayBatDau": "2024-06-28T10:00:00",
  *   "ngayKetThuc": "2024-06-28T12:00:00",
  *   "gioFlashBatDau": "2024-06-28T10:00:00",
- *   "gioFlashKetThuc": "2024-06-28T12:00:00",
- *   "soLuongToiDa": 100,
  *   "chiTiets": [
- *     { "bienTheSanPhamId": 5, "giaFlash": 18500000, "soLuongGioiHan": 50 },
- *     { "bienTheSanPhamId": 8, "giaFlash": 22000000, "soLuongGioiHan": 30 }
+ *     { "bienTheSanPhamId": 5, "phanTramGiam": 10, "soLuongGioiHan": 50 },
+ *     { "bienTheSanPhamId": 8, "phanTramGiam": 20, "soLuongGioiHan": 30 }
  *   ]
  * }
  * }</pre>
@@ -49,7 +47,7 @@ public class TaoFlashSaleRequest {
     private LocalDateTime gioFlashKetThuc;
 
     /** Tổng số lượng sản phẩm tối đa được áp giá flash. */
-    private Integer soLuongToiDa;
+
 
     /** Danh sách biến thể tham gia flash sale với giá riêng. */
     private List<ChiTietRequest> chiTiets;
@@ -63,16 +61,16 @@ public class TaoFlashSaleRequest {
         /** ID biến thể sản phẩm tham gia flash sale. */
         private Integer bienTheSanPhamId;
 
-        /** Giá flash sale đặc biệt (phải nhỏ hơn giaBan hiện tại). */
-        private BigDecimal giaFlash;
+        /** Phần trăm giảm giá. */
+        private BigDecimal phanTramGiam;
 
         /** Số lượng tối đa được bán với giá flash cho biến thể này. */
         private Integer soLuongGioiHan;
 
         public Integer getBienTheSanPhamId() { return bienTheSanPhamId; }
         public void setBienTheSanPhamId(Integer v) { this.bienTheSanPhamId = v; }
-        public BigDecimal getGiaFlash() { return giaFlash; }
-        public void setGiaFlash(BigDecimal v) { this.giaFlash = v; }
+        public BigDecimal getPhanTramGiam() { return phanTramGiam; }
+        public void setPhanTramGiam(BigDecimal v) { this.phanTramGiam = v; }
         public Integer getSoLuongGioiHan() { return soLuongGioiHan; }
         public void setSoLuongGioiHan(Integer v) { this.soLuongGioiHan = v; }
     }
@@ -93,8 +91,7 @@ public class TaoFlashSaleRequest {
     public void setGioFlashBatDau(LocalDateTime v) { this.gioFlashBatDau = v; }
     public LocalDateTime getGioFlashKetThuc() { return gioFlashKetThuc; }
     public void setGioFlashKetThuc(LocalDateTime v) { this.gioFlashKetThuc = v; }
-    public Integer getSoLuongToiDa() { return soLuongToiDa; }
-    public void setSoLuongToiDa(Integer v) { this.soLuongToiDa = v; }
+
     public List<ChiTietRequest> getChiTiets() { return chiTiets; }
     public void setChiTiets(List<ChiTietRequest> v) { this.chiTiets = v; }
 }

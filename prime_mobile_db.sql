@@ -31,6 +31,7 @@ CREATE INDEX idx_nd_email ON nguoi_dung (email);
 GO
 
 -- khach_hang: khách vãng lai (nguoi_dung_id NULL) hoặc có tài khoản
+-- Đã xóa bỏ các cột diem_tich_luy, hang_thanh_vien, tong_chi_tieu
 CREATE TABLE khach_hang (
                             id               INT           IDENTITY(1,1) PRIMARY KEY,
                             nguoi_dung_id    INT           NULL,
@@ -39,14 +40,10 @@ CREATE TABLE khach_hang (
                             so_dien_thoai    VARCHAR(20)   NOT NULL,
                             gioi_tinh        VARCHAR(5)    NULL,
                             ngay_sinh        DATE          NULL,
-                            diem_tich_luy    INT           NOT NULL DEFAULT 0,
-                            hang_thanh_vien  VARCHAR(15)   NOT NULL DEFAULT 'dong',
-                            tong_chi_tieu    DECIMAL(15,2) NOT NULL DEFAULT 0,
                             ngay_tao         DATETIME2     NOT NULL DEFAULT GETDATE(),
                             updated_at       DATETIME2     NOT NULL DEFAULT GETDATE(),
                             CONSTRAINT uq_kh_nguoi_dung  UNIQUE (nguoi_dung_id),
-                            CONSTRAINT chk_kh_gioi_tinh  CHECK (gioi_tinh       IN ('Nam','Nu','Khac')),
-                            CONSTRAINT chk_kh_hang       CHECK (hang_thanh_vien IN ('dong','bac','vang','kim_cuong')),
+                            CONSTRAINT chk_kh_gioi_tinh  CHECK (gioi_tinh IN ('Nam','Nu','Khac')),
                             CONSTRAINT fk_kh_nd          FOREIGN KEY (nguoi_dung_id) REFERENCES nguoi_dung(id) ON DELETE SET NULL
 );
 GO
@@ -58,7 +55,7 @@ GO
 -- =====================================================
 -- MODULE 2: SẢN PHẨM & BIẾN THỂ
 -- Chỉ bán duy nhất điện thoại không bán phụ kiến và những thứ khác
--- Bỏ bảng sku (gộp ma_sku, barcode vào bien_the_san_pham)
+-- Bỏ bảng sku (gộp ma_sku vào bien_the_san_pham), Đã xóa barcode
 -- Giữ may_dien_thoai để quản lý IMEI từng máy vật lý
 -- =====================================================
 
@@ -97,7 +94,7 @@ CREATE TABLE san_pham (
                           luot_xem         INT           NOT NULL DEFAULT 0,
                           ngay_tao         DATETIME2     NOT NULL DEFAULT GETDATE(),
                           updated_at       DATETIME2     NOT NULL DEFAULT GETDATE(),
-                          CONSTRAINT uq_sp_ma          UNIQUE (ma_san_pham),
+                          CONSTRAINT uq_sp_ma         UNIQUE (ma_san_pham),
                           CONSTRAINT chk_sp_trang_thai CHECK (trang_thai IN ('dang_ban','ngung_ban','sap_ra_mat')),
                           CONSTRAINT fk_sp_dm          FOREIGN KEY (danh_muc_id)      REFERENCES danh_muc(id),
                           CONSTRAINT fk_sp_hsx         FOREIGN KEY (hang_san_xuat_id) REFERENCES hang_san_xuat(id)
@@ -109,12 +106,11 @@ CREATE INDEX idx_sp_dm   ON san_pham (danh_muc_id, trang_thai);
 CREATE INDEX idx_sp_hang ON san_pham (hang_san_xuat_id, trang_thai);
 GO
 
--- bien_the_san_pham: 1 biến thể = 1 SKU (gộp ma_sku, barcode vào đây)
+-- bien_the_san_pham: 1 biến thể = 1 SKU
 CREATE TABLE bien_the_san_pham (
                                    id               INT           IDENTITY(1,1) PRIMARY KEY,
                                    san_pham_id      INT           NOT NULL,
                                    ma_sku           VARCHAR(100)  NOT NULL,
-                                   barcode          VARCHAR(50)   NULL,
                                    mau_sac          NVARCHAR(50)  NOT NULL,
                                    ma_mau_hex       VARCHAR(7),
                                    ram_gb           INT           NOT NULL,
@@ -129,14 +125,12 @@ CREATE TABLE bien_the_san_pham (
                                    ngay_tao         DATETIME2     NOT NULL DEFAULT GETDATE(),
                                    updated_at       DATETIME2     NOT NULL DEFAULT GETDATE(),
                                    CONSTRAINT uq_bt_ma_sku      UNIQUE (ma_sku),
-                                   CONSTRAINT uq_bt_barcode     UNIQUE (barcode),
                                    CONSTRAINT chk_bt_trang_thai CHECK (trang_thai IN ('con_hang','het_hang','ngung_kinh_doanh')),
                                    CONSTRAINT fk_bt_sp          FOREIGN KEY (san_pham_id) REFERENCES san_pham(id) ON DELETE CASCADE
 );
 GO
 
 CREATE INDEX idx_bt_sp      ON bien_the_san_pham (san_pham_id, trang_thai);
-CREATE INDEX idx_bt_barcode ON bien_the_san_pham (barcode);
 GO
 
 -- may_dien_thoai: theo dõi từng máy vật lý qua IMEI
@@ -188,9 +182,6 @@ GO
 
 -- =====================================================
 -- MODULE 3: KHO HÀNG
--- Chỉ có 2 kho cố định: kho_tong & kho_online
--- Bỏ loai_kho (dùng CHECK trực tiếp trong kho)
--- ton_kho & phieu tham chiếu bien_the_san_pham_id
 -- =====================================================
 
 CREATE TABLE kho (
@@ -281,7 +272,6 @@ GO
 
 -- =====================================================
 -- MODULE 4: NHÀ CUNG CẤP
--- Giữ nguyên, bỏ don_nhap_hang (không làm workflow đặt hàng NCC)
 -- =====================================================
 
 CREATE TABLE nha_cung_cap (
@@ -304,12 +294,8 @@ GO
 
 -- =====================================================
 -- MODULE 5: ĐỊA CHỈ KHÁCH HÀNG
--- Liên kết API giao hàng của Giao Hàng Nhanh
 -- =====================================================
 
--- =====================================================
--- BẢNG ĐỊA CHỈ KHÁCH HÀNG (Lưu cả ID để tính phí, lưu cả Text để hiển thị)
--- =====================================================
 CREATE TABLE dia_chi_khach_hang (
                                     id                       INT           IDENTITY(1,1) PRIMARY KEY,
                                     khach_hang_id            INT           NOT NULL,
@@ -317,11 +303,9 @@ CREATE TABLE dia_chi_khach_hang (
                                     ho_ten_nguoi_nhan        NVARCHAR(100),
                                     so_dien_thoai_nguoi_nhan VARCHAR(20),
                                     dia_chi_chi_tiet         NVARCHAR(255) NOT NULL,
-    -- Nhóm 1: Dùng để Frontend gửi cho Backend gọi API tính phí ship GHN
                                     tinh_thanh_id            INT           NOT NULL,
                                     quan_huyen_id            INT           NOT NULL,
                                     phuong_xa_code           VARCHAR(20)   NOT NULL,
-    -- Nhóm 2: Dùng để hiển thị giao diện UI ngay lập tức
                                     tinh_thanh_ten           NVARCHAR(100) NOT NULL,
                                     quan_huyen_ten           NVARCHAR(100) NOT NULL,
                                     phuong_xa_ten            NVARCHAR(100) NOT NULL,
@@ -333,7 +317,6 @@ GO
 
 -- =====================================================
 -- MODULE 6: GIỎ HÀNG
--- Hỗ trợ cả khách vãng lai (session_id) và khách có tài khoản (khach_hang_id)
 -- =====================================================
 
 CREATE TABLE gio_hang (
@@ -343,7 +326,7 @@ CREATE TABLE gio_hang (
                           ngay_tao      DATETIME2    NOT NULL DEFAULT GETDATE(),
                           updated_at    DATETIME2    NOT NULL DEFAULT GETDATE(),
                           CONSTRAINT chk_gh_dinh_danh CHECK (khach_hang_id IS NOT NULL OR session_id IS NOT NULL),
-                          CONSTRAINT fk_gh_kh          FOREIGN KEY (khach_hang_id) REFERENCES khach_hang(id) ON DELETE CASCADE
+                          CONSTRAINT fk_gh_kh         FOREIGN KEY (khach_hang_id) REFERENCES khach_hang(id) ON DELETE CASCADE
 );
 GO
 
@@ -366,9 +349,6 @@ GO
 
 -- =====================================================
 -- MODULE 7: ĐƠN HÀNG BÁN
--- Bỏ lich_su_don_hang (không cần audit trail chi tiết)
--- Bỏ cau_hinh_thanh_toan (VNPay cấu hình trên Merchant Portal)
--- Thanh toán online qua VNPay (redirect), offline qua tiền mặt/chuyển khoản
 -- =====================================================
 
 CREATE TABLE phuong_thuc_thanh_toan (
@@ -382,163 +362,122 @@ GO
 
 INSERT INTO phuong_thuc_thanh_toan (ten_pttt, mo_ta)
 VALUES
-(N'Tien mat', N'Thanh toan tien mat tai quay'),
-(N'Chuyen khoan', N'Chuyen khoan qua QR tinh tai quay, nhan vien xac nhan'),
-(
-    N'VNPay',
-    N'Thanh toan truc tuyen qua cong VNPay, khach redirect sang VNPay'
-);
+    (N'Tien mat', N'Thanh toan tien mat tai quay'),
+    (N'Chuyen khoan', N'Chuyen khoan qua QR tinh tai quay, nhan vien xac nhan'),
+    (N'VNPay', N'Thanh toan truc tuyen qua cong VNPay, khach redirect sang VNPay');
 GO
 
 CREATE TABLE don_hang (
-    id INT IDENTITY (1, 1) PRIMARY KEY,
-    ma_don_hang VARCHAR(50) NOT NULL,
-    khach_hang_id INT NOT NULL,
-    nguoi_xu_ly_id INT NULL,
-    cuoc_hoi_thoai_id INT NULL,
-    kenh_ban VARCHAR(10) NOT NULL DEFAULT 'online',
-    ngay_dat DATETIME2 NOT NULL DEFAULT GETDATE(),
-    -- Snapshot dia chi giao tai thoi diem dat hang (chuan hoa cho GHN)
-    dia_chi_giao_id INT NULL,
-    ho_ten_nguoi_nhan NVARCHAR(100) NULL,
-    sdt_nguoi_nhan VARCHAR(20) NULL,
-    email_nguoi_nhan VARCHAR(100) NULL,
-    dia_chi_giao_cu_the NVARCHAR(255) NULL,
-    phuong_xa_giao NVARCHAR(100) NULL,
-    quan_huyen_giao NVARCHAR(100) NULL,
-    tinh_thanh_giao NVARCHAR(100) NULL,
-    -- Tai chinh
-    tong_tien_hang DECIMAL(15, 2) NOT NULL,
-    tien_giam_gia DECIMAL(15, 2) NOT NULL DEFAULT 0,
-    phi_ship DECIMAL(15, 2) NOT NULL DEFAULT 0,   -- Lay tu API GHN
-    tong_thanh_toan AS (tong_tien_hang - tien_giam_gia + phi_ship) PERSISTED,
-    ma_giam_gia_id INT NULL,
-    -- Van chuyen (GHN quan ly nguoi giao, khong can luu noi bo)
-    ngay_giao_du_kien DATE NULL,       -- Lay tu API GHN
-    ngay_giao_thuc_te DATETIME2 NULL,
-    -- Trang thai don hang
-    trang_thai VARCHAR(20) NOT NULL DEFAULT 'cho_xac_nhan',
-    -- Trang thai thanh toan (rieng cho luong VNPay)
-    trang_thai_thanh_toan VARCHAR(20) NOT NULL DEFAULT 'chua_thanh_toan',
-    -- VNPay het han sau 15 phut -> tu dong huy don, tra kho
-    thoi_gian_het_han_tt DATETIME2 NULL,
-    ghi_chu NVARCHAR(MAX) NULL,
-    updated_at DATETIME2 NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT uq_dh_ma UNIQUE (ma_don_hang),
-    CONSTRAINT chk_dh_kenh CHECK (kenh_ban IN ('online', 'tai_quay')),
-    CONSTRAINT chk_dh_trang_thai CHECK (
-        trang_thai IN (
-            'cho_xac_nhan', 'da_xac_nhan', 'dang_giao', 'da_giao', 'da_huy'
-        )
-    ),
-    CONSTRAINT chk_dh_trang_thai_tt CHECK (
-        trang_thai_thanh_toan IN (
-            'chua_thanh_toan',      -- moi tao don, chua bat dau thanh toan
-            'dang_chuyen_huong',    -- dang redirect sang trang VNPay
-            'da_thanh_toan',        -- VNPay IPN xac nhan OK
-            'that_bai'              -- qua han hoac VNPay tra loi loi
-        )
-    ),
-    -- Chan du lieu am do loi nhap lieu / code
-    CONSTRAINT chk_dh_tong_tien_hang CHECK (tong_tien_hang >= 0),
-    CONSTRAINT chk_dh_tien_giam_gia CHECK (tien_giam_gia >= 0),
-    CONSTRAINT chk_dh_phi_ship CHECK (phi_ship >= 0),
-    CONSTRAINT fk_dh_kh FOREIGN KEY (khach_hang_id) REFERENCES khach_hang (id),
-    CONSTRAINT fk_dh_nd FOREIGN KEY (nguoi_xu_ly_id) REFERENCES nguoi_dung (id),
-    CONSTRAINT fk_dh_dc FOREIGN KEY (dia_chi_giao_id)
-    REFERENCES dia_chi_khach_hang (id) ON DELETE SET NULL
+                          id INT IDENTITY (1, 1) PRIMARY KEY,
+                          ma_don_hang VARCHAR(50) NOT NULL,
+                          khach_hang_id INT NOT NULL,
+                          nguoi_xu_ly_id INT NULL,
+                          -- Đã xóa cuoc_hoi_thoai_id
+                          kenh_ban VARCHAR(10) NOT NULL DEFAULT 'online',
+                          ngay_dat DATETIME2 NOT NULL DEFAULT GETDATE(),
+                          dia_chi_giao_id INT NULL,
+                          ho_ten_nguoi_nhan NVARCHAR(100) NULL,
+                          sdt_nguoi_nhan VARCHAR(20) NULL,
+                          email_nguoi_nhan VARCHAR(100) NULL,
+                          dia_chi_giao_cu_the NVARCHAR(255) NULL,
+                          phuong_xa_giao NVARCHAR(100) NULL,
+                          quan_huyen_giao NVARCHAR(100) NULL,
+                          tinh_thanh_giao NVARCHAR(100) NULL,
+                          tong_tien_hang DECIMAL(15, 2) NOT NULL,
+                          tien_giam_gia DECIMAL(15, 2) NOT NULL DEFAULT 0,
+                          phi_ship DECIMAL(15, 2) NOT NULL DEFAULT 0,
+                          tong_thanh_toan AS (tong_tien_hang - tien_giam_gia + phi_ship) PERSISTED,
+                          chuong_trinh_khuyen_mai_id INT NULL, -- Thay thế ma_giam_gia_id
+                          ngay_giao_du_kien DATE NULL,
+                          ngay_giao_thuc_te DATETIME2 NULL,
+                          trang_thai VARCHAR(20) NOT NULL DEFAULT 'cho_xac_nhan',
+                          trang_thai_thanh_toan VARCHAR(20) NOT NULL DEFAULT 'chua_thanh_toan',
+                          thoi_gian_het_han_tt DATETIME2 NULL,
+                          ghi_chu NVARCHAR(MAX) NULL,
+                          updated_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+                          CONSTRAINT uq_dh_ma UNIQUE (ma_don_hang),
+                          CONSTRAINT chk_dh_kenh CHECK (kenh_ban IN ('online', 'tai_quay')),
+                          CONSTRAINT chk_dh_trang_thai CHECK (trang_thai IN ('cho_xac_nhan', 'da_xac_nhan', 'dang_giao', 'da_giao', 'da_huy')),
+                          CONSTRAINT chk_dh_trang_thai_tt CHECK (trang_thai_thanh_toan IN ('chua_thanh_toan', 'dang_chuyen_huong', 'da_thanh_toan', 'that_bai')),
+                          CONSTRAINT chk_dh_tong_tien_hang CHECK (tong_tien_hang >= 0),
+                          CONSTRAINT chk_dh_tien_giam_gia CHECK (tien_giam_gia >= 0),
+                          CONSTRAINT chk_dh_phi_ship CHECK (phi_ship >= 0),
+                          CONSTRAINT fk_dh_kh FOREIGN KEY (khach_hang_id) REFERENCES khach_hang (id),
+                          CONSTRAINT fk_dh_nd FOREIGN KEY (nguoi_xu_ly_id) REFERENCES nguoi_dung (id),
+                          CONSTRAINT fk_dh_dc FOREIGN KEY (dia_chi_giao_id) REFERENCES dia_chi_khach_hang (id) ON DELETE SET NULL
 );
 GO
 
-CREATE INDEX idx_dh_kh ON don_hang (khach_hang_id, ngay_dat);
-CREATE INDEX idx_dh_tts ON don_hang (trang_thai, ngay_dat);
+CREATE INDEX idx_dh_kh   ON don_hang (khach_hang_id, ngay_dat);
+CREATE INDEX idx_dh_tts  ON don_hang (trang_thai, ngay_dat);
 CREATE INDEX idx_dh_ngay ON don_hang (ngay_dat);
-CREATE INDEX idx_dh_tttt
-    ON don_hang (trang_thai_thanh_toan, thoi_gian_het_han_tt);
+CREATE INDEX idx_dh_tttt ON don_hang (trang_thai_thanh_toan, thoi_gian_het_han_tt);
 GO
 
 ALTER TABLE may_dien_thoai
-ADD CONSTRAINT fk_may_dh FOREIGN KEY (don_hang_id)
-REFERENCES don_hang (id) ON DELETE SET NULL;
+    ADD CONSTRAINT fk_may_dh FOREIGN KEY (don_hang_id)
+        REFERENCES don_hang (id) ON DELETE SET NULL;
 GO
 
 CREATE TABLE chi_tiet_don_hang (
-    id INT IDENTITY (1, 1) PRIMARY KEY,
-    don_hang_id INT NOT NULL,
-    bien_the_san_pham_id INT NOT NULL,
-    so_luong INT NOT NULL,
-    don_gia_ban DECIMAL(15, 2) NOT NULL,
-    thanh_tien AS (so_luong * don_gia_ban) PERSISTED,
-    CONSTRAINT chk_ctdh_sl CHECK (so_luong > 0),
-    CONSTRAINT chk_ctdh_dongia CHECK (don_gia_ban >= 0),
-    CONSTRAINT fk_ctdh_dh FOREIGN KEY (don_hang_id)
-    REFERENCES don_hang (id) ON DELETE CASCADE,
-    CONSTRAINT fk_ctdh_bt FOREIGN KEY (bien_the_san_pham_id)
-    REFERENCES bien_the_san_pham (id)
+                                   id INT IDENTITY (1, 1) PRIMARY KEY,
+                                   don_hang_id INT NOT NULL,
+                                   bien_the_san_pham_id INT NOT NULL,
+                                   so_luong INT NOT NULL,
+                                   don_gia_ban DECIMAL(15, 2) NOT NULL,
+                                   thanh_tien AS (so_luong * don_gia_ban) PERSISTED,
+                                   CONSTRAINT chk_ctdh_sl CHECK (so_luong > 0),
+                                   CONSTRAINT chk_ctdh_dongia CHECK (don_gia_ban >= 0),
+                                   CONSTRAINT fk_ctdh_dh FOREIGN KEY (don_hang_id) REFERENCES don_hang (id) ON DELETE CASCADE,
+                                   CONSTRAINT fk_ctdh_bt FOREIGN KEY (bien_the_san_pham_id) REFERENCES bien_the_san_pham (id)
 );
 GO
 
--- Index cho FK (SQL Server khong tu tao)
 CREATE INDEX idx_ctdh_dh ON chi_tiet_don_hang (don_hang_id);
 GO
 
 CREATE TABLE thanh_toan (
-    id INT IDENTITY (1, 1) PRIMARY KEY,
-    don_hang_id INT NOT NULL,
-    phuong_thuc_thanh_toan_id INT NOT NULL,
-    so_tien DECIMAL(15, 2) NOT NULL,           -- So tien don hang yeu cau
-    -- So tien khach thuc te da thanh toan (nhan tu VNPay)
-    so_tien_thuc_te DECIMAL(15, 2) NULL,
-    ma_giao_dich VARCHAR(100) NULL,
-    trang_thai VARCHAR(15) NOT NULL DEFAULT 'cho',
-    thoi_gian_tao DATETIME2 NOT NULL DEFAULT GETDATE(),
-    thoi_gian_thanh_cong DATETIME2 NULL,
-    -- Thong tin VNPay
-    -- Ma don hang gui len VNPay (= ma_don_hang)
-    vnp_txn_ref VARCHAR(100) NULL,
-    vnp_transaction_no VARCHAR(100) NULL,      -- Ma giao dich VNPay tra ve
-    -- "00" = thanh cong, con lai = loi
-    vnp_response_code VARCHAR(10) NULL,
-    -- Ngan hang khach dung (VD: "NCB")
-    vnp_bank_code VARCHAR(20) NULL,
-    vnp_bank_tran_no VARCHAR(100) NULL,        -- Ma giao dich phia ngan hang
-    vnp_card_type VARCHAR(20) NULL,            -- "ATM" / "QRCODE" / "CREDIT"
-    -- Thoi gian VNPay xac nhan (yyyyMMddHHmmss)
-    vnp_pay_date VARCHAR(20) NULL,
-    -- Checksum de verify IPN khong bi gia mao
-    vnp_secure_hash VARCHAR(256) NULL,
-    -- Toan bo query string IPN de debug
-    raw_ipn NVARCHAR(MAX) NULL,
-    CONSTRAINT chk_tt_trang_thai CHECK (
-        trang_thai IN ('cho', 'thanh_cong', 'that_bai')
-    ),
-    CONSTRAINT chk_tt_so_tien CHECK (so_tien >= 0),
-    CONSTRAINT chk_tt_so_tien_thuc_te CHECK (so_tien_thuc_te >= 0),
-    CONSTRAINT fk_tt_dh FOREIGN KEY (don_hang_id) REFERENCES don_hang (id),
-    CONSTRAINT fk_tt_pttt FOREIGN KEY (phuong_thuc_thanh_toan_id)
-    REFERENCES phuong_thuc_thanh_toan (id)
+                            id INT IDENTITY (1, 1) PRIMARY KEY,
+                            don_hang_id INT NOT NULL,
+                            phuong_thuc_thanh_toan_id INT NOT NULL,
+                            so_tien DECIMAL(15, 2) NOT NULL,
+                            so_tien_thuc_te DECIMAL(15, 2) NULL,
+                            ma_giao_dich VARCHAR(100) NULL,
+                            trang_thai VARCHAR(15) NOT NULL DEFAULT 'cho',
+                            thoi_gian_tao DATETIME2 NOT NULL DEFAULT GETDATE(),
+                            thoi_gian_thanh_cong DATETIME2 NULL,
+                            vnp_txn_ref VARCHAR(100) NULL,
+                            vnp_transaction_no VARCHAR(100) NULL,
+                            vnp_response_code VARCHAR(10) NULL,
+                            vnp_bank_code VARCHAR(20) NULL,
+                            vnp_bank_tran_no VARCHAR(100) NULL,
+                            vnp_card_type VARCHAR(20) NULL,
+                            vnp_pay_date VARCHAR(20) NULL,
+                            vnp_secure_hash VARCHAR(256) NULL,
+                            raw_ipn NVARCHAR(MAX) NULL,
+                            CONSTRAINT chk_tt_trang_thai CHECK (trang_thai IN ('cho', 'thanh_cong', 'that_bai')),
+                            CONSTRAINT chk_tt_so_tien CHECK (so_tien >= 0),
+                            CONSTRAINT chk_tt_so_tien_thuc_te CHECK (so_tien_thuc_te >= 0),
+                            CONSTRAINT fk_tt_dh FOREIGN KEY (don_hang_id) REFERENCES don_hang (id),
+                            CONSTRAINT fk_tt_pttt FOREIGN KEY (phuong_thuc_thanh_toan_id) REFERENCES phuong_thuc_thanh_toan (id)
 );
 GO
 
--- Index cho FK
 CREATE INDEX idx_tt_dh ON thanh_toan (don_hang_id);
 GO
 
--- Unique index chong xu ly trung giao dich khi VNPay goi IPN nhieu lan
 CREATE UNIQUE INDEX uq_tt_vnp_txn
     ON thanh_toan (vnp_transaction_no)
     WHERE vnp_transaction_no IS NOT NULL;
 GO
 
--- Filtered index de check nhanh cac thanh toan chua het han
 CREATE INDEX idx_tt_het_han
     ON thanh_toan (thoi_gian_tao)
     WHERE trang_thai = 'cho';
 GO
+
 -- =====================================================
 -- MODULE 8: BẢO HÀNH
--- Gộp phieu_gui_ncc_bao_hanh vào yeu_cau_bao_hanh
--- Bỏ lich_su_bao_hanh
 -- =====================================================
 
 CREATE TABLE phieu_bao_hanh (
@@ -560,7 +499,6 @@ CREATE TABLE phieu_bao_hanh (
 );
 GO
 
--- Gộp thông tin gửi NCC vào cùng bảng yêu cầu bảo hành
 CREATE TABLE yeu_cau_bao_hanh (
                                   id                   INT           IDENTITY(1,1) PRIMARY KEY,
                                   ma_yeu_cau           VARCHAR(50)   NOT NULL,
@@ -570,13 +508,11 @@ CREATE TABLE yeu_cau_bao_hanh (
                                   mo_ta_loi            NVARCHAR(MAX),
                                   hinh_thuc            VARCHAR(15)   NOT NULL,
                                   trang_thai           VARCHAR(20)   NOT NULL DEFAULT 'tiep_nhan',
-    -- Thông tin gửi NCC (gộp từ phieu_gui_ncc_bao_hanh)
                                   nha_cung_cap_id      INT           NULL,
                                   ngay_gui_ncc         DATETIME2     NULL,
                                   ngay_du_kien_nhan    DATE          NULL,
                                   ngay_nhan_lai_ncc    DATETIME2     NULL,
                                   ket_qua_ncc          NVARCHAR(MAX) NULL,
-    -- Trả khách
                                   ngay_tra_khach       DATETIME2     NULL,
                                   ghi_chu              NVARCHAR(MAX),
                                   CONSTRAINT uq_ycbh_ma          UNIQUE (ma_yeu_cau),
@@ -592,9 +528,7 @@ CREATE INDEX idx_ycbh_pbh ON yeu_cau_bao_hanh (phieu_bao_hanh_id);
 GO
 
 -- =====================================================
--- MODULE 9: KHUYẾN MÃI
--- Gộp flash_sale vào chuong_trinh_khuyen_mai
--- Giữ pham_vi, ma_giam_gia, chi_tiet_flash_sale
+-- MODULE 9: KHUYẾN MÃI (CHỈ GIẢM THEO % & ĐIỀU KIỆN ĐƠN HÀNG)
 -- =====================================================
 
 CREATE TABLE chuong_trinh_khuyen_mai (
@@ -602,18 +536,17 @@ CREATE TABLE chuong_trinh_khuyen_mai (
                                          ten_ctkm           NVARCHAR(200) NOT NULL,
                                          mo_ta              NVARCHAR(MAX),
                                          loai               VARCHAR(25)   NOT NULL,
-                                         gia_tri_uu_dai     DECIMAL(15,2),
-                                         la_phan_tram       BIT           NOT NULL DEFAULT 0,
+                                         gia_tri_uu_dai     DECIMAL(15,2) NOT NULL, -- Giá trị %
                                          giam_toi_da        DECIMAL(15,2) NULL,
+                                         don_hang_toi_thieu DECIMAL(15,2) NULL,     -- Được "bế" từ bảng mã giảm giá qua
                                          ngay_bat_dau       DATETIME2     NOT NULL,
                                          ngay_ket_thuc      DATETIME2     NOT NULL,
-    -- Flash sale: giờ cụ thể (NULL nếu không phải flash sale)
                                          gio_flash_bat_dau  DATETIME2     NULL,
                                          gio_flash_ket_thuc DATETIME2     NULL,
                                          so_luong_toi_da    INT           NULL,
                                          so_lan_da_dung     INT           NOT NULL DEFAULT 0,
                                          trang_thai         VARCHAR(15)   NOT NULL DEFAULT 'chua_bat_dau',
-                                         CONSTRAINT chk_ctkm_loai       CHECK (loai      IN ('giam_gia_truc_tiep','phan_tram','ma_code','flash_sale','don_hang_toi_thieu')),
+                                         CONSTRAINT chk_ctkm_loai       CHECK (loai IN ('giam_gia_truc_tiep','phan_tram','flash_sale','don_hang_toi_thieu')),
                                          CONSTRAINT chk_ctkm_trang_thai CHECK (trang_thai IN ('chua_bat_dau','dang_dien_ra','da_ket_thuc','tam_dung'))
 );
 GO
@@ -624,33 +557,12 @@ GO
 CREATE TABLE pham_vi_khuyen_mai (
                                     id          INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
                                     ctkm_id     INT NOT NULL,
-                                    san_pham_id INT NULL,
-                                    danh_muc_id INT NULL,
-                                    hang_sx_id  INT NULL,
+                                    san_pham_id INT NOT NULL, -- Bỏ danh_muc_id và hang_sx_id
                                     CONSTRAINT fk_pvkm_ctkm FOREIGN KEY (ctkm_id)     REFERENCES chuong_trinh_khuyen_mai(id) ON DELETE CASCADE,
-                                    CONSTRAINT fk_pvkm_sp   FOREIGN KEY (san_pham_id) REFERENCES san_pham(id),
-                                    CONSTRAINT fk_pvkm_dm   FOREIGN KEY (danh_muc_id) REFERENCES danh_muc(id),
-                                    CONSTRAINT fk_pvkm_hsx  FOREIGN KEY (hang_sx_id)  REFERENCES hang_san_xuat(id)
+                                    CONSTRAINT fk_pvkm_sp   FOREIGN KEY (san_pham_id) REFERENCES san_pham(id)
 );
 GO
 
-CREATE TABLE ma_giam_gia (
-                             id                 INT           IDENTITY(1,1) PRIMARY KEY,
-                             ctkm_id            INT           NOT NULL,
-                             ma_code            VARCHAR(50)   NOT NULL,
-                             don_hang_toi_thieu DECIMAL(15,2) NOT NULL DEFAULT 0,
-                             giam_toi_da        DECIMAL(15,2) NULL,
-                             so_luong_toi_da    INT           NOT NULL DEFAULT 1,
-                             da_su_dung         INT           NOT NULL DEFAULT 0,
-                             CONSTRAINT uq_mgg_code UNIQUE (ma_code),
-                             CONSTRAINT fk_mgg_ctkm FOREIGN KEY (ctkm_id) REFERENCES chuong_trinh_khuyen_mai(id)
-);
-GO
-
-CREATE INDEX idx_mgg_code ON ma_giam_gia (ma_code);
-GO
-
--- Chi tiết giá flash sale cho từng biến thể
 CREATE TABLE chi_tiet_flash_sale (
                                      id                   INT           IDENTITY(1,1) PRIMARY KEY,
                                      ctkm_id              INT           NOT NULL,
@@ -663,67 +575,22 @@ CREATE TABLE chi_tiet_flash_sale (
 );
 GO
 
--- Gắn FK ma_giam_gia vào don_hang (thực hiện sau khi cả 2 bảng đã tồn tại)
+-- Gắn FK chuong_trinh_khuyen_mai vào don_hang
 ALTER TABLE don_hang
-    ADD CONSTRAINT fk_dh_mgg FOREIGN KEY (ma_giam_gia_id) REFERENCES ma_giam_gia(id) ON DELETE SET NULL;
+    ADD CONSTRAINT fk_dh_ctkm FOREIGN KEY (chuong_trinh_khuyen_mai_id) REFERENCES chuong_trinh_khuyen_mai(id) ON DELETE SET NULL;
 GO
 
 -- =====================================================
--- MODULE 10: ĐIỂM TÍCH LŨY & HẠNG THÀNH VIÊN
--- Điểm hiện tại lưu trong khach_hang.diem_tich_luy
--- Điểm KHÔNG dùng để quy đổi/thanh toán — chỉ dùng để TÍCH LŨY hiển thị
--- và làm căn cứ xét THĂNG HẠNG.
---
--- Quy tắc tích điểm hardcode theo hạng thành viên:
---   dong:       hệ số 1.0   (100.000đ chi tiêu = 1 điểm cơ bản)
---   bac:        hệ số 1.2
---   vang:       hệ số 1.5
---   kim_cuong:  hệ số 2.0
---   Công thức: diem_cong = FLOOR(tong_thanh_toan / 100000) * he_so_hang
---
--- Quy tắc thăng hạng theo khach_hang.tong_chi_tieu (cộng dồn):
---   dong:       0đ          → giảm giá 0%   mọi đơn hàng
---   bac:        >= 50.000.000đ  → giảm giá 3%   mọi đơn hàng
---   vang:       >= 100.000.000đ → giảm giá 5%   mọi đơn hàng
---   kim_cuong:  >= 250.000.000đ → giảm giá 7%   mọi đơn hàng
---
--- Toàn bộ rule trên hardcode trong code backend (không thêm bảng/cột cấu hình)
--- =====================================================
-
-CREATE TABLE lich_su_diem (
-                              id            INT           IDENTITY(1,1) PRIMARY KEY,
-                              khach_hang_id INT           NOT NULL,
-                              loai          VARCHAR(15)   NOT NULL,
-                              so_diem       INT           NOT NULL,
-                              so_diem_truoc INT           NOT NULL,
-                              so_diem_sau   INT           NOT NULL,
-                              don_hang_id   INT           NULL,
-                              ly_do         NVARCHAR(255),
-                              ngay_het_han  DATE          NULL,
-                              thoi_gian     DATETIME2     NOT NULL DEFAULT GETDATE(),
-                              CONSTRAINT chk_lsd_loai CHECK (loai IN ('cong','tru','het_han','dieu_chinh')),
-                              CONSTRAINT fk_lsd_kh    FOREIGN KEY (khach_hang_id) REFERENCES khach_hang(id),
-                              CONSTRAINT fk_lsd_dh    FOREIGN KEY (don_hang_id)   REFERENCES don_hang(id) ON DELETE SET NULL
-);
-GO
-
-CREATE INDEX idx_lsd_kh ON lich_su_diem (khach_hang_id, thoi_gian);
-GO
-
--- =====================================================
--- MODULE 11: CHATBOT AI
--- Bỏ chatbot_cau_hoi_mau (hardcode phía frontend)
--- Giữ cuoc_hoi_thoai + tin_nhan_chat
+-- MODULE 11: CHATBOT AI (ĐỘC LẬP TÙY CHỌN, ĐÃ GỠ KHÓA NGOẠI RÀNG BUỘC)
 -- =====================================================
 
 CREATE TABLE cuoc_hoi_thoai (
                                 id            INT           IDENTITY(1,1) PRIMARY KEY,
-                                khach_hang_id INT           NULL,
+                                khach_hang_id INT           NULL,         -- Vẫn lưu ID để biết của ai, nhưng KHÔNG còn FK constraint
                                 session_id    VARCHAR(100)  NULL,
                                 tieu_de       NVARCHAR(255) NULL,
                                 ngay_tao      DATETIME2     NOT NULL DEFAULT GETDATE(),
-                                updated_at    DATETIME2     NOT NULL DEFAULT GETDATE(),
-                                CONSTRAINT fk_cht_kh FOREIGN KEY (khach_hang_id) REFERENCES khach_hang(id) ON DELETE SET NULL
+                                updated_at    DATETIME2     NOT NULL DEFAULT GETDATE()
 );
 GO
 
@@ -736,34 +603,23 @@ CREATE TABLE tin_nhan_chat (
                                cuoc_hoi_thoai_id INT           NOT NULL,
                                vai               VARCHAR(10)   NOT NULL,
                                noi_dung          NVARCHAR(MAX) NOT NULL,
-    -- Thêm mới: Hỗ trợ ảnh gửi kèm (Gemini Vision)
                                hinh_anh_url      VARCHAR(255)  NULL,
-    -- Thêm mới: Quản lý Quota API Free
                                so_token          INT           NULL,
-    -- Ngữ cảnh (Giữ nguyên)
                                intent            VARCHAR(30)   NULL,
-                               don_hang_id_ref   INT           NULL,
-                               san_pham_id_ref   INT           NULL,
+                               don_hang_id_ref   INT           NULL,         -- Lưu tham chiếu lỏng, ĐÃ XÓA FK constraint
+                               san_pham_id_ref   INT           NULL,         -- Lưu tham chiếu lỏng, ĐÃ XÓA FK constraint
                                thoi_gian         DATETIME2     NOT NULL DEFAULT GETDATE(),
-    -- ĐÃ SỬA: Thay 'assistant' bằng 'model' chuẩn của Gemini
                                CONSTRAINT chk_tnc_vai    CHECK (vai    IN ('user','model','system')),
                                CONSTRAINT chk_tnc_intent CHECK (intent IN ('tu_van_sp','tra_cuu_dh','bao_hanh','khuyen_mai','chinh_sach','khac') OR intent IS NULL),
-                               CONSTRAINT fk_tnc_cht     FOREIGN KEY (cuoc_hoi_thoai_id) REFERENCES cuoc_hoi_thoai(id) ON DELETE CASCADE,
-                               CONSTRAINT fk_tnc_dh      FOREIGN KEY (don_hang_id_ref)   REFERENCES don_hang(id)       ON DELETE SET NULL,
-                               CONSTRAINT fk_tnc_sp      FOREIGN KEY (san_pham_id_ref)   REFERENCES san_pham(id)       ON DELETE SET NULL
+                               CONSTRAINT fk_tnc_cht     FOREIGN KEY (cuoc_hoi_thoai_id) REFERENCES cuoc_hoi_thoai(id) ON DELETE CASCADE
 );
 GO
 
 CREATE INDEX idx_tnc_cht ON tin_nhan_chat (cuoc_hoi_thoai_id, thoi_gian);
 GO
 
-ALTER TABLE don_hang
-    ADD CONSTRAINT fk_dh_cht FOREIGN KEY (cuoc_hoi_thoai_id) REFERENCES cuoc_hoi_thoai(id) ON DELETE SET NULL;
-GO
-
 -- =====================================================
 -- MODULE 12: ĐÁNH GIÁ & HỎI ĐÁP
--- Gộp hinh_anh_danh_gia → lưu JSON trong danh_gia_san_pham
 -- =====================================================
 
 CREATE TABLE danh_gia_san_pham (
@@ -824,111 +680,70 @@ CREATE TABLE yeu_thich (
 GO
 
 -- =====================================================
--- TRIGGERS
+-- TRIGGERS CẬP NHẬT UPDATED_AT TỰ ĐỘNG
 -- =====================================================
 
-CREATE TRIGGER trg_nd_updated ON nguoi_dung AFTER UPDATE
-                                                      AS BEGIN
-UPDATE nguoi_dung SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
+CREATE TRIGGER trg_nd_updated ON nguoi_dung AFTER UPDATE AS
+BEGIN
+    UPDATE nguoi_dung SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
 END;
 GO
 
-CREATE TRIGGER trg_kh_updated ON khach_hang AFTER UPDATE
-                                                      AS BEGIN
-UPDATE khach_hang SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
+CREATE TRIGGER trg_kh_updated ON khach_hang AFTER UPDATE AS
+BEGIN
+    UPDATE khach_hang SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
 END;
 GO
 
-CREATE TRIGGER trg_sp_updated ON san_pham AFTER UPDATE
-                                                    AS BEGIN
-UPDATE san_pham SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
+CREATE TRIGGER trg_sp_updated ON san_pham AFTER UPDATE AS
+BEGIN
+    UPDATE san_pham SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
 END;
 GO
 
-CREATE TRIGGER trg_bt_updated ON bien_the_san_pham AFTER UPDATE
-                                                             AS BEGIN
-UPDATE bien_the_san_pham SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
+CREATE TRIGGER trg_bt_updated ON bien_the_san_pham AFTER UPDATE AS
+BEGIN
+    UPDATE bien_the_san_pham SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
 END;
 GO
 
-CREATE TRIGGER trg_dh_updated ON don_hang AFTER UPDATE
-                                                    AS BEGIN
-UPDATE don_hang SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
+CREATE TRIGGER trg_dh_updated ON don_hang AFTER UPDATE AS
+BEGIN
+    UPDATE don_hang SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
 END;
 GO
 
-CREATE TRIGGER trg_tk_updated ON ton_kho AFTER UPDATE
-                                                   AS BEGIN
-UPDATE ton_kho SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
+CREATE TRIGGER trg_tk_updated ON ton_kho AFTER UPDATE AS
+BEGIN
+    UPDATE ton_kho SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
 END;
 GO
 
-CREATE TRIGGER trg_gh_updated ON gio_hang AFTER UPDATE
-                                                    AS BEGIN
-UPDATE gio_hang SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
+CREATE TRIGGER trg_gh_updated ON gio_hang AFTER UPDATE AS
+BEGIN
+    UPDATE gio_hang SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
 END;
 GO
 
-CREATE TRIGGER trg_cht_updated ON cuoc_hoi_thoai AFTER UPDATE
-                                                           AS BEGIN
-UPDATE cuoc_hoi_thoai SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
+CREATE TRIGGER trg_cht_updated ON cuoc_hoi_thoai AFTER UPDATE AS
+BEGIN
+    UPDATE cuoc_hoi_thoai SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
 END;
 GO
 
--- =====================================================
--- TỔNG KẾT
--- =====================================================
--- Tổng số bảng: 35 bảng
---
---  MODULE 1  - Người dùng & Phân quyền (2):
---    01. nguoi_dung
---    02. khach_hang
---  MODULE 2  - Sản phẩm & Biến thể (7):
---    03. danh_muc
---    04. hang_san_xuat
---    05. san_pham
---    06. bien_the_san_pham
---    07. may_dien_thoai
---    08. hinh_anh_san_pham
---    09. thong_so_ky_thuat
---  MODULE 3  - Kho hàng (6):
---    10. kho
---    11. ton_kho
---    12. phieu_nhap_kho
---    13. chi_tiet_phieu_nhap
---    14. phieu_chuyen_kho
---    15. chi_tiet_chuyen_kho
---  MODULE 4  - Nhà cung cấp (1):
---    16. nha_cung_cap
---  MODULE 5  - Địa chỉ (1):
---    17. dia_chi_khach_hang
---  MODULE 6  - Giỏ hàng (2):
---    18. gio_hang
---    19. chi_tiet_gio_hang
---  MODULE 7  - Đơn hàng (4):
---    20. phuong_thuc_thanh_toan
---    21. don_hang
---    22. chi_tiet_don_hang
---    23. thanh_toan
---  MODULE 8  - Bảo hành (2):
---    24. phieu_bao_hanh
---    25. yeu_cau_bao_hanh
---  MODULE 9  - Khuyến mãi (4):
---    26. chuong_trinh_khuyen_mai
---    27. pham_vi_khuyen_mai
---    28. ma_giam_gia
---    29. chi_tiet_flash_sale
---  MODULE 10 - Điểm tích lũy (1):
---    30. lich_su_diem
---  MODULE 11 - Chatbot AI (2):
---    31. cuoc_hoi_thoai
---    32. tin_nhan_chat
---  MODULE 12 - Đánh giá & Hỏi đáp (2):
---    33. danh_gia_san_pham
---    34. hoi_dap_san_pham
---  MODULE 13 - Wishlist (1):
---    35. yeu_thich
--- =====================================================
+
+-- 1. Xóa cái ràng buộc UNIQUE cũ đi (Tên constraint có thể khác, bạn xem đúng tên trong log nhé)
+ALTER TABLE may_dien_thoai DROP CONSTRAINT uq_may_serial;
+ALTER TABLE may_dien_thoai DROP CONSTRAINT uq_may_imei2; -- Chắc chắn imei2 cũng sẽ bị lỗi tương tự, xóa luôn
+
+-- 2. Tạo lại UNIQUE bằng Filtered Index (Chỉ áp dụng Unique khi khác NULL)
+CREATE UNIQUE NONCLUSTERED INDEX idx_uq_may_serial 
+ON may_dien_thoai(serial) 
+WHERE serial IS NOT NULL;
+
+CREATE UNIQUE NONCLUSTERED INDEX idx_uq_may_imei2 
+ON may_dien_thoai(imei2) 
+WHERE imei2 IS NOT NULL;
 
 
 USE PrimeMobile;
@@ -979,19 +794,19 @@ INSERT INTO san_pham (ma_san_pham, ten_san_pham, danh_muc_id, hang_san_xuat_id, 
 GO
 
 -- =====================================================
--- 5. BIẾN THỂ SẢN PHẨM (12 BIẾN THỂ)
+-- 5. BIẾN THỂ SẢN PHẨM (12 BIẾN THỂ - ĐÃ XÓA BARCODE)
 -- =====================================================
-INSERT INTO bien_the_san_pham (san_pham_id, ma_sku, barcode, mau_sac, ma_mau_hex, ram_gb, luu_tru_gb, gia_nhap, gia_ban, gia_khuyen_mai, trang_thai) VALUES
-(1, 'IP15PM-256-NAT', '88011', N'Titan Tự Nhiên', '#B5B6B1', 8, 256, 27000000, 29990000, 28990000, 'con_hang'),
-(1, 'IP15PM-512-BLK', '88012', N'Titan Đen', '#4B4B4D', 8, 512, 32000000, 35990000, NULL, 'con_hang'),
-(2, 'IP14-128-BLU', '88013', N'Xanh Dương', '#A3C6D3', 6, 128, 16000000, 18490000, 17990000, 'con_hang'),
-(3, 'S24U-256-GRY', '88021', N'Xám Titan', '#7D7A7D', 12, 256, 24000000, 26990000, 25490000, 'con_hang'),
-(3, 'S24U-512-YEL', '88022', N'Vàng Titan', '#E6DEB8', 12, 512, 28000000, 31490000, NULL, 'con_hang'),
-(4, 'ZF5-256-BLU', '88023', N'Xanh Icy', '#A9BCD0', 12, 256, 30000000, 34990000, NULL, 'con_hang'),
-(5, 'XM14-256-BLK', '88031', N'Đen', '#000000', 12, 256, 18000000, 20990000, 19990000, 'con_hang'),
-(6, 'RMN13-128-PUR', '88032', N'Tím', '#9D84B5', 8, 128, 6000000, 7490000, NULL, 'het_hang'),
-(7, 'R11-256-GRN', '88041', N'Xanh Sóng Biển', '#7BA89D', 8, 256, 9000000, 10990000, 10490000, 'con_hang'),
-(8, 'A18-128-BLU', '88042', N'Xanh Phát Sáng', '#87CEEB', 4, 128, 3000000, 3990000, 3690000, 'con_hang');
+INSERT INTO bien_the_san_pham (san_pham_id, ma_sku, mau_sac, ma_mau_hex, ram_gb, luu_tru_gb, gia_nhap, gia_ban, gia_khuyen_mai, trang_thai) VALUES
+(1, 'IP15PM-256-NAT', N'Titan Tự Nhiên', '#B5B6B1', 8, 256, 27000000, 29990000, 28990000, 'con_hang'),
+(1, 'IP15PM-512-BLK', N'Titan Đen', '#4B4B4D', 8, 512, 32000000, 35990000, NULL, 'con_hang'),
+(2, 'IP14-128-BLU', N'Xanh Dương', '#A3C6D3', 6, 128, 16000000, 18490000, 17990000, 'con_hang'),
+(3, 'S24U-256-GRY', N'Xám Titan', '#7D7A7D', 12, 256, 24000000, 26990000, 25490000, 'con_hang'),
+(3, 'S24U-512-YEL', N'Vàng Titan', '#E6DEB8', 12, 512, 28000000, 31490000, NULL, 'con_hang'),
+(4, 'ZF5-256-BLU', N'Xanh Icy', '#A9BCD0', 12, 256, 30000000, 34990000, NULL, 'con_hang'),
+(5, 'XM14-256-BLK', N'Đen', '#000000', 12, 256, 18000000, 20990000, 19990000, 'con_hang'),
+(6, 'RMN13-128-PUR', N'Tím', '#9D84B5', 8, 128, 6000000, 7490000, NULL, 'het_hang'),
+(7, 'R11-256-GRN', N'Xanh Sóng Biển', '#7BA89D', 8, 256, 9000000, 10990000, 10490000, 'con_hang'),
+(8, 'A18-128-BLU', N'Xanh Phát Sáng', '#87CEEB', 4, 128, 3000000, 3990000, 3690000, 'con_hang');
 GO
 
 -- =====================================================
@@ -1024,20 +839,15 @@ INSERT INTO ton_kho (kho_id, bien_the_san_pham_id, so_luong) VALUES
 GO
 
 -- =====================================================
--- 7. KHUYẾN MÃI & MÃ GIẢM GIÁ
+-- 7. KHUYẾN MÃI (LOGIC MỚI - CHỈ DÙNG %)
 -- =====================================================
-INSERT INTO chuong_trinh_khuyen_mai (ten_ctkm, loai, gia_tri_uu_dai, la_phan_tram, ngay_bat_dau, ngay_ket_thuc, trang_thai) VALUES
-(N'Siêu Sale Sinh Nhật', 'ma_code', 500000, 0, '2024-01-01', '2026-12-31', 'dang_dien_ra'),
-(N'Giảm giá Tân Sinh Viên', 'ma_code', 10, 1, '2024-01-01', '2026-12-31', 'dang_dien_ra');
-GO
-
-INSERT INTO ma_giam_gia (ctkm_id, ma_code, don_hang_toi_thieu, giam_toi_da, so_luong_toi_da) VALUES
-(1, 'BIRTHDAY500', 15000000, 500000, 100),
-(2, 'STUDENT10', 5000000, 1000000, 50);
+INSERT INTO chuong_trinh_khuyen_mai (ten_ctkm, loai, gia_tri_uu_dai, giam_toi_da, don_hang_toi_thieu, ngay_bat_dau, ngay_ket_thuc, trang_thai) VALUES
+(N'Siêu Sale Sinh Nhật', 'don_hang_toi_thieu', 5.00, 500000, 15000000, '2024-01-01', '2026-12-31', 'dang_dien_ra'),
+(N'Giảm giá Tân Sinh Viên', 'phan_tram', 10.00, 1000000, NULL, '2024-01-01', '2026-12-31', 'dang_dien_ra');
 GO
 
 -- =====================================================
--- 8. TÀI KHOẢN, KHÁCH HÀNG & ĐỊA CHỈ
+-- 8. TÀI KHOẢN, KHÁCH HÀNG & ĐỊA CHỈ (ĐÃ BỎ ĐIỂM/HẠNG)
 -- =====================================================
 INSERT INTO nguoi_dung (email, mat_khau, ho_ten, so_dien_thoai, vai_tro, trang_thai) VALUES
 ('admin@primemobile.vn', 'hash_admin', N'Lê Quản Trị', '0901111111', 'Admin', 'hoat_dong'),
@@ -1046,10 +856,10 @@ INSERT INTO nguoi_dung (email, mat_khau, ho_ten, so_dien_thoai, vai_tro, trang_t
 ('khach2@gmail.com', 'hash_kh2', N'Phạm Thị Hoa', '0987654321', 'KhachHang', 'hoat_dong');
 GO
 
-INSERT INTO khach_hang (nguoi_dung_id, ho_ten, email, so_dien_thoai, diem_tich_luy, hang_thanh_vien, tong_chi_tieu) VALUES
-(3, N'Nguyễn Văn An', 'khach1@gmail.com', '0912345678', 550, 'bac', 55000000),
-(4, N'Phạm Thị Hoa', 'khach2@gmail.com', '0987654321', 0, 'dong', 0),
-(NULL, N'Khách Lẻ Mặc Định', NULL, '0000000000', 0, 'dong', 0);
+INSERT INTO khach_hang (nguoi_dung_id, ho_ten, email, so_dien_thoai) VALUES
+(3, N'Nguyễn Văn An', 'khach1@gmail.com', '0912345678'),
+(4, N'Phạm Thị Hoa', 'khach2@gmail.com', '0987654321'),
+(NULL, N'Khách Lẻ Mặc Định', NULL, '0000000000');
 GO
 
 INSERT INTO dia_chi_khach_hang (khach_hang_id, loai_dia_chi, ho_ten_nguoi_nhan, so_dien_thoai_nguoi_nhan, dia_chi_chi_tiet, tinh_thanh_id, quan_huyen_id, phuong_xa_code, tinh_thanh_ten, quan_huyen_ten, phuong_xa_ten, mac_dinh) VALUES
@@ -1059,9 +869,10 @@ GO
 
 -- =====================================================
 -- 9. ĐƠN HÀNG (VNPay Compatible) & CHI TIẾT
+-- Đã thay ma_giam_gia_id thành chuong_trinh_khuyen_mai_id
 -- =====================================================
 -- Đơn hàng 1: ĐÃ GIAO - Đã thanh toán qua VNPay thành công
-INSERT INTO don_hang (ma_don_hang, khach_hang_id, nguoi_xu_ly_id, kenh_ban, dia_chi_giao_id, ho_ten_nguoi_nhan, sdt_nguoi_nhan, dia_chi_giao_cu_the, phuong_xa_giao, quan_huyen_giao, tinh_thanh_giao, tong_tien_hang, tien_giam_gia, phi_ship, ma_giam_gia_id, ngay_giao_du_kien, trang_thai, trang_thai_thanh_toan, ngay_dat) VALUES
+INSERT INTO don_hang (ma_don_hang, khach_hang_id, nguoi_xu_ly_id, kenh_ban, dia_chi_giao_id, ho_ten_nguoi_nhan, sdt_nguoi_nhan, dia_chi_giao_cu_the, phuong_xa_giao, quan_huyen_giao, tinh_thanh_giao, tong_tien_hang, tien_giam_gia, phi_ship, chuong_trinh_khuyen_mai_id, ngay_giao_du_kien, trang_thai, trang_thai_thanh_toan, ngay_dat) VALUES
 ('DH1', 1, 2, 'online', 1, N'Nguyễn Văn An', '0912345678', N'Số 1, Ngõ 2', N'Phường Dịch Vọng', N'Quận Cầu Giấy', N'Hà Nội', 28990000, 500000, 30000, 1, '2026-06-25', 'da_giao', 'da_thanh_toan', '2026-05-10');
 
 -- Đơn hàng 2: ĐANG GIAO - Thanh toán COD (Chưa thanh toán)

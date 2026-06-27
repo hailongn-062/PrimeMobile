@@ -64,6 +64,7 @@ public class Kho {
     // -------------------------------------------------------------------------
     // Quan hệ 1-N: 1 Kho → nhiều TonKho (bản ghi tồn kho từng SKU trong kho này)
     // -------------------------------------------------------------------------
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @OneToMany(mappedBy = "kho", fetch = FetchType.LAZY)
     @Builder.Default
     private List<TonKho> tonKhos = new ArrayList<>();
@@ -71,6 +72,7 @@ public class Kho {
     // -------------------------------------------------------------------------
     // Quan hệ 1-N: 1 Kho → nhiều PhieuNhapKho được nhập vào kho này
     // -------------------------------------------------------------------------
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @OneToMany(mappedBy = "kho", fetch = FetchType.LAZY)
     @Builder.Default
     private List<PhieuNhapKho> phieuNhapKhos = new ArrayList<>();
@@ -78,6 +80,7 @@ public class Kho {
     // -------------------------------------------------------------------------
     // Quan hệ 1-N: Kho với tư cách là KHO NGUỒN trong phiếu chuyển kho
     // -------------------------------------------------------------------------
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @OneToMany(mappedBy = "khoNguon", fetch = FetchType.LAZY)
     @Builder.Default
     private List<PhieuChuyenKho> phieuChuyenKhoNguons = new ArrayList<>();
@@ -85,6 +88,7 @@ public class Kho {
     // -------------------------------------------------------------------------
     // Quan hệ 1-N: Kho với tư cách là KHO ĐÍCH trong phiếu chuyển kho
     // -------------------------------------------------------------------------
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @OneToMany(mappedBy = "khoDich", fetch = FetchType.LAZY)
     @Builder.Default
     private List<PhieuChuyenKho> phieuChuyenKhoDichs = new ArrayList<>();

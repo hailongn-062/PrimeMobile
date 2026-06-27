@@ -57,7 +57,7 @@ public interface IBienTheSanPhamService {
      * @param bienTheSanPham Dữ liệu biến thể mới (chưa có ID).
      * @return {@link BienTheSanPham} đã được lưu.
      * @throws jakarta.persistence.EntityNotFoundException nếu sanPhamId không tồn tại.
-     * @throws IllegalArgumentException nếu {@code maSku} hoặc {@code barcode} đã tồn tại.
+     * @throws IllegalArgumentException nếu {@code maSku} đã tồn tại.
      */
     BienTheSanPham them(Integer sanPhamId, BienTheSanPham bienTheSanPham);
 
@@ -68,7 +68,7 @@ public interface IBienTheSanPhamService {
      * @param bienTheSanPham Dữ liệu mới.
      * @return {@link BienTheSanPham} sau khi cập nhật.
      * @throws jakarta.persistence.EntityNotFoundException nếu ID không tồn tại.
-     * @throws IllegalArgumentException nếu mã SKU hoặc barcode mới trùng với biến thể khác.
+     * @throws IllegalArgumentException nếu mã SKU mới trùng với biến thể khác.
      */
     BienTheSanPham capNhat(Integer id, BienTheSanPham bienTheSanPham);
 

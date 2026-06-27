@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Triển khai phân hệ Bán hàng Offline (tại quầy) cho PrimeMobile.
@@ -407,6 +408,83 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
     // =======================================================================
     // PRIVATE HELPER METHODS
     // =======================================================================
+
+    /**
+     * {@inheritDoc}
+     *
+     * <h3>Luồng chi tiết:</h3>
+     * <ol>
+     *   <li>Validate đơn hàng tồn tại và đang ở trạng thái có thể sửa ({@code "cho_xac_nhan"}).</li>
+     *   <li>Xác định khách hàng theo thứ tự ưu tiên:
+     *       <ol type="a">
+     *         <li>Nếu {@code khachHangId != null} → Query DB.
+     *             Nếu tìm thấy → dùng khách đó.</li>
+     *         <li>Nếu {@code khachHangId == null} HOẶC không tìm thấy trong DB →
+     *             Tự động lấy tài khoản khách lẻ mặc định (sdt = '0000000000').</li>
+     *       </ol>
+     *   </li>
+     *   <li>Gán {@code khachHang} vào đơn hàng và lưu.</li>
+     * </ol>
+     */
+    @Override
+    @Transactional
+    public DonHang capNhatKhachHangChoDon(Integer donHangId, Integer khachHangId) {
+
+        log.info("[BanHangOffline] Cập nhật khách hàng — donHangId={}, khachHangId={}",
+                donHangId, khachHangId);
+
+        // ------------------------------------------------------------------
+        // Bước 1: Validate đơn hàng tồn tại
+        // ------------------------------------------------------------------
+        DonHang donHang = donHangRepository.findById(donHangId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Không tìm thấy đơn hàng có ID: " + donHangId));
+
+        if (!TRANG_THAI_CHO_THANH_TOAN.equals(donHang.getTrangThai())) {
+            throw new IllegalStateException(String.format(
+                    "Đơn hàng [%s] đang ở trạng thái '%s', không thể thay đổi khách hàng.",
+                    donHang.getMaDonHang(), donHang.getTrangThai()));
+        }
+
+        // ------------------------------------------------------------------
+        // Bước 2: Chốt khách hàng — Optional-based resolution
+        // ------------------------------------------------------------------
+        KhachHang khachHang;
+
+        Optional<KhachHang> khachOptional = Optional.ofNullable(khachHangId)
+                .flatMap(khachHangRepository::findById);
+
+        if (khachOptional.isPresent()) {
+            // Trường hợp 1: Khách có tài khoản hợp lệ
+            khachHang = khachOptional.get();
+            log.info("[BanHangOffline] Gán khách hàng id={} ('{}') vào đơn [{}].",
+                    khachHang.getId(), khachHang.getHoTen(), donHang.getMaDonHang());
+        } else {
+            // Trường hợp 2: khachHangId null hoặc không tìm thấy → Khách lẻ mặc định
+            if (khachHangId != null) {
+                // ID được cung cấp nhưng không tồn tại trong DB → cảnh báo, fallback
+                log.warn("[BanHangOffline] Không tìm thấy khách hàng id={}. " +
+                         "Tự động gán vào tài khoản khách lẻ mặc định.", khachHangId);
+            } else {
+                log.info("[BanHangOffline] khachHangId = null. Gán vào tài khoản khách lẻ mặc định.");
+            }
+            khachHang = khachHangRepository.findBySoDienThoai(SDT_KHACH_LE_MAC_DINH)
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            "Không tìm thấy tài khoản khách lẻ mặc định (sdt='" +
+                            SDT_KHACH_LE_MAC_DINH + "'). Vui lòng kiểm tra dữ liệu khởi tạo DB."));
+        }
+
+        // ------------------------------------------------------------------
+        // Bước 3: Gán và lưu
+        // ------------------------------------------------------------------
+        donHang.setKhachHang(khachHang);
+        donHang.setUpdatedAt(LocalDateTime.now());
+        donHang = donHangRepository.save(donHang);
+
+        log.info("[BanHangOffline] Đã cập nhật khách hàng cho đơn [{}] → khachHangId={}.",
+                donHang.getMaDonHang(), khachHang.getId());
+        return donHang;
+    }
 
     /**
      * Tìm Kho Tổng từ database theo loai = 'kho_tong'.

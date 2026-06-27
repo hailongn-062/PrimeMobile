@@ -70,11 +70,7 @@ public record DatHangRequest(
          */
         Integer phuongThucThanhToanId,
 
-        /**
-         * ID mã giảm giá (optional — nullable).
-         * NULL nếu khách không dùng voucher.
-         */
-        Integer maGiamGiaId,
+
 
         /**
          * Phí vận chuyển (từ GHN API hoặc frontend tính).

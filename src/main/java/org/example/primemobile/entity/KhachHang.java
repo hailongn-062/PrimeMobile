@@ -14,12 +14,7 @@ import java.time.LocalDateTime;
  *  - Khách vãng lai (guest):  nguoiDung = NULL, không cần tài khoản.
  *  - Khách có tài khoản:       nguoiDung != NULL, quan hệ 1-1 với bảng nguoi_dung.
  * <p>
- * Trường hang_thanh_vien phản ánh hạng hiện tại:
- *   "dong" (0đ) | "bac" (≥50tr) | "vang" (≥100tr) | "kim_cuong" (≥250tr)
- * Logic xét thăng hạng được hardcode ở Service layer theo system_rules.md §4.
- * <p>
- * Điểm tích lũy (diem_tich_luy) chỉ dùng để hiển thị và căn cứ thăng hạng,
- * TUYỆT ĐỐI KHÔNG quy đổi thành tiền hoặc trừ trực tiếp vào hóa đơn.
+ * Hệ thống đã loại bỏ chức năng tích điểm và hạng thành viên.
  */
 @Entity
 @Table(
@@ -82,32 +77,6 @@ public class KhachHang {
     @Column(name = "ngay_sinh")
     private LocalDate ngaySinh;
 
-    /**
-     * Điểm tích lũy hiện tại (DEFAULT 0).
-     * Mục đích: hiển thị mức độ thân thiết & xét thăng hạng.
-     * KHÔNG được dùng để trừ tiền thanh toán.
-     */
-    @Column(name = "diem_tich_luy", nullable = false)
-    @Builder.Default
-    private Integer diemTichLuy = 0;
-
-    /**
-     * Hạng thành viên hiện tại (DEFAULT 'dong').
-     * Giá trị hợp lệ: "dong" | "bac" | "vang" | "kim_cuong"
-     * Logic thăng hạng hardcode trong Service Layer (system_rules.md §4.2).
-     */
-    @Column(name = "hang_thanh_vien", nullable = false, length = 15)
-    @Builder.Default
-    private String hangThanhVien = "dong";
-
-    /**
-     * Tổng tiền chi tiêu tích lũy (DEFAULT 0).
-     * Dùng làm căn cứ xét thăng hạng theo system_rules.md §4.2.
-     * Chỉ cộng khi đơn hàng chuyển sang trạng thái 'da_giao'.
-     */
-    @Column(name = "tong_chi_tieu", nullable = false, precision = 15, scale = 2)
-    @Builder.Default
-    private BigDecimal tongChiTieu = BigDecimal.ZERO;
 
     /** Thời điểm tạo bản ghi. Mặc định = GETDATE() ở DB. */
     @Column(name = "ngay_tao", nullable = false, updatable = false)

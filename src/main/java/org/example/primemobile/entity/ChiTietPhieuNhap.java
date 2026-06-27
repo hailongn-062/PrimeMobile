@@ -38,6 +38,7 @@ public class ChiTietPhieuNhap {
      * Phiếu nhập kho chứa dòng chi tiết này.
      * ON DELETE CASCADE ở DB – xóa phiếu nhập thì chi tiết tự xóa theo.
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
             name = "phieu_nhap_id",

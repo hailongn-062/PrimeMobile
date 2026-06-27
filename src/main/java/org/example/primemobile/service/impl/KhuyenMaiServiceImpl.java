@@ -11,10 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -22,173 +21,20 @@ import java.util.UUID;
 public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
 
     private final ChuongTrinhKhuyenMaiRepository ctkmRepo;
-    private final MaGiamGiaRepository            maGiamGiaRepo;
     private final ChiTietFlashSaleRepository      chiTietFlashSaleRepo;
     private final PhamViKhuyenMaiRepository       phamViKhuyenMaiRepo;
     private final BienTheSanPhamRepository        bienTheSanPhamRepo;
     private final SanPhamRepository               sanPhamRepo;
-    private final DanhMucRepository               danhMucRepo;
-    private final HangSanXuatRepository           hangSanXuatRepo;
 
-    // ── ADMIN: Chương trình khuyến mãi ──────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+    // CRUD CHÍNH
+    // ═══════════════════════════════════════════════════════════════════════
 
     @Override
     @Transactional(readOnly = true)
     public List<ChuongTrinhKhuyenMai> layDanhSach() {
-        return ctkmRepo.findAll();
+        return ctkmRepo.findAllByOrderByIdDesc();
     }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<ChuongTrinhKhuyenMai> layKhuyenMaiDangDienRa() {
-        return ctkmRepo.layKhuyenMaiDangDienRa();
-    }
-
-    @Override
-    @Transactional
-    public ChuongTrinhKhuyenMai taoMoi(ChuongTrinhKhuyenMai request) {
-        validateCtkmRequest(request);
-        ChuongTrinhKhuyenMai entity = ChuongTrinhKhuyenMai.builder()
-                .tenCtkm(request.getTenCtkm())
-                .moTa(request.getMoTa())
-                .loai(request.getLoai())
-                .giaTriUuDai(request.getGiaTriUuDai())
-                .laPhanTram(request.getLaPhanTram() != null ? request.getLaPhanTram() : false)
-                .giamToiDa(request.getGiamToiDa())
-                .ngayBatDau(request.getNgayBatDau())
-                .ngayKetThuc(request.getNgayKetThuc())
-                .gioFlashBatDau(request.getGioFlashBatDau())
-                .gioFlashKetThuc(request.getGioFlashKetThuc())
-                .soLuongToiDa(request.getSoLuongToiDa())
-                .trangThai("chua_bat_dau")
-                .build();
-        ChuongTrinhKhuyenMai saved = ctkmRepo.save(entity);
-        log.info("[KhuyenMai] Tạo CTKM thành công — id={}, ten={}", saved.getId(), saved.getTenCtkm());
-        return saved;
-    }
-
-    @Override
-    @Transactional
-    public ChuongTrinhKhuyenMai capNhat(Integer id, ChuongTrinhKhuyenMai request) {
-        ChuongTrinhKhuyenMai entity = ctkmRepo.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy chương trình KM ID: " + id));
-        if (request.getTenCtkm()     != null) entity.setTenCtkm(request.getTenCtkm());
-        if (request.getMoTa()        != null) entity.setMoTa(request.getMoTa());
-        if (request.getGiaTriUuDai() != null) entity.setGiaTriUuDai(request.getGiaTriUuDai());
-        if (request.getGiamToiDa()   != null) entity.setGiamToiDa(request.getGiamToiDa());
-        if (request.getNgayBatDau()  != null) entity.setNgayBatDau(request.getNgayBatDau());
-        if (request.getNgayKetThuc() != null) entity.setNgayKetThuc(request.getNgayKetThuc());
-        if (request.getTrangThai()   != null) entity.setTrangThai(request.getTrangThai());
-        return ctkmRepo.save(entity);
-    }
-
-    // ── ADMIN: Sinh mã giảm giá ──────────────────────────────────────────
-
-    @Override
-    @Transactional
-    public List<MaGiamGia> sinhMaGiamGia(Integer ctkmId, int soLuong, String prefix) {
-        if (soLuong <= 0 || soLuong > 500) {
-            throw new IllegalArgumentException("Số lượng mã phải trong khoảng 1 - 500.");
-        }
-        ChuongTrinhKhuyenMai ctkm = ctkmRepo.findById(ctkmId)
-                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy chương trình KM ID: " + ctkmId));
-
-        if (!"ma_code".equals(ctkm.getLoai())) {
-            throw new IllegalArgumentException(
-                    "Chương trình [" + ctkm.getTenCtkm() + "] không phải loại 'ma_code'. " +
-                    "Chỉ loại 'ma_code' mới được sinh mã giảm giá.");
-        }
-
-        String tiToPrefix = (prefix != null && !prefix.isBlank()) ? prefix.toUpperCase().trim() : "CODE";
-        List<MaGiamGia> danhSach = new ArrayList<>(soLuong);
-
-        int attempts = 0;
-        while (danhSach.size() < soLuong && attempts < soLuong * 3) {
-            attempts++;
-            // Sinh mã ngẫu nhiên: PREFIX-XXXXXXXX (8 ký tự hex từ UUID)
-            String maCode = tiToPrefix + "-" + UUID.randomUUID().toString()
-                    .replace("-", "").substring(0, 8).toUpperCase();
-
-            if (maGiamGiaRepo.existsByMaCode(maCode)) continue; // Trùng → thử lại
-
-            MaGiamGia ma = MaGiamGia.builder()
-                    .chuongTrinhKhuyenMai(ctkm)
-                    .maCode(maCode)
-                    .donHangToiThieu(BigDecimal.ZERO)
-                    .soLuongToiDa(1)
-                    .daSuDung(0)
-                    .build();
-            danhSach.add(ma);
-        }
-
-        if (danhSach.size() < soLuong) {
-            throw new IllegalStateException("Không thể sinh đủ " + soLuong + " mã duy nhất. Vui lòng thử lại.");
-        }
-
-        List<MaGiamGia> saved = maGiamGiaRepo.saveAll(danhSach);
-        log.info("[KhuyenMai] Sinh {} mã giảm giá cho ctkmId={}", saved.size(), ctkmId);
-        return saved;
-    }
-
-    // ── PUBLIC: Check mã tại Checkout ────────────────────────────────────
-
-    @Override
-    @Transactional(readOnly = true)
-    public BigDecimal checkMa(String maCode, BigDecimal tongTien) {
-        if (maCode == null || maCode.isBlank()) {
-            throw new IllegalArgumentException("Mã giảm giá không được để trống.");
-        }
-        if (tongTien == null || tongTien.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Tổng tiền đơn hàng phải lớn hơn 0.");
-        }
-
-        // Bước 1: Tìm mã (kèm CTKM cha)
-        MaGiamGia ma = maGiamGiaRepo.findByMaCodeWithCtkm(maCode.trim().toUpperCase())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Mã giảm giá '" + maCode + "' không tồn tại trong hệ thống."));
-
-        ChuongTrinhKhuyenMai ctkm = ma.getChuongTrinhKhuyenMai();
-
-        // Bước 2: Chương trình phải đang diễn ra
-        if (!"dang_dien_ra".equals(ctkm.getTrangThai())) {
-            throw new IllegalArgumentException(String.format(
-                    "Mã '%s' thuộc chương trình [%s] đang ở trạng thái '%s', không thể sử dụng.",
-                    maCode, ctkm.getTenCtkm(), ctkm.getTrangThai()));
-        }
-
-        // Bước 3: Chưa hết hạn
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isAfter(ctkm.getNgayKetThuc())) {
-            throw new IllegalArgumentException(String.format(
-                    "Mã '%s' đã hết hạn vào ngày %s.", maCode, ctkm.getNgayKetThuc().toLocalDate()));
-        }
-        if (now.isBefore(ctkm.getNgayBatDau())) {
-            throw new IllegalArgumentException(String.format(
-                    "Mã '%s' chưa đến thời gian áp dụng (bắt đầu: %s).",
-                    maCode, ctkm.getNgayBatDau().toLocalDate()));
-        }
-
-        // Bước 4: Còn lượt dùng
-        if (ma.getDaSuDung() >= ma.getSoLuongToiDa()) {
-            throw new IllegalArgumentException(
-                    "Mã '" + maCode + "' đã hết lượt sử dụng.");
-        }
-
-        // Bước 5: Đơn hàng đạt giá trị tối thiểu
-        if (tongTien.compareTo(ma.getDonHangToiThieu()) < 0) {
-            throw new IllegalArgumentException(String.format(
-                    "Đơn hàng chưa đạt giá trị tối thiểu để dùng mã '%s'. " +
-                    "Yêu cầu: %,.0f VNĐ | Đơn hiện tại: %,.0f VNĐ.",
-                    maCode, ma.getDonHangToiThieu(), tongTien));
-        }
-
-        // Tính số tiền được giảm
-        BigDecimal soTienGiam = tinhSoTienGiam(ctkm, ma, tongTien);
-        log.info("[KhuyenMai] checkMa='{}' | tongTien={} | giảm={}", maCode, tongTien, soTienGiam);
-        return soTienGiam;
-    }
-
-    // ── ADMIN: Phương thức bổ sung phục vụ UI ───────────────────────────
 
     @Override
     @Transactional(readOnly = true)
@@ -197,34 +43,66 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy chương trình KM ID: " + id));
     }
 
+    /**
+     * Hàm lưu chung: Tự động phân biệt Thêm mới (id == null) / Cập nhật (id != null).
+     * Validate logic theo từng loại khuyến mãi.
+     */
     @Override
-    @Transactional(readOnly = true)
-    public List<MaGiamGia> layMaGiamGia(Integer ctkmId) {
-        return maGiamGiaRepo.findByChuongTrinhKhuyenMaiId(ctkmId);
+    @Transactional
+    public ChuongTrinhKhuyenMai luu(ChuongTrinhKhuyenMai ctkm) {
+        validateTheoLoai(ctkm);
+
+        if (ctkm.getId() != null) {
+            // === CẬP NHẬT ===
+            ChuongTrinhKhuyenMai entity = ctkmRepo.findById(ctkm.getId())
+                    .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy CTKM ID: " + ctkm.getId()));
+
+            entity.setTenCtkm(ctkm.getTenCtkm());
+            entity.setMoTa(ctkm.getMoTa());
+            entity.setGiaTriUuDai(ctkm.getGiaTriUuDai());
+
+            entity.setNgayBatDau(ctkm.getNgayBatDau());
+            entity.setNgayKetThuc(ctkm.getNgayKetThuc());
+            // Chỉ cập nhật các trường thuộc loại tương ứng
+            entity.setDonHangToiThieu(ctkm.getDonHangToiThieu());
+            entity.setGioFlashBatDau(ctkm.getGioFlashBatDau());
+            entity.setGioFlashKetThuc(ctkm.getGioFlashKetThuc());
+
+            if (ctkm.getTrangThai() != null && !ctkm.getTrangThai().isBlank()) {
+                entity.setTrangThai(ctkm.getTrangThai());
+            }
+
+            ChuongTrinhKhuyenMai saved = ctkmRepo.save(entity);
+            log.info("[KhuyenMai] Cập nhật CTKM id={} loai={}", saved.getId(), saved.getLoai());
+            return saved;
+
+        } else {
+            // === THÊM MỚI ===
+            if (ctkm.getTrangThai() == null || ctkm.getTrangThai().isBlank()) {
+                ctkm.setTrangThai("chua_bat_dau");
+            }
+            if (ctkm.getSoLanDaDung() == null) {
+                ctkm.setSoLanDaDung(0);
+            }
+            ChuongTrinhKhuyenMai saved = ctkmRepo.save(ctkm);
+            log.info("[KhuyenMai] Tạo mới CTKM id={} loai={} ten={}", saved.getId(), saved.getLoai(), saved.getTenCtkm());
+            return saved;
+        }
     }
 
     @Override
     @Transactional
-    public void themChiTietFlashSale(Integer ctkmId, Integer bienTheId, BigDecimal giaFlash, Integer soLuongGioiHan) {
-        ChuongTrinhKhuyenMai ctkm = ctkmRepo.findById(ctkmId)
-                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy CTKM ID: " + ctkmId));
-        BienTheSanPham bt = bienTheSanPhamRepo.findById(bienTheId)
-                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy biến thể ID: " + bienTheId));
-        ChiTietFlashSale ct = ChiTietFlashSale.builder()
-                .chuongTrinhKhuyenMai(ctkm)
-                .bienTheSanPham(bt)
-                .giaFlash(giaFlash)
-                .soLuongGioiHan(soLuongGioiHan)
-                .daBan(0)
-                .build();
-        chiTietFlashSaleRepo.save(ct);
+    public void xoa(Integer id) {
+        if (!ctkmRepo.existsById(id)) {
+            throw new EntityNotFoundException("Không tìm thấy CTKM ID: " + id);
+        }
+        ctkmRepo.deleteById(id);
+        log.info("[KhuyenMai] Đã xóa CTKM id={}", id);
     }
 
-    @Override
-    @Transactional
-    public void xoaChiTietFlashSale(Integer chiTietId) {
-        chiTietFlashSaleRepo.deleteById(chiTietId);
-    }
+    // ═══════════════════════════════════════════════════════════════════════
+    // SUB-FORM: FLASH SALE
+    // ═══════════════════════════════════════════════════════════════════════
 
     @Override
     @Transactional(readOnly = true)
@@ -234,24 +112,78 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
 
     @Override
     @Transactional
-    public void themPhamVi(Integer ctkmId, Integer sanPhamId, Integer danhMucId, Integer hangSanXuatId) {
+    public void themChiTietFlashSale(Integer ctkmId, Integer bienTheId,
+                                     BigDecimal phanTramGiam, Integer soLuongGioiHan) {
         ChuongTrinhKhuyenMai ctkm = ctkmRepo.findById(ctkmId)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy CTKM ID: " + ctkmId));
+        BienTheSanPham bt = bienTheSanPhamRepo.findById(bienTheId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy biến thể ID: " + bienTheId));
+
+        if (phanTramGiam == null || phanTramGiam.compareTo(BigDecimal.ZERO) <= 0
+                || phanTramGiam.compareTo(new BigDecimal("100")) > 0) {
+            throw new IllegalArgumentException("Phần trăm giảm phải từ 0.01 đến 100.");
+        }
+        if (soLuongGioiHan == null || soLuongGioiHan <= 0) {
+            throw new IllegalArgumentException("Số lượng giới hạn phải lớn hơn 0.");
+        }
+
+        // Kiểm tra biến thể đã tồn tại trong flash sale chưa
+        boolean daConan = chiTietFlashSaleRepo.findByChuongTrinhKhuyenMaiId(ctkmId)
+                .stream().anyMatch(c -> c.getBienTheSanPham().getId().equals(bienTheId));
+        if (daConan) {
+            throw new IllegalArgumentException("Biến thể này đã có trong Flash Sale. Vui lòng xóa dòng cũ trước khi thêm lại.");
+        }
+
+        ChiTietFlashSale ct = ChiTietFlashSale.builder()
+                .chuongTrinhKhuyenMai(ctkm)
+                .bienTheSanPham(bt)
+                .phanTramGiam(phanTramGiam)
+                .soLuongGioiHan(soLuongGioiHan)
+                .daBan(0)
+                .build();
+        chiTietFlashSaleRepo.save(ct);
+        log.info("[KhuyenMai] Thêm biến thể id={} vào Flash Sale id={}", bienTheId, ctkmId);
+    }
+
+    @Override
+    @Transactional
+    public void xoaChiTietFlashSale(Integer chiTietId) {
+        chiTietFlashSaleRepo.deleteById(chiTietId);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SUB-FORM: PHẠM VI ÁP DỤNG (giam_gia_truc_tiep)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PhamViKhuyenMai> layPhamVi(Integer ctkmId) {
+        return phamViKhuyenMaiRepo.findByChuongTrinhKhuyenMaiId(ctkmId);
+    }
+
+    @Override
+    @Transactional
+    public void themPhamVi(Integer ctkmId, Integer sanPhamId) {
+        ChuongTrinhKhuyenMai ctkm = ctkmRepo.findById(ctkmId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy CTKM ID: " + ctkmId));
+        if (sanPhamId == null) {
+            throw new IllegalArgumentException("Vui lòng chọn sản phẩm cần áp dụng.");
+        }
+        SanPham sp = sanPhamRepo.findById(sanPhamId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy sản phẩm ID: " + sanPhamId));
+
+        // Kiểm tra trùng
+        boolean daConan = phamViKhuyenMaiRepo.findByChuongTrinhKhuyenMaiId(ctkmId)
+                .stream().anyMatch(p -> p.getSanPham() != null && p.getSanPham().getId().equals(sanPhamId));
+        if (daConan) {
+            throw new IllegalArgumentException("Sản phẩm này đã có trong danh sách áp dụng.");
+        }
+
         PhamViKhuyenMai pv = new PhamViKhuyenMai();
         pv.setChuongTrinhKhuyenMai(ctkm);
-        if (sanPhamId != null) {
-            pv.setSanPham(sanPhamRepo.findById(sanPhamId)
-                    .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy sản phẩm ID: " + sanPhamId)));
-        }
-        if (danhMucId != null) {
-            pv.setDanhMuc(danhMucRepo.findById(danhMucId)
-                    .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy danh mục ID: " + danhMucId)));
-        }
-        if (hangSanXuatId != null) {
-            pv.setHangSanXuat(hangSanXuatRepo.findById(hangSanXuatId)
-                    .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy hãng SX ID: " + hangSanXuatId)));
-        }
+        pv.setSanPham(sp);
         phamViKhuyenMaiRepo.save(pv);
+        log.info("[KhuyenMai] Thêm sản phẩm id={} vào phạm vi CTKM id={}", sanPhamId, ctkmId);
     }
 
     @Override
@@ -260,54 +192,182 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
         phamViKhuyenMaiRepo.deleteById(phamViId);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // PUBLIC (FRONTEND)
+    // ═══════════════════════════════════════════════════════════════════════
+
     @Override
     @Transactional(readOnly = true)
-    public List<PhamViKhuyenMai> layPhamVi(Integer ctkmId) {
-        return phamViKhuyenMaiRepo.findByChuongTrinhKhuyenMaiId(ctkmId);
+    public List<ChuongTrinhKhuyenMai> layKhuyenMaiDangDienRa() {
+        return ctkmRepo.layKhuyenMaiDangDienRa();
     }
 
-    // ── PRIVATE HELPERS ──────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+    // POS — BÁN HÀNG TẠI QUẦY
+    // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * Tính số tiền được giảm dựa trên cấu hình CTKM.
-     * Đảm bảo số tiền giảm không vượt tổng đơn hàng.
+     * {@inheritDoc}
+     *
+     * <h3>Thuật toán (O(n), 1 DB round-trip):</h3>
+     * <ol>
+     *   <li>Query DB: Lấy tất cả CTKM đang diễn ra, loại áp dụng toàn đơn hàng
+     *       ({@code phan_tram}, {@code don_hang_toi_thieu}).</li>
+     *   <li>Filter eligibility: Bỏ qua CTKM có {@code donHangToiThieu > tongTienHang}.</li>
+     *   <li>Tính tiền giảm theo loại:
+     *       <ul>
+     *         <li>{@code phan_tram}          → tongTienHang × (giaTriUuDai / 100)</li>
+     *         <li>{@code don_hang_toi_thieu} → tongTienHang × (giaTriUuDai / 100)</li>
+     *       </ul>
+     *   </li>
+     *   <li>Trả về CTKM có tiền giảm lớn nhất. Nếu bằng nhau, ưu tiên ID nhỏ hơn
+     *       (CTKM được tạo trước).</li>
+     * </ol>
+     *
+     * @param tongTienHang Tổng tiền hàng (phải >= 0). Nếu null hoặc <= 0, trả về null ngay.
+     * @return CTKM tốt nhất hoặc {@code null} nếu không có CTKM phù hợp.
      */
-    private BigDecimal tinhSoTienGiam(ChuongTrinhKhuyenMai ctkm,
-                                       MaGiamGia ma, BigDecimal tongTien) {
-        BigDecimal soTienGiam;
+    @Override
+    @Transactional(readOnly = true)
+    public ChuongTrinhKhuyenMai timKhuyenMaiTotNhatChoDonHang(BigDecimal tongTienHang) {
 
-        if (Boolean.TRUE.equals(ctkm.getLaPhanTram())) {
-            // Giảm theo phần trăm
-            soTienGiam = tongTien
-                    .multiply(ctkm.getGiaTriUuDai())
-                    .divide(BigDecimal.valueOf(100), 0, RoundingMode.DOWN);
-            // Áp dụng giảm tối đa (ưu tiên giamToiDa của mã, fallback về của CTKM)
-            BigDecimal giamToiDa = ma.getGiamToiDa() != null ? ma.getGiamToiDa() : ctkm.getGiamToiDa();
-            if (giamToiDa != null && soTienGiam.compareTo(giamToiDa) > 0) {
-                soTienGiam = giamToiDa;
-            }
-        } else {
-            // Giảm số tiền cố định
-            soTienGiam = ctkm.getGiaTriUuDai();
+        // Guard: Không thể áp khuyến mãi nếu tổng tiền hàng không hợp lệ
+        if (tongTienHang == null || tongTienHang.compareTo(BigDecimal.ZERO) <= 0) {
+            log.warn("[KhuyenMai-POS] tongTienHang không hợp lệ ({}), bỏ qua tìm khuyến mãi.",
+                    tongTienHang);
+            return null;
         }
 
-        // Không giảm quá tổng đơn hàng
-        if (soTienGiam.compareTo(tongTien) > 0) soTienGiam = tongTien;
-        return soTienGiam;
+        List<ChuongTrinhKhuyenMai> danhSach = ctkmRepo.layKhuyenMaiApDungToanDonHang();
+
+        if (danhSach.isEmpty()) {
+            log.debug("[KhuyenMai-POS] Không có CTKM nào đang diễn ra cho toàn đơn hàng.");
+            return null;
+        }
+
+        Optional<ChuongTrinhKhuyenMai> ketQua = danhSach.stream()
+                // ─── Bước 1: Filter điều kiện đơn tối thiểu ───────────────
+                .filter(ctkm -> {
+                    BigDecimal nguong = ctkm.getDonHangToiThieu();
+                    // Nếu không có ngưỡng tối thiểu → luôn đủ điều kiện
+                    if (nguong == null) return true;
+                    // Chỉ áp dụng khi tổng tiền hàng >= ngưỡng
+                    return tongTienHang.compareTo(nguong) >= 0;
+                })
+                // ─── Bước 2: Chọn CTKM có tiền giảm lớn nhất ────────────
+                .max(Comparator
+                        .comparing(ctkm -> tinhTienGiam(ctkm, tongTienHang),
+                                   Comparator.naturalOrder()));
+
+        ketQua.ifPresentOrElse(
+                ctkm -> log.info(
+                        "[KhuyenMai-POS] Chọn CTKM tốt nhất: id={}, ten='{}', loai={}, " +
+                        "giaTriUuDai={}%, tienGiam={}, tongTienHang={}",
+                        ctkm.getId(), ctkm.getTenCtkm(), ctkm.getLoai(),
+                        ctkm.getGiaTriUuDai(),
+                        tinhTienGiam(ctkm, tongTienHang),
+                        tongTienHang),
+                () -> log.debug(
+                        "[KhuyenMai-POS] Không có CTKM nào đủ điều kiện cho đơn {}.",
+                        tongTienHang)
+        );
+
+        return ketQua.orElse(null);
     }
 
-    private void validateCtkmRequest(ChuongTrinhKhuyenMai req) {
+    @Override
+    @Transactional
+    public void toggleTrangThai(Integer id) {
+        ChuongTrinhKhuyenMai ctkm = ctkmRepo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy chương trình KM ID: " + id));
+
+        if ("tam_dung".equals(ctkm.getTrangThai())) {
+            // === Mở lại: tính toán trạng thái thực tế theo thời gian hiện tại ===
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+            String trangThaiMoi;
+            if (now.isBefore(ctkm.getNgayBatDau())) {
+                trangThaiMoi = "chua_bat_dau";
+            } else if (now.isAfter(ctkm.getNgayKetThuc())) {
+                trangThaiMoi = "da_ket_thuc";
+            } else {
+                trangThaiMoi = "dang_dien_ra";
+            }
+
+            ctkm.setTrangThai(trangThaiMoi);
+            log.info("[KhuyenMai] Mở lại CTKM id={} → trạng thái mới = {}", id, trangThaiMoi);
+
+        } else {
+            // === Tạm dừng bất kỳ trạng thái khác ===
+            ctkm.setTrangThai("tam_dung");
+            log.info("[KhuyenMai] Tạm dừng CTKM id={} (trước đó: {})", id, ctkm.getTrangThai());
+        }
+
+        ctkmRepo.save(ctkm);
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PRIVATE HELPERS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void validateTheoLoai(ChuongTrinhKhuyenMai req) {
         if (req.getTenCtkm() == null || req.getTenCtkm().isBlank()) {
-            throw new IllegalArgumentException("Tên chương trình khuyến mãi không được trống.");
+            throw new IllegalArgumentException("Tên chương trình khuyến mãi không được để trống.");
         }
         if (req.getLoai() == null || req.getLoai().isBlank()) {
-            throw new IllegalArgumentException("Loại khuyến mãi không được trống.");
+            throw new IllegalArgumentException("Loại khuyến mãi không hợp lệ.");
         }
         if (req.getNgayBatDau() == null || req.getNgayKetThuc() == null) {
-            throw new IllegalArgumentException("Ngày bắt đầu và kết thúc không được trống.");
+            throw new IllegalArgumentException("Ngày bắt đầu và kết thúc không được để trống.");
         }
         if (req.getNgayBatDau().isAfter(req.getNgayKetThuc())) {
             throw new IllegalArgumentException("Ngày bắt đầu phải trước ngày kết thúc.");
         }
+        if (req.getGiaTriUuDai() == null || req.getGiaTriUuDai().compareTo(BigDecimal.ZERO) <= 0
+                || req.getGiaTriUuDai().compareTo(new BigDecimal("100")) > 0) {
+            throw new IllegalArgumentException("Giá trị ưu đãi (%) phải từ 0.01 đến 100.");
+        }
+
+        switch (req.getLoai()) {
+            case "don_hang_toi_thieu" -> {
+                if (req.getDonHangToiThieu() == null || req.getDonHangToiThieu().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new IllegalArgumentException("Loại 'Đơn hàng tối thiểu' yêu cầu nhập số tiền tối thiểu hợp lệ.");
+                }
+            }
+            case "flash_sale" -> {
+                if (req.getGioFlashBatDau() == null || req.getGioFlashKetThuc() == null) {
+                    throw new IllegalArgumentException("Flash Sale yêu cầu nhập giờ flash bắt đầu và kết thúc.");
+                }
+                if (req.getGioFlashBatDau().isAfter(req.getGioFlashKetThuc())) {
+                    throw new IllegalArgumentException("Giờ flash bắt đầu phải trước giờ flash kết thúc.");
+                }
+            }
+            case "phan_tram", "giam_gia_truc_tiep" -> { /* không yêu cầu thêm */ }
+            default -> throw new IllegalArgumentException("Loại khuyến mãi không hợp lệ: " + req.getLoai());
+        }
+    }   // ← đóng validateTheoLoai()
+
+    /**
+     * Tính số tiền được giảm của 1 CTKM với tổng tiền hàng cho trước.
+     *
+     * <p>Công thức:
+     * <ul>
+     *   <li>{@code "phan_tram"} / {@code "don_hang_toi_thieu"}:
+     *       {@code tongTienHang × (giaTriUuDai / 100)}, làm tròn HALF_UP 2 chữ số thập phân.</li>
+     * </ul>
+     *
+     * @param ctkm         Chương trình khuyến mãi cần tính.
+     * @param tongTienHang Tổng tiền hàng của đơn.
+     * @return Số tiền được giảm (>= 0). Trả về ZERO nếu giaTriUuDai null hoặc loại không xác định.
+     */
+    private BigDecimal tinhTienGiam(ChuongTrinhKhuyenMai ctkm, BigDecimal tongTienHang) {
+        if (ctkm.getGiaTriUuDai() == null) {
+            return BigDecimal.ZERO;
+        }
+        // Cả 2 loại "phan_tram" và "don_hang_toi_thieu" đều giảm theo phần trăm
+        return tongTienHang
+                .multiply(ctkm.getGiaTriUuDai())
+                .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
     }
 }

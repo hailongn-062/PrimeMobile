@@ -74,4 +74,25 @@ public interface IBanHangOfflineService {
      * @throws jakarta.persistence.EntityNotFoundException Nếu không tìm thấy đơn, PTTT, hoặc tồn kho.
      */
     DonHang thanhToanDonHang(Integer donHangId, Integer phuongThucThanhToanId);
+
+    /**
+     * Cập nhật / chốt khách hàng cho đơn hàng POS.
+     *
+     * <p>Logic nghiệp vụ (system_rules.md §2.1):
+     * <ul>
+     *   <li><b>Trường hợp 1 — Khách có tài khoản:</b>
+     *       {@code khachHangId} truyền lên hợp lệ → Lấy thông tin khách đó gán vào DonHang.</li>
+     *   <li><b>Trường hợp 2 — Khách lẻ vãng lai:</b>
+     *       {@code khachHangId} là {@code null} hoặc không tìm thấy trong DB →
+     *       Tự động gán vào tài khoản khách lẻ mặc định ({@code so_dien_thoai = '0000000000'}).</li>
+     * </ul>
+     *
+     * @param donHangId   ID đơn hàng đang nháp cần cập nhật khách hàng.
+     * @param khachHangId ID khách hàng (có thể null — Khách lẻ).
+     * @return Đơn hàng đã được gán khách hàng.
+     * @throws jakarta.persistence.EntityNotFoundException Nếu đơn hàng không tồn tại
+     *         hoặc tài khoản khách lẻ mặc định chưa được khởi tạo trong DB.
+     * @throws IllegalStateException Nếu đơn hàng không ở trạng thái có thể sửa.
+     */
+    DonHang capNhatKhachHangChoDon(Integer donHangId, Integer khachHangId);
 }

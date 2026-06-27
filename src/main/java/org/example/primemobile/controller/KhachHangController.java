@@ -54,7 +54,6 @@ public class KhachHangController {
 
     /**
      * Xem chi tiết một khách hàng theo ID.
-     * Trả về đầy đủ thông tin bao gồm hạng thành viên, điểm tích lũy, tổng chi tiêu.
      *
      * @param id ID khách hàng.
      */

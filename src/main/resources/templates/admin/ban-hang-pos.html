@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{layout/admin-layout :: adminHead}"></head>
+
+<head>
+    <title>Bán hàng tại quầy (POS) — PrimeMobile</title>
+    <style>
+        /* ══════════════════════════════════════════════
+           POS — OVERRIDE: Full-width content area
+           Sidebar bị thu gọn mặc định trên POS để có
+           diện tích tối đa cho giao diện bán hàng.
+        ══════════════════════════════════════════════ */
+        :root {
+            --pos-left-bg: #F0F4F8;
+            --pos-right-bg: #1A1F2E;
+            --pos-cart-bg: #232840;
+            --pos-accent: #1565C0;
+            --pos-green: #16a34a;
+            --pos-border: rgba(255, 255, 255, .08);
+            --pos-text-dim: rgba(255, 255, 255, .55);
+            --card-radius: 14px;
+        }
+
+        /* Force sidebar thu gọn khi ở trang POS */
+        body {
+            overflow: hidden;
+        }
+
+        /* ── WRAPPER FULL-SCREEN ── */
+        #pos-wrapper {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        /* ── SIDEBAR ── */
+        #pmSidebar {
+            width: 220px;
+            min-width: 220px;
+            transition: width .3s ease, min-width .3s ease;
+            overflow: hidden;
+        }
+
+        body.pos-sidebar-mini #pmSidebar {
+            width: 0;
+            min-width: 0;
+        }
+
+        /* ── POS MAIN ── */
+        #pos-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--pos-left-bg);
+        }
+
+        /* ── TOPBAR ── */
+        #pmTopbar {
+            position: static;
+            left: 0;
+            flex-shrink: 0;
+            height: 54px;
+            padding: 0 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            background: #fff;
+            border-bottom: 1px solid #E8EDF5;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, .06);
+            z-index: 100;
+        }
+
+        /* ── BODY: 2 CỘT ── */
+        #pos-body {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            gap: 0;
+        }
+
+        /* ══ CỘT TRÁI — Sản phẩm ══ */
+        #col-products {
+            flex: 0 0 60%;
+            max-width: 60%;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem 1rem 1rem 1.25rem;
+            overflow: hidden;
+            background: var(--pos-left-bg);
+        }
+
+        /* Thanh tìm kiếm */
+        .pos-search-bar {
+            position: relative;
+            margin-bottom: .85rem;
+            flex-shrink: 0;
+        }
+
+        .pos-search-bar .fa-search {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9CA3AF;
+            font-size: .9rem;
+            pointer-events: none;
+        }
+
+        #inputSearch {
+            border-radius: 12px;
+            border: 2px solid #E8EDF5;
+            padding: .6rem .9rem .6rem 2.5rem;
+            font-size: .9rem;
+            width: 100%;
+            transition: border-color .2s;
+            background: #fff;
+        }
+
+        #inputSearch:focus {
+            outline: none;
+            border-color: var(--pos-accent);
+            box-shadow: 0 0 0 3px rgba(21, 101, 192, .12);
+        }
+
+        /* Loading skeleton & empty */
+        #product-status {
+            text-align: center;
+            padding: 2.5rem;
+            color: #6B7280;
+            font-size: .9rem;
+        }
+
+        /* Product grid */
+        #product-grid {
+            flex: 1;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+            gap: .8rem;
+            padding-bottom: .5rem;
+            align-content: start;
+        }
+
+        #product-grid::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        #product-grid::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 4px;
+        }
+
+        /* Product card */
+        .prod-card {
+            background: #fff;
+            border-radius: var(--card-radius);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .07);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform .18s, box-shadow .18s;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .prod-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, .12);
+            border-color: var(--pos-accent);
+        }
+
+        .prod-card .prod-img {
+            height: 100px;
+            background: #F8FAFC;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .prod-card .prod-img img {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+        }
+
+        .prod-card .prod-img .prod-emoji {
+            font-size: 2.5rem;
+        }
+
+        .prod-card .prod-body {
+            padding: .65rem .7rem .55rem;
+            display: flex;
+            flex-direction: column;
+            gap: .2rem;
+            flex: 1;
+        }
+
+        .prod-card .prod-name {
+            font-size: .78rem;
+            font-weight: 700;
+            color: #1A1A2E;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .prod-card .prod-sku {
+            font-size: .68rem;
+            color: #9CA3AF;
+        }
+
+        .prod-card .prod-price {
+            font-size: .9rem;
+            font-weight: 800;
+            color: var(--pos-accent);
+            margin-top: .15rem;
+        }
+
+        .prod-card .prod-price-sale {
+            font-size: .78rem;
+            font-weight: 800;
+            color: #e53e3e;
+        }
+
+        .prod-card .prod-stock {
+            font-size: .7rem;
+            color: #6B7280;
+            font-weight: 600;
+        }
+
+        .prod-card .prod-stock span {
+            font-weight: 800;
+            color: var(--pos-green);
+        }
+
+        .prod-card .btn-add {
+            margin: 0 .7rem .65rem;
+            border: none;
+            border-radius: 9px;
+            background: var(--pos-accent);
+            color: #fff;
+            font-size: .78rem;
+            font-weight: 700;
+            padding: .38rem .5rem;
+            cursor: pointer;
+            transition: background .2s, transform .1s;
+            text-align: center;
+        }
+
+        .prod-card .btn-add:hover {
+            background: #0D47A1;
+        }
+
+        .prod-card .btn-add:active {
+            transform: scale(.97);
+        }
+
+        .prod-card.out-of-stock {
+            opacity: .45;
+            pointer-events: none;
+        }
+
+        /* ══ CỘT PHẢI — Giỏ hàng ══ */
+        #col-cart {
+            flex: 0 0 40%;
+            max-width: 40%;
+            background: var(--pos-right-bg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-left: 1px solid rgba(0, 0, 0, .12);
+        }
+
+        /* Cart header */
+        .cart-header {
+            padding: .9rem 1.1rem .7rem;
+            border-bottom: 1px solid var(--pos-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .cart-header .cart-title {
+            font-weight: 800;
+            color: #fff;
+            font-size: .95rem;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        .cart-count-badge {
+            background: var(--pos-accent);
+            color: #fff;
+            border-radius: 20px;
+            padding: 1px 9px;
+            font-size: .7rem;
+            font-weight: 700;
+        }
+
+        .btn-clear-cart {
+            background: rgba(255, 255, 255, .07);
+            border: 1px solid var(--pos-border);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, .55);
+            font-size: .75rem;
+            padding: .3rem .7rem;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .btn-clear-cart:hover {
+            background: rgba(239, 68, 68, .2);
+            color: #f87171;
+        }
+
+        /* Khách hàng select */
+        .cart-customer {
+            padding: .7rem 1.1rem;
+            border-bottom: 1px solid var(--pos-border);
+            flex-shrink: 0;
+        }
+
+        .cart-customer label {
+            font-size: .73rem;
+            font-weight: 700;
+            color: var(--pos-text-dim);
+            text-transform: uppercase;
+            letter-spacing: .8px;
+            display: block;
+            margin-bottom: .35rem;
+        }
+
+        .cart-customer select {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .06);
+            color: #fff;
+            padding: .45rem .8rem;
+            font-size: .85rem;
+            cursor: pointer;
+        }
+
+        .cart-customer select option {
+            background: #1A1F2E;
+        }
+
+        /* Cart items */
+        #cart-items-wrap {
+            flex: 1;
+            overflow-y: auto;
+            padding: .6rem .9rem;
+            display: flex;
+            flex-direction: column;
+            gap: .65rem;
+        }
+
+        #cart-items-wrap::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #cart-items-wrap::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, .15);
+            border-radius: 4px;
+        }
+
+        #cart-empty-msg {
+            text-align: center;
+            color: var(--pos-text-dim);
+            padding: 2.5rem 1rem;
+            font-size: .88rem;
+        }
+
+        #cart-empty-msg i {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: .5rem;
+            opacity: .4;
+        }
+
+        /* Cart item card */
+        .cart-item {
+            background: var(--pos-cart-bg);
+            border-radius: 12px;
+            border: 1px solid var(--pos-border);
+            padding: .7rem .85rem;
+        }
+
+        .cart-item-top {
+            display: flex;
+            align-items: flex-start;
+            gap: .6rem;
+            margin-bottom: .5rem;
+        }
+
+        .cart-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .cart-item-name {
+            font-size: .82rem;
+            font-weight: 700;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cart-item-sku {
+            font-size: .69rem;
+            color: var(--pos-text-dim);
+        }
+
+        .cart-item-price {
+            font-size: .85rem;
+            font-weight: 800;
+            color: #60A5FA;
+            white-space: nowrap;
+        }
+
+        /* Qty stepper */
+        .qty-stepper {
+            display: flex;
+            align-items: center;
+            gap: .3rem;
+            margin-top: .35rem;
+        }
+
+        .qty-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 7px;
+            border: 1px solid rgba(255, 255, 255, .15);
+            background: rgba(255, 255, 255, .07);
+            color: #fff;
+            font-size: .85rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background .15s;
+        }
+
+        .qty-btn:hover {
+            background: rgba(255, 255, 255, .15);
+        }
+
+        .qty-display {
+            min-width: 28px;
+            text-align: center;
+            font-weight: 800;
+            color: #fff;
+            font-size: .9rem;
+        }
+
+        .cart-item-subtotal {
+            font-size: .75rem;
+            color: var(--pos-text-dim);
+            margin-left: auto;
+            align-self: center;
+        }
+
+        .btn-remove-item {
+            background: none;
+            border: none;
+            color: rgba(239, 68, 68, .55);
+            cursor: pointer;
+            font-size: .85rem;
+            padding: .15rem .3rem;
+            transition: color .15s;
+            align-self: flex-start;
+        }
+
+        .btn-remove-item:hover {
+            color: #ef4444;
+        }
+
+        /* IMEI input area */
+        .imei-section {
+            margin-top: .45rem;
+        }
+
+        .imei-label {
+            font-size: .68rem;
+            font-weight: 700;
+            color: var(--pos-text-dim);
+            text-transform: uppercase;
+            letter-spacing: .7px;
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+            margin-bottom: .3rem;
+        }
+
+        .imei-count-indicator {
+            font-size: .66rem;
+            padding: 1px 7px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+
+        .imei-count-indicator.ok {
+            background: rgba(22, 163, 74, .2);
+            color: #4ade80;
+        }
+
+        .imei-count-indicator.err {
+            background: rgba(239, 68, 68, .2);
+            color: #f87171;
+        }
+
+        .imei-input {
+            width: 100%;
+            background: rgba(0, 0, 0, .25);
+            border: 1px solid rgba(255, 255, 255, .1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: .78rem;
+            font-family: 'Courier New', monospace;
+            padding: .45rem .7rem;
+            resize: none;
+            min-height: 40px;
+            transition: border-color .2s, box-shadow .2s;
+            line-height: 1.4;
+        }
+
+        .imei-input::placeholder {
+            color: rgba(255, 255, 255, .25);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .imei-input:focus {
+            outline: none;
+            border-color: #60A5FA;
+            box-shadow: 0 0 0 2px rgba(96, 165, 250, .15);
+        }
+
+        .imei-input.imei-error {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 2px rgba(239, 68, 68, .2) !important;
+        }
+
+        .imei-err-msg {
+            font-size: .68rem;
+            color: #f87171;
+            margin-top: .2rem;
+            display: none;
+        }
+
+        /* ══ CỘT PHẢI — Tổng kết ══ */
+        .cart-summary {
+            padding: .75rem 1.1rem;
+            border-top: 1px solid var(--pos-border);
+            background: rgba(0, 0, 0, .2);
+            flex-shrink: 0;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: .28rem 0;
+        }
+
+        .summary-row .lbl {
+            font-size: .83rem;
+            color: var(--pos-text-dim);
+        }
+
+        .summary-row .val {
+            font-size: .88rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .summary-row.discount .lbl {
+            color: #4ade80;
+        }
+
+        .summary-row.discount .val {
+            color: #4ade80;
+        }
+
+        .summary-row.promo-info .lbl {
+            font-size: .73rem;
+        }
+
+        .summary-row.promo-info .val {
+            font-size: .73rem;
+            color: #4ade80;
+        }
+
+        .summary-divider {
+            border: none;
+            border-top: 1px solid var(--pos-border);
+            margin: .4rem 0;
+        }
+
+        .summary-row.total .lbl {
+            font-size: .92rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .summary-row.total .val {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #60A5FA;
+        }
+
+        /* ── CHECKOUT BUTTON ── */
+        .btn-checkout {
+            margin: .65rem 1.1rem .85rem;
+            width: calc(100% - 2.2rem);
+            padding: .85rem;
+            font-size: 1rem;
+            font-weight: 800;
+            border-radius: 14px;
+            border: none;
+            background: linear-gradient(135deg, #1565C0, #1E88E5);
+            color: #fff;
+            cursor: pointer;
+            letter-spacing: .3px;
+            transition: all .2s;
+            box-shadow: 0 4px 18px rgba(21, 101, 192, .45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .6rem;
+            flex-shrink: 0;
+        }
+
+        .btn-checkout:hover {
+            background: linear-gradient(135deg, #0D47A1, #1565C0);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(21, 101, 192, .55);
+        }
+
+        .btn-checkout:active {
+            transform: scale(.98);
+        }
+
+        .btn-checkout:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ── SKELETON LOADER ── */
+        .skeleton-card {
+            background: #fff;
+            border-radius: var(--card-radius);
+            height: 220px;
+            animation: shimmer 1.5s infinite;
+            background: linear-gradient(90deg, #E8EDF5 25%, #F0F4F8 50%, #E8EDF5 75%);
+            background-size: 200% 100%;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        /* ── TOPBAR MINI LOGO ── */
+        .pos-topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            font-weight: 800;
+            color: #1A1A2E;
+            font-size: .95rem;
+        }
+
+        .pos-topbar-brand .brand-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #1565C0, #FF6F00);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        /* Responsive: collapse sidebar always on POS */
+        @media (max-width: 1200px) {
+            #col-products {
+                flex: 0 0 55%;
+                max-width: 55%;
+            }
+
+            #col-cart {
+                flex: 0 0 45%;
+                max-width: 45%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ═══════════════════════════════════════════════════════════
+     POS WRAPPER — ghi đè layout admin thông thường
+═══════════════════════════════════════════════════════════ -->
+    <div id="pos-wrapper">
+
+        <!-- SIDEBAR (có thể ẩn) -->
+        <aside id="pmSidebar" th:replace="~{layout/admin-layout :: sidebar}"></aside>
+
+        <!-- POS MAIN -->
+        <div id="pos-main">
+
+            <!-- TOPBAR -->
+            <header id="pmTopbar">
+                <!-- Toggle sidebar -->
+                <button class="btn-toggle-sidebar" id="btnToggleSidebar" title="Thu gọn / Mở rộng menu" style="border:none;background:none;width:36px;height:36px;border-radius:8px;
+                           display:flex;align-items:center;justify-content:center;color:#6B7280;
+                           cursor:pointer;transition:all .2s;flex-shrink:0;">
+                    <i class="fa fa-bars"></i>
+                </button>
+
+                <div class="pos-topbar-brand">
+                    <div class="brand-icon">📱</div>
+                    <span>POS — Bán hàng tại quầy</span>
+                    <span style="background:#E8F5E9;color:#2e7d32;border-radius:20px;
+                             padding:2px 10px;font-size:.68rem;font-weight:700;
+                             letter-spacing:.5px;margin-left:.5rem;">TRỰC TUYẾN</span>
+                </div>
+
+                <!-- Clock -->
+                <div style="margin-left:auto;font-size:.85rem;color:#6B7280;font-weight:600;
+                        display:flex;align-items:center;gap:.6rem;">
+                    <i class="fa fa-clock" style="color:#1565C0;"></i>
+                    <span id="pos-clock">--:--:--</span>
+                </div>
+
+                <!-- Logout -->
+                <a href="/dang-xuat" style="margin-left:1rem;display:flex;align-items:center;
+                    gap:.4rem;padding:.35rem .85rem;border-radius:8px;background:#FFF0F0;
+                    color:#C0392B;border:1px solid #FECDD3;font-size:.8rem;font-weight:600;
+                    text-decoration:none;transition:all .2s;"
+                    onclick="return confirm('Bạn có chắc muốn đăng xuất không?')" id="btn-dang-xuat">
+                    <i class="fa fa-sign-out-alt"></i>
+                    <span class="d-none d-sm-inline">Đăng xuất</span>
+                </a>
+            </header>
+
+            <!-- POS BODY: 2 CỘT -->
+            <div id="pos-body">
+
+                <!-- ══════════════════════════════════════════
+                 CỘT TRÁI — Tìm kiếm & Danh sách sản phẩm
+            ══════════════════════════════════════════ -->
+                <section id="col-products">
+
+                    <!-- Search bar -->
+                    <div class="pos-search-bar">
+                        <i class="fa fa-search"></i>
+                        <input type="text" id="inputSearch" placeholder="Tìm theo tên sản phẩm hoặc mã SKU..."
+                            autocomplete="off">
+                    </div>
+
+                    <!-- Status (loading / empty) -->
+                    <div id="product-status" style="display:none;">
+                        <div class="spinner-border text-primary" style="width:2rem;height:2rem;" role="status"></div>
+                        <p class="mt-2 mb-0">Đang tải danh sách sản phẩm...</p>
+                    </div>
+
+                    <!-- Product grid -->
+                    <div id="product-grid"></div>
+
+                </section>
+
+                <!-- ══════════════════════════════════════════
+                 CỘT PHẢI — Giỏ hàng & Thanh toán
+            ══════════════════════════════════════════ -->
+                <section id="col-cart">
+
+                    <!-- Cart header -->
+                    <div class="cart-header">
+                        <div class="cart-title">
+                            <i class="fa fa-shopping-cart"></i>
+                            Giỏ hàng
+                            <span class="cart-count-badge" id="cart-count">0</span>
+                        </div>
+                        <button class="btn-clear-cart" id="btnClearCart" title="Xoá toàn bộ giỏ hàng">
+                            <i class="fa fa-trash-alt me-1"></i>Xoá tất cả
+                        </button>
+                    </div>
+
+                    <!-- Chọn khách hàng -->
+                    <div class="cart-customer">
+                        <label><i class="fa fa-user-circle me-1"></i>Khách hàng</label>
+                        <select id="selectKhachHang">
+                            <option value="">👤 Khách lẻ (mặc định)</option>
+                            <!-- Các khách hàng sẽ được load thêm nếu cần -->
+                        </select>
+                    </div>
+
+                    <!-- Cart items -->
+                    <div id="cart-items-wrap">
+                        <div id="cart-empty-msg">
+                            <i class="fa fa-shopping-bag"></i>
+                            Chưa có sản phẩm nào.<br>
+                            <span style="font-size:.78rem;opacity:.6;">Bấm "Thêm vào giỏ" để bắt đầu.</span>
+                        </div>
+                    </div>
+
+                    <!-- Tổng kết -->
+                    <div class="cart-summary">
+                        <div class="summary-row">
+                            <span class="lbl">Tổng tiền hàng</span>
+                            <span class="val" id="sum-tong-tien">0 ₫</span>
+                        </div>
+                        <div class="summary-row discount" id="row-giam" style="display:none;">
+                            <span class="lbl"><i class="fa fa-tag me-1"></i>Giảm giá</span>
+                            <span class="val" id="sum-tien-giam">0 ₫</span>
+                        </div>
+                        <div class="summary-row promo-info" id="row-promo-name" style="display:none;">
+                            <span class="lbl" id="sum-promo-name"
+                                style="color:var(--pos-text-dim);font-style:italic;"></span>
+                            <span class="val" id="sum-promo-pct"></span>
+                        </div>
+                        <hr class="summary-divider">
+                        <div class="summary-row total">
+                            <span class="lbl">Khách cần trả</span>
+                            <span class="val" id="sum-can-tra">0 ₫</span>
+                        </div>
+                    </div>
+
+                    <!-- Nút thanh toán -->
+                    <button class="btn-checkout" id="btnCheckout" disabled>
+                        <i class="fa fa-cash-register"></i>
+                        Thanh toán &amp; In Bill
+                    </button>
+
+                </section>
+
+            </div><!-- #pos-body -->
+        </div><!-- #pos-main -->
+    </div><!-- #pos-wrapper -->
+
+    <!-- ═══════════════════════════════════
+     MODAL — In hóa đơn (Bill preview)
+═══════════════════════════════════ -->
+    <div class="modal fade" id="modalBill" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:520px;">
+            <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+                <div class="modal-header"
+                    style="background:linear-gradient(135deg,#1565C0,#1E88E5);color:#fff;border:none;">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa fa-receipt me-2"></i>Hóa đơn bán hàng
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="bill-content"
+                    style="font-family:'Courier New',monospace;font-size:.82rem;padding:1.25rem 1.5rem;">
+                    <!-- Được render bởi JS -->
+                </div>
+                <div class="modal-footer" style="border-top:1px solid #E8EDF5;gap:.5rem;">
+                    <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+                        <i class="fa fa-times me-1"></i>Đóng
+                    </button>
+                    <button class="btn btn-primary btn-sm" id="btnPrintBill">
+                        <i class="fa fa-print me-1"></i>In hóa đơn
+                    </button>
+                    <button class="btn btn-success btn-sm" id="btnNewOrder">
+                        <i class="fa fa-plus me-1"></i>Đơn hàng mới
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════
+     DEPENDENCIES
+═══════════════════════════════════ -->
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+
+    <!--
+    POS JavaScript — toàn bộ logic nằm ở /static/js/pos.js
+    Modules: state management, auto-promo, IMEI validate, checkout, bill printing
+-->
+    <script src="/js/pos.js"></script>
+
+</body>
+
+</html>

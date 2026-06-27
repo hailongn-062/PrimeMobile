@@ -26,12 +26,10 @@ import java.util.List;
 @Table(
         name = "bien_the_san_pham",
         indexes = {
-                @Index(name = "idx_bt_sp",      columnList = "san_pham_id, trang_thai"),
-                @Index(name = "idx_bt_barcode", columnList = "barcode")
+                @Index(name = "idx_bt_sp",      columnList = "san_pham_id, trang_thai")
         },
         uniqueConstraints = {
-                @UniqueConstraint(name = "uq_bt_ma_sku",  columnNames = "ma_sku"),
-                @UniqueConstraint(name = "uq_bt_barcode", columnNames = "barcode")
+                @UniqueConstraint(name = "uq_bt_ma_sku",  columnNames = "ma_sku")
         }
 )
 @Getter
@@ -63,12 +61,7 @@ public class BienTheSanPham {
     @Column(name = "ma_sku", nullable = false, length = 100, unique = true)
     private String maSku;
 
-    /**
-     * Barcode / EAN-13 – duy nhất nếu có.
-     * Nullable vì một số máy không có barcode chuẩn.
-     */
-    @Column(name = "barcode", length = 50, unique = true)
-    private String barcode;
+
 
     /** Tên màu sắc (ví dụ: "Titan Đen", "Titan Trắng"). */
     @Column(name = "mau_sac", nullable = false, length = 50)

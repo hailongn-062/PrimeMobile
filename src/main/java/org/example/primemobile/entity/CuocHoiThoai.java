@@ -17,10 +17,8 @@ import java.util.List;
  *  Tích hợp Gemini API tạm thời BỊ HOÃN.
  *  Entity được tạo đầy đủ để mapping DB và phục vụ refactor {@link DonHang}.
  * <p>
- * Quan hệ:
- *  - N:1 với {@link KhachHang}    (FK khach_hang_id, ON DELETE SET NULL, nullable)
  *  - 1-N với {@link TinNhanChat}  (mappedBy cuocHoiThoai, CASCADE ALL)
- *  - 1-N với {@link DonHang}      (mappedBy cuocHoiThoai — FK thêm qua ALTER TABLE)
+ *  - ID tham chiếu lỏng tới KhachHang (khach_hang_id) và DonHang (thông qua cột trong bảng don_hang)
  */
 @Entity
 @Table(
@@ -35,8 +33,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"tinNhanChats", "donHangs"})
-@EqualsAndHashCode(exclude = {"tinNhanChats", "donHangs"})
+@ToString(exclude = {"tinNhanChats"})
+@EqualsAndHashCode(exclude = {"tinNhanChats"})
 public class CuocHoiThoai {
 
     @Id
@@ -44,16 +42,11 @@ public class CuocHoiThoai {
     private Integer id;
 
     /**
-     * Khách hàng đã đăng nhập thực hiện hội thoại.
-     * ON DELETE SET NULL — xóa khách hàng vẫn giữ lịch sử chat.
-     * NULL nếu là khách vãng lai.
+     * ID Khách hàng đã đăng nhập thực hiện hội thoại.
+     * Tham chiếu lỏng, NULL nếu là khách vãng lai.
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "khach_hang_id",
-            foreignKey = @ForeignKey(name = "fk_cht_kh")
-    )
-    private KhachHang khachHang;
+    @Column(name = "khach_hang_id")
+    private Integer khachHangId;
 
     /**
      * Session token định danh khách vãng lai.
@@ -85,11 +78,4 @@ public class CuocHoiThoai {
     @OneToMany(mappedBy = "cuocHoiThoai", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<TinNhanChat> tinNhanChats = new ArrayList<>();
-
-    // -------------------------------------------------------------------------
-    // Quan hệ 1-N ngược: CuocHoiThoai → DonHang (FK fk_dh_cht qua ALTER TABLE)
-    // -------------------------------------------------------------------------
-    @OneToMany(mappedBy = "cuocHoiThoai", fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<DonHang> donHangs = new ArrayList<>();
 }

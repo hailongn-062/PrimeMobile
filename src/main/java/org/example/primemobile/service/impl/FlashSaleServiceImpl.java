@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,9 +63,8 @@ public class FlashSaleServiceImpl implements IFlashSaleService {
                 .ngayKetThuc(request.getNgayKetThuc())
                 .gioFlashBatDau(request.getGioFlashBatDau())
                 .gioFlashKetThuc(request.getGioFlashKetThuc())
-                .soLuongToiDa(request.getSoLuongToiDa())
+
                 .trangThai("chua_bat_dau")
-                .laPhanTram(false)
                 .build();
 
         flashSale = ctkmRepository.save(flashSale);
@@ -73,15 +73,14 @@ public class FlashSaleServiceImpl implements IFlashSaleService {
         for (TaoFlashSaleRequest.ChiTietRequest ct : request.getChiTiets()) {
             BienTheSanPham bt = bienTheRepository.findById(ct.getBienTheSanPhamId())
                     .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy biến thể ID: " + ct.getBienTheSanPhamId()));
-            
-            if (ct.getGiaFlash().compareTo(bt.getGiaBan()) >= 0) {
-                 throw new IllegalArgumentException("Giá Flash Sale phải nhỏ hơn giá bán hiện tại của biến thể " + bt.getMaSku());
+            if (ct.getPhanTramGiam() == null || ct.getPhanTramGiam().compareTo(BigDecimal.ZERO) < 0 || ct.getPhanTramGiam().compareTo(new BigDecimal("100")) > 0) {
+                 throw new IllegalArgumentException("Phần trăm giảm phải từ 0 đến 100 cho biến thể " + bt.getMaSku());
             }
 
             chiTiets.add(ChiTietFlashSale.builder()
                     .chuongTrinhKhuyenMai(flashSale)
                     .bienTheSanPham(bt)
-                    .giaFlash(ct.getGiaFlash())
+                    .phanTramGiam(ct.getPhanTramGiam())
                     .soLuongGioiHan(ct.getSoLuongGioiHan())
                     .daBan(0)
                     .build());
@@ -108,7 +107,7 @@ public class FlashSaleServiceImpl implements IFlashSaleService {
         flashSale.setNgayKetThuc(request.getNgayKetThuc());
         flashSale.setGioFlashBatDau(request.getGioFlashBatDau());
         flashSale.setGioFlashKetThuc(request.getGioFlashKetThuc());
-        flashSale.setSoLuongToiDa(request.getSoLuongToiDa());
+
 
         ctfsRepository.deleteAll(flashSale.getChiTietFlashSales());
         flashSale.getChiTietFlashSales().clear();
@@ -117,15 +116,14 @@ public class FlashSaleServiceImpl implements IFlashSaleService {
         for (TaoFlashSaleRequest.ChiTietRequest ct : request.getChiTiets()) {
             BienTheSanPham bt = bienTheRepository.findById(ct.getBienTheSanPhamId())
                     .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy biến thể ID: " + ct.getBienTheSanPhamId()));
-            
-            if (ct.getGiaFlash().compareTo(bt.getGiaBan()) >= 0) {
-                 throw new IllegalArgumentException("Giá Flash Sale phải nhỏ hơn giá bán hiện tại của biến thể " + bt.getMaSku());
+            if (ct.getPhanTramGiam() == null || ct.getPhanTramGiam().compareTo(BigDecimal.ZERO) < 0 || ct.getPhanTramGiam().compareTo(new BigDecimal("100")) > 0) {
+                 throw new IllegalArgumentException("Phần trăm giảm phải từ 0 đến 100 cho biến thể " + bt.getMaSku());
             }
 
             chiTiets.add(ChiTietFlashSale.builder()
                     .chuongTrinhKhuyenMai(flashSale)
                     .bienTheSanPham(bt)
-                    .giaFlash(ct.getGiaFlash())
+                    .phanTramGiam(ct.getPhanTramGiam())
                     .soLuongGioiHan(ct.getSoLuongGioiHan())
                     .daBan(0)
                     .build());

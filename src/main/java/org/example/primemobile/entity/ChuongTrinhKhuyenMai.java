@@ -13,17 +13,16 @@ import java.util.List;
  * <p>
  * Gộp chương trình khuyến mãi thông thường và Flash Sale vào cùng 1 bảng.
  * Flash Sale được phân biệt bằng loai = 'flash_sale' và các trường
- * gioFlashBatDau / gioFlashKetThuc / soLuongToiDa có giá trị.
+ * gioFlashBatDau / gioFlashKetThuc có giá trị.
  * <p>
  * Phân loại (CHECK chk_ctkm_loai):
- *  "giam_gia_truc_tiep" | "phan_tram" | "ma_code" | "flash_sale" | "don_hang_toi_thieu"
+ *  "giam_gia_truc_tiep" | "phan_tram" | "flash_sale" | "don_hang_toi_thieu"
  * <p>
  * Trạng thái (CHECK chk_ctkm_trang_thai):
  *  "chua_bat_dau" | "dang_dien_ra" | "da_ket_thuc" | "tam_dung"
  * <p>
  * Quan hệ:
  *  - 1-N với {@link PhamViKhuyenMai}   (mappedBy chuongTrinhKhuyenMai, CASCADE ALL)
- *  - 1-N với {@link MaGiamGia}         (mappedBy chuongTrinhKhuyenMai)
  *  - 1-N với {@link ChiTietFlashSale}  (mappedBy chuongTrinhKhuyenMai, CASCADE ALL)
  */
 @Entity
@@ -38,8 +37,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"phamViKhuyenMais", "maGiamGias", "chiTietFlashSales"})
-@EqualsAndHashCode(exclude = {"phamViKhuyenMais", "maGiamGias", "chiTietFlashSales"})
+@ToString(exclude = {"phamViKhuyenMais", "chiTietFlashSales"})
+@EqualsAndHashCode(exclude = {"phamViKhuyenMais", "chiTietFlashSales"})
 public class ChuongTrinhKhuyenMai {
 
     @Id
@@ -56,35 +55,22 @@ public class ChuongTrinhKhuyenMai {
 
     /**
      * Loại khuyến mãi (NOT NULL).
-     * Giá trị hợp lệ: "giam_gia_truc_tiep" | "phan_tram" | "ma_code"
+     * Giá trị hợp lệ: "giam_gia_truc_tiep" | "phan_tram" 
      *                | "flash_sale" | "don_hang_toi_thieu"
      */
     @Column(name = "loai", nullable = false, length = 25)
     private String loai;
 
-    /**
-     * Giá trị ưu đãi:
-     *  - laPhanTram = false: số tiền giảm cố định (đồng).
-     *  - laPhanTram = true : phần trăm giảm (ví dụ: 10 = 10%).
-     */
+    /** Giá trị ưu đãi. */
     @Column(name = "gia_tri_uu_dai", precision = 15, scale = 2)
     private BigDecimal giaTriUuDai;
 
     /**
-     * Xác định giá trị ưu đãi là phần trăm hay số tiền tuyệt đối (DEFAULT false).
-     * false = số tiền | true = phần trăm (%).
+     * Đơn hàng tối thiểu (áp dụng khi loai = 'don_hang_toi_thieu').
      */
-    @Column(name = "la_phan_tram", nullable = false)
-    @Builder.Default
-    private Boolean laPhanTram = false;
+    @Column(name = "don_hang_toi_thieu", precision = 15, scale = 2)
+    private BigDecimal donHangToiThieu;
 
-    /**
-     * Giảm tối đa (áp dụng khi laPhanTram = true).
-     * Ví dụ: giảm 10% nhưng tối đa 500.000đ.
-     * NULL = không giới hạn mức giảm.
-     */
-    @Column(name = "giam_toi_da", precision = 15, scale = 2)
-    private BigDecimal giamToiDa;
 
     /** Ngày giờ bắt đầu chương trình. */
     @Column(name = "ngay_bat_dau", nullable = false)
@@ -106,12 +92,6 @@ public class ChuongTrinhKhuyenMai {
     @Column(name = "gio_flash_ket_thuc")
     private LocalDateTime gioFlashKetThuc;
 
-    /**
-     * Tổng số lượng sản phẩm tối đa được áp giá flash.
-     * NULL = không giới hạn số lượng (áp dụng cho loại khác).
-     */
-    @Column(name = "so_luong_toi_da")
-    private Integer soLuongToiDa;
 
     /** Đếm số lần mã đã được sử dụng (DEFAULT 0). */
     @Column(name = "so_lan_da_dung", nullable = false)
@@ -134,11 +114,6 @@ public class ChuongTrinhKhuyenMai {
     @OneToMany(mappedBy = "chuongTrinhKhuyenMai", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<PhamViKhuyenMai> phamViKhuyenMais = new ArrayList<>();
-
-    /** Danh sách mã giảm giá thuộc chương trình này. */
-    @OneToMany(mappedBy = "chuongTrinhKhuyenMai", fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<MaGiamGia> maGiamGias = new ArrayList<>();
 
     /** Chi tiết giá flash sale cho từng biến thể (ON DELETE CASCADE). */
     @OneToMany(mappedBy = "chuongTrinhKhuyenMai", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)

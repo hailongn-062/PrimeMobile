@@ -242,16 +242,6 @@
                             <span class="text-muted">Email: </span>
                             <span th:text="${donHang.khachHang.email ?: '—'}">Email</span>
                         </li>
-                        <li class="mb-1">
-                            <span class="text-muted">Hạng: </span>
-                            <span class="badge bg-warning text-dark"
-                                  th:text="${donHang.khachHang.hangThanhVien ?: 'Đồng'}">Bạc</span>
-                        </li>
-                        <li>
-                            <span class="text-muted">Điểm tích lũy: </span>
-                            <span class="fw-semibold text-success"
-                                  th:text="${donHang.khachHang.diemTichLuy ?: 0} + ' điểm'">0 điểm</span>
-                        </li>
                     </ul>
                 </div>
             </div>

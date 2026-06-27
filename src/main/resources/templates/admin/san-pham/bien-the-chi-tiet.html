@@ -117,10 +117,6 @@
                             <label class="form-label fw-semibold small">Giá khuyến mãi (VNĐ)</label>
                             <input type="number" class="form-control" id="btGiaKm">
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold small">Barcode (Tùy chọn)</label>
-                            <input type="text" class="form-control" id="btBarcode">
-                        </div>
                     </div>
                 </form>
             </div>
@@ -203,7 +199,6 @@
         document.getElementById('btGiaNhap').value = bt.giaNhap;
         document.getElementById('btGiaBan').value = bt.giaBan;
         document.getElementById('btGiaKm').value = bt.giaKhuyenMai || '';
-        document.getElementById('btBarcode').value = bt.barcode || '';
         
         document.getElementById('bienTheModalLabel').innerText = 'Cập nhật Biến thể';
         bienTheModal.show();
@@ -218,8 +213,7 @@
             luuTruGb: parseInt(document.getElementById('btRom').value) || null,
             giaNhap: parseInt(document.getElementById('btGiaNhap').value),
             giaBan: parseInt(document.getElementById('btGiaBan').value),
-            giaKhuyenMai: parseInt(document.getElementById('btGiaKm').value) || null,
-            barcode: document.getElementById('btBarcode').value || null
+            giaKhuyenMai: parseInt(document.getElementById('btGiaKm').value) || null
         };
 
         if(!payload.maSku || !payload.mauSac || !payload.giaNhap || !payload.giaBan) {

@@ -86,8 +86,7 @@ public class BienTheSanPhamController {
      *   "ramGb": 8,
      *   "luuTruGb": 256,
      *   "giaNhap": 25000000,
-     *   "giaBan": 34990000,
-     *   "barcode": "1234567890123"   ← optional
+     *   "giaBan": 34990000
      * }
      * </pre>
      * Sau khi gọi API này thành công:

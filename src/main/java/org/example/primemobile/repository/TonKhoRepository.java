@@ -39,4 +39,25 @@ public interface TonKhoRepository extends JpaRepository<TonKho, Integer> {
      * Dùng cho màn hình chi tiết sản phẩm (hiển thị "Còn hàng / Hết hàng").
      */
     List<TonKho> findByBienTheSanPham(BienTheSanPham bienTheSanPham);
+
+    /**
+     * Lấy tất cả SKU có tồn kho > 0 tại Kho Tổng, kèm đầy đủ thông tin
+     * biến thể và sản phẩm cha — dùng cho màn hình POS.
+     *
+     * <p>JOIN FETCH tất cả liên kết trong 1 query để tránh N+1.
+     * Chỉ trả về biến thể còn hàng ({@code soLuong > 0}).
+     *
+     * @param loaiKho Loại kho (truyền {@code "kho_tong"}).
+     * @return Danh sách {@link TonKho} kèm biến thể và sản phẩm cha.
+     */
+    @Query("""
+            SELECT t FROM TonKho t
+            JOIN FETCH t.bienTheSanPham bt
+            JOIN FETCH bt.sanPham sp
+            LEFT JOIN FETCH bt.hinhAnhSanPhams ha
+            WHERE t.kho.loai = :loaiKho
+              AND t.soLuong  > 0
+            ORDER BY sp.tenSanPham ASC
+            """)
+    List<TonKho> layDanhSachChoPos(@Param("loaiKho") String loaiKho);
 }

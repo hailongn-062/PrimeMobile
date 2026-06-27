@@ -17,10 +17,4 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
 
     /** Kiểm tra trùng mã SKU, loại trừ ID hiện tại — dùng khi cập nhật. */
     boolean existsByMaSkuAndIdNot(String maSku, Integer id);
-
-    /** Kiểm tra trùng barcode — dùng khi thêm mới (barcode có thể null). */
-    boolean existsByBarcode(String barcode);
-
-    /** Kiểm tra trùng barcode, loại trừ ID hiện tại — dùng khi cập nhật. */
-    boolean existsByBarcodeAndIdNot(String barcode, Integer id);
 }

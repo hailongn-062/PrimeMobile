@@ -91,16 +91,6 @@ public class DonHang {
         private NguoiDung nguoiXuLy;
 
         /**
-         * Cuộc hội thoại Chatbot AI dẫn đến đơn hàng này (nếu có).
-         * Nullable — đa số đơn hàng không xuất phát từ chatbot.
-         * ON DELETE SET NULL — xóa hội thoại không ảnh hưởng đơn hàng.
-         * FK fk_dh_cht tương ứng với ALTER TABLE trong SQL (Module 11).
-         */
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "cuoc_hoi_thoai_id", foreignKey = @ForeignKey(name = "fk_dh_cht"))
-        private CuocHoiThoai cuocHoiThoai;
-
-        /**
          * Kênh bán hàng (DEFAULT 'online').
          * Giá trị hợp lệ: "online" | "tai_quay"
          */
@@ -186,14 +176,11 @@ public class DonHang {
         private BigDecimal tongThanhToan;
 
         /**
-         * Mã giảm giá được áp dụng cho đơn hàng này.
-         * Nullable — đơn hàng không bắt buộc phải có mã giảm giá.
-         * ON DELETE SET NULL (DB level) — xóa mã giảm giá không ảnh hưởng lịch sử đơn.
-         * FK fk_dh_mgg tương ứng với ALTER TABLE trong SQL (Module 9).
+         * Chương trình khuyến mãi áp dụng cho đơn hàng.
          */
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "ma_giam_gia_id", foreignKey = @ForeignKey(name = "fk_dh_mgg"))
-        private MaGiamGia maGiamGia;
+        @JoinColumn(name = "chuong_trinh_khuyen_mai_id")
+        private ChuongTrinhKhuyenMai chuongTrinhKhuyenMai;
 
         // -------------------------------------------------------------------------
         // VẬN CHUYỂN

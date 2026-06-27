@@ -1,83 +1,117 @@
 package org.example.primemobile.service;
 
+import org.example.primemobile.entity.ChiTietFlashSale;
 import org.example.primemobile.entity.ChuongTrinhKhuyenMai;
-import org.example.primemobile.entity.MaGiamGia;
+import org.example.primemobile.entity.PhamViKhuyenMai;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Nghiệp vụ Khuyến Mãi & Mã Giảm Giá cho PrimeMobile.
+ * Nghiệp vụ Khuyến Mãi cho PrimeMobile.
  *
- * <h3>Thiết kế API check mã (checkMa):</h3>
- * Trả về {@code BigDecimal} — số tiền được giảm.
- * Frontend dùng để hiển thị "Bạn được giảm X đồng" trước khi đặt hàng.
- * Giá trị 0 = mã không hợp lệ (đã có message lỗi ném ra).
+ * 4 loại khuyến mãi (loai):
+ *  - "phan_tram"          → Giảm % cơ bản theo thời gian
+ *  - "don_hang_toi_thieu" → Giảm % nếu tổng tiền >= donHangToiThieu
+ *  - "giam_gia_truc_tiep" → Giảm % cho sản phẩm cụ thể (PhamViKhuyenMai)
+ *  - "flash_sale"         → Giảm % cho biến thể cụ thể theo khung giờ (ChiTietFlashSale)
  */
 public interface IKhuyenMaiService {
 
-    // ── Admin: Chương trình khuyến mãi ────────────────────────────────
+    // ── CRUD chính ─────────────────────────────────────────────────────────
+
+    /** Lấy toàn bộ danh sách chương trình (sắp xếp theo id DESC). */
     List<ChuongTrinhKhuyenMai> layDanhSach();
-    ChuongTrinhKhuyenMai taoMoi(ChuongTrinhKhuyenMai request);
-    ChuongTrinhKhuyenMai capNhat(Integer id, ChuongTrinhKhuyenMai request);
 
-    // ── Public: Chương trình khuyến mãi ───────────────────────────────
-    List<ChuongTrinhKhuyenMai> layKhuyenMaiDangDienRa();
-
-
-    /** Lấy chi tiết 1 chương trình khuyến mãi theo ID. */
+    /** Lấy chi tiết 1 chương trình theo ID. */
     ChuongTrinhKhuyenMai layTheoId(Integer id);
 
-    /** Lấy danh sách mã giảm giá của 1 chương trình. */
-    List<MaGiamGia> layMaGiamGia(Integer ctkmId);
-
-    // ── Admin: Sinh mã giảm giá ───────────────────────────────────────
     /**
-     * Sinh danh sách mã giảm giá ngẫu nhiên (duy nhất) cho 1 chương trình.
+     * Lưu (Thêm mới / Cập nhật) chương trình khuyến mãi.
+     * Validate dựa trên trường {@code loai}.
      *
-     * @param ctkmId   ID chương trình khuyến mãi loại "ma_code".
-     * @param soLuong  Số mã cần sinh.
-     * @param prefix   Tiền tố (ví dụ: "SUMMER24" → "SUMMER24-XXXXXX").
-     * @return Danh sách mã vừa tạo.
+     * @throws IllegalArgumentException nếu dữ liệu không hợp lệ.
      */
-    List<MaGiamGia> sinhMaGiamGia(Integer ctkmId, int soLuong, String prefix);
+    ChuongTrinhKhuyenMai luu(ChuongTrinhKhuyenMai ctkm);
 
-    // ── Admin: Chi tiết Flash Sale ────────────────────────────────────
-    /** Thêm một biến thể vào Flash Sale. */
-    void themChiTietFlashSale(Integer ctkmId, Integer bienTheId, java.math.BigDecimal giaFlash, Integer soLuongGioiHan);
+    /** Xóa mềm (đổi trạng thái) hoặc xóa hẳn 1 chương trình. */
+    void xoa(Integer id);
 
-    /** Xóa một dòng chi tiết Flash Sale theo ID. */
+    // ── Sub-form: Flash Sale ───────────────────────────────────────────────
+
+    /** Lấy danh sách chi tiết Flash Sale theo ctkmId. */
+    List<ChiTietFlashSale> layChiTietFlashSale(Integer ctkmId);
+
+    /**
+     * Thêm biến thể vào Flash Sale.
+     *
+     * @param ctkmId         ID chương trình flash sale.
+     * @param bienTheId      ID biến thể sản phẩm.
+     * @param phanTramGiam   Phần trăm giảm (0-100).
+     * @param soLuongGioiHan Số lượng tối đa bán với giá flash.
+     */
+    void themChiTietFlashSale(Integer ctkmId, Integer bienTheId, BigDecimal phanTramGiam, Integer soLuongGioiHan);
+
+    /** Xóa 1 dòng chi tiết Flash Sale theo chiTietId. */
     void xoaChiTietFlashSale(Integer chiTietId);
 
-    /** Lấy danh sách chi tiết Flash Sale của 1 chương trình. */
-    List<org.example.primemobile.entity.ChiTietFlashSale> layChiTietFlashSale(Integer ctkmId);
-
-    // ── Admin: Phạm vi khuyến mãi ─────────────────────────────────────
-    /** Thêm phạm vi áp dụng. */
-    void themPhamVi(Integer ctkmId, Integer sanPhamId, Integer danhMucId, Integer hangSanXuatId);
-
-    /** Xóa phạm vi theo ID. */
-    void xoaPhamVi(Integer phamViId);
+    // ── Sub-form: Phạm vi áp dụng (giam_gia_truc_tiep) ────────────────────
 
     /** Lấy danh sách phạm vi của 1 chương trình. */
-    List<org.example.primemobile.entity.PhamViKhuyenMai> layPhamVi(Integer ctkmId);
+    List<PhamViKhuyenMai> layPhamVi(Integer ctkmId);
 
-    // ── Public: Check mã tại Checkout ────────────────────────────────
     /**
-     * Kiểm tra mã giảm giá hợp lệ và tính số tiền được giảm.
+     * Thêm sản phẩm vào phạm vi áp dụng.
      *
-     * <h3>Các điều kiện kiểm tra:</h3>
-     * <ol>
-     *   <li>Mã tồn tại trong hệ thống.</li>
-     *   <li>Chương trình KM đang ở trạng thái {@code "dang_dien_ra"}.</li>
-     *   <li>Chương trình KM chưa hết hạn ({@code ngayKetThuc} > now).</li>
-     *   <li>Mã còn lượt dùng ({@code daSuDung} &lt; {@code soLuongToiDa}).</li>
-     *   <li>Tổng đơn hàng >= {@code donHangToiThieu}.</li>
-     * </ol>
-     *
-     * @param maCode   Mã code khách nhập.
-     * @param tongTien Tổng tiền đơn hàng (trước giảm giá).
-     * @return Số tiền được giảm (VNĐ). Ném {@link IllegalArgumentException} nếu mã không hợp lệ.
+     * @param ctkmId    ID chương trình.
+     * @param sanPhamId ID sản phẩm.
      */
-    BigDecimal checkMa(String maCode, BigDecimal tongTien);
+    void themPhamVi(Integer ctkmId, Integer sanPhamId);
+
+    /** Xóa 1 dòng phạm vi theo phamViId. */
+    void xoaPhamVi(Integer phamViId);
+
+    // ── Trạng thái ──────────────────────────────────────────────────────────
+
+    /**
+     * Toggle trạng thái Tạm dừng / Mở lại cho 1 chương trình khuyến mãi.
+     *
+     * <ul>
+     *   <li>Nếu đang {@code tam_dung}: tính lại trạng thái thực tế dựa vào thời gian hiện tại
+     *       ({@code chua_bat_dau} / {@code dang_dien_ra} / {@code da_ket_thuc}).</li>
+     *   <li>Ngược lại: đặt thành {@code tam_dung}.</li>
+     * </ul>
+     *
+     * @param id ID của chương trình khuyến mãi.
+     */
+    void toggleTrangThai(Integer id);
+
+    // ── Public (frontend) ──────────────────────────────────────────────────
+
+    /** Lấy danh sách khuyến mãi đang diễn ra (dùng cho trang chủ / checkout). */
+    List<ChuongTrinhKhuyenMai> layKhuyenMaiDangDienRa();
+
+    // ── POS / Bán hàng tại quầy ────────────────────────────────────────────
+
+    /**
+     * Tìm chương trình khuyến mãi mang lại số tiền giảm LỚN NHẤT cho đơn hàng.
+     *
+     * <p>Tiêu chí lọc:
+     * <ul>
+     *   <li>Chỉ xét các CTKM có {@code trangThai = 'dang_dien_ra'}.</li>
+     *   <li>Chỉ xét loại áp dụng toàn bộ đơn hàng:
+     *       {@code "phan_tram"} hoặc {@code "don_hang_toi_thieu"}.</li>
+     *   <li>Lọc bỏ nếu {@code donHangToiThieu} > {@code tongTienHang}.</li>
+     * </ul>
+     *
+     * <p>Công thức tính tiền giảm:
+     * <ul>
+     *   <li>{@code "phan_tram"}:          {@code tongTienHang × (giaTriUuDai / 100)}</li>
+     *   <li>{@code "don_hang_toi_thieu"}: {@code tongTienHang × (giaTriUuDai / 100)}</li>
+     * </ul>
+     *
+     * @param tongTienHang Tổng tiền hàng của đơn (chưa giảm, chưa cộng phí ship).
+     * @return CTKM tốt nhất, hoặc {@code null} nếu không có CTKM nào phù hợp.
+     */
+    ChuongTrinhKhuyenMai timKhuyenMaiTotNhatChoDonHang(BigDecimal tongTienHang);
 }
