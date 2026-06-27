@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.primemobile.entity.*;
 import org.example.primemobile.repository.*;
 import org.example.primemobile.service.IGioHangService;
+import org.example.primemobile.service.IKhuyenMaiService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,12 +21,15 @@ import java.util.Optional;
  * <p>
  * Mọi thao tác thêm/cập nhật đều kiểm tra tồn kho tại {@code kho_online}
  * (kho có {@code loai = 'kho_online'}).
- * Nếu số lượng yêu cầu vượt quá tồn kho thực tế → ném {@link IllegalArgumentException} ngay.
+ * Nếu số lượng yêu cầu vượt quá tồn kho thực tế → ném
+ * {@link IllegalArgumentException} ngay.
  *
  * <h2>Upsert Logic (Quan trọng):</h2>
  * <p>
- * Khi thêm SKU đã có trong giỏ, Service cộng dồn số lượng thay vì INSERT bản ghi mới,
- * đảm bảo ràng buộc UNIQUE (gio_hang_id, bien_the_san_pham_id) không bị vi phạm.
+ * Khi thêm SKU đã có trong giỏ, Service cộng dồn số lượng thay vì INSERT bản
+ * ghi mới,
+ * đảm bảo ràng buộc UNIQUE (gio_hang_id, bien_the_san_pham_id) không bị vi
+ * phạm.
  */
 @Slf4j
 @Service
@@ -40,12 +44,13 @@ public class GioHangServiceImpl implements IGioHangService {
     // -----------------------------------------------------------------------
     // DEPENDENCIES
     // -----------------------------------------------------------------------
-    private final GioHangRepository          gioHangRepository;
-    private final ChiTietGioHangRepository   chiTietGioHangRepository;
-    private final BienTheSanPhamRepository   bienTheSanPhamRepository;
-    private final KhachHangRepository        khachHangRepository;
-    private final KhoRepository              khoRepository;
-    private final TonKhoRepository           tonKhoRepository;
+    private final GioHangRepository gioHangRepository;
+    private final ChiTietGioHangRepository chiTietGioHangRepository;
+    private final BienTheSanPhamRepository bienTheSanPhamRepository;
+    private final KhachHangRepository khachHangRepository;
+    private final KhoRepository khoRepository;
+    private final TonKhoRepository tonKhoRepository;
+    private final IKhuyenMaiService khuyenMaiService; // ✅ Thêm service tính giá khuyến mãi động
 
     // =========================================================================
     // PUBLIC METHODS
@@ -72,7 +77,7 @@ public class GioHangServiceImpl implements IGioHangService {
     @Override
     @Transactional
     public GioHang themVaoGioHang(Integer khachHangId, String sessionId,
-                                  Integer bienTheSanPhamId, Integer soLuong) {
+            Integer bienTheSanPhamId, Integer soLuong) {
         // Validate đầu vào cơ bản
         if (soLuong == null || soLuong <= 0) {
             throw new IllegalArgumentException("Số lượng phải lớn hơn 0.");
@@ -88,8 +93,8 @@ public class GioHangServiceImpl implements IGioHangService {
         GioHang gioHang = timHoacTaoGioHang(khachHangId, sessionId);
 
         // Kiểm tra SKU đã có trong giỏ chưa (upsert)
-        Optional<ChiTietGioHang> chiTietOpt =
-                chiTietGioHangRepository.findByGioHangIdAndBienTheSanPhamId(gioHang.getId(), bienTheSanPhamId);
+        Optional<ChiTietGioHang> chiTietOpt = chiTietGioHangRepository
+                .findByGioHangIdAndBienTheSanPhamId(gioHang.getId(), bienTheSanPhamId);
 
         int soLuongTong;
         if (chiTietOpt.isPresent()) {
@@ -162,7 +167,7 @@ public class GioHangServiceImpl implements IGioHangService {
 
         // Reload với chi tiết đầy đủ
         Integer khachHangId = gioHang.getKhachHang() != null ? gioHang.getKhachHang().getId() : null;
-        String sessionId    = gioHang.getSessionId();
+        String sessionId = gioHang.getSessionId();
         return timGioHangVoiChiTiet(khachHangId, sessionId).orElse(gioHang);
     }
 
@@ -201,11 +206,13 @@ public class GioHangServiceImpl implements IGioHangService {
     /**
      * Kiểm tra tồn kho tại kho_online trước khi cho phép thêm/cập nhật số lượng.
      * <p>
-     * Tìm kho online theo {@code loai = 'kho_online'}, sau đó truy vấn bảng {@code ton_kho}.
-     * Nếu không tìm thấy bản ghi tồn kho hoặc số lượng yêu cầu > tồn kho thực → ném exception.
+     * Tìm kho online theo {@code loai = 'kho_online'}, sau đó truy vấn bảng
+     * {@code ton_kho}.
+     * Nếu không tìm thấy bản ghi tồn kho hoặc số lượng yêu cầu > tồn kho thực → ném
+     * exception.
      *
-     * @param bienThe  Biến thể SKU cần kiểm tra.
-     * @param soLuong  Số lượng muốn đặt (tổng cuối cùng trong giỏ).
+     * @param bienThe Biến thể SKU cần kiểm tra.
+     * @param soLuong Số lượng muốn đặt (tổng cuối cùng trong giỏ).
      * @throws IllegalArgumentException nếu kho online không đủ hàng.
      */
     private void kiemTraTonKhoOnline(BienTheSanPham bienThe, int soLuong) {
@@ -221,12 +228,13 @@ public class GioHangServiceImpl implements IGioHangService {
         if (soLuong > tonKhoHienTai) {
             throw new IllegalArgumentException(
                     "Số lượng sản phẩm trong kho online không đủ. " +
-                    "Yêu cầu: " + soLuong + ", còn lại: " + tonKhoHienTai + ".");
+                            "Yêu cầu: " + soLuong + ", còn lại: " + tonKhoHienTai + ".");
         }
     }
 
     /**
-     * Tìm giỏ hàng đang tồn tại (ưu tiên theo khachHangId, fallback theo sessionId).
+     * Tìm giỏ hàng đang tồn tại (ưu tiên theo khachHangId, fallback theo
+     * sessionId).
      * Không eager-load chi tiết — dùng cho các thao tác ghi.
      */
     private Optional<GioHang> timGioHang(Integer khachHangId, String sessionId) {
@@ -240,7 +248,8 @@ public class GioHangServiceImpl implements IGioHangService {
     }
 
     /**
-     * Tìm giỏ hàng kèm chi tiết sản phẩm (FETCH JOIN) — dùng cho đọc/trả về response.
+     * Tìm giỏ hàng kèm chi tiết sản phẩm (FETCH JOIN) — dùng cho đọc/trả về
+     * response.
      */
     private Optional<GioHang> timGioHangVoiChiTiet(Integer khachHangId, String sessionId) {
         if (khachHangId != null) {
@@ -280,32 +289,37 @@ public class GioHangServiceImpl implements IGioHangService {
 
     /**
      * Kiểm tra ít nhất 1 trong 2 (khachHangId, sessionId) phải khác null/rỗng.
-     * Khớp với CHECK constraint DB: {@code (khach_hang_id IS NOT NULL OR session_id IS NOT NULL)}.
+     * Khớp với CHECK constraint DB:
+     * {@code (khach_hang_id IS NOT NULL OR session_id IS NOT NULL)}.
      */
     private void validateDinhDanhNguoiDung(Integer khachHangId, String sessionId) {
         boolean khongCoKhachHang = (khachHangId == null);
-        boolean khongCoSession   = (sessionId == null || sessionId.isBlank());
+        boolean khongCoSession = (sessionId == null || sessionId.isBlank());
         if (khongCoKhachHang && khongCoSession) {
             throw new IllegalArgumentException(
                     "Phải cung cấp khachHangId hoặc sessionId để xác định giỏ hàng.");
         }
     }
 
+    // =========================================================================
+    // TÍNH TỔNG TIỀN GIỎ HÀNG
+    // =========================================================================
+
     /**
-     * Tính tổng tiền tạm tính của giỏ hàng.
-     * Ưu tiên dùng giaKhuyenMai nếu có, ngược lại dùng giaBan.
-     *
-     * @param gioHang Giỏ hàng cần tính tổng.
-     * @return Tổng tiền tạm tính.
+     * {@inheritDoc}
      */
-    public static BigDecimal tinhTongTienTamTinh(GioHang gioHang) {
-        if (gioHang == null || gioHang.getChiTietGioHangs() == null) return BigDecimal.ZERO;
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal tinhTongTienTamTinh(GioHang gioHang) {
+        if (gioHang == null || gioHang.getChiTietGioHangs() == null) {
+            return BigDecimal.ZERO;
+        }
         return gioHang.getChiTietGioHangs().stream()
                 .map(ct -> {
                     BienTheSanPham bt = ct.getBienTheSanPham();
-                    BigDecimal donGia = (bt.getGiaKhuyenMai() != null)
-                            ? bt.getGiaKhuyenMai()
-                            : bt.getGiaBan();
+                    // Gọi service để tính giá sau khuyến mãi (ưu tiên flash sale, giảm trực tiếp)
+                    // Truyền tongTienHang = null vì chưa có tổng tiền để áp dụng loại toàn đơn
+                    BigDecimal donGia = khuyenMaiService.tinhGiaSauKhuyenMai(bt.getId(), null);
                     return donGia.multiply(BigDecimal.valueOf(ct.getSoLuong()));
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);

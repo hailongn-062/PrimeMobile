@@ -28,11 +28,20 @@ public class KhachHangServiceImpl implements IKhachHangService {
     // PUBLIC METHODS
     // =========================================================================
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Nếu từ khóa rỗng hoặc null, trả về toàn bộ danh sách khách hàng
+     * (tránh lỗi JPQL khi truyền null vào CONCAT).
+     */
     @Override
     @Transactional(readOnly = true)
     public List<KhachHang> timKiem(String tuKhoa) {
-        String keyword = (tuKhoa == null || tuKhoa.isBlank()) ? null : tuKhoa.trim();
+        // Nếu không có từ khóa, trả về toàn bộ danh sách (không dùng query có vấn đề)
+        if (tuKhoa == null || tuKhoa.isBlank()) {
+            return khachHangRepository.findAll();
+        }
+        String keyword = tuKhoa.trim();
         return khachHangRepository.timKiemTheoSdtHoacEmail(keyword);
     }
 
@@ -50,10 +59,10 @@ public class KhachHangServiceImpl implements IKhachHangService {
      * <p>
      * Luồng xử lý:
      * <ol>
-     *   <li>Load entity hiện tại.</li>
-     *   <li>Validate SĐT mới không trùng với khách khác.</li>
-     *   <li>Validate email mới không trùng với khách khác (nếu có).</li>
-     *   <li>Ghi đè các trường được phép cập nhật.</li>
+     * <li>Load entity hiện tại.</li>
+     * <li>Validate SĐT mới không trùng với khách khác.</li>
+     * <li>Validate email mới không trùng với khách khác (nếu có).</li>
+     * <li>Ghi đè các trường được phép cập nhật.</li>
      * </ol>
      */
     @Override

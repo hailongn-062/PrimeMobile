@@ -3,7 +3,9 @@ package org.example.primemobile.controller;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.example.primemobile.dto.auth.SessionUser;
+import org.example.primemobile.dto.kho.ImeiDto;
 import org.example.primemobile.dto.kho.ThemImeiRequest;
+import org.example.primemobile.entity.MayDienThoai;
 import org.example.primemobile.service.IMayDienThoaiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,25 +16,30 @@ import org.springframework.web.bind.annotation.*;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * REST Controller cho phân hệ Kiểm Soát IMEI Máy Điện Thoại Vật Lý.
  * <p>
  * Base path: {@code /api/admin/imei} — được bảo vệ bởi
- * {@link org.example.primemobile.interceptor.AuthInterceptor} (pattern {@code /api/admin/**}).
+ * {@link org.example.primemobile.interceptor.AuthInterceptor} (pattern
+ * {@code /api/admin/**}).
  *
  * <h3>Quy tắc nghiệp vụ (system_rules.md §3.3):</h3>
  * <ul>
- *   <li>Mỗi chiếc điện thoại vật lý được định danh qua cụm (imei1, imei2, serial).</li>
- *   <li><b>Chặn thêm thừa:</b> Số IMEI {@code trong_kho} của 1 SKU KHÔNG ĐƯỢC vượt quá
- *       tổng tồn kho (kho_tong + kho_online) của SKU đó.</li>
- *   <li>imei1, imei2, serial phải duy nhất toàn hệ thống.</li>
+ * <li>Mỗi chiếc điện thoại vật lý được định danh qua cụm (imei1, imei2,
+ * serial).</li>
+ * <li><b>Chặn thêm thừa:</b> Số IMEI {@code trong_kho} của 1 SKU KHÔNG ĐƯỢC
+ * vượt quá tổng tồn kho (kho_tong + kho_online) của SKU đó.</li>
+ * <li>imei1, imei2, serial phải duy nhất toàn hệ thống.</li>
  * </ul>
  *
  * <h3>Endpoints:</h3>
+ * 
  * <pre>
  *   POST /api/admin/imei/nhap                               → Nhập danh sách IMEI mới cho 1 SKU
  *   GET  /api/admin/imei/can-them/{khoId}/{bienTheId}       → Xem số IMEI còn cần nhập thêm
+ *   GET  /api/admin/imei/danh-sach                          → Lấy danh sách IMEI theo biến thể và trạng thái (dùng cho POS)
  * </pre>
  */
 @RestController
@@ -52,6 +59,7 @@ public class MayDienThoaiController {
      * Nhập danh sách IMEI máy vật lý mới vào hệ thống cho 1 biến thể SKU.
      *
      * <h3>Request Body mẫu:</h3>
+     * 
      * <pre>{@code
      * [
      *   { "imei1": "123456789012345", "imei2": "123456789012346", "serial": "SN-A001" },
@@ -61,13 +69,15 @@ public class MayDienThoaiController {
      *
      * <h3>Luồng nghiệp vụ (system_rules.md §3.3):</h3>
      * <ol>
-     *   <li>Kiểm tra số IMEI còn thiếu của SKU tại kho.</li>
-     *   <li><b>Chặn thêm thừa:</b> Nếu số lượng gửi lên > số còn thiếu → HTTP 400.</li>
-     *   <li>Kiểm tra trùng lặp imei1/imei2/serial trong DB.</li>
-     *   <li>Lưu tất cả với tinhTrang = {@code "trong_kho"}.</li>
+     * <li>Kiểm tra số IMEI còn thiếu của SKU tại kho.</li>
+     * <li><b>Chặn thêm thừa:</b> Nếu số lượng gửi lên > số còn thiếu → HTTP
+     * 400.</li>
+     * <li>Kiểm tra trùng lặp imei1/imei2/serial trong DB.</li>
+     * <li>Lưu tất cả với tinhTrang = {@code "trong_kho"}.</li>
      * </ol>
      *
-     * @param khoId            ID kho chứa hàng (dùng để tra cứu tồn kho làm mốc so sánh).
+     * @param khoId            ID kho chứa hàng (dùng để tra cứu tồn kho làm mốc so
+     *                         sánh).
      * @param bienTheSanPhamId ID biến thể SKU cần gắn IMEI.
      * @param danhSachImei     Danh sách IMEI cần nhập (imei1 bắt buộc).
      * @param sessionUser      Nhân viên đang đăng nhập.
@@ -126,11 +136,11 @@ public class MayDienThoaiController {
      * <p>
      * Hệ thống sử dụng endpoint này để:
      * <ul>
-     *   <li>Báo cáo danh sách SKU thiếu IMEI cho nhân viên cần nhập thêm.</li>
-     *   <li>Validate trước khi nhân viên submit form nhập IMEI.</li>
+     * <li>Báo cáo danh sách SKU thiếu IMEI cho nhân viên cần nhập thêm.</li>
+     * <li>Validate trước khi nhân viên submit form nhập IMEI.</li>
      * </ul>
      *
-     * @param khoId    ID kho cần kiểm tra.
+     * @param khoId     ID kho cần kiểm tra.
      * @param bienTheId ID biến thể SKU cần kiểm tra.
      * @return HTTP 200 kèm số lượng IMEI cần nhập thêm.
      *         HTTP 404 nếu SKU chưa có trong kho này.
@@ -157,6 +167,72 @@ public class MayDienThoaiController {
         } catch (EntityNotFoundException e) {
             log.warn("[IMEI] ❌ Không tìm thấy tồn kho khoId={}, bienTheId={}: {}", khoId, bienTheId, e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(buildErrorResponse(e.getMessage()));
+        }
+    }
+
+    // =========================================================================
+    // GET /api/admin/imei/danh-sach — Lấy danh sách IMEI theo biến thể và trạng
+    // thái (POS)
+    // =========================================================================
+
+    /**
+     * Lấy danh sách IMEI của một biến thể sản phẩm theo trạng thái (mặc định
+     * 'trong_kho').
+     * <p>
+     * Endpoint này được dùng cho màn hình Bán hàng tại quầy (POS) để nhân viên chọn
+     * IMEI từ danh sách có sẵn thay vì nhập tay.
+     * <p>
+     * <b>Lưu ý:</b> Nếu không truyền {@code tinhTrang}, sẽ lấy tất cả IMEI của biến
+     * thể (không lọc trạng thái).
+     *
+     * @param bienTheSanPhamId ID biến thể sản phẩm (SKU) cần lấy danh sách IMEI.
+     * @param tinhTrang        Trạng thái IMEI cần lọc (mặc định 'trong_kho').
+     *                         Các giá trị hợp lệ: 'trong_kho', 'da_ban',
+     *                         'bao_hanh', 'loi_hong'.
+     * @param sessionUser      Nhân viên đang đăng nhập (chỉ để log kiểm soát).
+     * @return HTTP 200 kèm danh sách {@link ImeiDto} có trạng thái tương ứng.
+     *         Luôn trả về mảng rỗng nếu không có IMEI nào.
+     */
+    @GetMapping("/danh-sach")
+    public ResponseEntity<?> layDanhSachImei(
+            @RequestParam Integer bienTheSanPhamId,
+            @RequestParam(required = false) String tinhTrang,
+            @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
+
+        log.info("[IMEI] Lấy danh sách IMEI — bienTheId={}, tinhTrang={}, nhanVienId={}",
+                bienTheSanPhamId, tinhTrang, sessionUser.getId());
+
+        try {
+            // Gọi service lấy danh sách entity
+            List<MayDienThoai> danhSachEntity = mayDienThoaiService.layDanhSachTheoBienTheVaTrangThai(
+                    bienTheSanPhamId,
+                    tinhTrang);
+
+            // Đảm bảo danh sách không null
+            if (danhSachEntity == null) {
+                danhSachEntity = List.of();
+            }
+
+            // Map entity sang DTO để tránh lỗi serialize Hibernate proxy
+            List<ImeiDto> danhSachDto = danhSachEntity.stream()
+                    .map(m -> new ImeiDto(
+                            m.getId(),
+                            m.getImei1(),
+                            m.getImei2(),
+                            m.getSerial(),
+                            m.getTinhTrang()))
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(danhSachDto);
+
+        } catch (EntityNotFoundException e) {
+            log.warn("[IMEI] ❌ Không tìm thấy biến thể ID={}: {}", bienTheSanPhamId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(buildErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            log.error("[IMEI] ❌ Lỗi khi lấy danh sách IMEI: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body(buildErrorResponse("Lỗi hệ thống khi lấy danh sách IMEI."));
         }
     }
 

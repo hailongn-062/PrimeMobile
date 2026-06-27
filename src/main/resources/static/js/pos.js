@@ -13,7 +13,7 @@
  *     5. LOAD PRODUCTS  (GET /api/admin/pos/san-pham)
  *     6. CART CRUD      (add, remove, changeQty, clear)
  *     7. RENDER CART
- *     8. IMEI MANAGEMENT
+ *     8. IMEI MANAGEMENT (chọn từ dropdown, tự động lọc IMEI đã dùng)
  *     9. AUTO-PROMO     (GET /api/admin/pos/tinh-khuyen-mai)
  *    10. SUMMARY UI
  *    11. VALIDATE & CHECKOUT (POST /api/admin/pos/thanh-toan)
@@ -71,11 +71,14 @@ const API = {
     SAN_PHAM: '/api/admin/pos/san-pham',
     TINH_KM: '/api/admin/pos/tinh-khuyen-mai',
     THANH_TOAN: '/api/admin/pos/thanh-toan',
+    IMEI_DANH_SACH: '/api/admin/imei/danh-sach',
+    KHACH_HANG: '/api/admin/khach-hang',   // <-- thêm API tìm kiếm khách hàng
 };
 
 const LOAI_KHO_TONG = 'kho_tong';
 const PROMO_DEBOUNCE_MS = 450;   // ms chờ sau khi cart thay đổi trước khi gọi promo API
 const SEARCH_DEBOUNCE_MS = 220;   // ms debounce cho search input
+const CUSTOMER_SEARCH_DEBOUNCE_MS = 300; // debounce cho tìm kiếm khách hàng
 
 /* ════════════════════════════════════════════════════════════
    2. DOM UTILITIES
@@ -124,6 +127,7 @@ function resolveDOM() {
         btnClearCart: el('btnClearCart'),
         btnCheckout: el('btnCheckout'),
         selectKhachHang: el('selectKhachHang'),
+        searchCustomer: el('searchCustomer'),   // <-- thêm ref cho input tìm kiếm KH
         posClock: el('pos-clock'),
         btnToggleSidebar: el('btnToggleSidebar'),
         // Summary
@@ -304,46 +308,269 @@ function initSearch() {
    6. CART CRUD
 ════════════════════════════════════════════════════════════ */
 
+/**
+ * Lấy danh sách IMEI từ API (trạng thái 'trong_kho')
+ * Trả về mảng các đối tượng IMEI, hoặc throw Error.
+ */
+async function fetchImeiList(bienTheId) {
+    const url = `${API.IMEI_DANH_SACH}?bienTheSanPhamId=${bienTheId}&tinhTrang=trong_kho`;
+    console.log('[POS] fetchImeiList url:', url);
+    const res = await fetch(url, { credentials: 'include' });
+    if (!res.ok) {
+        const errText = await res.text().catch(() => `HTTP ${res.status}`);
+        throw new Error(`Lỗi API IMEI (${res.status}): ${errText}`);
+    }
+    const data = await res.json();
+    console.log('[POS] fetchImeiList response:', data);
+    // Kiểm tra cấu trúc dữ liệu: có thể là mảng hoặc object chứa data
+    if (Array.isArray(data)) {
+        return data;
+    } else if (data && Array.isArray(data.data)) {
+        return data.data;
+    } else if (data && Array.isArray(data.content)) {
+        return data.content;
+    } else {
+        throw new Error('Dữ liệu IMEI trả về không đúng định dạng.');
+    }
+}
+
+/**
+ * Lấy danh sách tất cả IMEI đã được chọn trong giỏ (từ tất cả các item).
+ * Dùng để lọc ra những IMEI không cho phép chọn lại.
+ */
+function getSelectedImeis() {
+    const allImeis = [];
+    cart.forEach(item => {
+        const imeis = parseImeis(item.imeis);
+        allImeis.push(...imeis);
+    });
+    return allImeis;
+}
+
+/**
+ * Mở modal SweetAlert2 để chọn IMEI cho 1 item (lần đầu tiên).
+ * Trả về true nếu người dùng chọn thành công, false nếu hủy hoặc không có IMEI.
+ */
+async function openImeiSelector(item) {
+    try {
+        const imeiList = await fetchImeiList(item.bienTheId);
+        if (!imeiList || imeiList.length === 0) {
+            toastWarn(`Không có IMEI nào trong kho cho "${item.tenSanPham}". Vui lòng nhập kho trước.`);
+            return false;
+        }
+
+        // Lọc ra những IMEI đã được chọn trong giỏ (trừ IMEI của chính item này)
+        const selectedImeis = getSelectedImeis();
+        const available = imeiList.filter(imei => !selectedImeis.includes(imei.imei1));
+
+        if (available.length < item.soLuong) {
+            toastWarn(`Không đủ IMEI khả dụng. Cần ${item.soLuong}, chỉ còn ${available.length}.`);
+            return false;
+        }
+
+        const soLuong = item.soLuong;
+        // Xây dựng HTML modal
+        let html = `<div style="max-height:300px;overflow-y:auto;padding:0.5rem 0;">`;
+        for (let i = 0; i < soLuong; i++) {
+            html += `
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+                    <span style="font-weight:bold;min-width:80px;">IMEI #${i + 1}:</span>
+                    <select class="imei-select-${item.bienTheId}" data-index="${i}" style="flex:1;padding:0.4rem;border-radius:6px;border:1px solid #ccc;">
+                        <option value="">-- Chọn IMEI --</option>
+                        ${available.map(imei => `<option value="${imei.imei1}">${imei.imei1}${imei.imei2 ? ' (SIM2: ' + imei.imei2 + ')' : ''}</option>`).join('')}
+                    </select>
+                </div>
+            `;
+        }
+        html += `</div>`;
+
+        const { value: imeis } = await Swal.fire({
+            title: `Chọn IMEI cho ${item.tenSanPham}`,
+            html: html,
+            width: 600,
+            confirmButtonText: 'Xác nhận',
+            cancelButtonText: 'Hủy',
+            showCancelButton: true,
+            preConfirm: () => {
+                const selects = document.querySelectorAll(`.imei-select-${item.bienTheId}`);
+                const imeisSelected = [];
+                let valid = true;
+                selects.forEach(sel => {
+                    if (!sel.value) {
+                        valid = false;
+                    }
+                    imeisSelected.push(sel.value);
+                });
+                if (!valid) {
+                    Swal.showValidationMessage('Vui lòng chọn đủ IMEI cho tất cả các vị trí.');
+                    return false;
+                }
+                // Kiểm tra trùng
+                const unique = new Set(imeisSelected);
+                if (unique.size !== imeisSelected.length) {
+                    Swal.showValidationMessage('Không được chọn trùng IMEI.');
+                    return false;
+                }
+                return imeisSelected;
+            }
+        });
+
+        if (imeis) {
+            item.imeis = imeis.join(', ');
+            return true;
+        }
+        return false; // hủy
+
+    } catch (error) {
+        console.error('[POS] openImeiSelector error:', error);
+        toastWarn('Lỗi khi tải danh sách IMEI: ' + error.message);
+        return false;
+    }
+}
+
+/**
+ * Mở modal để chọn thêm IMEI cho số lượng tăng thêm (giữ nguyên IMEI cũ).
+ * Trả về true nếu chọn thành công, false nếu hủy hoặc không đủ IMEI.
+ */
+async function selectAdditionalImeis(item, count) {
+    try {
+        const imeiList = await fetchImeiList(item.bienTheId);
+        if (!imeiList || imeiList.length === 0) {
+            toastWarn(`Không có IMEI nào trong kho cho "${item.tenSanPham}".`);
+            return false;
+        }
+
+        // Lọc ra những IMEI đã được chọn trong giỏ (bao gồm cả IMEI hiện tại của item này)
+        const selectedImeis = getSelectedImeis();
+        // IMEI hiện tại của item này (sẽ không tính là "đã chọn" để tránh trùng)
+        const currentImeis = parseImeis(item.imeis);
+        // Lọc: loại bỏ những IMEI đã có trong giỏ, nhưng KHÔNG loại bỏ IMEI đang thuộc item này
+        const available = imeiList.filter(imei => {
+            // Nếu imei này đang thuộc item này thì vẫn cho phép chọn (để tránh lỗi logic)
+            // Nhưng thực tế ta không muốn chọn lại IMEI đã có, nên ta bỏ qua nó.
+            // Vì vậy ta loại bỏ nếu nó có trong danh sách đã chọn (của tất cả item)
+            return !selectedImeis.includes(imei.imei1);
+        });
+
+        if (available.length < count) {
+            toastWarn(`Không đủ IMEI khả dụng. Cần ${count}, chỉ còn ${available.length}.`);
+            return false;
+        }
+
+        // Xây dựng modal với count select
+        let html = `<div style="max-height:300px;overflow-y:auto;padding:0.5rem 0;">`;
+        for (let i = 0; i < count; i++) {
+            html += `
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+                    <span style="font-weight:bold;min-width:80px;">IMEI #${i + 1}:</span>
+                    <select class="imei-select-${item.bienTheId}" data-index="${i}" style="flex:1;padding:0.4rem;border-radius:6px;border:1px solid #ccc;">
+                        <option value="">-- Chọn IMEI --</option>
+                        ${available.map(imei => `<option value="${imei.imei1}">${imei.imei1}${imei.imei2 ? ' (SIM2: ' + imei.imei2 + ')' : ''}</option>`).join('')}
+                    </select>
+                </div>
+            `;
+        }
+        html += `</div>`;
+
+        const { value: newImeis } = await Swal.fire({
+            title: `Chọn thêm IMEI cho ${item.tenSanPham}`,
+            html: html,
+            width: 600,
+            confirmButtonText: 'Xác nhận',
+            cancelButtonText: 'Hủy',
+            showCancelButton: true,
+            preConfirm: () => {
+                const selects = document.querySelectorAll(`.imei-select-${item.bienTheId}`);
+                const selected = [];
+                let valid = true;
+                selects.forEach(sel => {
+                    if (!sel.value) {
+                        valid = false;
+                    }
+                    selected.push(sel.value);
+                });
+                if (!valid) {
+                    Swal.showValidationMessage('Vui lòng chọn đủ IMEI.');
+                    return false;
+                }
+                // Kiểm tra trùng trong danh sách mới
+                const unique = new Set(selected);
+                if (unique.size !== selected.length) {
+                    Swal.showValidationMessage('Không được chọn trùng IMEI.');
+                    return false;
+                }
+                return selected;
+            }
+        });
+
+        if (newImeis) {
+            // Nối IMEI mới vào cuối chuỗi hiện tại
+            const current = parseImeis(item.imeis);
+            const allImeis = [...current, ...newImeis];
+            item.imeis = allImeis.join(', ');
+            return true;
+        }
+        return false;
+
+    } catch (error) {
+        console.error('[POS] selectAdditionalImeis error:', error);
+        toastWarn('Lỗi khi tải IMEI: ' + error.message);
+        return false;
+    }
+}
+
 /** Thêm sản phẩm vào giỏ hoặc tăng số lượng nếu đã có */
-function addToCart(bienTheId) {
+async function addToCart(bienTheId) {
     const p = allProducts.find(x => x.bienTheId === bienTheId);
     if (!p) return;
 
     const donGia = p.giaKhuyenMai ?? p.giaBan;
-    const existing = cart.find(x => x.bienTheId === bienTheId);
+    let existing = cart.find(x => x.bienTheId === bienTheId);
 
     if (existing) {
         // Kiểm tra không vượt quá tồn kho
         if (existing.soLuong >= (p.tonKho ?? 0)) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Không đủ hàng',
-                text: `Tồn kho Kho Tổng cho sản phẩm này chỉ còn ${p.tonKho} máy.`,
-                confirmButtonColor: '#1565C0',
-                timer: 2500,
-                showConfirmButton: false,
-                toast: true,
-                position: 'top-end',
-            });
+            toastWarn(`Tồn kho Kho Tổng cho sản phẩm này chỉ còn ${p.tonKho} máy.`);
             return;
         }
         existing.soLuong++;
-    } else {
-        cart.push({
-            bienTheId: p.bienTheId,
-            tenSanPham: p.tenSanPham,
-            maSku: p.maSku,
-            mauSac: p.mauSac,
-            ramGb: p.ramGb,
-            luuTruGb: p.luuTruGb,
-            soLuong: 1,
-            donGia: donGia,
-            imeis: ''
-        });
+        // Chỉ chọn thêm 1 IMEI, giữ nguyên IMEI cũ
+        const success = await selectAdditionalImeis(existing, 1);
+        if (!success) {
+            // Nếu không chọn được, giảm số lượng lại
+            existing.soLuong--;
+            if (existing.soLuong === 0) {
+                removeFromCart(bienTheId);
+            }
+        }
+        onCartChanged();
+        return;
     }
 
-    onCartChanged();
+    // Thêm mới
+    const newItem = {
+        bienTheId: p.bienTheId,
+        tenSanPham: p.tenSanPham,
+        maSku: p.maSku,
+        mauSac: p.mauSac,
+        ramGb: p.ramGb,
+        luuTruGb: p.luuTruGb,
+        soLuong: 1,
+        donGia: donGia,
+        imeis: '',
+    };
+    cart.push(newItem);
+
+    // Mở modal chọn IMEI cho item mới
+    const success = await openImeiSelector(newItem);
+    if (!success) {
+        // Nếu không chọn được IMEI, xóa item khỏi giỏ
+        removeFromCart(bienTheId);
+        return;
+    }
+
     flashProductCard(bienTheId, 'success');
+    onCartChanged();
 }
 
 /** Xoá 1 sản phẩm khỏi giỏ */
@@ -357,7 +584,7 @@ function removeFromCart(bienTheId) {
  * delta = +1 tăng | delta = -1 giảm
  * Nếu soLuong về 0 → hỏi có muốn xoá không
  */
-function changeQty(bienTheId, delta) {
+async function changeQty(bienTheId, delta) {
     const item = cart.find(x => x.bienTheId === bienTheId);
     if (!item) return;
 
@@ -365,7 +592,7 @@ function changeQty(bienTheId, delta) {
 
     if (newQty <= 0) {
         // Hỏi xác nhận xoá
-        Swal.fire({
+        const result = await Swal.fire({
             icon: 'question',
             title: 'Xoá sản phẩm?',
             text: `Bỏ "${item.tenSanPham}" khỏi giỏ hàng?`,
@@ -373,9 +600,8 @@ function changeQty(bienTheId, delta) {
             confirmButtonText: 'Xoá',
             cancelButtonText: 'Huỷ',
             confirmButtonColor: '#ef4444',
-        }).then(r => {
-            if (r.isConfirmed) removeFromCart(bienTheId);
         });
+        if (result.isConfirmed) removeFromCart(bienTheId);
         return;
     }
 
@@ -393,6 +619,14 @@ function changeQty(bienTheId, delta) {
         const imeiList = parseImeis(item.imeis);
         if (imeiList.length > newQty) {
             item.imeis = imeiList.slice(0, newQty).join(', ');
+        }
+    }
+    // Nếu tăng số lượng → chọn thêm 1 IMEI
+    if (delta > 0) {
+        const success = await selectAdditionalImeis(item, 1);
+        if (!success) {
+            item.soLuong = newQty - 1;
+            toastWarn('Không thể tăng số lượng vì thiếu IMEI.');
         }
     }
 
@@ -438,31 +672,24 @@ function renderCart() {
 
     if (DOM.cartEmptyMsg) DOM.cartEmptyMsg.style.display = 'none';
 
-    // Lưu lại giá trị IMEI hiện tại (để không mất khi re-render)
-    cart.forEach(item => {
-        const existingInput = el(`imei-input-${item.bienTheId}`);
-        if (existingInput) item.imeis = existingInput.value;
-    });
-
     DOM.cartItemsWrap.innerHTML = cart.map(item => buildCartItemHtml(item)).join('');
 
-    // Gán event listeners cho IMEI inputs
+    // Event listeners cho nút "Chọn lại IMEI"
     cart.forEach(item => {
-        const input = el(`imei-input-${item.bienTheId}`);
-        if (input) {
-            // Đồng bộ giá trị (tránh mất khi re-render)
-            input.value = item.imeis;
-            input.addEventListener('input', () => onImeiInput(item.bienTheId));
-            input.addEventListener('paste', () => setTimeout(() => onImeiInput(item.bienTheId), 0));
-            input.addEventListener('change', () => onImeiInput(item.bienTheId));
+        const btn = el(`btn-rechoose-imei-${item.bienTheId}`);
+        if (btn) {
+            btn.addEventListener('click', () => reopenImeiSelector(item.bienTheId));
         }
-        updateImeiIndicator(item.bienTheId);
     });
 }
 
 /** Tạo HTML cho 1 dòng sản phẩm trong giỏ */
 function buildCartItemHtml(item) {
     const subtotal = item.donGia * item.soLuong;
+    const imeiList = parseImeis(item.imeis);
+    const imeiStatus = imeiList.length === item.soLuong ? '✅' : '⚠️';
+    const imeiDisplay = imeiList.length > 0 ? imeiList.join(', ') : 'Chưa chọn IMEI';
+
     return `
     <div class="cart-item" id="cart-item-${item.bienTheId}">
         <!-- Top row: thông tin + stepper -->
@@ -489,29 +716,26 @@ function buildCartItemHtml(item) {
             </div>
         </div>
 
-        <!-- ══ IMEI SECTION — CỰC KỲ QUAN TRỌNG ══ -->
-        <div class="imei-section" role="group" aria-label="Nhập mã IMEI">
+        <!-- ══ IMEI SECTION — CHỌN TỪ DROPDOWN ══ -->
+        <div class="imei-section" role="group" aria-label="Mã IMEI">
             <div class="imei-label">
                 <i class="fa fa-barcode" aria-hidden="true"></i>
                 Mã IMEI
-                <span class="imei-count-indicator err" id="imei-ind-${item.bienTheId}"
-                      title="Số IMEI đã nhập / cần nhập">
-                    0/${item.soLuong}
+                <span class="imei-count-indicator ${imeiList.length === item.soLuong ? 'ok' : 'err'}"
+                      id="imei-ind-${item.bienTheId}"
+                      title="Số IMEI đã chọn / cần chọn">
+                    ${imeiList.length}/${item.soLuong}
                 </span>
                 <span style="font-size:.61rem;color:rgba(255,255,255,.28);font-weight:400;margin-left:.15rem;">
-                    (${item.soLuong} máy • cách nhau bằng dấu phẩy)
+                    ${imeiStatus}
                 </span>
             </div>
-            <textarea
-                class="imei-input"
-                id="imei-input-${item.bienTheId}"
-                rows="1"
-                placeholder="VD: 356938035643809${item.soLuong > 1 ? ', 356938035643810' : ''}"
-                autocomplete="off"
-                spellcheck="false"
-                aria-label="Nhập mã IMEI cho ${escHtml(item.tenSanPham)}"
-            ></textarea>
-            <div class="imei-err-msg" id="imei-err-${item.bienTheId}" role="alert"></div>
+            <div style="font-size:.75rem;color:var(--pos-text-dim);word-break:break-all;margin-bottom:.2rem;">
+                ${imeiDisplay}
+            </div>
+            <button class="btn-rechoose-imei" id="btn-rechoose-imei-${item.bienTheId}">
+                <i class="fa fa-edit"></i> Chọn lại IMEI
+            </button>
         </div>
     </div>`;
 }
@@ -527,97 +751,23 @@ function flashProductCard(bienTheId, type = 'success') {
 }
 
 /* ════════════════════════════════════════════════════════════
-   8. IMEI MANAGEMENT
+   8. IMEI MANAGEMENT — CHỌN LẠI IMEI
 ════════════════════════════════════════════════════════════ */
 
-/** Gọi khi nội dung IMEI input thay đổi */
-function onImeiInput(bienTheId) {
-    const input = el(`imei-input-${bienTheId}`);
+/** Mở lại modal chọn IMEI cho một item (dùng trong nút "Chọn lại IMEI") */
+async function reopenImeiSelector(bienTheId) {
     const item = cart.find(x => x.bienTheId === bienTheId);
-    if (!input || !item) return;
-
-    item.imeis = input.value;
-
-    // Xoá lỗi nếu đang có (user đang sửa)
-    clearImeiError(bienTheId);
-    updateImeiIndicator(bienTheId);
-}
-
-/** Cập nhật badge đếm IMEI (OK/ERR) */
-function updateImeiIndicator(bienTheId) {
-    const item = cart.find(x => x.bienTheId === bienTheId);
-    const indEl = el(`imei-ind-${bienTheId}`);
-    if (!item || !indEl) return;
-
-    const imeiVal = el(`imei-input-${bienTheId}`)?.value ?? item.imeis;
-    const count = parseImeis(imeiVal).length;
-    const needed = item.soLuong;
-    const isOk = count === needed;
-
-    indEl.textContent = `${count}/${needed}`;
-    indEl.className = `imei-count-indicator ${isOk ? 'ok' : 'err'}`;
-}
-
-function showImeiError(bienTheId, msg) {
-    const inputEl = el(`imei-input-${bienTheId}`);
-    const errEl = el(`imei-err-${bienTheId}`);
-    if (inputEl) inputEl.classList.add('imei-error');
-    if (errEl) { errEl.style.display = ''; errEl.textContent = msg; }
-}
-
-function clearImeiError(bienTheId) {
-    const inputEl = el(`imei-input-${bienTheId}`);
-    const errEl = el(`imei-err-${bienTheId}`);
-    if (inputEl) inputEl.classList.remove('imei-error');
-    if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
-}
-
-/**
- * Validate tất cả IMEI trong giỏ.
- * @returns {boolean} true nếu tất cả hợp lệ
- *
- * Các quy tắc kiểm tra:
- *   1. Số IMEI == soLuong sản phẩm
- *   2. Không có IMEI trùng nhau trong cùng 1 đơn
- *   3. Mỗi IMEI đủ 15 ký tự số (chuẩn GSMA) — cảnh báo mềm
- */
-function validateAllImeis() {
-    let allOk = true;
-    const seenImeis = new Set();   // Phát hiện IMEI trùng trong đơn
-
-    cart.forEach(item => {
-        const imeiRaw = el(`imei-input-${item.bienTheId}`)?.value ?? item.imeis ?? '';
-        const imeiList = parseImeis(imeiRaw);
-        const needed = item.soLuong;
-
-        // ── Kiểm tra số lượng ────────────────────────────────
-        if (imeiList.length !== needed) {
-            allOk = false;
-            const diff = needed - imeiList.length;
-            showImeiError(
-                item.bienTheId,
-                imeiList.length === 0
-                    ? `⚠ Chưa nhập IMEI. Cần nhập ${needed} mã.`
-                    : `⚠ Nhập ${imeiList.length}/${needed} IMEI — còn thiếu ${diff > 0 ? diff : 0} mã${diff < 0 ? ` (thừa ${-diff} mã)` : ''}.`
-            );
-            return; // continue forEach
-        }
-
-        // ── Kiểm tra trùng trong đơn ─────────────────────────
-        for (const imei of imeiList) {
-            const normalized = imei.toUpperCase().replace(/\s/g, '');
-            if (seenImeis.has(normalized)) {
-                allOk = false;
-                showImeiError(item.bienTheId, `⚠ IMEI [${imei}] bị trùng trong đơn hàng.`);
-                break;
-            }
-            seenImeis.add(normalized);
-        }
-
-        if (allOk) clearImeiError(item.bienTheId);
-    });
-
-    return allOk;
+    if (!item) return;
+    // Reset IMEI cũ trước khi mở
+    item.imeis = '';
+    const success = await openImeiSelector(item);
+    if (!success) {
+        // Nếu không chọn được IMEI, xóa item khỏi giỏ
+        removeFromCart(bienTheId);
+        toastWarn('Không chọn được IMEI, đã xóa sản phẩm khỏi giỏ.');
+    } else {
+        onCartChanged();
+    }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -715,7 +865,7 @@ async function handleClearCart() {
 
     const result = await Swal.fire({
         title: 'Xoá giỏ hàng?',
-        text: 'Toàn bộ sản phẩm và IMEI đã nhập sẽ bị xoá.',
+        text: 'Toàn bộ sản phẩm và IMEI đã chọn sẽ bị xoá.',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: '<i class="fa fa-trash me-1"></i>Xoá tất cả',
@@ -734,18 +884,14 @@ async function handleCheckout() {
     if (!imeisOk) {
         await Swal.fire({
             icon: 'warning',
-            title: 'Thiếu hoặc sai mã IMEI',
-            html: `Vui lòng nhập đủ mã IMEI cho tất cả sản phẩm.<br>
+            title: 'Thiếu hoặc trùng mã IMEI',
+            html: `Vui lòng chọn đủ IMEI cho tất cả sản phẩm và đảm bảo không trùng lặp.<br>
                                 <small style="color:#6B7280;">
-                                Ô IMEI bị lỗi đã được viền đỏ.
+                                Các sản phẩm chưa đủ IMEI sẽ hiển thị dấu ⚠️.
                                 </small>`,
             confirmButtonText: 'Kiểm tra lại',
             confirmButtonColor: '#1565C0',
         });
-
-        // Scroll đến lỗi đầu tiên
-        const firstErr = $('.imei-input.imei-error');
-        firstErr?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
     }
 
@@ -787,12 +933,6 @@ async function handleCheckout() {
     if (!confirm.isConfirmed) return;
 
     // ── BƯỚC 3: Build payload ────────────────────────────────
-    // Đọc lại giá trị IMEI mới nhất từ DOM trước khi submit
-    cart.forEach(item => {
-        const input = el(`imei-input-${item.bienTheId}`);
-        if (input) item.imeis = input.value;
-    });
-
     const khachHangId = DOM.selectKhachHang?.value
         ? parseInt(DOM.selectKhachHang.value, 10)
         : null;
@@ -851,6 +991,30 @@ function setCheckoutLoading(isLoading) {
     DOM.btnCheckout.innerHTML = isLoading
         ? `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Đang xử lý...`
         : `<i class="fa fa-cash-register me-2"></i>Thanh toán &amp; In Bill`;
+}
+
+/**
+ * Validate tất cả IMEI trong giỏ (đảm bảo đủ và không trùng)
+ */
+function validateAllImeis() {
+    let allOk = true;
+    const seen = new Set();
+    cart.forEach(item => {
+        const imeis = parseImeis(item.imeis);
+        if (imeis.length !== item.soLuong) {
+            allOk = false;
+            return;
+        }
+        for (const imei of imeis) {
+            const norm = imei.toUpperCase().replace(/\s/g, '');
+            if (seen.has(norm)) {
+                allOk = false;
+                break;
+            }
+            seen.add(norm);
+        }
+    });
+    return allOk;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -987,6 +1151,56 @@ function initBillModal() {
 }
 
 /* ════════════════════════════════════════════════════════════
+   13. KHÁCH HÀNG SEARCH — GET /api/admin/khach-hang
+════════════════════════════════════════════════════════════ */
+
+/** Tải danh sách khách hàng từ API (có từ khóa tìm kiếm) */
+async function loadCustomers(keyword = '') {
+    try {
+        // Nếu keyword rỗng hoặc chỉ khoảng trắng, gọi API không tham số để lấy tất cả
+        const trimmed = keyword.trim();
+        const url = trimmed
+            ? `${API.KHACH_HANG}?tuKhoa=${encodeURIComponent(trimmed)}`
+            : API.KHACH_HANG;
+        const res = await fetch(url, { credentials: 'include' });
+        if (!res.ok) throw new Error('Không thể tải danh sách khách hàng');
+        const customers = await res.json();
+        populateCustomerDropdown(customers);
+    } catch (err) {
+        console.warn('[POS] loadCustomers error:', err);
+        // Nếu lỗi, vẫn giữ option mặc định — không làm gián đoạn luồng bán hàng
+    }
+}
+
+/** Đổ dữ liệu khách hàng vào dropdown select */
+function populateCustomerDropdown(customers) {
+    const select = DOM.selectKhachHang;
+    if (!select) return;
+    // Giữ option đầu tiên "Khách lẻ (mặc định)"
+    select.innerHTML = '<option value="">👤 Khách lẻ (mặc định)</option>';
+    if (Array.isArray(customers)) {
+        customers.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            // Hiển thị họ tên + SĐT, nếu thiếu SĐT thì dùng email
+            const display = `${c.hoTen} (${c.soDienThoai || c.email || 'Không có SĐT'})`;
+            opt.textContent = display;
+            select.appendChild(opt);
+        });
+    }
+}
+
+/** Khởi tạo tìm kiếm khách hàng với debounce */
+function initCustomerSearch() {
+    const input = DOM.searchCustomer;
+    if (!input) return;
+    input.addEventListener('input', debounce((e) => {
+        const keyword = e.target.value.trim();
+        loadCustomers(keyword);
+    }, CUSTOMER_SEARCH_DEBOUNCE_MS));
+}
+
+/* ════════════════════════════════════════════════════════════
    13. TOAST SHORTCUTS
 ════════════════════════════════════════════════════════════ */
 function toastSuccess(msg) {
@@ -1013,7 +1227,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initSearch();
     initCheckout();
     initBillModal();
+    initCustomerSearch();     // <-- khởi tạo tìm kiếm khách hàng
     loadProducts();
+    loadCustomers();          // <-- load danh sách khách hàng mặc định khi vào trang
 });
 
 /* Expose tới onclick="" attributes trong HTML */

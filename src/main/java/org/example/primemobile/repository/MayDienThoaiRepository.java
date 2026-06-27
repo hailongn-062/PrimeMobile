@@ -54,4 +54,29 @@ public interface MayDienThoaiRepository extends JpaRepository<MayDienThoai, Inte
         AND m.tinhTrang = 'trong_kho'
       """)
   List<MayDienThoai> findTrongKhoByBienTheId(@Param("bienTheId") Integer bienTheId);
+
+  /**
+   * Lấy danh sách IMEI của một biến thể SKU theo trạng thái cụ thể.
+   * Dùng cho màn hình POS để hiển thị danh sách IMEI có sẵn cho nhân viên chọn.
+   * <p>
+   * <b>Lưu ý:</b> Method này yêu cầu {@code tinhTrang} phải khác {@code null}.
+   * Nếu muốn lấy tất cả IMEI (không lọc trạng thái), sử dụng
+   * {@link #findByBienTheSanPhamId(Integer)}.
+   *
+   * @param bienTheSanPhamId ID biến thể sản phẩm (SKU) cần lấy.
+   * @param tinhTrang        Trạng thái IMEI cần lọc (ví dụ: 'trong_kho',
+   *                         'da_ban', ...).
+   *                         <b>Không được null.</b>
+   * @return Danh sách {@link MayDienThoai} có trạng thái tương ứng.
+   */
+  List<MayDienThoai> findByBienTheSanPhamIdAndTinhTrang(Integer bienTheSanPhamId, String tinhTrang);
+
+  /**
+   * Lấy tất cả IMEI của một biến thể (không lọc theo trạng thái).
+   * Dùng cho màn hình POS khi cần hiển thị toàn bộ IMEI của sản phẩm.
+   *
+   * @param bienTheSanPhamId ID biến thể sản phẩm (SKU) cần lấy.
+   * @return Danh sách tất cả {@link MayDienThoai} thuộc biến thể đó.
+   */
+  List<MayDienThoai> findByBienTheSanPhamId(Integer bienTheSanPhamId);
 }

@@ -320,7 +320,7 @@
             color: #f87171;
         }
 
-        /* Khách hàng select */
+        /* Khách hàng select & search */
         .cart-customer {
             padding: .7rem 1.1rem;
             border-bottom: 1px solid var(--pos-border);
@@ -335,6 +335,29 @@
             letter-spacing: .8px;
             display: block;
             margin-bottom: .35rem;
+        }
+
+        /* Input tìm kiếm khách hàng */
+        #searchCustomer {
+            width: 100%;
+            margin-bottom: 6px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .06);
+            color: #fff;
+            padding: .45rem .8rem;
+            font-size: .85rem;
+            outline: none;
+            transition: border .2s;
+        }
+
+        #searchCustomer:focus {
+            border-color: var(--pos-accent);
+            box-shadow: 0 0 0 3px rgba(21, 101, 192, .2);
+        }
+
+        #searchCustomer::placeholder {
+            color: rgba(255, 255, 255, .3);
         }
 
         .cart-customer select {
@@ -484,7 +507,7 @@
             color: #ef4444;
         }
 
-        /* IMEI input area */
+        /* ── IMEI SECTION — hiển thị IMEI đã chọn và nút "Chọn lại" ── */
         .imei-section {
             margin-top: .45rem;
         }
@@ -498,7 +521,7 @@
             display: flex;
             align-items: center;
             gap: .35rem;
-            margin-bottom: .3rem;
+            margin-bottom: .2rem;
         }
 
         .imei-count-indicator {
@@ -518,42 +541,21 @@
             color: #f87171;
         }
 
-        .imei-input {
-            width: 100%;
-            background: rgba(0, 0, 0, .25);
-            border: 1px solid rgba(255, 255, 255, .1);
-            border-radius: 8px;
+        /* Nút Chọn lại IMEI */
+        .btn-rechoose-imei {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: .65rem;
+            padding: .1rem .5rem;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .btn-rechoose-imei:hover {
+            background: rgba(255, 255, 255, 0.15);
             color: #fff;
-            font-size: .78rem;
-            font-family: 'Courier New', monospace;
-            padding: .45rem .7rem;
-            resize: none;
-            min-height: 40px;
-            transition: border-color .2s, box-shadow .2s;
-            line-height: 1.4;
-        }
-
-        .imei-input::placeholder {
-            color: rgba(255, 255, 255, .25);
-            font-family: 'Inter', sans-serif;
-        }
-
-        .imei-input:focus {
-            outline: none;
-            border-color: #60A5FA;
-            box-shadow: 0 0 0 2px rgba(96, 165, 250, .15);
-        }
-
-        .imei-input.imei-error {
-            border-color: #ef4444 !important;
-            box-shadow: 0 0 0 2px rgba(239, 68, 68, .2) !important;
-        }
-
-        .imei-err-msg {
-            font-size: .68rem;
-            color: #f87171;
-            margin-top: .2rem;
-            display: none;
         }
 
         /* ══ CỘT PHẢI — Tổng kết ══ */
@@ -805,9 +807,12 @@
                     <!-- Chọn khách hàng -->
                     <div class="cart-customer">
                         <label><i class="fa fa-user-circle me-1"></i>Khách hàng</label>
+                        <!-- Ô tìm kiếm khách hàng (sẽ được JS xử lý) -->
+                        <input type="text" id="searchCustomer" placeholder="Tìm theo tên hoặc SĐT..."
+                            autocomplete="off">
                         <select id="selectKhachHang">
                             <option value="">👤 Khách lẻ (mặc định)</option>
-                            <!-- Các khách hàng sẽ được load thêm nếu cần -->
+                            <!-- Các khách hàng sẽ được load thêm bởi JS -->
                         </select>
                     </div>
 

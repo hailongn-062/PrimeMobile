@@ -4,7 +4,6 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.example.primemobile.entity.GioHang;
 import org.example.primemobile.service.IGioHangService;
-import org.example.primemobile.service.impl.GioHangServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -15,18 +14,21 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * REST Controller quản lý Giỏ Hàng Online — đường dẫn công khai, cả khách vãng lai đều dùng được.
+ * REST Controller quản lý Giỏ Hàng Online — đường dẫn công khai, cả khách vãng
+ * lai đều dùng được.
  * <p>
  * Base path: {@code /api/public/gio-hang} — KHÔNG bảo vệ bởi AuthInterceptor.
  * <p>
  * Xác định người dùng qua 2 param tùy chọn:
  * <ul>
- *   <li>{@code khachHangId} — Dành cho khách đã đăng nhập.</li>
- *   <li>{@code sessionId}   — Dành cho khách vãng lai (UUID từ localStorage/cookie browser).</li>
+ * <li>{@code khachHangId} — Dành cho khách đã đăng nhập.</li>
+ * <li>{@code sessionId} — Dành cho khách vãng lai (UUID từ localStorage/cookie
+ * browser).</li>
  * </ul>
  * Phải truyền ít nhất một trong 2, nếu không sẽ nhận HTTP 400.
  * <p>
  * Endpoints:
+ * 
  * <pre>
  *   GET    /api/public/gio-hang                   → Lấy giỏ hàng kèm tổng tiền tạm tính
  *   POST   /api/public/gio-hang/them              → Thêm sản phẩm vào giỏ
@@ -51,12 +53,14 @@ public class GioHangController {
     /**
      * Lấy toàn bộ giỏ hàng kèm tổng tiền tạm tính.
      * <p>
-     * Response trả về wrapper object gồm {@code gioHang} và {@code tongTienTamTinh} (VND).
+     * Response trả về wrapper object gồm {@code gioHang} và {@code tongTienTamTinh}
+     * (VND).
      * <p>
      * Ví dụ:
      * <ul>
-     *   <li>Khách đăng nhập: {@code GET /api/public/gio-hang?khachHangId=1}</li>
-     *   <li>Khách vãng lai:  {@code GET /api/public/gio-hang?sessionId=abc-123-xyz}</li>
+     * <li>Khách đăng nhập: {@code GET /api/public/gio-hang?khachHangId=1}</li>
+     * <li>Khách vãng lai:
+     * {@code GET /api/public/gio-hang?sessionId=abc-123-xyz}</li>
      * </ul>
      */
     @GetMapping
@@ -70,11 +74,10 @@ public class GioHangController {
             return ResponseEntity.ok(Map.of(
                     "gioHang", (Object) null,
                     "tongTienTamTinh", BigDecimal.ZERO,
-                    "soLuongSanPham", 0
-            ));
+                    "soLuongSanPham", 0));
         }
 
-        BigDecimal tongTien = GioHangServiceImpl.tinhTongTienTamTinh(gioHang);
+        BigDecimal tongTien = gioHangService.tinhTongTienTamTinh(gioHang);
         int soLuong = gioHang.getChiTietGioHangs() == null ? 0 : gioHang.getChiTietGioHangs().size();
 
         Map<String, Object> response = new LinkedHashMap<>();
@@ -92,6 +95,7 @@ public class GioHangController {
      * Thêm sản phẩm vào giỏ hàng (upsert — cộng dồn nếu đã có).
      * <p>
      * Body JSON:
+     * 
      * <pre>
      * {
      *   "khachHangId": 1,         ← hoặc null
@@ -100,6 +104,7 @@ public class GioHangController {
      *   "soLuong": 2
      * }
      * </pre>
+     * 
      * Sau khi thêm thành công, trả về giỏ hàng kèm tổng tiền tạm tính.
      */
     @PostMapping("/them")
@@ -111,9 +116,8 @@ public class GioHangController {
                     request.khachHangId(),
                     request.sessionId(),
                     request.bienTheSanPhamId(),
-                    request.soLuong()
-            );
-            BigDecimal tongTien = GioHangServiceImpl.tinhTongTienTamTinh(gioHang);
+                    request.soLuong());
+            BigDecimal tongTien = gioHangService.tinhTongTienTamTinh(gioHang);
             return ResponseEntity.ok(Map.of("gioHang", gioHang, "tongTienTamTinh", tongTien));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
@@ -141,7 +145,7 @@ public class GioHangController {
         log.info("[GioHangController] Cập nhật số lượng — itemId={}, soLuongMoi={}", itemId, soLuongMoi);
         try {
             GioHang gioHang = gioHangService.capNhatSoLuong(itemId, soLuongMoi);
-            BigDecimal tongTien = GioHangServiceImpl.tinhTongTienTamTinh(gioHang);
+            BigDecimal tongTien = gioHangService.tinhTongTienTamTinh(gioHang);
             return ResponseEntity.ok(Map.of("gioHang", gioHang, "tongTienTamTinh", tongTien));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
@@ -205,8 +209,8 @@ public class GioHangController {
      */
     public record ThemVaoGioHangRequest(
             Integer khachHangId,
-            String  sessionId,
+            String sessionId,
             Integer bienTheSanPhamId,
-            Integer soLuong
-    ) {}
+            Integer soLuong) {
+    }
 }

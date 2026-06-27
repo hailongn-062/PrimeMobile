@@ -38,16 +38,15 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
     // -----------------------------------------------------------------------
     // HẰNG SỐ TRẠNG THÁI (khớp CHECK constraint chk_bt_trang_thai trong DB)
     // -----------------------------------------------------------------------
-    private static final Set<String> TRANG_THAI_HOP_LE =
-            Set.of("con_hang", "het_hang", "ngung_kinh_doanh");
+    private static final Set<String> TRANG_THAI_HOP_LE = Set.of("con_hang", "het_hang", "ngung_kinh_doanh");
 
     // -----------------------------------------------------------------------
     // DEPENDENCIES
     // -----------------------------------------------------------------------
     private final BienTheSanPhamRepository bienTheSanPhamRepository;
-    private final SanPhamRepository        sanPhamRepository;
-    private final KhoRepository            khoRepository;
-    private final TonKhoRepository         tonKhoRepository;
+    private final SanPhamRepository sanPhamRepository;
+    private final KhoRepository khoRepository;
+    private final TonKhoRepository tonKhoRepository;
 
     // =========================================================================
     // PUBLIC METHODS
@@ -78,11 +77,11 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
      *
      * <h3>Luồng chi tiết (trong 1 Transaction):</h3>
      * <ol>
-     *   <li>Validate sản phẩm cha tồn tại.</li>
-     *   <li>Validate {@code maSku} không trùng.</li>
-     *   <li>Lưu biến thể vào DB.</li>
-     *   <li><b>[LUẬT BẮT BUỘC]</b> Tìm tất cả kho đang hoạt động →
-     *       tạo bản ghi {@code TonKho(soLuong=0)} cho biến thể tại mỗi kho.</li>
+     * <li>Validate sản phẩm cha tồn tại.</li>
+     * <li>Validate {@code maSku} không trùng.</li>
+     * <li>Lưu biến thể vào DB.</li>
+     * <li><b>[LUẬT BẮT BUỘC]</b> Tìm tất cả kho đang hoạt động →
+     * tạo bản ghi {@code TonKho(soLuong=0)} cho biến thể tại mỗi kho.</li>
      * </ol>
      */
     @Override
@@ -95,8 +94,6 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
 
         // Bước 2: Validate mã SKU
         validateMaSku(bienTheSanPham.getMaSku(), null);
-
-
 
         // Bước 4: Gán sản phẩm cha và giá trị mặc định, lưu biến thể
         bienTheSanPham.setSanPham(sanPham);
@@ -123,7 +120,7 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
 
         if (tatCaKhoHoatDong.isEmpty()) {
             log.warn("[BienTheSanPham] Không tìm thấy kho nào đang hoạt động. " +
-                     "Tồn kho chưa được khởi tạo cho SKU: {}", saved.getMaSku());
+                    "Tồn kho chưa được khởi tạo cho SKU: {}", saved.getMaSku());
         } else {
             LocalDateTime now = LocalDateTime.now();
             for (Kho kho : tatCaKhoHoatDong) {
@@ -150,7 +147,7 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
      * <p>
      * Các trường được phép cập nhật: {@code maSku}, {@code mauSac},
      * {@code maMauHex}, {@code ramGb}, {@code luuTruGb}, {@code loaiLuuTru},
-     * {@code giaNhap}, {@code giaBan}, {@code giaKhuyenMai}, {@code trongLuongGram}, {@code pinMah}.
+     * {@code giaNhap}, {@code giaBan}, {@code trongLuongGram}, {@code pinMah}.
      */
     @Override
     @Transactional
@@ -161,21 +158,22 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
         validateMaSku(bienTheMoi.getMaSku(), id);
         existing.setMaSku(bienTheMoi.getMaSku().trim().toUpperCase());
 
-
-
         // Ghi đè các trường thông tin biến thể
         if (bienTheMoi.getMauSac() != null && !bienTheMoi.getMauSac().isBlank()) {
             existing.setMauSac(bienTheMoi.getMauSac().trim());
         }
         existing.setMaMauHex(bienTheMoi.getMaMauHex());
-        if (bienTheMoi.getRamGb() != null)          existing.setRamGb(bienTheMoi.getRamGb());
-        if (bienTheMoi.getLuuTruGb() != null)        existing.setLuuTruGb(bienTheMoi.getLuuTruGb());
+        if (bienTheMoi.getRamGb() != null)
+            existing.setRamGb(bienTheMoi.getRamGb());
+        if (bienTheMoi.getLuuTruGb() != null)
+            existing.setLuuTruGb(bienTheMoi.getLuuTruGb());
         if (bienTheMoi.getLoaiLuuTru() != null && !bienTheMoi.getLoaiLuuTru().isBlank()) {
             existing.setLoaiLuuTru(bienTheMoi.getLoaiLuuTru());
         }
-        if (bienTheMoi.getGiaNhap() != null)         existing.setGiaNhap(bienTheMoi.getGiaNhap());
-        if (bienTheMoi.getGiaBan() != null)           existing.setGiaBan(bienTheMoi.getGiaBan());
-        existing.setGiaKhuyenMai(bienTheMoi.getGiaKhuyenMai()); // Cho phép set null (xóa KM)
+        if (bienTheMoi.getGiaNhap() != null)
+            existing.setGiaNhap(bienTheMoi.getGiaNhap());
+        if (bienTheMoi.getGiaBan() != null)
+            existing.setGiaBan(bienTheMoi.getGiaBan());
         existing.setTrongLuongGram(bienTheMoi.getTrongLuongGram());
         existing.setPinMah(bienTheMoi.getPinMah());
         existing.setUpdatedAt(LocalDateTime.now());
@@ -192,7 +190,7 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
         if (trangThai == null || !TRANG_THAI_HOP_LE.contains(trangThai)) {
             throw new IllegalArgumentException(
                     "Trạng thái biến thể không hợp lệ: \"" + trangThai + "\". " +
-                    "Giá trị hợp lệ: " + TRANG_THAI_HOP_LE);
+                            "Giá trị hợp lệ: " + TRANG_THAI_HOP_LE);
         }
         BienTheSanPham bienThe = getBienTheSanPham(id);
         bienThe.setTrangThai(trangThai);
@@ -206,7 +204,9 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
     // PRIVATE HELPERS
     // =========================================================================
 
-    /** Validate mã SKU không rỗng và không trùng. {@code excludeId} null = thêm mới. */
+    /**
+     * Validate mã SKU không rỗng và không trùng. {@code excludeId} null = thêm mới.
+     */
     private void validateMaSku(String maSku, Integer excludeId) {
         if (maSku == null || maSku.isBlank()) {
             throw new IllegalArgumentException("Mã SKU không được để trống.");
@@ -220,6 +220,4 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
                     "Mã SKU \"" + maSkuTrim + "\" đã tồn tại. Vui lòng dùng mã SKU khác.");
         }
     }
-
-
 }

@@ -118,7 +118,6 @@ CREATE TABLE bien_the_san_pham (
                                    loai_luu_tru     VARCHAR(20)   NOT NULL DEFAULT 'UFS',
                                    gia_nhap         DECIMAL(15,2) NOT NULL,
                                    gia_ban          DECIMAL(15,2) NOT NULL,
-                                   gia_khuyen_mai   DECIMAL(15,2) NULL,
                                    trong_luong_gram INT,
                                    pin_mAh          INT,
                                    trang_thai       VARCHAR(20)   NOT NULL DEFAULT 'con_hang',
@@ -796,19 +795,18 @@ GO
 -- =====================================================
 -- 5. BIẾN THỂ SẢN PHẨM (12 BIẾN THỂ - ĐÃ XÓA BARCODE)
 -- =====================================================
-INSERT INTO bien_the_san_pham (san_pham_id, ma_sku, mau_sac, ma_mau_hex, ram_gb, luu_tru_gb, gia_nhap, gia_ban, gia_khuyen_mai, trang_thai) VALUES
-(1, 'IP15PM-256-NAT', N'Titan Tự Nhiên', '#B5B6B1', 8, 256, 27000000, 29990000, 28990000, 'con_hang'),
-(1, 'IP15PM-512-BLK', N'Titan Đen', '#4B4B4D', 8, 512, 32000000, 35990000, NULL, 'con_hang'),
-(2, 'IP14-128-BLU', N'Xanh Dương', '#A3C6D3', 6, 128, 16000000, 18490000, 17990000, 'con_hang'),
-(3, 'S24U-256-GRY', N'Xám Titan', '#7D7A7D', 12, 256, 24000000, 26990000, 25490000, 'con_hang'),
-(3, 'S24U-512-YEL', N'Vàng Titan', '#E6DEB8', 12, 512, 28000000, 31490000, NULL, 'con_hang'),
-(4, 'ZF5-256-BLU', N'Xanh Icy', '#A9BCD0', 12, 256, 30000000, 34990000, NULL, 'con_hang'),
-(5, 'XM14-256-BLK', N'Đen', '#000000', 12, 256, 18000000, 20990000, 19990000, 'con_hang'),
-(6, 'RMN13-128-PUR', N'Tím', '#9D84B5', 8, 128, 6000000, 7490000, NULL, 'het_hang'),
-(7, 'R11-256-GRN', N'Xanh Sóng Biển', '#7BA89D', 8, 256, 9000000, 10990000, 10490000, 'con_hang'),
-(8, 'A18-128-BLU', N'Xanh Phát Sáng', '#87CEEB', 4, 128, 3000000, 3990000, 3690000, 'con_hang');
+INSERT INTO bien_the_san_pham (san_pham_id, ma_sku, mau_sac, ma_mau_hex, ram_gb, luu_tru_gb, gia_nhap, gia_ban, trang_thai) VALUES
+(1, 'IP15PM-256-NAT', N'Titan Tự Nhiên', '#B5B6B1', 8, 256, 27000000, 29990000, 'con_hang'),
+(1, 'IP15PM-512-BLK', N'Titan Đen', '#4B4B4D', 8, 512, 32000000, 35990000, 'con_hang'),
+(2, 'IP14-128-BLU', N'Xanh Dương', '#A3C6D3', 6, 128, 16000000, 18490000, 'con_hang'),
+(3, 'S24U-256-GRY', N'Xám Titan', '#7D7A7D', 12, 256, 24000000, 26990000, 'con_hang'),
+(3, 'S24U-512-YEL', N'Vàng Titan', '#E6DEB8', 12, 512, 28000000, 31490000, 'con_hang'),
+(4, 'ZF5-256-BLU', N'Xanh Icy', '#A9BCD0', 12, 256, 30000000, 34990000, 'con_hang'),
+(5, 'XM14-256-BLK', N'Đen', '#000000', 12, 256, 18000000, 20990000, 'con_hang'),
+(6, 'RMN13-128-PUR', N'Tím', '#9D84B5', 8, 128, 6000000, 7490000, 'het_hang'),
+(7, 'R11-256-GRN', N'Xanh Sóng Biển', '#7BA89D', 8, 256, 9000000, 10990000, 'con_hang'),
+(8, 'A18-128-BLU', N'Xanh Phát Sáng', '#87CEEB', 4, 128, 3000000, 3990000, 'con_hang');
 GO
-
 -- =====================================================
 -- 6. HÌNH ẢNH SẢN PHẨM & TỒN KHO
 -- =====================================================

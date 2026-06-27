@@ -17,471 +17,516 @@
     </style>
 </head>
 <body>
-    <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
-    <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
+<th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
+<th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
 
-    <main id="pmContent">
-        <div class="pm-card" style="max-width: 1100px; margin: 0 auto;">
-            <div class="pm-card-header d-flex justify-content-between align-items-center">
+<main id="pmContent">
+    <div class="pm-card" style="max-width: 1100px; margin: 0 auto;">
+        <div class="pm-card-header d-flex justify-content-between align-items-center">
                 <span>
                     <i class="fa fa-exchange-alt me-2 text-warning"></i>
                     Quản lý Phiếu Chuyển Kho
                 </span>
-            </div>
-            <div class="card-body p-4">
-                
-                <!-- Nav Tabs -->
-                <ul class="nav nav-tabs mb-4" id="pckTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active fw-semibold" id="tao-pck-tab" data-bs-toggle="tab" data-bs-target="#tao-pck" type="button" role="tab">
-                            <i class="fa fa-plus-circle me-1"></i> Tạo Phiếu Chuyển
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-semibold" id="lich-su-tab" data-bs-toggle="tab" data-bs-target="#lich-su" type="button" role="tab">
-                            <i class="fa fa-history me-1"></i> Lịch sử Phiếu Chuyển
-                        </button>
-                    </li>
-                </ul>
+        </div>
+        <div class="card-body p-4">
 
-                <div class="tab-content" id="pckTabContent">
-                    <!-- KHU VỰC 1: TẠO PHIẾU CHUYỂN MỚI -->
-                    <div class="tab-pane fade show active" id="tao-pck" role="tabpanel">
-                        <form id="formTaoPhieu">
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Kho Nguồn <span class="text-danger">*</span></label>
-                                    <select id="khoNguonId" class="form-select shadow-sm" required>
-                                        <option value="">-- Chọn Kho Nguồn --</option>
-                                        <option th:each="kho : ${danhSachKho}" 
-                                                th:value="${kho.id}" 
-                                                th:text="${kho.tenKho}"></option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Kho Đích <span class="text-danger">*</span></label>
-                                    <select id="khoDichId" class="form-select shadow-sm" required>
-                                        <option value="">-- Chọn Kho Đích --</option>
-                                        <option th:each="kho : ${danhSachKho}" 
-                                                th:value="${kho.id}" 
-                                                th:text="${kho.tenKho}"></option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Lý do chuyển</label>
-                                    <textarea id="lyDo" class="form-control shadow-sm" rows="1" placeholder="Ví dụ: Bổ sung hàng cho chi nhánh..."></textarea>
-                                </div>
+            <!-- Nav Tabs -->
+            <ul class="nav nav-tabs mb-4" id="pckTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-semibold" id="tao-pck-tab" data-bs-toggle="tab" data-bs-target="#tao-pck" type="button" role="tab">
+                        <i class="fa fa-plus-circle me-1"></i> Tạo Phiếu Chuyển
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold" id="lich-su-tab" data-bs-toggle="tab" data-bs-target="#lich-su" type="button" role="tab">
+                        <i class="fa fa-history me-1"></i> Lịch sử Phiếu Chuyển
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="pckTabContent">
+                <!-- KHU VỰC 1: TẠO PHIẾU CHUYỂN MỚI -->
+                <div class="tab-pane fade show active" id="tao-pck" role="tabpanel">
+                    <form id="formTaoPhieu">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Kho Nguồn <span class="text-danger">*</span></label>
+                                <select id="khoNguonId" class="form-select shadow-sm" required>
+                                    <option value="">-- Chọn Kho Nguồn --</option>
+                                    <option th:each="kho : ${danhSachKho}"
+                                            th:value="${kho.id}"
+                                            th:text="${kho.tenKho}"></option>
+                                </select>
                             </div>
-
-                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-                                <h6 class="fw-bold mb-0 text-warning">Chi tiết sản phẩm chuyển</h6>
-                                <button type="button" id="btn-them-dong" class="btn btn-sm btn-outline-warning text-dark shadow-sm">
-                                    <i class="fa fa-plus me-1"></i> Thêm sản phẩm chuyển
-                                </button>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Kho Đích <span class="text-danger">*</span></label>
+                                <select id="khoDichId" class="form-select shadow-sm" required>
+                                    <option value="">-- Chọn Kho Đích --</option>
+                                    <option th:each="kho : ${danhSachKho}"
+                                            th:value="${kho.id}"
+                                            th:text="${kho.tenKho}"></option>
+                                </select>
                             </div>
-
-                            <div class="table-responsive mb-4">
-                                <table class="table table-bordered table-hover align-middle table-pck" id="chiTietTable">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 45%">Biến thể (SKU) <span class="text-danger">*</span></th>
-                                            <th style="width: 30%">Tồn kho khả dụng (Nguồn)</th>
-                                            <th style="width: 15%">Số lượng chuyển <span class="text-danger">*</span></th>
-                                            <th style="width: 10%" class="text-center">Xóa</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="chi-tiet-body">
-                                        <!-- Rows render here -->
-                                    </tbody>
-                                </table>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Lý do chuyển</label>
+                                <textarea id="lyDo" class="form-control shadow-sm" rows="1" placeholder="Ví dụ: Bổ sung hàng cho chi nhánh..."></textarea>
                             </div>
+                        </div>
 
-                            <div class="text-end border-top pt-3">
-                                <button type="button" id="btn-luu-phieu" class="btn btn-warning px-5 shadow-sm fw-semibold">
-                                    <i class="fa fa-paper-plane me-2"></i> Tạo Phiếu Chuyển
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                            <h6 class="fw-bold mb-0 text-warning">Chi tiết sản phẩm chuyển</h6>
+                            <button type="button" id="btn-them-dong" class="btn btn-sm btn-outline-warning text-dark shadow-sm">
+                                <i class="fa fa-plus me-1"></i> Thêm sản phẩm chuyển
+                            </button>
+                        </div>
 
-                    <!-- KHU VỰC 2: LỊCH SỬ PHIẾU CHUYỂN -->
-                    <div class="tab-pane fade" id="lich-su" role="tabpanel">
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-hover align-middle table-pck">
+                        <div class="table-responsive mb-4">
+                            <table class="table table-bordered table-hover align-middle table-pck" id="chiTietTable">
                                 <thead>
-                                    <tr>
-                                        <th>Mã phiếu</th>
-                                        <th>Kho nguồn</th>
-                                        <th>Kho đích</th>
-                                        <th>Lý do</th>
-                                        <th>Ngày chuyển</th>
-                                        <th class="text-center">Hành động</th>
-                                    </tr>
+                                <tr>
+                                    <th style="width: 45%">Biến thể (SKU) <span class="text-danger">*</span></th>
+                                    <th style="width: 30%">Tồn kho khả dụng (Nguồn)</th>
+                                    <th style="width: 15%">Số lượng chuyển <span class="text-danger">*</span></th>
+                                    <th style="width: 10%" class="text-center">Xóa</th>
+                                </tr>
                                 </thead>
-                                <tbody id="lichSuBody">
-                                    <tr><td colspan="6" class="text-center text-muted">Đang tải dữ liệu...</td></tr>
+                                <tbody id="chi-tiet-body">
+                                <!-- Rows render here -->
                                 </tbody>
                             </table>
                         </div>
+
+                        <div class="text-end border-top pt-3">
+                            <button type="button" id="btn-luu-phieu" class="btn btn-warning px-5 shadow-sm fw-semibold">
+                                <i class="fa fa-paper-plane me-2"></i> Tạo Phiếu Chuyển
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- KHU VỰC 2: LỊCH SỬ PHIẾU CHUYỂN -->
+                <div class="tab-pane fade" id="lich-su" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle table-pck">
+                            <thead>
+                            <tr>
+                                <th>Mã phiếu</th>
+                                <th>Kho nguồn</th>
+                                <th>Kho đích</th>
+                                <th>Lý do</th>
+                                <th>Ngày chuyển</th>
+                                <th class="text-center">Hành động</th>
+                            </tr>
+                            </thead>
+                            <tbody id="lichSuBody">
+                            <tr><td colspan="6" class="text-center text-muted">Đang tải dữ liệu...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- MODAL CHI TIẾT PHIẾU CHUYỂN -->
-        <div class="modal fade" id="chiTietModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title fw-bold text-warning"><i class="fa fa-truck-loading me-2"></i>Chi tiết Phiếu Chuyển</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <p class="mb-1 text-muted small">Mã phiếu</p>
-                                <strong id="modalMaPhieu">--</strong>
-                            </div>
-                            <div class="col-md-4">
-                                <p class="mb-1 text-muted small">Kho Nguồn &rarr; Kho Đích</p>
-                                <strong id="modalTuyenDuong">--</strong>
-                            </div>
-                            <div class="col-md-4">
-                                <p class="mb-1 text-muted small">Ngày chuyển</p>
-                                <strong id="modalNgayChuyen">--</strong>
-                            </div>
+    <!-- MODAL CHI TIẾT PHIẾU CHUYỂN -->
+    <div class="modal fade" id="chiTietModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-warning"><i class="fa fa-truck-loading me-2"></i>Chi tiết Phiếu Chuyển</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <p class="mb-1 text-muted small">Mã phiếu</p>
+                            <strong id="modalMaPhieu">--</strong>
                         </div>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Biến thể (SKU)</th>
-                                        <th class="text-center">Số lượng chuyển</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="modalChiTietBody">
-                                </tbody>
-                            </table>
+                        <div class="col-md-4">
+                            <p class="mb-1 text-muted small">Kho Nguồn &rarr; Kho Đích</p>
+                            <strong id="modalTuyenDuong">--</strong>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="mb-1 text-muted small">Ngày chuyển</p>
+                            <strong id="modalNgayChuyen">--</strong>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Biến thể (SKU)</th>
+                                <th class="text-center">Số lượng chuyển</th>
+                            </tr>
+                            </thead>
+                            <tbody id="modalChiTietBody">
+                            </tbody>
+                        </table>
                     </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
                 </div>
             </div>
         </div>
+    </div>
 
-    </main>
+</main>
 
-    <!-- Template cho dòng chi tiết -->
-    <template id="rowTemplate">
-        <tr class="chi-tiet-row">
-            <td>
-                <select class="form-select form-select-sm sku-select" required>
-                    <option value="">-- Chọn SKU --</option>
-                    <option th:each="bt : ${danhSachBienThe}" 
-                            th:value="${bt.id}" 
-                            th:text="${bt.maSku + (bt.sanPham != null ? ' - ' + bt.sanPham.tenSanPham : '')}"></option>
-                </select>
-            </td>
-            <td>
-                <span class="fw-semibold ton-kho-hien-thi">Chưa kiểm tra</span>
-                <span class="max-qty-label text-muted d-none"></span>
-            </td>
-            <td>
-                <input type="number" class="form-control form-control-sm sl-input text-center" min="1" disabled required>
-            </td>
-            <td class="text-center align-middle">
-                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" title="Xóa dòng">
-                    <i class="fa fa-trash"></i>
-                </button>
-            </td>
-        </tr>
-    </template>
+<!-- Template cho dòng chi tiết -->
+<template id="rowTemplate">
+    <tr class="chi-tiet-row">
+        <td>
+            <select class="form-select form-select-sm sku-select" required>
+                <option value="">-- Chọn SKU --</option>
+                <option th:each="bt : ${danhSachBienThe}"
+                        th:value="${bt.id}"
+                        th:text="${bt.maSku + (bt.sanPham != null ? ' - ' + bt.sanPham.tenSanPham : '')}"></option>
+            </select>
+        </td>
+        <td>
+            <span class="fw-semibold ton-kho-hien-thi">Chưa kiểm tra</span>
+            <span class="max-qty-label text-muted d-none"></span>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm sl-input text-center" min="1" disabled required>
+        </td>
+        <td class="text-center align-middle">
+            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" title="Xóa dòng">
+                <i class="fa fa-trash"></i>
+            </button>
+        </td>
+    </tr>
+</template>
 
-    <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+<th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            
-            const btnAddRow = document.getElementById("btn-them-dong");
-            const chiTietBody = document.getElementById("chi-tiet-body");
-            const rowTemplate = document.getElementById("rowTemplate").content;
-            
-            const btnSubmitPhieu = document.getElementById("btn-luu-phieu");
-            const formTaoPhieu = document.getElementById("formTaoPhieu");
-            
-            const khoNguonId = document.getElementById("khoNguonId");
-            const khoDichId = document.getElementById("khoDichId");
-            const lyDo = document.getElementById("lyDo");
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
 
-            const lichSuTab = document.getElementById("lich-su-tab");
-            const lichSuBody = document.getElementById("lichSuBody");
-            
-            const chiTietModal = new bootstrap.Modal(document.getElementById('chiTietModal'));
+        const btnAddRow = document.getElementById("btn-them-dong");
+        const chiTietBody = document.getElementById("chi-tiet-body");
+        const rowTemplate = document.getElementById("rowTemplate").content;
 
-            // --- TAB 1: TẠO PHIẾU CHUYỂN ---
-            
-            // Xử lý logic mỗi khi chọn SKU
-            async function handleSkuChange(event) {
-                const selectEl = event.target;
-                const row = selectEl.closest("tr");
-                const tonKhoHienThi = row.querySelector(".ton-kho-hien-thi");
-                const maxQtyLabel = row.querySelector(".max-qty-label");
-                const slInput = row.querySelector(".sl-input");
-                
-                const bienTheId = selectEl.value;
-                const sourceKhoId = khoNguonId.value;
+        const btnSubmitPhieu = document.getElementById("btn-luu-phieu");
+        const formTaoPhieu = document.getElementById("formTaoPhieu");
 
-                if (!bienTheId) {
-                    tonKhoHienThi.textContent = "Chưa kiểm tra";
-                    tonKhoHienThi.className = "fw-semibold ton-kho-hien-thi text-muted";
-                    maxQtyLabel.classList.add("d-none");
+        const khoNguonId = document.getElementById("khoNguonId");
+        const khoDichId = document.getElementById("khoDichId");
+        const lyDo = document.getElementById("lyDo");
+
+        const lichSuTab = document.getElementById("lich-su-tab");
+        const lichSuBody = document.getElementById("lichSuBody");
+
+        const chiTietModal = new bootstrap.Modal(document.getElementById('chiTietModal'));
+
+        // ─── VALIDATE KHO NGUỒN & KHO ĐÍCH KHÔNG TRÙNG ───
+        function updateKhoDichOptions() {
+            const selectedValue = khoNguonId.value;
+            Array.from(khoDichId.options).forEach(opt => {
+                if (opt.value && opt.value === selectedValue) {
+                    opt.disabled = true;
+                } else {
+                    opt.disabled = false;
+                }
+            });
+            // Nếu Kho Đích đang chọn trùng với Kho Nguồn thì reset về rỗng
+            if (khoDichId.value && khoDichId.value === selectedValue) {
+                khoDichId.value = '';
+            }
+        }
+
+        khoNguonId.addEventListener('change', function() {
+            updateKhoDichOptions();
+            // Nếu đã có SKU được chọn, reset lại các dòng để tránh sai tồn kho
+            const rows = chiTietBody.querySelectorAll(".chi-tiet-row");
+            rows.forEach(row => {
+                const select = row.querySelector(".sku-select");
+                if (select && select.value) {
+                    // Kích hoạt lại sự kiện change để load lại tồn kho
+                    select.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+
+        khoDichId.addEventListener('change', function() {
+            if (this.value && this.value === khoNguonId.value) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Kho Nguồn và Kho Đích không được trùng nhau!',
+                    text: 'Vui lòng chọn kho đích khác.',
+                    timer: 2500,
+                    showConfirmButton: true
+                });
+                this.value = '';
+            }
+        });
+
+        // ─── TẠO PHIẾU CHUYỂN ───
+
+        // Xử lý logic mỗi khi chọn SKU
+        async function handleSkuChange(event) {
+            const selectEl = event.target;
+            const row = selectEl.closest("tr");
+            const tonKhoHienThi = row.querySelector(".ton-kho-hien-thi");
+            const maxQtyLabel = row.querySelector(".max-qty-label");
+            const slInput = row.querySelector(".sl-input");
+
+            const bienTheId = selectEl.value;
+            const sourceKhoId = khoNguonId.value;
+
+            if (!bienTheId) {
+                tonKhoHienThi.textContent = "Chưa kiểm tra";
+                tonKhoHienThi.className = "fw-semibold ton-kho-hien-thi text-muted";
+                maxQtyLabel.classList.add("d-none");
+                slInput.value = "";
+                slInput.disabled = true;
+                slInput.removeAttribute("max");
+                return;
+            }
+
+            if (!sourceKhoId) {
+                Swal.fire('Chú ý', 'Vui lòng chọn Kho Nguồn trước khi chọn sản phẩm', 'warning');
+                selectEl.value = "";
+                return;
+            }
+
+            try {
+                // Hiển thị trạng thái đang tải
+                tonKhoHienThi.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang tải...';
+                tonKhoHienThi.className = "fw-semibold ton-kho-hien-thi text-primary";
+                slInput.disabled = true;
+
+                // Gọi API lấy tồn kho theo khoNguon và bienThe
+                const response = await fetch(`/api/admin/phieu-chuyen/ton-kho/${sourceKhoId}/${bienTheId}`);
+
+                let soLuongTon = 0;
+                if (response.status === 404) {
+                    soLuongTon = 0;
+                } else if (response.ok) {
+                    const tonKhoApi = await response.json();
+                    soLuongTon = parseInt(tonKhoApi.soLuong || tonKhoApi) || 0;
+                } else {
+                    throw new Error("Lỗi kết nối");
+                }
+
+                const maxChuyen = soLuongTon - 5; // Safety Stock = 5
+
+                maxQtyLabel.classList.remove("d-none");
+
+                if (maxChuyen <= 0) {
+                    tonKhoHienThi.textContent = `Tồn kho khả dụng: ${soLuongTon} (Không đủ an toàn)`;
+                    tonKhoHienThi.className = "fw-semibold ton-kho-hien-thi text-danger";
+
+                    maxQtyLabel.textContent = "Tồn kho không đủ mức an toàn (5) để chuyển";
+                    maxQtyLabel.className = "max-qty-label text-danger fw-bold";
+
                     slInput.value = "";
                     slInput.disabled = true;
                     slInput.removeAttribute("max");
-                    return;
+                } else {
+                    tonKhoHienThi.textContent = `Tồn hiện tại: ${soLuongTon}`;
+                    tonKhoHienThi.className = "fw-semibold ton-kho-hien-thi text-success";
+
+                    maxQtyLabel.textContent = `Tối đa được chuyển: ${maxChuyen}`;
+                    maxQtyLabel.className = "max-qty-label text-success fw-bold";
+
+                    slInput.disabled = false;
+                    slInput.setAttribute("max", maxChuyen);
+                    slInput.value = 1;
                 }
 
-                if (!sourceKhoId) {
-                    Swal.fire('Chú ý', 'Vui lòng chọn Kho Nguồn trước khi chọn sản phẩm', 'warning');
-                    selectEl.value = "";
-                    return;
-                }
+            } catch (error) {
+                tonKhoHienThi.textContent = "Lỗi kết nối";
+                tonKhoHienThi.className = "fw-semibold ton-kho-hien-thi text-danger";
+                maxQtyLabel.classList.add("d-none");
+            }
+        }
 
-                try {
-                    // Hiển thị trạng thái đang tải
-                    tonKhoHienThi.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang tải...';
-                    tonKhoHienThi.className = "fw-semibold ton-kho-hien-thi text-primary";
-                    slInput.disabled = true;
+        // Thêm 1 dòng mới
+        function addRow() {
+            const clone = document.importNode(rowTemplate, true);
 
-                    // Gọi API lấy tồn kho theo khoNguon và bienThe
-                    const response = await fetch(`/api/admin/phieu-chuyen/ton-kho/${sourceKhoId}/${bienTheId}`);
-                    
-                    let soLuongTon = 0;
-                    if (response.status === 404) {
-                        soLuongTon = 0;
-                    } else if (response.ok) {
-                        const tonKhoApi = await response.json(); 
-                        soLuongTon = parseInt(tonKhoApi.soLuong || tonKhoApi) || 0;
+            // Gắn sự kiện change cho Select SKU
+            clone.querySelector(".sku-select").addEventListener("change", handleSkuChange);
+
+            // Nút xóa dòng
+            clone.querySelector(".btn-remove-row").addEventListener("click", function(e) {
+                e.target.closest("tr").remove();
+            });
+
+            chiTietBody.appendChild(clone);
+        }
+
+        btnAddRow.addEventListener("click", addRow);
+
+        // Xử lý nếu người dùng đổi Kho Nguồn khi đã chọn SKU ở dưới
+        khoNguonId.addEventListener("change", function() {
+            const rows = chiTietBody.querySelectorAll(".chi-tiet-row");
+            if (rows.length > 0 && rows[0].querySelector(".sku-select").value) {
+                Swal.fire({
+                    title: 'Đổi Kho Nguồn?',
+                    text: "Việc đổi Kho Nguồn sẽ làm mới lại toàn bộ danh sách sản phẩm bên dưới. Bạn có chắc không?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Đồng ý',
+                    cancelButtonText: 'Hủy'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        chiTietBody.innerHTML = '';
+                        addRow();
                     } else {
-                        throw new Error("Lỗi kết nối");
+                        // Revert lại giá trị kho cũ (cần state management, nhưng để đơn giản ta cứ xóa cho chắc chắn)
+                        // Tùy theo logic ứng dụng
                     }
-                    
-                    const maxChuyen = soLuongTon - 5; // Safety Stock = 5
+                });
+            }
+        });
 
-                    maxQtyLabel.classList.remove("d-none");
+        // Khởi tạo 1 dòng ban đầu
+        addRow();
 
-                    if (maxChuyen <= 0) {
-                        tonKhoHienThi.textContent = `Tồn kho khả dụng: ${soLuongTon} (Không đủ an toàn)`;
-                        tonKhoHienThi.className = "fw-semibold ton-kho-hien-thi text-danger";
-                        
-                        maxQtyLabel.textContent = "Tồn kho không đủ mức an toàn (5) để chuyển";
-                        maxQtyLabel.className = "max-qty-label text-danger fw-bold";
-                        
-                        slInput.value = "";
-                        slInput.disabled = true;
-                        slInput.removeAttribute("max");
-                    } else {
-                        tonKhoHienThi.textContent = `Tồn hiện tại: ${soLuongTon}`;
-                        tonKhoHienThi.className = "fw-semibold ton-kho-hien-thi text-success";
-                        
-                        maxQtyLabel.textContent = `Tối đa được chuyển: ${maxChuyen}`;
-                        maxQtyLabel.className = "max-qty-label text-success fw-bold";
-                        
-                        slInput.disabled = false;
-                        slInput.setAttribute("max", maxChuyen);
-                        slInput.value = 1;
-                    }
+        // Gọi cập nhật disable Kho Đích ban đầu
+        updateKhoDichOptions();
 
-                } catch (error) {
-                    tonKhoHienThi.textContent = "Lỗi kết nối";
-                    tonKhoHienThi.className = "fw-semibold ton-kho-hien-thi text-danger";
-                    maxQtyLabel.classList.add("d-none");
-                }
+        // Submit Phiếu Chuyển
+        btnSubmitPhieu.addEventListener("click", async function() {
+
+            // 1. Validate Form & Logical Rules
+            const kn = khoNguonId.value;
+            const kd = khoDichId.value;
+
+            if (!kn || !kd) {
+                Swal.fire('Thiếu thông tin', 'Vui lòng chọn đầy đủ Kho Nguồn và Kho Đích!', 'warning');
+                return;
             }
 
-            // Thêm 1 dòng mới
-            function addRow() {
-                const clone = document.importNode(rowTemplate, true);
-                
-                // Gắn sự kiện change cho Select SKU
-                clone.querySelector(".sku-select").addEventListener("change", handleSkuChange);
-                
-                // Nút xóa dòng
-                clone.querySelector(".btn-remove-row").addEventListener("click", function(e) {
-                    e.target.closest("tr").remove();
+            if (kn === kd) {
+                Swal.fire('Lỗi logic', 'Kho Nguồn không được trùng với Kho Đích!', 'error');
+                return;
+            }
+
+            const rows = chiTietBody.querySelectorAll(".chi-tiet-row");
+            if (rows.length === 0) {
+                Swal.fire('Thiếu dữ liệu', 'Vui lòng thêm ít nhất 1 dòng sản phẩm.', 'warning');
+                return;
+            }
+
+            const chiTiets = [];
+            const skuSet = new Set();
+            let hasError = false;
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const bienTheId = row.querySelector(".sku-select").value;
+                const slInput = row.querySelector(".sl-input");
+                const soLuong = parseInt(slInput.value);
+                const maxChuyen = parseInt(slInput.getAttribute("max"));
+
+                if (!bienTheId) {
+                    Swal.fire('Thiếu dữ liệu', `Dòng ${i + 1} chưa chọn Biến thể (SKU).`, 'error');
+                    hasError = true; break;
+                }
+                if (slInput.disabled) {
+                    Swal.fire('Dữ liệu không hợp lệ', `Dòng ${i + 1} không đủ điều kiện chuyển (thiếu hàng).`, 'error');
+                    hasError = true; break;
+                }
+                if (isNaN(soLuong) || soLuong <= 0) {
+                    Swal.fire('Dữ liệu không hợp lệ', `Số lượng chuyển ở dòng ${i + 1} phải > 0.`, 'error');
+                    hasError = true; break;
+                }
+                if (soLuong > maxChuyen) {
+                    Swal.fire('Vượt quá hạn mức', `Số lượng dòng ${i + 1} (${soLuong}) vượt quá mức tối đa cho phép (${maxChuyen}).`, 'error');
+                    hasError = true; break;
+                }
+
+                // Chống trùng lặp SKU
+                if (skuSet.has(bienTheId)) {
+                    Swal.fire('Trùng lặp sản phẩm', `Biến thể (SKU) ở dòng ${i + 1} đã được chọn trước đó. Vui lòng gộp chung!`, 'error');
+                    hasError = true; break;
+                }
+                skuSet.add(bienTheId);
+
+                chiTiets.push({
+                    bienTheSanPhamId: parseInt(bienTheId),
+                    soLuong: soLuong
+                });
+            }
+
+            if (hasError) return;
+
+            // 2. Chuẩn bị payload JSON
+            const payload = {
+                khoNguonId: parseInt(kn),
+                khoDichId: parseInt(kd),
+                lyDo: lyDo.value.trim(),
+                chiTiets: chiTiets
+            };
+
+            // 3. Gọi API POST
+            try {
+                btnSubmitPhieu.disabled = true;
+                btnSubmitPhieu.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>Đang tạo phiếu...';
+
+                const response = await fetch('/api/admin/phieu-chuyen', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
 
-                chiTietBody.appendChild(clone);
-            }
-
-            btnAddRow.addEventListener("click", addRow);
-            
-            // Xử lý nếu người dùng đổi Kho Nguồn khi đã chọn SKU ở dưới
-            khoNguonId.addEventListener("change", function() {
-                const rows = chiTietBody.querySelectorAll(".chi-tiet-row");
-                if (rows.length > 0 && rows[0].querySelector(".sku-select").value) {
+                if (response.status === 201) {
                     Swal.fire({
-                        title: 'Đổi Kho Nguồn?',
-                        text: "Việc đổi Kho Nguồn sẽ làm mới lại toàn bộ danh sách sản phẩm bên dưới. Bạn có chắc không?",
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Đồng ý',
-                        cancelButtonText: 'Hủy'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            chiTietBody.innerHTML = '';
-                            addRow();
-                        } else {
-                            // Revert lại giá trị kho cũ (cần state management, nhưng để đơn giản ta cứ xóa cho chắc chắn)
-                            // Tùy theo logic ứng dụng
-                        }
+                        icon: 'success',
+                        title: 'Thành công!',
+                        text: 'Đã cập nhật tồn kho 2 đầu',
+                        timer: 2500,
+                        showConfirmButton: false
                     });
+
+                    // Reset form
+                    formTaoPhieu.reset();
+                    chiTietBody.innerHTML = '';
+                    addRow(); // Thêm lại 1 dòng trống
+
+                    // Tự động chuyển qua load tab lịch sử
+                    loadLichSu();
+                } else {
+                    const errorData = await response.json();
+                    Swal.fire('Lỗi từ hệ thống', errorData.message || 'Không thể tạo phiếu chuyển', 'error');
                 }
-            });
+            } catch (error) {
+                Swal.fire('Lỗi kết nối', 'Mất kết nối máy chủ.', 'error');
+            } finally {
+                btnSubmitPhieu.disabled = false;
+                btnSubmitPhieu.innerHTML = '<i class="fa fa-paper-plane me-2"></i> Tạo Phiếu Chuyển';
+            }
+        });
 
-            // Khởi tạo 1 dòng ban đầu
-            addRow();
+        // --- TAB 2: LỊCH SỬ PHIẾU CHUYỂN ---
 
-            // Submit Phiếu Chuyển
-            btnSubmitPhieu.addEventListener("click", async function() {
-                
-                // 1. Validate Form & Logical Rules
-                const kn = khoNguonId.value;
-                const kd = khoDichId.value;
-                
-                if (!kn || !kd) {
-                    Swal.fire('Thiếu thông tin', 'Vui lòng chọn đầy đủ Kho Nguồn và Kho Đích!', 'warning');
+        async function loadLichSu() {
+            try {
+                lichSuBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted"><i class="fa fa-spinner fa-spin me-2"></i> Đang tải dữ liệu...</td></tr>';
+
+                const response = await fetch('/api/admin/phieu-chuyen?page=0&size=50&sort=ngayChuyen,desc');
+                if (!response.ok) throw new Error('Lỗi fetch lịch sử');
+
+                const data = await response.json();
+                const list = data.content || [];
+
+                if (list.length === 0) {
+                    lichSuBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Chưa có phiếu chuyển nào.</td></tr>';
                     return;
                 }
 
-                if (kn === kd) {
-                    Swal.fire('Lỗi logic', 'Kho Nguồn không được trùng với Kho Đích!', 'error');
-                    return;
-                }
-
-                const rows = chiTietBody.querySelectorAll(".chi-tiet-row");
-                if (rows.length === 0) {
-                    Swal.fire('Thiếu dữ liệu', 'Vui lòng thêm ít nhất 1 dòng sản phẩm.', 'warning');
-                    return;
-                }
-
-                const chiTiets = [];
-                const skuSet = new Set();
-                let hasError = false;
-
-                for (let i = 0; i < rows.length; i++) {
-                    const row = rows[i];
-                    const bienTheId = row.querySelector(".sku-select").value;
-                    const slInput = row.querySelector(".sl-input");
-                    const soLuong = parseInt(slInput.value);
-                    const maxChuyen = parseInt(slInput.getAttribute("max"));
-
-                    if (!bienTheId) {
-                        Swal.fire('Thiếu dữ liệu', `Dòng ${i + 1} chưa chọn Biến thể (SKU).`, 'error');
-                        hasError = true; break;
-                    }
-                    if (slInput.disabled) {
-                        Swal.fire('Dữ liệu không hợp lệ', `Dòng ${i + 1} không đủ điều kiện chuyển (thiếu hàng).`, 'error');
-                        hasError = true; break;
-                    }
-                    if (isNaN(soLuong) || soLuong <= 0) {
-                        Swal.fire('Dữ liệu không hợp lệ', `Số lượng chuyển ở dòng ${i + 1} phải > 0.`, 'error');
-                        hasError = true; break;
-                    }
-                    if (soLuong > maxChuyen) {
-                        Swal.fire('Vượt quá hạn mức', `Số lượng dòng ${i + 1} (${soLuong}) vượt quá mức tối đa cho phép (${maxChuyen}).`, 'error');
-                        hasError = true; break;
-                    }
-
-                    // Chống trùng lặp SKU
-                    if (skuSet.has(bienTheId)) {
-                        Swal.fire('Trùng lặp sản phẩm', `Biến thể (SKU) ở dòng ${i + 1} đã được chọn trước đó. Vui lòng gộp chung!`, 'error');
-                        hasError = true; break;
-                    }
-                    skuSet.add(bienTheId);
-
-                    chiTiets.push({
-                        bienTheSanPhamId: parseInt(bienTheId),
-                        soLuong: soLuong
-                    });
-                }
-
-                if (hasError) return;
-
-                // 2. Chuẩn bị payload JSON
-                const payload = {
-                    khoNguonId: parseInt(kn),
-                    khoDichId: parseInt(kd),
-                    lyDo: lyDo.value.trim(),
-                    chiTiets: chiTiets
-                };
-
-                // 3. Gọi API POST
-                try {
-                    btnSubmitPhieu.disabled = true;
-                    btnSubmitPhieu.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>Đang tạo phiếu...';
-
-                    const response = await fetch('/api/admin/phieu-chuyen', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (response.status === 201) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Thành công!',
-                            text: 'Đã cập nhật tồn kho 2 đầu',
-                            timer: 2500,
-                            showConfirmButton: false
-                        });
-
-                        // Reset form
-                        formTaoPhieu.reset();
-                        chiTietBody.innerHTML = '';
-                        addRow(); // Thêm lại 1 dòng trống
-
-                        // Tự động chuyển qua load tab lịch sử
-                        loadLichSu();
-                    } else {
-                        const errorData = await response.json();
-                        Swal.fire('Lỗi từ hệ thống', errorData.message || 'Không thể tạo phiếu chuyển', 'error');
-                    }
-                } catch (error) {
-                    Swal.fire('Lỗi kết nối', 'Mất kết nối máy chủ.', 'error');
-                } finally {
-                    btnSubmitPhieu.disabled = false;
-                    btnSubmitPhieu.innerHTML = '<i class="fa fa-paper-plane me-2"></i> Tạo Phiếu Chuyển';
-                }
-            });
-
-            // --- TAB 2: LỊCH SỬ PHIẾU CHUYỂN ---
-            
-            async function loadLichSu() {
-                try {
-                    lichSuBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted"><i class="fa fa-spinner fa-spin me-2"></i> Đang tải dữ liệu...</td></tr>';
-                    
-                    const response = await fetch('/api/admin/phieu-chuyen?page=0&size=50&sort=ngayChuyen,desc');
-                    if (!response.ok) throw new Error('Lỗi fetch lịch sử');
-                    
-                    const data = await response.json();
-                    const list = data.content || [];
-                    
-                    if (list.length === 0) {
-                        lichSuBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Chưa có phiếu chuyển nào.</td></tr>';
-                        return;
-                    }
-
-                    let html = '';
-                    list.forEach(pc => {
-                        html += `
+                let html = '';
+                list.forEach(pc => {
+                    html += `
                             <tr>
                                 <td class="fw-bold">PC-${pc.id}</td>
-                                <td class="text-danger fw-semibold">${pc.khoNguon ? pc.khoNguon.tenKho : 'N/A'}</td>
-                                <td class="text-success fw-semibold">${pc.khoDich ? pc.khoDich.tenKho : 'N/A'}</td>
+                                <td class="text-danger fw-semibold">${pc.tenKhoNguon || 'N/A'}</td>
+                                <td class="text-success fw-semibold">${pc.tenKhoDich || 'N/A'}</td>
                                 <td>${pc.lyDo || '—'}</td>
                                 <td>${new Date(pc.ngayChuyen).toLocaleString('vi-VN')}</td>
                                 <td class="text-center">
@@ -491,62 +536,67 @@
                                 </td>
                             </tr>
                         `;
-                    });
-                    lichSuBody.innerHTML = html;
+                });
+                lichSuBody.innerHTML = html;
 
-                    // Gắn sự kiện cho các nút Xem
-                    document.querySelectorAll('.btn-view-detail').forEach(btn => {
-                        btn.addEventListener('click', function() {
-                            const id = this.getAttribute('data-id');
-                            showModalChiTiet(id);
-                        });
+                // Gắn sự kiện cho các nút Xem
+                document.querySelectorAll('.btn-view-detail').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = this.getAttribute('data-id');
+                        showModalChiTiet(id);
                     });
+                });
 
-                } catch (error) {
-                    lichSuBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Lỗi tải dữ liệu!</td></tr>';
-                }
+            } catch (error) {
+                lichSuBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Lỗi tải dữ liệu!</td></tr>';
             }
+        }
 
-            // Gọi tải lịch sử khi click sang tab Lịch sử
-            lichSuTab.addEventListener('shown.bs.tab', loadLichSu);
+        // Gọi tải lịch sử khi click sang tab Lịch sử
+        lichSuTab.addEventListener('shown.bs.tab', loadLichSu);
 
-            // Hàm load và show Modal Chi Tiết
-            async function showModalChiTiet(id) {
-                try {
-                    const response = await fetch(`/api/admin/phieu-chuyen/${id}`);
-                    if (!response.ok) throw new Error('Lỗi lấy chi tiết');
-                    
-                    const data = await response.json();
-                    
-                    document.getElementById('modalMaPhieu').textContent = `PC-${data.id}`;
-                    const kn = data.khoNguon ? data.khoNguon.tenKho : 'N/A';
-                    const kd = data.khoDich ? data.khoDich.tenKho : 'N/A';
-                    document.getElementById('modalTuyenDuong').innerHTML = `<span class="text-danger">${kn}</span> &rarr; <span class="text-success">${kd}</span>`;
-                    document.getElementById('modalNgayChuyen').textContent = new Date(data.ngayChuyen).toLocaleString('vi-VN');
+        // Hàm load và show Modal Chi Tiết
+        async function showModalChiTiet(id) {
+            try {
+                const response = await fetch(`/api/admin/phieu-chuyen/${id}`);
+                if (!response.ok) throw new Error('Lỗi lấy chi tiết');
 
-                    let chiTietHtml = '';
-                    if (data.chiTiets && data.chiTiets.length > 0) {
-                        data.chiTiets.forEach((ct, index) => {
-                            chiTietHtml += `
+                const result = await response.json();
+                // API trả về { success, message, data: PhieuChuyenKhoDto }
+                const data = result.data;
+                if (!data) {
+                    throw new Error('Không có dữ liệu chi tiết');
+                }
+
+                document.getElementById('modalMaPhieu').textContent = `PC-${data.id}`;
+                const kn = data.tenKhoNguon || 'N/A';
+                const kd = data.tenKhoDich || 'N/A';
+                document.getElementById('modalTuyenDuong').innerHTML = `<span class="text-danger">${kn}</span> &rarr; <span class="text-success">${kd}</span>`;
+                document.getElementById('modalNgayChuyen').textContent = new Date(data.ngayChuyen).toLocaleString('vi-VN');
+
+                let chiTietHtml = '';
+                if (data.chiTiets && data.chiTiets.length > 0) {
+                    data.chiTiets.forEach((ct, index) => {
+                        chiTietHtml += `
                                 <tr>
                                     <td class="text-center text-muted">${index + 1}</td>
-                                    <td class="fw-semibold">${ct.bienTheSanPham ? ct.bienTheSanPham.maSku : 'N/A'}</td>
+                                    <td class="fw-semibold">${ct.maSku || 'N/A'}</td>
                                     <td class="text-center fw-bold text-primary">${ct.soLuong}</td>
                                 </tr>
                             `;
-                        });
-                    } else {
-                        chiTietHtml = '<tr><td colspan="3" class="text-center">Không có chi tiết.</td></tr>';
-                    }
-                    
-                    document.getElementById('modalChiTietBody').innerHTML = chiTietHtml;
-                    chiTietModal.show();
-
-                } catch (error) {
-                    Swal.fire('Lỗi', 'Không thể xem chi tiết phiếu.', 'error');
+                    });
+                } else {
+                    chiTietHtml = '<tr><td colspan="3" class="text-center">Không có chi tiết.</td></tr>';
                 }
+
+                document.getElementById('modalChiTietBody').innerHTML = chiTietHtml;
+                chiTietModal.show();
+
+            } catch (error) {
+                Swal.fire('Lỗi', 'Không thể xem chi tiết phiếu.', 'error');
             }
-        });
-    </script>
+        }
+    });
+</script>
 </body>
 </html>

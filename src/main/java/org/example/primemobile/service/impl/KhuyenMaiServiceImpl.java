@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -21,10 +22,10 @@ import java.util.Optional;
 public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
 
     private final ChuongTrinhKhuyenMaiRepository ctkmRepo;
-    private final ChiTietFlashSaleRepository      chiTietFlashSaleRepo;
-    private final PhamViKhuyenMaiRepository       phamViKhuyenMaiRepo;
-    private final BienTheSanPhamRepository        bienTheSanPhamRepo;
-    private final SanPhamRepository               sanPhamRepo;
+    private final ChiTietFlashSaleRepository chiTietFlashSaleRepo;
+    private final PhamViKhuyenMaiRepository phamViKhuyenMaiRepo;
+    private final BienTheSanPhamRepository bienTheSanPhamRepo;
+    private final SanPhamRepository sanPhamRepo;
 
     // ═══════════════════════════════════════════════════════════════════════
     // CRUD CHÍNH
@@ -44,7 +45,8 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
     }
 
     /**
-     * Hàm lưu chung: Tự động phân biệt Thêm mới (id == null) / Cập nhật (id != null).
+     * Hàm lưu chung: Tự động phân biệt Thêm mới (id == null) / Cập nhật (id !=
+     * null).
      * Validate logic theo từng loại khuyến mãi.
      */
     @Override
@@ -85,7 +87,8 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
                 ctkm.setSoLanDaDung(0);
             }
             ChuongTrinhKhuyenMai saved = ctkmRepo.save(ctkm);
-            log.info("[KhuyenMai] Tạo mới CTKM id={} loai={} ten={}", saved.getId(), saved.getLoai(), saved.getTenCtkm());
+            log.info("[KhuyenMai] Tạo mới CTKM id={} loai={} ten={}", saved.getId(), saved.getLoai(),
+                    saved.getTenCtkm());
             return saved;
         }
     }
@@ -113,7 +116,7 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
     @Override
     @Transactional
     public void themChiTietFlashSale(Integer ctkmId, Integer bienTheId,
-                                     BigDecimal phanTramGiam, Integer soLuongGioiHan) {
+            BigDecimal phanTramGiam, Integer soLuongGioiHan) {
         ChuongTrinhKhuyenMai ctkm = ctkmRepo.findById(ctkmId)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy CTKM ID: " + ctkmId));
         BienTheSanPham bt = bienTheSanPhamRepo.findById(bienTheId)
@@ -131,7 +134,8 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
         boolean daConan = chiTietFlashSaleRepo.findByChuongTrinhKhuyenMaiId(ctkmId)
                 .stream().anyMatch(c -> c.getBienTheSanPham().getId().equals(bienTheId));
         if (daConan) {
-            throw new IllegalArgumentException("Biến thể này đã có trong Flash Sale. Vui lòng xóa dòng cũ trước khi thêm lại.");
+            throw new IllegalArgumentException(
+                    "Biến thể này đã có trong Flash Sale. Vui lòng xóa dòng cũ trước khi thêm lại.");
         }
 
         ChiTietFlashSale ct = ChiTietFlashSale.builder()
@@ -211,20 +215,22 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
      *
      * <h3>Thuật toán (O(n), 1 DB round-trip):</h3>
      * <ol>
-     *   <li>Query DB: Lấy tất cả CTKM đang diễn ra, loại áp dụng toàn đơn hàng
-     *       ({@code phan_tram}, {@code don_hang_toi_thieu}).</li>
-     *   <li>Filter eligibility: Bỏ qua CTKM có {@code donHangToiThieu > tongTienHang}.</li>
-     *   <li>Tính tiền giảm theo loại:
-     *       <ul>
-     *         <li>{@code phan_tram}          → tongTienHang × (giaTriUuDai / 100)</li>
-     *         <li>{@code don_hang_toi_thieu} → tongTienHang × (giaTriUuDai / 100)</li>
-     *       </ul>
-     *   </li>
-     *   <li>Trả về CTKM có tiền giảm lớn nhất. Nếu bằng nhau, ưu tiên ID nhỏ hơn
-     *       (CTKM được tạo trước).</li>
+     * <li>Query DB: Lấy tất cả CTKM đang diễn ra, loại áp dụng toàn đơn hàng
+     * ({@code phan_tram}, {@code don_hang_toi_thieu}).</li>
+     * <li>Filter eligibility: Bỏ qua CTKM có
+     * {@code donHangToiThieu > tongTienHang}.</li>
+     * <li>Tính tiền giảm theo loại:
+     * <ul>
+     * <li>{@code phan_tram} → tongTienHang × (giaTriUuDai / 100)</li>
+     * <li>{@code don_hang_toi_thieu} → tongTienHang × (giaTriUuDai / 100)</li>
+     * </ul>
+     * </li>
+     * <li>Trả về CTKM có tiền giảm lớn nhất. Nếu bằng nhau, ưu tiên ID nhỏ hơn
+     * (CTKM được tạo trước).</li>
      * </ol>
      *
-     * @param tongTienHang Tổng tiền hàng (phải >= 0). Nếu null hoặc <= 0, trả về null ngay.
+     * @param tongTienHang Tổng tiền hàng (phải >= 0). Nếu null hoặc <= 0, trả về
+     *                     null ngay.
      * @return CTKM tốt nhất hoặc {@code null} nếu không có CTKM phù hợp.
      */
     @Override
@@ -250,27 +256,27 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
                 .filter(ctkm -> {
                     BigDecimal nguong = ctkm.getDonHangToiThieu();
                     // Nếu không có ngưỡng tối thiểu → luôn đủ điều kiện
-                    if (nguong == null) return true;
+                    if (nguong == null)
+                        return true;
                     // Chỉ áp dụng khi tổng tiền hàng >= ngưỡng
                     return tongTienHang.compareTo(nguong) >= 0;
                 })
                 // ─── Bước 2: Chọn CTKM có tiền giảm lớn nhất ────────────
                 .max(Comparator
                         .comparing(ctkm -> tinhTienGiam(ctkm, tongTienHang),
-                                   Comparator.naturalOrder()));
+                                Comparator.naturalOrder()));
 
         ketQua.ifPresentOrElse(
                 ctkm -> log.info(
                         "[KhuyenMai-POS] Chọn CTKM tốt nhất: id={}, ten='{}', loai={}, " +
-                        "giaTriUuDai={}%, tienGiam={}, tongTienHang={}",
+                                "giaTriUuDai={}%, tienGiam={}, tongTienHang={}",
                         ctkm.getId(), ctkm.getTenCtkm(), ctkm.getLoai(),
                         ctkm.getGiaTriUuDai(),
                         tinhTienGiam(ctkm, tongTienHang),
                         tongTienHang),
                 () -> log.debug(
                         "[KhuyenMai-POS] Không có CTKM nào đủ điều kiện cho đơn {}.",
-                        tongTienHang)
-        );
+                        tongTienHang));
 
         return ketQua.orElse(null);
     }
@@ -283,7 +289,7 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
 
         if ("tam_dung".equals(ctkm.getTrangThai())) {
             // === Mở lại: tính toán trạng thái thực tế theo thời gian hiện tại ===
-            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            LocalDateTime now = LocalDateTime.now();
 
             String trangThaiMoi;
             if (now.isBefore(ctkm.getNgayBatDau())) {
@@ -306,6 +312,118 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
         ctkmRepo.save(ctkm);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // TÍNH GIÁ SAU KHUYẾN MÃI ĐỘNG
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Thứ tự ưu tiên:
+     * <ol>
+     * <li><b>Flash Sale</b> – áp dụng nếu có CTKM flash đang diễn ra cho biến thể
+     * và còn số lượng.</li>
+     * <li><b>Giảm giá trực tiếp</b> – áp dụng nếu có CTKM giam_gia_truc_tiep
+     * đang diễn ra cho sản phẩm cha.</li>
+     * <li><b>Phần trăm hoặc Đơn hàng tối thiểu</b> – áp dụng cho toàn đơn,
+     * chỉ xét nếu {@code tongTienHang != null} và đủ điều kiện.
+     * Chọn CTKM có phần trăm giảm cao nhất.</li>
+     * </ol>
+     * Nếu không có CTKM nào, trả về {@code giaBan} gốc.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal tinhGiaSauKhuyenMai(Integer bienTheId, BigDecimal tongTienHang) {
+        // ── Lấy biến thể ──────────────────────────────────────────────
+        BienTheSanPham bienThe = bienTheSanPhamRepo.findById(bienTheId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy biến thể ID: " + bienTheId));
+        BigDecimal giaGoc = bienThe.getGiaBan();
+        BigDecimal giaSauKM = giaGoc;
+        LocalDateTime now = LocalDateTime.now();
+
+        // ── 1. Flash Sale (ưu tiên cao nhất) ──────────────────────────
+        List<ChiTietFlashSale> flashList = chiTietFlashSaleRepo.findByChuongTrinhKhuyenMaiId(bienThe.getId());
+        // Cần filter: CTKM flash đang diễn ra, thời gian hiện tại trong khung giờ, và
+        // còn số lượng
+        Optional<ChiTietFlashSale> flashOpt = flashList.stream()
+                .filter(ct -> {
+                    ChuongTrinhKhuyenMai ctkm = ct.getChuongTrinhKhuyenMai();
+                    if (!"dang_dien_ra".equals(ctkm.getTrangThai()))
+                        return false;
+                    // Kiểm tra khung giờ flash
+                    LocalDateTime start = ctkm.getGioFlashBatDau();
+                    LocalDateTime end = ctkm.getGioFlashKetThuc();
+                    if (start == null || end == null)
+                        return false;
+                    boolean inTime = now.isAfter(start) && now.isBefore(end);
+                    // Kiểm tra số lượng còn
+                    boolean conSoLuong = ct.getDaBan() < ct.getSoLuongGioiHan();
+                    return inTime && conSoLuong;
+                })
+                .findFirst();
+
+        if (flashOpt.isPresent()) {
+            BigDecimal phanTram = flashOpt.get().getPhanTramGiam();
+            giaSauKM = giaGoc.multiply(
+                    BigDecimal.ONE.subtract(phanTram.divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP)));
+            log.debug("[KhuyenMai] Áp dụng Flash Sale: biếnTheId={}, giá gốc={}, giảm {}%, giá mới={}",
+                    bienTheId, giaGoc, phanTram, giaSauKM);
+            return giaSauKM;
+        }
+
+        // ── 2. Giảm giá trực tiếp ──────────────────────────────────────
+        // Lấy sản phẩm cha và tìm PhamViKhuyenMai
+        SanPham sanPham = bienThe.getSanPham();
+        List<PhamViKhuyenMai> pvList = phamViKhuyenMaiRepo.findByChuongTrinhKhuyenMaiId(sanPham.getId());
+        // Thực tế cần query theo san_pham_id và CTKM đang diễn ra, nhưng do có ít dữ
+        // liệu, filter bằng stream
+        Optional<PhamViKhuyenMai> pvOpt = pvList.stream()
+                .filter(pv -> {
+                    ChuongTrinhKhuyenMai ctkm = pv.getChuongTrinhKhuyenMai();
+                    return "giam_gia_truc_tiep".equals(ctkm.getLoai())
+                            && "dang_dien_ra".equals(ctkm.getTrangThai())
+                            && pv.getSanPham() != null && pv.getSanPham().getId().equals(sanPham.getId());
+                })
+                .findFirst();
+
+        if (pvOpt.isPresent()) {
+            BigDecimal phanTram = pvOpt.get().getChuongTrinhKhuyenMai().getGiaTriUuDai();
+            giaSauKM = giaGoc.multiply(
+                    BigDecimal.ONE.subtract(phanTram.divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP)));
+            log.debug("[KhuyenMai] Áp dụng Giảm giá trực tiếp: biếnTheId={}, giá gốc={}, giảm {}%, giá mới={}",
+                    bienTheId, giaGoc, phanTram, giaSauKM);
+            return giaSauKM;
+        }
+
+        // ── 3. Phần trăm hoặc Đơn hàng tối thiểu ──────────────────────
+        if (tongTienHang != null) {
+            List<ChuongTrinhKhuyenMai> ctkmList = ctkmRepo.layKhuyenMaiApDungToanDonHang();
+            Optional<ChuongTrinhKhuyenMai> bestCtkm = ctkmList.stream()
+                    .filter(ctkm -> {
+                        // Kiểm tra điều kiện đơn tối thiểu
+                        BigDecimal nguong = ctkm.getDonHangToiThieu();
+                        if (nguong != null && tongTienHang.compareTo(nguong) < 0) {
+                            return false;
+                        }
+                        return true;
+                    })
+                    .max(Comparator.comparing(ChuongTrinhKhuyenMai::getGiaTriUuDai));
+
+            if (bestCtkm.isPresent()) {
+                BigDecimal phanTram = bestCtkm.get().getGiaTriUuDai();
+                giaSauKM = giaGoc.multiply(
+                        BigDecimal.ONE.subtract(phanTram.divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP)));
+                log.debug("[KhuyenMai] Áp dụng %/Đơn tối thiểu: biếnTheId={}, giá gốc={}, giảm {}%, giá mới={}",
+                        bienTheId, giaGoc, phanTram, giaSauKM);
+                return giaSauKM;
+            }
+        }
+
+        // ── Không có KM nào → giá gốc ──────────────────────────────────
+        log.debug("[KhuyenMai] Không có KM áp dụng cho biến thể {}, trả về giá gốc {}", bienTheId, giaGoc);
+        return giaGoc;
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // PRIVATE HELPERS
@@ -332,7 +450,8 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
         switch (req.getLoai()) {
             case "don_hang_toi_thieu" -> {
                 if (req.getDonHangToiThieu() == null || req.getDonHangToiThieu().compareTo(BigDecimal.ZERO) <= 0) {
-                    throw new IllegalArgumentException("Loại 'Đơn hàng tối thiểu' yêu cầu nhập số tiền tối thiểu hợp lệ.");
+                    throw new IllegalArgumentException(
+                            "Loại 'Đơn hàng tối thiểu' yêu cầu nhập số tiền tối thiểu hợp lệ.");
                 }
             }
             case "flash_sale" -> {
@@ -343,23 +462,27 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
                     throw new IllegalArgumentException("Giờ flash bắt đầu phải trước giờ flash kết thúc.");
                 }
             }
-            case "phan_tram", "giam_gia_truc_tiep" -> { /* không yêu cầu thêm */ }
+            case "phan_tram", "giam_gia_truc_tiep" -> {
+                /* không yêu cầu thêm */ }
             default -> throw new IllegalArgumentException("Loại khuyến mãi không hợp lệ: " + req.getLoai());
         }
-    }   // ← đóng validateTheoLoai()
+    }
 
     /**
      * Tính số tiền được giảm của 1 CTKM với tổng tiền hàng cho trước.
      *
-     * <p>Công thức:
+     * <p>
+     * Công thức:
      * <ul>
-     *   <li>{@code "phan_tram"} / {@code "don_hang_toi_thieu"}:
-     *       {@code tongTienHang × (giaTriUuDai / 100)}, làm tròn HALF_UP 2 chữ số thập phân.</li>
+     * <li>{@code "phan_tram"} / {@code "don_hang_toi_thieu"}:
+     * {@code tongTienHang × (giaTriUuDai / 100)}, làm tròn HALF_UP 2 chữ số thập
+     * phân.</li>
      * </ul>
      *
      * @param ctkm         Chương trình khuyến mãi cần tính.
      * @param tongTienHang Tổng tiền hàng của đơn.
-     * @return Số tiền được giảm (>= 0). Trả về ZERO nếu giaTriUuDai null hoặc loại không xác định.
+     * @return Số tiền được giảm (>= 0). Trả về ZERO nếu giaTriUuDai null hoặc loại
+     *         không xác định.
      */
     private BigDecimal tinhTienGiam(ChuongTrinhKhuyenMai ctkm, BigDecimal tongTienHang) {
         if (ctkm.getGiaTriUuDai() == null) {

@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <title>Quản lý Phiếu Nhập Kho</title>
     <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
-    <!-- Thêm SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .table-pnk th {
             background-color: #f8f9fa;
         }
+
         .summary-box {
             background-color: #e9ecef;
             border-radius: 8px;
@@ -16,8 +17,58 @@
             text-align: right;
             font-size: 1.1rem;
         }
+
+        .gia-input-wrapper .form-control.is-invalid {
+            border-color: #dc3545 !important;
+            background-color: #fff0f0 !important;
+        }
+
+        .gia-input-wrapper .form-control.is-valid {
+            border-color: #198754 !important;
+            background-color: #f0fff4 !important;
+        }
+
+        .gia-warning-msg {
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 3px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .gia-warning-msg.danger {
+            color: #721c24;
+            background-color: #f8d7da;
+        }
+
+        .gia-warning-msg.success {
+            color: #155724;
+            background-color: #d4edda;
+        }
+
+        .table-pnk td,
+        .table-pnk th {
+            vertical-align: middle;
+        }
+
+        .table-pnk .form-control-sm {
+            height: 31px;
+            font-size: 0.85rem;
+        }
+
+        .table-pnk .sku-select {
+            height: 31px;
+            font-size: 0.85rem;
+        }
+
+        .chi-tiet-row.table-danger-row {
+            background-color: #fff5f5;
+            border-left: 4px solid #dc3545;
+        }
     </style>
 </head>
+
 <body>
     <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
     <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
@@ -25,78 +76,74 @@
     <main id="pmContent">
         <div class="pm-card" style="max-width: 1100px; margin: 0 auto;">
             <div class="pm-card-header d-flex justify-content-between align-items-center">
-                <span>
-                    <i class="fa fa-arrow-circle-down me-2 text-primary"></i>
-                    Quản lý Phiếu Nhập Kho
-                </span>
+                <span><i class="fa fa-arrow-circle-down me-2 text-primary"></i> Quản lý Phiếu Nhập Kho</span>
             </div>
             <div class="card-body p-4">
-                
-                <!-- Nav Tabs -->
                 <ul class="nav nav-tabs mb-4" id="pnkTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active fw-semibold" id="tao-pnk-tab" data-bs-toggle="tab" data-bs-target="#tao-pnk" type="button" role="tab">
+                        <button class="nav-link active fw-semibold" id="tao-pnk-tab" data-bs-toggle="tab"
+                            data-bs-target="#tao-pnk" type="button" role="tab">
                             <i class="fa fa-plus-circle me-1"></i> Tạo Phiếu Mới
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-semibold" id="lich-su-tab" data-bs-toggle="tab" data-bs-target="#lich-su" type="button" role="tab">
+                        <button class="nav-link fw-semibold" id="lich-su-tab" data-bs-toggle="tab"
+                            data-bs-target="#lich-su" type="button" role="tab">
                             <i class="fa fa-history me-1"></i> Lịch sử Phiếu Nhập
                         </button>
                     </li>
                 </ul>
-
                 <div class="tab-content" id="pnkTabContent">
-                    <!-- KHU VỰC 1: TẠO PHIẾU NHẬP MỚI -->
+                    <!-- Tạo phiếu mới -->
                     <div class="tab-pane fade show active" id="tao-pnk" role="tabpanel">
                         <form id="formTaoPhieu">
                             <div class="row g-3 mb-4">
                                 <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Kho nhận (Kho Tổng) <span class="text-danger">*</span></label>
-                                    <select id="khoId" class="form-select shadow-sm" required>
-                                        <option value="">-- Chọn Kho --</option>
-                                        <option th:each="kho : ${danhSachKho}" 
-                                                th:if="${kho.loai == 'kho_tong'}"
-                                                th:value="${kho.id}" 
-                                                th:text="${kho.tenKho}"></option>
+                                    <label class="form-label fw-semibold">Kho nhận (Kho Tổng) <span
+                                            class="text-danger">*</span></label>
+                                    <select id="khoId" class="form-select shadow-sm" required disabled>
+                                        <option value="1" selected>Kho Tổng Miền Bắc</option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Nhà cung cấp <span class="text-danger">*</span></label>
+                                    <label class="form-label fw-semibold">Nhà cung cấp <span
+                                            class="text-danger">*</span></label>
                                     <select id="nhaCungCapId" class="form-select shadow-sm" required>
                                         <option value="">-- Chọn Nhà cung cấp --</option>
-                                        <option th:each="ncc : ${danhSachNhaCungCap}" 
-                                                th:value="${ncc.id}" 
-                                                th:text="${ncc.tenNcc}"></option>
+                                        <option th:each="ncc : ${danhSachNhaCungCap}" th:value="${ncc.id}"
+                                            th:text="${ncc.tenNcc}"></option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold">Ghi chú</label>
-                                    <textarea id="ghiChu" class="form-control shadow-sm" rows="1" placeholder="Nhập ghi chú..."></textarea>
+                                    <textarea id="ghiChu" class="form-control shadow-sm" rows="1"
+                                        placeholder="Nhập ghi chú..."></textarea>
                                 </div>
                             </div>
 
                             <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
                                 <h6 class="fw-bold mb-0 text-primary">Chi tiết sản phẩm nhập</h6>
-                                <button type="button" id="btn-them-dong" class="btn btn-sm btn-outline-primary shadow-sm">
+                                <button type="button" id="btn-them-dong"
+                                    class="btn btn-sm btn-outline-primary shadow-sm">
                                     <i class="fa fa-plus me-1"></i> Thêm dòng sản phẩm
                                 </button>
                             </div>
 
                             <div class="table-responsive mb-4">
-                                <table class="table table-bordered table-hover align-middle table-pnk" id="chiTietTable">
+                                <table class="table table-bordered table-hover align-middle table-pnk"
+                                    id="chiTietTable">
                                     <thead>
                                         <tr>
-                                            <th style="width: 40%">Biến thể (SKU) <span class="text-danger">*</span></th>
+                                            <th style="width: 35%">Biến thể (SKU) <span class="text-danger">*</span>
+                                            </th>
                                             <th style="width: 15%">Số lượng <span class="text-danger">*</span></th>
-                                            <th style="width: 20%">Đơn giá nhập <span class="text-danger">*</span></th>
-                                            <th style="width: 20%" class="text-end">Thành tiền</th>
+                                            <th style="width: 25%">Đơn giá nhập <span class="text-danger">*</span></th>
+                                            <th style="width: 15%">Giá bán tham khảo</th>
+                                            <th style="width: 5%" class="text-end">Thành tiền</th>
                                             <th style="width: 5%" class="text-center">Xóa</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="chi-tiet-body">
-                                        <!-- Rows render here -->
-                                    </tbody>
+                                    <tbody id="chi-tiet-body"></tbody>
                                 </table>
                             </div>
 
@@ -113,7 +160,7 @@
                         </form>
                     </div>
 
-                    <!-- KHU VỰC 2: LỊCH SỬ PHIẾU NHẬP -->
+                    <!-- Lịch sử -->
                     <div class="tab-pane fade" id="lich-su" role="tabpanel">
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover align-middle table-pnk">
@@ -128,7 +175,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="lichSuBody">
-                                    <tr><td colspan="6" class="text-center text-muted">Đang tải dữ liệu...</td></tr>
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">Đang tải dữ liệu...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -142,18 +191,17 @@
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title fw-bold text-primary"><i class="fa fa-file-invoice me-2"></i>Chi tiết Phiếu Nhập</h5>
+                        <h5 class="modal-title fw-bold text-primary"><i class="fa fa-file-invoice me-2"></i>Chi tiết
+                            Phiếu Nhập</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row mb-3">
                             <div class="col-6">
-                                <p class="mb-1 text-muted small">Mã phiếu</p>
-                                <strong id="modalMaPhieu">--</strong>
+                                <p class="mb-1 text-muted small">Mã phiếu</p><strong id="modalMaPhieu">--</strong>
                             </div>
                             <div class="col-6">
-                                <p class="mb-1 text-muted small">Ngày nhập</p>
-                                <strong id="modalNgayNhap">--</strong>
+                                <p class="mb-1 text-muted small">Ngày nhập</p><strong id="modalNgayNhap">--</strong>
                             </div>
                         </div>
                         <div class="table-responsive">
@@ -167,8 +215,7 @@
                                         <th class="text-end">Thành tiền</th>
                                     </tr>
                                 </thead>
-                                <tbody id="modalChiTietBody">
-                                </tbody>
+                                <tbody id="modalChiTietBody"></tbody>
                             </table>
                         </div>
                     </div>
@@ -179,31 +226,33 @@
                 </div>
             </div>
         </div>
-
     </main>
 
-    <!-- Template cho dòng chi tiết -->
     <template id="rowTemplate">
         <tr class="chi-tiet-row">
             <td>
                 <select class="form-select form-select-sm sku-select" required>
                     <option value="">-- Chọn SKU --</option>
-                    <option th:each="bt : ${danhSachBienThe}" 
-                            th:value="${bt.id}" 
-                            th:text="${bt.maSku + (bt.sanPham != null ? ' - ' + bt.sanPham.tenSanPham : '')}"></option>
+                    <option th:each="bt : ${danhSachBienThe}" th:value="${bt.id}"
+                        th:text="${bt.maSku + (bt.sanPham != null ? ' - ' + bt.sanPham.tenSanPham : '')}"
+                        th:data-gia-ban="${bt.giaBan}"></option>
                 </select>
             </td>
+            <td><input type="number" class="form-control form-control-sm sl-input text-center" min="1" value="1"
+                    required></td>
             <td>
-                <input type="number" class="form-control form-control-sm sl-input text-center" min="1" value="1" required>
+                <div class="gia-input-wrapper">
+                    <input type="number" class="form-control form-control-sm gia-input text-end" min="0" value="0"
+                        required>
+                    <div class="gia-warning-msg"></div>
+                </div>
             </td>
-            <td>
-                <input type="number" class="form-control form-control-sm gia-input text-end" min="0" value="0" required>
-            </td>
+            <td><span class="ref-price"><i class="fa fa-tag me-1"></i>Giá bán: <strong
+                        class="gia-ban-ref">---</strong></span></td>
             <td class="text-end fw-semibold text-danger thanh-tien-cell align-middle">0 đ</td>
             <td class="text-center align-middle">
-                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" title="Xóa dòng">
-                    <i class="fa fa-trash"></i>
-                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" title="Xóa dòng"><i
+                        class="fa fa-trash"></i></button>
             </td>
         </tr>
     </template>
@@ -211,37 +260,108 @@
     <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            
-            // --- CÁC PHẦN TỬ DOM ---
+        document.addEventListener("DOMContentLoaded", function () {
             const btnAddRow = document.getElementById("btn-them-dong");
             const chiTietBody = document.getElementById("chi-tiet-body");
             const rowTemplate = document.getElementById("rowTemplate").content;
             const tongTienLabel = document.getElementById("tong-tien-text");
             const btnSubmitPhieu = document.getElementById("btn-luu-phieu");
             const formTaoPhieu = document.getElementById("formTaoPhieu");
-            
             const khoId = document.getElementById("khoId");
             const nhaCungCapId = document.getElementById("nhaCungCapId");
             const ghiChu = document.getElementById("ghiChu");
-
             const lichSuTab = document.getElementById("lich-su-tab");
             const lichSuBody = document.getElementById("lichSuBody");
-            
             const chiTietModal = new bootstrap.Modal(document.getElementById('chiTietModal'));
 
-            // Helper format tiền tệ
-            function formatVND(n) {
-                return new Intl.NumberFormat('vi-VN').format(n) + ' đ';
+            function formatVND(n) { return new Intl.NumberFormat('vi-VN').format(n) + ' đ'; }
+
+            // ─── Validate đơn giá nhập so với giá bán ───
+            function validateGiaNhap(row) {
+                const skuSelect = row.querySelector('.sku-select');
+                const giaInput = row.querySelector('.gia-input');
+                const warningMsg = row.querySelector('.gia-warning-msg');
+                const giaBanRef = row.querySelector('.gia-ban-ref');
+
+                const selectedOption = skuSelect.options[skuSelect.selectedIndex];
+                const giaBan = parseFloat(selectedOption?.dataset?.giaBan) || 0;
+                const giaNhap = parseFloat(giaInput.value) || 0;
+
+                // Cập nhật giá bán tham khảo (nếu tồn tại)
+                if (giaBanRef) {
+                    if (giaBan > 0) {
+                        giaBanRef.textContent = formatVND(giaBan);
+                        giaBanRef.className = '';
+                    } else {
+                        giaBanRef.textContent = '---';
+                        giaBanRef.className = 'no-price';
+                    }
+                }
+
+                // Xóa class cũ
+                giaInput.classList.remove('is-valid', 'is-invalid');
+                warningMsg.textContent = '';
+                warningMsg.className = 'gia-warning-msg';
+                row.classList.remove('table-danger-row');
+
+                if (giaNhap <= 0 || giaBan <= 0) {
+                    // Nếu chưa nhập hoặc không có giá bán, không cảnh báo
+                    if (giaNhap > 0 && giaBan <= 0) {
+                        warningMsg.textContent = 'ℹ️ SKU chưa có giá bán, không thể so sánh.';
+                        warningMsg.className = 'gia-warning-msg';
+                    }
+                    return;
+                }
+
+                if (giaNhap >= giaBan) {
+                    // Lỗi: đơn giá >= giá bán
+                    giaInput.classList.add('is-invalid');
+                    warningMsg.textContent = `🚫 Đơn giá nhập (${formatVND(giaNhap)}) ≥ Giá bán (${formatVND(giaBan)})! Không thể lưu phiếu.`;
+                    warningMsg.className = 'gia-warning-msg danger';
+                    row.classList.add('table-danger-row');
+                } else {
+                    // Hợp lệ
+                    giaInput.classList.add('is-valid');
+                    const loiNhuan = giaBan - giaNhap;
+                    warningMsg.textContent = `✅ Lợi nhuận ${((loiNhuan / giaBan) * 100).toFixed(1)}% (${formatVND(loiNhuan)})`;
+                    warningMsg.className = 'gia-warning-msg success';
+                }
             }
 
-            // --- TAB 1: TẠO PHIẾU NHẬP MỚI ---
-            
-            // Tính lại tổng tiền bảng nhập
+            // ─── Thêm dòng mới ───
+            function addRow() {
+                const clone = document.importNode(rowTemplate, true);
+                clone.querySelector(".sl-input").addEventListener("input", calculateTotal);
+                clone.querySelector(".gia-input").addEventListener("input", function () {
+                    calculateTotal();
+                    validateGiaNhap(this.closest('.chi-tiet-row'));
+                });
+                clone.querySelector(".sku-select").addEventListener("change", function () {
+                    const row = this.closest('.chi-tiet-row');
+                    // Giữ nguyên giá nhập, chỉ cập nhật validate
+                    validateGiaNhap(row);
+                    calculateTotal();
+                });
+                clone.querySelector(".btn-remove-row").addEventListener("click", function (e) {
+                    e.target.closest("tr").remove();
+                    calculateTotal();
+                });
+                chiTietBody.appendChild(clone);
+                calculateTotal();
+                // Validate nếu đã chọn SKU
+                const firstRow = chiTietBody.querySelector('.chi-tiet-row:last-child');
+                if (firstRow) {
+                    const skuSelect = firstRow.querySelector('.sku-select');
+                    if (skuSelect.value) {
+                        validateGiaNhap(firstRow);
+                    }
+                }
+            }
+
+            // ─── Tính tổng tiền ───
             function calculateTotal() {
                 let total = 0;
-                const rows = chiTietBody.querySelectorAll(".chi-tiet-row");
-                rows.forEach(row => {
+                document.querySelectorAll(".chi-tiet-row").forEach(row => {
                     const sl = parseInt(row.querySelector(".sl-input").value) || 0;
                     const gia = parseInt(row.querySelector(".gia-input").value) || 0;
                     const thanhTien = sl * gia;
@@ -251,39 +371,18 @@
                 tongTienLabel.textContent = formatVND(total);
             }
 
-            // Thêm 1 dòng mới
-            function addRow() {
-                const clone = document.importNode(rowTemplate, true);
-                
-                // Lắng nghe sự kiện để tính lại tiền
-                clone.querySelector(".sl-input").addEventListener("input", calculateTotal);
-                clone.querySelector(".gia-input").addEventListener("input", calculateTotal);
-                
-                // Nút xóa dòng
-                clone.querySelector(".btn-remove-row").addEventListener("click", function(e) {
-                    e.target.closest("tr").remove();
-                    calculateTotal();
-                });
-
-                chiTietBody.appendChild(clone);
-                calculateTotal();
-            }
-
+            // ─── Khởi tạo ───
             btnAddRow.addEventListener("click", addRow);
-            
-            // Thêm sẵn 1 dòng khởi tạo
             addRow();
 
-            // Submit Phiếu
-            btnSubmitPhieu.addEventListener("click", async function() {
-                // 1. Validate form cơ bản (các trường required)
+            // ─── Submit phiếu ───
+            btnSubmitPhieu.addEventListener("click", async function () {
                 if (!formTaoPhieu.checkValidity()) {
                     formTaoPhieu.reportValidity();
                     return;
                 }
 
-                // 2. Validate nghiệp vụ chi tiết
-                const rows = chiTietBody.querySelectorAll(".chi-tiet-row");
+                const rows = document.querySelectorAll(".chi-tiet-row");
                 if (rows.length === 0) {
                     Swal.fire('Thiếu dữ liệu', 'Vui lòng thêm ít nhất 1 dòng sản phẩm.', 'warning');
                     return;
@@ -292,6 +391,8 @@
                 const chiTiets = [];
                 const skuSet = new Set();
                 let hasError = false;
+                let hasDanger = false;
+                let firstDangerRow = null;
 
                 for (let i = 0; i < rows.length; i++) {
                     const row = rows[i];
@@ -311,13 +412,18 @@
                         Swal.fire('Dữ liệu không hợp lệ', `Đơn giá ở dòng ${i + 1} không được âm.`, 'error');
                         hasError = true; break;
                     }
-
-                    // Chống trùng lặp SKU
                     if (skuSet.has(bienTheId)) {
-                        Swal.fire('Trùng lặp sản phẩm', `Biến thể (SKU) ở dòng ${i + 1} đã được chọn trước đó. Vui lòng gộp chung lại thành 1 dòng!`, 'error');
+                        Swal.fire('Trùng lặp sản phẩm', `Biến thể (SKU) ở dòng ${i + 1} đã được chọn trước đó.`, 'error');
                         hasError = true; break;
                     }
                     skuSet.add(bienTheId);
+
+                    // Kiểm tra lỗi đơn giá >= giá bán
+                    const giaInput = row.querySelector('.gia-input');
+                    if (giaInput.classList.contains('is-invalid')) {
+                        hasDanger = true;
+                        if (!firstDangerRow) firstDangerRow = row;
+                    }
 
                     chiTiets.push({
                         bienTheSanPhamId: parseInt(bienTheId),
@@ -328,7 +434,20 @@
 
                 if (hasError) return;
 
-                // 3. Đóng gói payload
+                if (hasDanger) {
+                    if (firstDangerRow) {
+                        firstDangerRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        firstDangerRow.querySelector('.gia-input').focus();
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Không thể lưu phiếu!',
+                        html: 'Có <strong>ít nhất 1 dòng</strong> có đơn giá nhập <strong>lớn hơn hoặc bằng</strong> giá bán.<br>Vui lòng điều chỉnh lại đơn giá nhập hoặc kiểm tra giá bán của sản phẩm.',
+                        confirmButtonColor: '#dc3545',
+                    });
+                    return;
+                }
+
                 const payload = {
                     khoId: parseInt(khoId.value),
                     nhaCungCapId: parseInt(nhaCungCapId.value),
@@ -336,33 +455,20 @@
                     chiTiets: chiTiets
                 };
 
-                // 4. Gửi API
                 try {
                     btnSubmitPhieu.disabled = true;
                     btnSubmitPhieu.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>Đang xử lý...';
-
                     const response = await fetch('/api/admin/phieu-nhap', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
-
                     if (response.status === 201) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Thành công!',
-                            text: 'Tạo phiếu thành công! Tồn kho Tổng đã được cộng.',
-                            timer: 2500,
-                            showConfirmButton: false
-                        });
-
-                        // Reset form
+                        Swal.fire({ icon: 'success', title: 'Thành công!', text: 'Tạo phiếu thành công! Tồn kho Tổng đã được cộng.', timer: 2500, showConfirmButton: false });
                         formTaoPhieu.reset();
                         chiTietBody.innerHTML = '';
-                        addRow(); // Thêm lại 1 dòng trống
+                        addRow();
                         calculateTotal();
-
-                        // Tự động load lại lịch sử
                         loadLichSu();
                     } else {
                         const errorData = await response.json();
@@ -376,77 +482,66 @@
                 }
             });
 
-            // --- TAB 2: LỊCH SỬ PHIẾU NHẬP ---
-            
+            // ─── Tab lịch sử ───
             async function loadLichSu() {
                 try {
                     const response = await fetch('/api/admin/phieu-nhap?page=0&size=50&sort=ngayNhap,desc');
                     if (!response.ok) throw new Error('Failed to fetch');
-                    
                     const data = await response.json();
                     const list = data.content || [];
-                    
                     if (list.length === 0) {
                         lichSuBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Chưa có dữ liệu phiếu nhập.</td></tr>';
                         return;
                     }
-
                     let html = '';
                     list.forEach(pn => {
                         html += `
                             <tr>
                                 <td class="fw-bold">PN-${pn.id}</td>
-                                <td>${pn.kho ? pn.kho.tenKho : 'N/A'}</td>
-                                <td>${pn.nhaCungCap ? pn.nhaCungCap.tenNcc : 'N/A'}</td>
+                                <td>${pn.tenKho ? pn.tenKho : 'N/A'}</td>
+                                <td>${pn.tenNhaCungCap ? pn.tenNhaCungCap : 'N/A'}</td>
                                 <td>${new Date(pn.ngayNhap).toLocaleString('vi-VN')}</td>
                                 <td class="text-end fw-semibold text-danger">${formatVND(pn.tongTien)}</td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-info btn-view-detail" data-id="${pn.id}">
-                                        <i class="fa fa-eye"></i> Xem chi tiết
-                                    </button>
-                                </td>
+                                <td class="text-center"><button class="btn btn-sm btn-outline-info btn-view-detail" data-id="${pn.id}"><i class="fa fa-eye"></i> Xem chi tiết</button></td>
                             </tr>
                         `;
                     });
                     lichSuBody.innerHTML = html;
-
-                    // Gắn sự kiện cho các nút Xem chi tiết
                     document.querySelectorAll('.btn-view-detail').forEach(btn => {
-                        btn.addEventListener('click', function() {
+                        btn.addEventListener('click', function () {
                             const id = this.getAttribute('data-id');
                             showModalChiTiet(id);
                         });
                     });
-
                 } catch (error) {
                     lichSuBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Lỗi tải dữ liệu lịch sử!</td></tr>';
                 }
             }
 
-            // Gọi tải lịch sử khi click sang tab Lịch sử
             lichSuTab.addEventListener('shown.bs.tab', loadLichSu);
 
-            // Hàm load và show Modal Chi Tiết
             async function showModalChiTiet(id) {
                 try {
                     const response = await fetch(`/api/admin/phieu-nhap/${id}`);
                     if (!response.ok) throw new Error('Không lấy được chi tiết');
-                    
-                    const data = await response.json();
-                    
+                    const result = await response.json();
+                    // API trả về { success, message, data: PhieuNhapKhoDto }
+                    const data = result.data;
+                    if (!data) {
+                        throw new Error('Không có dữ liệu chi tiết');
+                    }
                     document.getElementById('modalMaPhieu').textContent = `PN-${data.id}`;
                     document.getElementById('modalNgayNhap').textContent = new Date(data.ngayNhap).toLocaleString('vi-VN');
                     document.getElementById('modalTongTien').textContent = formatVND(data.tongTien);
-
                     let chiTietHtml = '';
                     if (data.chiTiets && data.chiTiets.length > 0) {
                         data.chiTiets.forEach((ct, index) => {
                             chiTietHtml += `
                                 <tr>
                                     <td class="text-center text-muted">${index + 1}</td>
-                                    <td class="fw-semibold">${ct.bienTheSanPham ? ct.bienTheSanPham.maSku : 'N/A'}</td>
+                                    <td class="fw-semibold">${ct.maSku || 'N/A'}</td>
                                     <td class="text-center">${ct.soLuong}</td>
-                                    <td class="text-end">${formatVND(ct.donGia)}</td>
+                                    <td class="text-end">${formatVND(ct.donGiaNhap)}</td>
                                     <td class="text-end fw-semibold">${formatVND(ct.thanhTien)}</td>
                                 </tr>
                             `;
@@ -454,10 +549,8 @@
                     } else {
                         chiTietHtml = '<tr><td colspan="5" class="text-center">Không có chi tiết.</td></tr>';
                     }
-                    
                     document.getElementById('modalChiTietBody').innerHTML = chiTietHtml;
                     chiTietModal.show();
-
                 } catch (error) {
                     Swal.fire('Lỗi', 'Không thể tải chi tiết phiếu nhập.', 'error');
                 }
@@ -465,4 +558,5 @@
         });
     </script>
 </body>
+
 </html>

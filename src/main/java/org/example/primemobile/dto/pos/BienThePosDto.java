@@ -37,13 +37,11 @@ public class BienThePosDto {
     private Integer luuTruGb;
 
     /**
-     * Giá bán hiển thị: Ưu tiên {@code giaKhuyenMai} nếu đang áp dụng,
-     * fallback về {@code giaBan}.
+     * Giá bán hiển thị: Giá này sẽ được tính động dựa trên chương trình khuyến mãi
+     * hiện tại.
+     * Không còn lưu trữ giá khuyến mãi tĩnh nữa.
      */
     private BigDecimal giaBan;
-
-    /** Giá khuyến mãi (null nếu không có). */
-    private BigDecimal giaKhuyenMai;
 
     /**
      * Số lượng còn lại tại Kho Tổng (đã trừ Safety Stock nếu cần).

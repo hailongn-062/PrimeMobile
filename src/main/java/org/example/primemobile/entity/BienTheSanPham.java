@@ -15,136 +15,119 @@ import java.util.List;
  * Ví dụ: iPhone 15 Pro Max – Titan Đen – 8GB RAM – 256GB.
  * <p>
  * Quan hệ:
- *  - N:1 với {@link SanPham}      (FK san_pham_id, ON DELETE CASCADE)
- *  - 1:N với {@link MayDienThoai} (mappedBy bienTheSanPham)
- *  - 1:N với {@link HinhAnhSanPham} (mappedBy bienTheSanPham, CASCADE DELETE)
+ * - N:1 với {@link SanPham} (FK san_pham_id, ON DELETE CASCADE)
+ * - 1:N với {@link MayDienThoai} (mappedBy bienTheSanPham)
+ * - 1:N với {@link HinhAnhSanPham} (mappedBy bienTheSanPham, CASCADE DELETE)
  * <p>
  * Trạng thái hợp lệ (CHECK chk_bt_trang_thai):
- *  "con_hang" | "het_hang" | "ngung_kinh_doanh"
+ * "con_hang" | "het_hang" | "ngung_kinh_doanh"
  */
 @Entity
-@Table(
-        name = "bien_the_san_pham",
-        indexes = {
-                @Index(name = "idx_bt_sp",      columnList = "san_pham_id, trang_thai")
-        },
-        uniqueConstraints = {
-                @UniqueConstraint(name = "uq_bt_ma_sku",  columnNames = "ma_sku")
-        }
-)
+@Table(name = "bien_the_san_pham", indexes = {
+                @Index(name = "idx_bt_sp", columnList = "san_pham_id, trang_thai")
+}, uniqueConstraints = {
+                @UniqueConstraint(name = "uq_bt_ma_sku", columnNames = "ma_sku")
+})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"mayDienThoais", "hinhAnhSanPhams"})
-@EqualsAndHashCode(exclude = {"mayDienThoais", "hinhAnhSanPhams"})
+@ToString(exclude = { "mayDienThoais", "hinhAnhSanPhams" })
+@EqualsAndHashCode(exclude = { "mayDienThoais", "hinhAnhSanPhams" })
 public class BienTheSanPham {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Integer id;
 
-    /**
-     * Sản phẩm cha của biến thể này.
-     * NOT NULL, ON DELETE CASCADE (DB-level).
-     */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "san_pham_id",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "fk_bt_sp")
-    )
-    private SanPham sanPham;
+        /**
+         * Sản phẩm cha của biến thể này.
+         * NOT NULL, ON DELETE CASCADE (DB-level).
+         */
+        @ManyToOne(fetch = FetchType.LAZY, optional = false)
+        @JoinColumn(name = "san_pham_id", nullable = false, foreignKey = @ForeignKey(name = "fk_bt_sp"))
+        private SanPham sanPham;
 
-    /** Mã SKU – duy nhất trong toàn hệ thống (ví dụ: "IP15PM-TIT-8-256"). */
-    @Column(name = "ma_sku", nullable = false, length = 100, unique = true)
-    private String maSku;
+        /** Mã SKU – duy nhất trong toàn hệ thống (ví dụ: "IP15PM-TIT-8-256"). */
+        @Column(name = "ma_sku", nullable = false, length = 100, unique = true)
+        private String maSku;
 
+        /** Tên màu sắc (ví dụ: "Titan Đen", "Titan Trắng"). */
+        @Column(name = "mau_sac", nullable = false, length = 50)
+        private String mauSac;
 
+        /**
+         * Mã màu hex để hiển thị ô màu trên UI (ví dụ: "#1C1C1E").
+         * Nullable nếu không cần hiển thị ô màu.
+         */
+        @Column(name = "ma_mau_hex", length = 7)
+        private String maMauHex;
 
-    /** Tên màu sắc (ví dụ: "Titan Đen", "Titan Trắng"). */
-    @Column(name = "mau_sac", nullable = false, length = 50)
-    private String mauSac;
+        /** Dung lượng RAM tính bằng GB. */
+        @Column(name = "ram_gb", nullable = false)
+        private Integer ramGb;
 
-    /**
-     * Mã màu hex để hiển thị ô màu trên UI (ví dụ: "#1C1C1E").
-     * Nullable nếu không cần hiển thị ô màu.
-     */
-    @Column(name = "ma_mau_hex", length = 7)
-    private String maMauHex;
+        /** Dung lượng lưu trữ tính bằng GB. */
+        @Column(name = "luu_tru_gb", nullable = false)
+        private Integer luuTruGb;
 
-    /** Dung lượng RAM tính bằng GB. */
-    @Column(name = "ram_gb", nullable = false)
-    private Integer ramGb;
+        /**
+         * Loại bộ nhớ trong (DEFAULT 'UFS').
+         * Ví dụ: "UFS", "NVMe", "eMMC".
+         */
+        @Column(name = "loai_luu_tru", nullable = false, length = 20)
+        @Builder.Default
+        private String loaiLuuTru = "UFS";
 
-    /** Dung lượng lưu trữ tính bằng GB. */
-    @Column(name = "luu_tru_gb", nullable = false)
-    private Integer luuTruGb;
+        /** Giá nhập từ nhà cung cấp. */
+        @Column(name = "gia_nhap", nullable = false, precision = 15, scale = 2)
+        private BigDecimal giaNhap;
 
-    /**
-     * Loại bộ nhớ trong (DEFAULT 'UFS').
-     * Ví dụ: "UFS", "NVMe", "eMMC".
-     */
-    @Column(name = "loai_luu_tru", nullable = false, length = 20)
-    @Builder.Default
-    private String loaiLuuTru = "UFS";
+        /** Giá bán lẻ niêm yết. */
+        @Column(name = "gia_ban", nullable = false, precision = 15, scale = 2)
+        private BigDecimal giaBan;
 
-    /** Giá nhập từ nhà cung cấp. */
-    @Column(name = "gia_nhap", nullable = false, precision = 15, scale = 2)
-    private BigDecimal giaNhap;
+        /** Trọng lượng máy tính bằng gram. */
+        @Column(name = "trong_luong_gram")
+        private Integer trongLuongGram;
 
-    /** Giá bán lẻ niêm yết. */
-    @Column(name = "gia_ban", nullable = false, precision = 15, scale = 2)
-    private BigDecimal giaBan;
+        /**
+         * Dung lượng pin tính bằng mAh.
+         * Tên cột DB: pin_mAh (giữ nguyên mapping).
+         */
+        @Column(name = "pin_mAh")
+        private Integer pinMah;
 
-    /**
-     * Giá khuyến mãi tạm thời.
-     * NULL = không đang khuyến mãi.
-     */
-    @Column(name = "gia_khuyen_mai", precision = 15, scale = 2)
-    private BigDecimal giaKhuyenMai;
+        /**
+         * Trạng thái tồn kho của biến thể (DEFAULT 'con_hang').
+         * Giá trị hợp lệ: "con_hang" | "het_hang" | "ngung_kinh_doanh"
+         */
+        @Column(name = "trang_thai", nullable = false, length = 20)
+        @Builder.Default
+        private String trangThai = "con_hang";
 
-    /** Trọng lượng máy tính bằng gram. */
-    @Column(name = "trong_luong_gram")
-    private Integer trongLuongGram;
+        /** Thời điểm tạo bản ghi. */
+        @Column(name = "ngay_tao", nullable = false, updatable = false)
+        @Builder.Default
+        private LocalDateTime ngayTao = LocalDateTime.now();
 
-    /**
-     * Dung lượng pin tính bằng mAh.
-     * Tên cột DB: pin_mAh (giữ nguyên mapping).
-     */
-    @Column(name = "pin_mAh")
-    private Integer pinMah;
+        /** Thời điểm cập nhật bản ghi gần nhất. */
+        @Column(name = "updated_at", nullable = false)
+        @Builder.Default
+        private LocalDateTime updatedAt = LocalDateTime.now();
 
-    /**
-     * Trạng thái tồn kho của biến thể (DEFAULT 'con_hang').
-     * Giá trị hợp lệ: "con_hang" | "het_hang" | "ngung_kinh_doanh"
-     */
-    @Column(name = "trang_thai", nullable = false, length = 20)
-    @Builder.Default
-    private String trangThai = "con_hang";
+        // -------------------------------------------------------------------------
+        // Quan hệ 1-N: 1 BienTheSanPham → nhiều MayDienThoai (IMEI tracking)
+        // -------------------------------------------------------------------------
+        @OneToMany(mappedBy = "bienTheSanPham", fetch = FetchType.LAZY)
+        @Builder.Default
+        private List<MayDienThoai> mayDienThoais = new ArrayList<>();
 
-    /** Thời điểm tạo bản ghi. */
-    @Column(name = "ngay_tao", nullable = false, updatable = false)
-    @Builder.Default
-    private LocalDateTime ngayTao = LocalDateTime.now();
-
-    /** Thời điểm cập nhật bản ghi gần nhất. */
-    @Column(name = "updated_at", nullable = false)
-    @Builder.Default
-    private LocalDateTime updatedAt = LocalDateTime.now();
-
-    // -------------------------------------------------------------------------
-    // Quan hệ 1-N: 1 BienTheSanPham → nhiều MayDienThoai (IMEI tracking)
-    // -------------------------------------------------------------------------
-    @OneToMany(mappedBy = "bienTheSanPham", fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<MayDienThoai> mayDienThoais = new ArrayList<>();
-
-    // -------------------------------------------------------------------------
-    // Quan hệ 1-N: 1 BienTheSanPham → nhiều HinhAnhSanPham (ON DELETE CASCADE)
-    // -------------------------------------------------------------------------
-    @OneToMany(mappedBy = "bienTheSanPham", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<HinhAnhSanPham> hinhAnhSanPhams = new ArrayList<>();
+        // -------------------------------------------------------------------------
+        // Quan hệ 1-N: 1 BienTheSanPham → nhiều HinhAnhSanPham (ON DELETE CASCADE)
+        // -------------------------------------------------------------------------
+        @OneToMany(mappedBy = "bienTheSanPham", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+        @Builder.Default
+        private List<HinhAnhSanPham> hinhAnhSanPhams = new ArrayList<>();
 }

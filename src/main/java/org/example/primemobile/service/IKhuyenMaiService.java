@@ -11,10 +11,10 @@ import java.util.List;
  * Nghiệp vụ Khuyến Mãi cho PrimeMobile.
  *
  * 4 loại khuyến mãi (loai):
- *  - "phan_tram"          → Giảm % cơ bản theo thời gian
- *  - "don_hang_toi_thieu" → Giảm % nếu tổng tiền >= donHangToiThieu
- *  - "giam_gia_truc_tiep" → Giảm % cho sản phẩm cụ thể (PhamViKhuyenMai)
- *  - "flash_sale"         → Giảm % cho biến thể cụ thể theo khung giờ (ChiTietFlashSale)
+ * - "phan_tram" → Giảm % cơ bản theo thời gian
+ * - "don_hang_toi_thieu" → Giảm % nếu tổng tiền >= donHangToiThieu
+ * - "giam_gia_truc_tiep" → Giảm % cho sản phẩm cụ thể (PhamViKhuyenMai)
+ * - "flash_sale" → Giảm % cho biến thể cụ thể theo khung giờ (ChiTietFlashSale)
  */
 public interface IKhuyenMaiService {
 
@@ -77,9 +77,10 @@ public interface IKhuyenMaiService {
      * Toggle trạng thái Tạm dừng / Mở lại cho 1 chương trình khuyến mãi.
      *
      * <ul>
-     *   <li>Nếu đang {@code tam_dung}: tính lại trạng thái thực tế dựa vào thời gian hiện tại
-     *       ({@code chua_bat_dau} / {@code dang_dien_ra} / {@code da_ket_thuc}).</li>
-     *   <li>Ngược lại: đặt thành {@code tam_dung}.</li>
+     * <li>Nếu đang {@code tam_dung}: tính lại trạng thái thực tế dựa vào thời gian
+     * hiện tại
+     * ({@code chua_bat_dau} / {@code dang_dien_ra} / {@code da_ket_thuc}).</li>
+     * <li>Ngược lại: đặt thành {@code tam_dung}.</li>
      * </ul>
      *
      * @param id ID của chương trình khuyến mãi.
@@ -96,22 +97,55 @@ public interface IKhuyenMaiService {
     /**
      * Tìm chương trình khuyến mãi mang lại số tiền giảm LỚN NHẤT cho đơn hàng.
      *
-     * <p>Tiêu chí lọc:
+     * <p>
+     * Tiêu chí lọc:
      * <ul>
-     *   <li>Chỉ xét các CTKM có {@code trangThai = 'dang_dien_ra'}.</li>
-     *   <li>Chỉ xét loại áp dụng toàn bộ đơn hàng:
-     *       {@code "phan_tram"} hoặc {@code "don_hang_toi_thieu"}.</li>
-     *   <li>Lọc bỏ nếu {@code donHangToiThieu} > {@code tongTienHang}.</li>
+     * <li>Chỉ xét các CTKM có {@code trangThai = 'dang_dien_ra'}.</li>
+     * <li>Chỉ xét loại áp dụng toàn bộ đơn hàng:
+     * {@code "phan_tram"} hoặc {@code "don_hang_toi_thieu"}.</li>
+     * <li>Lọc bỏ nếu {@code donHangToiThieu} > {@code tongTienHang}.</li>
      * </ul>
      *
-     * <p>Công thức tính tiền giảm:
+     * <p>
+     * Công thức tính tiền giảm:
      * <ul>
-     *   <li>{@code "phan_tram"}:          {@code tongTienHang × (giaTriUuDai / 100)}</li>
-     *   <li>{@code "don_hang_toi_thieu"}: {@code tongTienHang × (giaTriUuDai / 100)}</li>
+     * <li>{@code "phan_tram"}: {@code tongTienHang × (giaTriUuDai / 100)}</li>
+     * <li>{@code "don_hang_toi_thieu"}:
+     * {@code tongTienHang × (giaTriUuDai / 100)}</li>
      * </ul>
      *
      * @param tongTienHang Tổng tiền hàng của đơn (chưa giảm, chưa cộng phí ship).
      * @return CTKM tốt nhất, hoặc {@code null} nếu không có CTKM nào phù hợp.
      */
     ChuongTrinhKhuyenMai timKhuyenMaiTotNhatChoDonHang(BigDecimal tongTienHang);
+
+    // ── Tính giá sau khuyến mãi động ──────────────────────────────────────
+
+    /**
+     * Tính giá bán thực tế của một biến thể sản phẩm sau khi áp dụng
+     * các chương trình khuyến mãi đang diễn ra.
+     *
+     * <p>
+     * Thứ tự ưu tiên áp dụng khuyến mãi (theo system_rules.md §5):
+     * <ol>
+     * <li><b>Flash Sale</b> – áp dụng cho biến thể cụ thể trong khung giờ
+     * và còn số lượng.</li>
+     * <li><b>Giảm giá trực tiếp</b> – áp dụng cho sản phẩm thông qua
+     * {@code pham_vi_khuyen_mai}.</li>
+     * <li><b>Phần trăm</b> hoặc <b>Đơn hàng tối thiểu</b> – áp dụng cho
+     * toàn đơn, cần {@code tongTienHang} để kiểm tra điều kiện.</li>
+     * </ol>
+     * Nếu không có khuyến mãi nào phù hợp, trả về giá gốc ({@code giaBan}).
+     *
+     * <p>
+     * Lưu ý: Đối với loại {@code "don_hang_toi_thieu"}, cần truyền
+     * {@code tongTienHang} để kiểm tra ngưỡng. Nếu truyền {@code null},
+     * loại này sẽ bị bỏ qua.
+     *
+     * @param bienTheId    ID của biến thể sản phẩm (SKU) cần tính giá.
+     * @param tongTienHang Tổng tiền hàng của đơn (có thể {@code null}
+     *                     nếu chưa có hoặc không cần áp dụng loại toàn đơn).
+     * @return Giá bán thực tế sau khuyến mãi, hoặc {@code giaBan} nếu không có KM.
+     */
+    BigDecimal tinhGiaSauKhuyenMai(Integer bienTheId, BigDecimal tongTienHang);
 }

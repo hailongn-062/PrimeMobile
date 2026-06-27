@@ -295,12 +295,10 @@ public class PosController {
                                         .orElseThrow()
                                         .getBienTheSanPham();
 
-                        // 7b. Tạo ChiTietDonHang
+                        // 7b. Tạo ChiTietDonHang - tính giá động nếu client không gửi donGia
                         BigDecimal donGia = ct.getDonGia() != null
                                         ? ct.getDonGia()
-                                        : (bienThe.getGiaKhuyenMai() != null
-                                                        ? bienThe.getGiaKhuyenMai()
-                                                        : bienThe.getGiaBan());
+                                        : khuyenMaiService.tinhGiaSauKhuyenMai(bienThe.getId(), req.getTongTien());
 
                         ChiTietDonHang chiTiet = ChiTietDonHang.builder()
                                         .donHang(savedDonHang)
@@ -389,13 +387,15 @@ public class PosController {
                 BienTheSanPham bt = tonKho.getBienTheSanPham();
                 SanPham sp = bt.getSanPham();
 
-                // Lấy ảnh đại diện: ưu tiên laAnhChinh, fallback ảnh đầu tiên
                 String anhDaiDien = bt.getHinhAnhSanPhams().stream()
                                 .filter(h -> Boolean.TRUE.equals(h.getLaAnhChinh()))
                                 .findFirst()
                                 .or(() -> bt.getHinhAnhSanPhams().stream().findFirst())
                                 .map(HinhAnhSanPham::getDuongDan)
                                 .orElse(null);
+
+                // Tính giá sau khuyến mãi (ưu tiên flash sale, giảm trực tiếp, % toàn đơn)
+                BigDecimal giaSauKM = khuyenMaiService.tinhGiaSauKhuyenMai(bt.getId(), BigDecimal.ZERO);
 
                 return BienThePosDto.builder()
                                 .bienTheId(bt.getId())
@@ -404,8 +404,7 @@ public class PosController {
                                 .mauSac(bt.getMauSac())
                                 .ramGb(bt.getRamGb())
                                 .luuTruGb(bt.getLuuTruGb())
-                                .giaBan(bt.getGiaBan())
-                                .giaKhuyenMai(bt.getGiaKhuyenMai())
+                                .giaBan(giaSauKM) // Giá sau khuyến mãi động
                                 .tonKho(tonKho.getSoLuong())
                                 .anhDaiDien(anhDaiDien)
                                 .build();

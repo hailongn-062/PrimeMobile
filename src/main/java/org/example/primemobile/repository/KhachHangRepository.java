@@ -25,11 +25,20 @@ public interface KhachHangRepository extends JpaRepository<KhachHang, Integer> {
        /**
         * Tìm kiếm khách hàng theo từ khóa — áp dụng cho cả SĐT lẫn email.
         * Dùng cho màn hình tra cứu khách hàng tại Admin Dashboard.
-        * So sánh LIKE chứa từ khóa ở cả 2 trường, trả về top 20 để tránh quá tải.
+        * So sánh LIKE chứa từ khóa ở cả 2 trường.
+        * 
+        * <p>
+        * <b>Lưu ý:</b> Đây là Native Query để xử lý an toàn với tham số NULL
+        * (tránh lỗi SQLGrammarException khi CONCAT với NULL trong JPQL).
+        * </p>
+        *
+        * @param tuKhoa Từ khóa tìm kiếm (có thể null).
+        * @return Danh sách khách hàng phù hợp.
         */
-       @Query("SELECT k FROM KhachHang k WHERE " +
-                     "(:tuKhoa IS NULL OR k.soDienThoai LIKE %:tuKhoa% OR " +
-                     "LOWER(k.email) LIKE LOWER(CONCAT('%', :tuKhoa, '%')))")
+       @Query(value = "SELECT * FROM khach_hang WHERE " +
+                     "(:tuKhoa IS NULL OR " +
+                     "(so_dien_thoai LIKE CONCAT('%', :tuKhoa, '%') OR " +
+                     "LOWER(email) LIKE LOWER(CONCAT('%', :tuKhoa, '%'))))", nativeQuery = true)
        List<KhachHang> timKiemTheoSdtHoacEmail(@Param("tuKhoa") String tuKhoa);
 
        /**
