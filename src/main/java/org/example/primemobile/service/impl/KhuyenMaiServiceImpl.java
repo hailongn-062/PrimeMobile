@@ -116,7 +116,7 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
     @Override
     @Transactional
     public void themChiTietFlashSale(Integer ctkmId, Integer bienTheId,
-            BigDecimal phanTramGiam, Integer soLuongGioiHan) {
+                                     BigDecimal phanTramGiam, Integer soLuongGioiHan) {
         ChuongTrinhKhuyenMai ctkm = ctkmRepo.findById(ctkmId)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy CTKM ID: " + ctkmId));
         BienTheSanPham bt = bienTheSanPhamRepo.findById(bienTheId)
@@ -327,8 +327,8 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
      * <li><b>Giảm giá trực tiếp</b> – áp dụng nếu có CTKM giam_gia_truc_tiep
      * đang diễn ra cho sản phẩm cha.</li>
      * <li><b>Phần trăm hoặc Đơn hàng tối thiểu</b> – áp dụng cho toàn đơn,
-     * chỉ xét nếu {@code tongTienHang != null} và đủ điều kiện.
-     * Chọn CTKM có phần trăm giảm cao nhất.</li>
+     * chỉ xét nếu {@code tongTienHang != null} và {@code tongTienHang > 0}
+     * (có ít nhất 1 sản phẩm trong giỏ). Chọn CTKM có phần trăm giảm cao nhất.</li>
      * </ol>
      * Nếu không có CTKM nào, trả về {@code giaBan} gốc.
      */
@@ -343,28 +343,10 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
         LocalDateTime now = LocalDateTime.now();
 
         // ── 1. Flash Sale (ưu tiên cao nhất) ──────────────────────────
-        List<ChiTietFlashSale> flashList = chiTietFlashSaleRepo.findByChuongTrinhKhuyenMaiId(bienThe.getId());
-        // Cần filter: CTKM flash đang diễn ra, thời gian hiện tại trong khung giờ, và
-        // còn số lượng
-        Optional<ChiTietFlashSale> flashOpt = flashList.stream()
-                .filter(ct -> {
-                    ChuongTrinhKhuyenMai ctkm = ct.getChuongTrinhKhuyenMai();
-                    if (!"dang_dien_ra".equals(ctkm.getTrangThai()))
-                        return false;
-                    // Kiểm tra khung giờ flash
-                    LocalDateTime start = ctkm.getGioFlashBatDau();
-                    LocalDateTime end = ctkm.getGioFlashKetThuc();
-                    if (start == null || end == null)
-                        return false;
-                    boolean inTime = now.isAfter(start) && now.isBefore(end);
-                    // Kiểm tra số lượng còn
-                    boolean conSoLuong = ct.getDaBan() < ct.getSoLuongGioiHan();
-                    return inTime && conSoLuong;
-                })
-                .findFirst();
-
-        if (flashOpt.isPresent()) {
-            BigDecimal phanTram = flashOpt.get().getPhanTramGiam();
+        List<ChiTietFlashSale> flashList = chiTietFlashSaleRepo.findActiveFlashSaleByBienTheId(bienTheId);
+        if (!flashList.isEmpty()) {
+            ChiTietFlashSale flash = flashList.get(0);
+            BigDecimal phanTram = flash.getPhanTramGiam();
             giaSauKM = giaGoc.multiply(
                     BigDecimal.ONE.subtract(phanTram.divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP)));
             log.debug("[KhuyenMai] Áp dụng Flash Sale: biếnTheId={}, giá gốc={}, giảm {}%, giá mới={}",
@@ -373,22 +355,11 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
         }
 
         // ── 2. Giảm giá trực tiếp ──────────────────────────────────────
-        // Lấy sản phẩm cha và tìm PhamViKhuyenMai
         SanPham sanPham = bienThe.getSanPham();
-        List<PhamViKhuyenMai> pvList = phamViKhuyenMaiRepo.findByChuongTrinhKhuyenMaiId(sanPham.getId());
-        // Thực tế cần query theo san_pham_id và CTKM đang diễn ra, nhưng do có ít dữ
-        // liệu, filter bằng stream
-        Optional<PhamViKhuyenMai> pvOpt = pvList.stream()
-                .filter(pv -> {
-                    ChuongTrinhKhuyenMai ctkm = pv.getChuongTrinhKhuyenMai();
-                    return "giam_gia_truc_tiep".equals(ctkm.getLoai())
-                            && "dang_dien_ra".equals(ctkm.getTrangThai())
-                            && pv.getSanPham() != null && pv.getSanPham().getId().equals(sanPham.getId());
-                })
-                .findFirst();
-
-        if (pvOpt.isPresent()) {
-            BigDecimal phanTram = pvOpt.get().getChuongTrinhKhuyenMai().getGiaTriUuDai();
+        List<PhamViKhuyenMai> pvList = phamViKhuyenMaiRepo.findActiveGiamGiaTrucTiepBySanPhamId(sanPham.getId());
+        if (!pvList.isEmpty()) {
+            PhamViKhuyenMai pv = pvList.get(0);
+            BigDecimal phanTram = pv.getChuongTrinhKhuyenMai().getGiaTriUuDai();
             giaSauKM = giaGoc.multiply(
                     BigDecimal.ONE.subtract(phanTram.divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP)));
             log.debug("[KhuyenMai] Áp dụng Giảm giá trực tiếp: biếnTheId={}, giá gốc={}, giảm {}%, giá mới={}",
@@ -397,7 +368,8 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
         }
 
         // ── 3. Phần trăm hoặc Đơn hàng tối thiểu ──────────────────────
-        if (tongTienHang != null) {
+        // ✅ SỬA: Chỉ áp dụng khi tongTienHang > 0 (có sản phẩm trong giỏ)
+        if (tongTienHang != null && tongTienHang.compareTo(BigDecimal.ZERO) > 0) {
             List<ChuongTrinhKhuyenMai> ctkmList = ctkmRepo.layKhuyenMaiApDungToanDonHang();
             Optional<ChuongTrinhKhuyenMai> bestCtkm = ctkmList.stream()
                     .filter(ctkm -> {

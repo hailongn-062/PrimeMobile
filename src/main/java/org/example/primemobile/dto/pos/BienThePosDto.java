@@ -37,9 +37,14 @@ public class BienThePosDto {
     private Integer luuTruGb;
 
     /**
+     * Giá bán gốc (không áp dụng khuyến mãi).
+     * Dùng để hiển thị giá gốc (có gạch ngang) khi có khuyến mãi.
+     */
+    private BigDecimal giaGoc;
+
+    /**
      * Giá bán hiển thị: Giá này sẽ được tính động dựa trên chương trình khuyến mãi
-     * hiện tại.
-     * Không còn lưu trữ giá khuyến mãi tĩnh nữa.
+     * hiện tại (sau khi áp dụng flash sale, giảm trực tiếp, v.v.).
      */
     private BigDecimal giaBan;
 

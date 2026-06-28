@@ -72,19 +72,18 @@ const API = {
     TINH_KM: '/api/admin/pos/tinh-khuyen-mai',
     THANH_TOAN: '/api/admin/pos/thanh-toan',
     IMEI_DANH_SACH: '/api/admin/imei/danh-sach',
-    KHACH_HANG: '/api/admin/khach-hang',   // <-- thêm API tìm kiếm khách hàng
+    KHACH_HANG: '/api/admin/khach-hang',
 };
 
 const LOAI_KHO_TONG = 'kho_tong';
-const PROMO_DEBOUNCE_MS = 450;   // ms chờ sau khi cart thay đổi trước khi gọi promo API
-const SEARCH_DEBOUNCE_MS = 220;   // ms debounce cho search input
-const CUSTOMER_SEARCH_DEBOUNCE_MS = 300; // debounce cho tìm kiếm khách hàng
+const PROMO_DEBOUNCE_MS = 450;
+const SEARCH_DEBOUNCE_MS = 220;
+const CUSTOMER_SEARCH_DEBOUNCE_MS = 300;
 
 /* ════════════════════════════════════════════════════════════
    2. DOM UTILITIES
 ════════════════════════════════════════════════════════════ */
 
-/** Lấy element an toàn — trả về null thay vì throw nếu không tìm thấy */
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 const el = (id) => document.getElementById(id);
@@ -127,7 +126,7 @@ function resolveDOM() {
         btnClearCart: el('btnClearCart'),
         btnCheckout: el('btnCheckout'),
         selectKhachHang: el('selectKhachHang'),
-        searchCustomer: el('searchCustomer'),   // <-- thêm ref cho input tìm kiếm KH
+        searchCustomer: el('searchCustomer'),
         posClock: el('pos-clock'),
         btnToggleSidebar: el('btnToggleSidebar'),
         // Summary
@@ -163,9 +162,7 @@ function startClock() {
    4. SIDEBAR TOGGLE
 ════════════════════════════════════════════════════════════ */
 function initSidebar() {
-    // Mặc định collapse sidebar để tối đa diện tích POS
     document.body.classList.add('pos-sidebar-mini');
-
     DOM.btnToggleSidebar?.addEventListener('click', () => {
         document.body.classList.toggle('pos-sidebar-mini');
     });
@@ -242,10 +239,13 @@ function renderProducts(list) {
     DOM.productGrid.innerHTML = list.map(p => buildProductCardHtml(p)).join('');
 }
 
-/** Tạo HTML cho 1 product card */
+/** Tạo HTML cho 1 product card – hiển thị cả giá gốc và giá sau khuyến mãi */
 function buildProductCardHtml(p) {
-    const donGia = p.giaKhuyenMai ?? p.giaBan;
-    const isOnSale = p.giaKhuyenMai != null;
+    // Lấy giá gốc và giá sau khuyến mãi
+    const giaGoc = p.giaGoc ?? p.giaBan;
+    const giaBan = p.giaBan ?? giaGoc;
+    const isOnSale = giaGoc !== giaBan; // Nếu khác nhau thì có khuyến mãi
+    const donGia = isOnSale ? giaBan : giaGoc;
     const isOutOfStock = (p.tonKho ?? 0) <= 0;
 
     const imgHtml = p.anhDaiDien
@@ -253,9 +253,14 @@ function buildProductCardHtml(p) {
                style="max-height:100%;max-width:100%;object-fit:contain;">`
         : `<span style="font-size:2.8rem;">📱</span>`;
 
-    const saleStrike = isOnSale
-        ? `<div style="font-size:.68rem;color:#9CA3AF;text-decoration:line-through;">${fmt(p.giaBan)}</div>`
-        : '';
+    // Hiển thị giá gốc (gạch ngang) và giá bán hiện tại
+    const priceHtml = isOnSale
+        ? `
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                <div style="font-size:.75rem;color:#9CA3AF;text-decoration:line-through;">${fmt(giaGoc)}</div>
+                <div class="prod-price prod-price-sale">${fmt(giaBan)}</div>
+            </div>`
+        : `<div class="prod-price">${fmt(giaGoc)}</div>`;
 
     const stockLabel = isOutOfStock
         ? `<div class="prod-stock">Hết hàng</div>`
@@ -267,8 +272,7 @@ function buildProductCardHtml(p) {
         <div class="prod-body">
             <div class="prod-name">${escHtml(p.tenSanPham)}</div>
             <div class="prod-sku">${escHtml(p.maSku)} · ${p.ramGb}GB · ${p.luuTruGb}GB</div>
-            ${saleStrike}
-            <div class="prod-price${isOnSale ? ' prod-price-sale' : ''}">${fmt(donGia)}</div>
+            ${priceHtml}
             ${stockLabel}
         </div>
         <button class="btn-add" onclick="addToCart(${p.bienTheId})"
@@ -322,7 +326,6 @@ async function fetchImeiList(bienTheId) {
     }
     const data = await res.json();
     console.log('[POS] fetchImeiList response:', data);
-    // Kiểm tra cấu trúc dữ liệu: có thể là mảng hoặc object chứa data
     if (Array.isArray(data)) {
         return data;
     } else if (data && Array.isArray(data.data)) {
@@ -359,7 +362,6 @@ async function openImeiSelector(item) {
             return false;
         }
 
-        // Lọc ra những IMEI đã được chọn trong giỏ (trừ IMEI của chính item này)
         const selectedImeis = getSelectedImeis();
         const available = imeiList.filter(imei => !selectedImeis.includes(imei.imei1));
 
@@ -369,7 +371,6 @@ async function openImeiSelector(item) {
         }
 
         const soLuong = item.soLuong;
-        // Xây dựng HTML modal
         let html = `<div style="max-height:300px;overflow-y:auto;padding:0.5rem 0;">`;
         for (let i = 0; i < soLuong; i++) {
             html += `
@@ -405,7 +406,6 @@ async function openImeiSelector(item) {
                     Swal.showValidationMessage('Vui lòng chọn đủ IMEI cho tất cả các vị trí.');
                     return false;
                 }
-                // Kiểm tra trùng
                 const unique = new Set(imeisSelected);
                 if (unique.size !== imeisSelected.length) {
                     Swal.showValidationMessage('Không được chọn trùng IMEI.');
@@ -419,7 +419,7 @@ async function openImeiSelector(item) {
             item.imeis = imeis.join(', ');
             return true;
         }
-        return false; // hủy
+        return false;
 
     } catch (error) {
         console.error('[POS] openImeiSelector error:', error);
@@ -440,24 +440,14 @@ async function selectAdditionalImeis(item, count) {
             return false;
         }
 
-        // Lọc ra những IMEI đã được chọn trong giỏ (bao gồm cả IMEI hiện tại của item này)
         const selectedImeis = getSelectedImeis();
-        // IMEI hiện tại của item này (sẽ không tính là "đã chọn" để tránh trùng)
-        const currentImeis = parseImeis(item.imeis);
-        // Lọc: loại bỏ những IMEI đã có trong giỏ, nhưng KHÔNG loại bỏ IMEI đang thuộc item này
-        const available = imeiList.filter(imei => {
-            // Nếu imei này đang thuộc item này thì vẫn cho phép chọn (để tránh lỗi logic)
-            // Nhưng thực tế ta không muốn chọn lại IMEI đã có, nên ta bỏ qua nó.
-            // Vì vậy ta loại bỏ nếu nó có trong danh sách đã chọn (của tất cả item)
-            return !selectedImeis.includes(imei.imei1);
-        });
+        const available = imeiList.filter(imei => !selectedImeis.includes(imei.imei1));
 
         if (available.length < count) {
             toastWarn(`Không đủ IMEI khả dụng. Cần ${count}, chỉ còn ${available.length}.`);
             return false;
         }
 
-        // Xây dựng modal với count select
         let html = `<div style="max-height:300px;overflow-y:auto;padding:0.5rem 0;">`;
         for (let i = 0; i < count; i++) {
             html += `
@@ -493,7 +483,6 @@ async function selectAdditionalImeis(item, count) {
                     Swal.showValidationMessage('Vui lòng chọn đủ IMEI.');
                     return false;
                 }
-                // Kiểm tra trùng trong danh sách mới
                 const unique = new Set(selected);
                 if (unique.size !== selected.length) {
                     Swal.showValidationMessage('Không được chọn trùng IMEI.');
@@ -504,7 +493,6 @@ async function selectAdditionalImeis(item, count) {
         });
 
         if (newImeis) {
-            // Nối IMEI mới vào cuối chuỗi hiện tại
             const current = parseImeis(item.imeis);
             const allImeis = [...current, ...newImeis];
             item.imeis = allImeis.join(', ');
@@ -524,20 +512,18 @@ async function addToCart(bienTheId) {
     const p = allProducts.find(x => x.bienTheId === bienTheId);
     if (!p) return;
 
-    const donGia = p.giaKhuyenMai ?? p.giaBan;
+    // Lấy giá bán hiện tại (sau khuyến mãi)
+    const donGia = p.giaBan ?? p.giaGoc;
     let existing = cart.find(x => x.bienTheId === bienTheId);
 
     if (existing) {
-        // Kiểm tra không vượt quá tồn kho
         if (existing.soLuong >= (p.tonKho ?? 0)) {
             toastWarn(`Tồn kho Kho Tổng cho sản phẩm này chỉ còn ${p.tonKho} máy.`);
             return;
         }
         existing.soLuong++;
-        // Chỉ chọn thêm 1 IMEI, giữ nguyên IMEI cũ
         const success = await selectAdditionalImeis(existing, 1);
         if (!success) {
-            // Nếu không chọn được, giảm số lượng lại
             existing.soLuong--;
             if (existing.soLuong === 0) {
                 removeFromCart(bienTheId);
@@ -547,7 +533,6 @@ async function addToCart(bienTheId) {
         return;
     }
 
-    // Thêm mới
     const newItem = {
         bienTheId: p.bienTheId,
         tenSanPham: p.tenSanPham,
@@ -561,10 +546,8 @@ async function addToCart(bienTheId) {
     };
     cart.push(newItem);
 
-    // Mở modal chọn IMEI cho item mới
     const success = await openImeiSelector(newItem);
     if (!success) {
-        // Nếu không chọn được IMEI, xóa item khỏi giỏ
         removeFromCart(bienTheId);
         return;
     }
@@ -591,7 +574,6 @@ async function changeQty(bienTheId, delta) {
     const newQty = item.soLuong + delta;
 
     if (newQty <= 0) {
-        // Hỏi xác nhận xoá
         const result = await Swal.fire({
             icon: 'question',
             title: 'Xoá sản phẩm?',
@@ -605,7 +587,6 @@ async function changeQty(bienTheId, delta) {
         return;
     }
 
-    // Kiểm tra không vượt tồn kho
     const stock = allProducts.find(p => p.bienTheId === bienTheId)?.tonKho ?? 999;
     if (newQty > stock) {
         toastWarn(`Tồn kho chỉ còn ${stock} máy.`);
@@ -614,14 +595,12 @@ async function changeQty(bienTheId, delta) {
 
     item.soLuong = newQty;
 
-    // Nếu giảm số lượng → cắt bớt IMEI tương ứng
     if (delta < 0) {
         const imeiList = parseImeis(item.imeis);
         if (imeiList.length > newQty) {
             item.imeis = imeiList.slice(0, newQty).join(', ');
         }
     }
-    // Nếu tăng số lượng → chọn thêm 1 IMEI
     if (delta > 0) {
         const success = await selectAdditionalImeis(item, 1);
         if (!success) {
@@ -653,14 +632,11 @@ function onCartChanged() {
 function renderCart() {
     if (!DOM.cartItemsWrap) return;
 
-    // Cập nhật badge đếm
     const totalQty = cart.reduce((s, x) => s + x.soLuong, 0);
     if (DOM.cartCount) DOM.cartCount.textContent = totalQty;
 
-    // Bật/tắt nút thanh toán
     if (DOM.btnCheckout) DOM.btnCheckout.disabled = (cart.length === 0);
 
-    // Empty state
     if (cart.length === 0) {
         DOM.cartItemsWrap.innerHTML = '';
         if (DOM.cartEmptyMsg) {
@@ -674,7 +650,6 @@ function renderCart() {
 
     DOM.cartItemsWrap.innerHTML = cart.map(item => buildCartItemHtml(item)).join('');
 
-    // Event listeners cho nút "Chọn lại IMEI"
     cart.forEach(item => {
         const btn = el(`btn-rechoose-imei-${item.bienTheId}`);
         if (btn) {
@@ -692,12 +667,10 @@ function buildCartItemHtml(item) {
 
     return `
     <div class="cart-item" id="cart-item-${item.bienTheId}">
-        <!-- Top row: thông tin + stepper -->
         <div class="cart-item-top">
             <div class="cart-item-info">
                 <div class="cart-item-name" title="${escHtml(item.tenSanPham)}">${escHtml(item.tenSanPham)}</div>
                 <div class="cart-item-sku">${escHtml(item.maSku)}</div>
-                <!-- Qty stepper -->
                 <div class="qty-stepper">
                     <button class="qty-btn" onclick="changeQty(${item.bienTheId}, -1)"
                             title="Giảm số lượng" aria-label="Giảm">−</button>
@@ -716,7 +689,6 @@ function buildCartItemHtml(item) {
             </div>
         </div>
 
-        <!-- ══ IMEI SECTION — CHỌN TỪ DROPDOWN ══ -->
         <div class="imei-section" role="group" aria-label="Mã IMEI">
             <div class="imei-label">
                 <i class="fa fa-barcode" aria-hidden="true"></i>
@@ -758,11 +730,9 @@ function flashProductCard(bienTheId, type = 'success') {
 async function reopenImeiSelector(bienTheId) {
     const item = cart.find(x => x.bienTheId === bienTheId);
     if (!item) return;
-    // Reset IMEI cũ trước khi mở
     item.imeis = '';
     const success = await openImeiSelector(item);
     if (!success) {
-        // Nếu không chọn được IMEI, xóa item khỏi giỏ
         removeFromCart(bienTheId);
         toastWarn('Không chọn được IMEI, đã xóa sản phẩm khỏi giỏ.');
     } else {
@@ -785,7 +755,7 @@ function triggerAutoPromo() {
  * Chỉ gọi khi cart không rỗng. Nếu tongTien = 0 → reset promoState.
  */
 async function fetchPromo() {
-    if (isFetchingPromo) return;  // Không gọi concurrent
+    if (isFetchingPromo) return;
 
     const tongTien = calcTongTien();
 
@@ -813,7 +783,6 @@ async function fetchPromo() {
         };
 
     } catch (err) {
-        // Không hiện lỗi cho user — chỉ log internal
         console.warn('[POS] fetchPromo error (silent):', err.message);
         promoState = { ctkmId: null, tenCtkm: null, giaTriUuDai: 0, tienGiam: 0 };
     } finally {
@@ -879,7 +848,6 @@ async function handleClearCart() {
 async function handleCheckout() {
     if (!cart.length) return;
 
-    // ── BƯỚC 1: Validate IMEI ────────────────────────────────
     const imeisOk = validateAllImeis();
     if (!imeisOk) {
         await Swal.fire({
@@ -895,7 +863,6 @@ async function handleCheckout() {
         return;
     }
 
-    // ── BƯỚC 2: Confirm dialog ──────────────────────────────
     const tongTien = calcTongTien();
     const tienGiam = promoState.tienGiam ?? 0;
     const canTra = tongTien - tienGiam;
@@ -932,7 +899,6 @@ async function handleCheckout() {
 
     if (!confirm.isConfirmed) return;
 
-    // ── BƯỚC 3: Build payload ────────────────────────────────
     const khachHangId = DOM.selectKhachHang?.value
         ? parseInt(DOM.selectKhachHang.value, 10)
         : null;
@@ -950,7 +916,6 @@ async function handleCheckout() {
         }))
     };
 
-    // ── BƯỚC 4: Gửi POST ────────────────────────────────────
     setCheckoutLoading(true);
 
     try {
@@ -968,7 +933,6 @@ async function handleCheckout() {
 
         const result = await res.json();
 
-        // ── BƯỚC 5: Thành công → Hiển thị bill ──────────────
         showBillModal(result, payload);
 
     } catch (err) {
@@ -1021,10 +985,10 @@ function validateAllImeis() {
    12. BILL / INVOICE MODAL
 ════════════════════════════════════════════════════════════ */
 
-let _lastPayload = null; // Lưu payload để dùng lại khi in
+let _lastPayload = null;
 
 function showBillModal(apiResult, payload) {
-    _lastPayload = payload; // Lưu lại để in
+    _lastPayload = payload;
 
     const now = new Date().toLocaleString('vi-VN');
     const tongTien = payload.tongTien;
@@ -1067,7 +1031,6 @@ function showBillModal(apiResult, payload) {
 
     if (DOM.billContent) {
         DOM.billContent.innerHTML = `
-            <!-- Header -->
             <div style="text-align:center;margin-bottom:1rem;padding-bottom:.75rem;
                         border-bottom:2px dashed #E8EDF5;">
                 <div style="font-size:1.2rem;font-weight:800;color:#1565C0;">📱 PrimeMobile</div>
@@ -1079,18 +1042,15 @@ function showBillModal(apiResult, payload) {
                 </div>
             </div>
 
-            <!-- Khách hàng -->
             <div style="margin-bottom:.5rem;font-size:.82rem;">
                 <strong>Khách hàng:</strong> ${escHtml(apiResult.khachHang ?? 'Khách lẻ')}
             </div>
             <hr style="margin:.5rem 0;border-color:#E8EDF5;">
 
-            <!-- Chi tiết hàng -->
             ${linesHtml}
 
             <hr style="margin:.6rem 0;border-top:2px solid #1565C0;">
 
-            <!-- Tổng -->
             <div style="font-size:.83rem;">
                 <div style="display:flex;justify-content:space-between;margin:.2rem 0;">
                     <span>Tổng tiền hàng:</span><strong>${fmt(tongTien)}</strong>
@@ -1115,7 +1075,6 @@ function showBillModal(apiResult, payload) {
 }
 
 function initBillModal() {
-    // Nút In hóa đơn
     DOM.btnPrintBill?.addEventListener('click', () => {
         const content = DOM.billContent?.innerHTML ?? '';
         const win = window.open('', '_blank', 'width=540,height=720,menubar=no,toolbar=no');
@@ -1135,17 +1094,13 @@ function initBillModal() {
 </head><body>${content}</body></html>`);
         win.document.close();
         win.focus();
-        // Đợi font load rồi mới in
         setTimeout(() => { win.print(); }, 600);
     });
 
-    // Nút Đơn hàng mới
     DOM.btnNewOrder?.addEventListener('click', () => {
         bootstrap.Modal.getInstance(el('modalBill'))?.hide();
         clearCart();
-        // Reload stock để cập nhật tồn kho mới nhất
         loadProducts();
-        // Toast thông báo
         toastSuccess('Sẵn sàng tạo đơn mới!');
     });
 }
@@ -1157,7 +1112,6 @@ function initBillModal() {
 /** Tải danh sách khách hàng từ API (có từ khóa tìm kiếm) */
 async function loadCustomers(keyword = '') {
     try {
-        // Nếu keyword rỗng hoặc chỉ khoảng trắng, gọi API không tham số để lấy tất cả
         const trimmed = keyword.trim();
         const url = trimmed
             ? `${API.KHACH_HANG}?tuKhoa=${encodeURIComponent(trimmed)}`
@@ -1168,7 +1122,6 @@ async function loadCustomers(keyword = '') {
         populateCustomerDropdown(customers);
     } catch (err) {
         console.warn('[POS] loadCustomers error:', err);
-        // Nếu lỗi, vẫn giữ option mặc định — không làm gián đoạn luồng bán hàng
     }
 }
 
@@ -1176,13 +1129,11 @@ async function loadCustomers(keyword = '') {
 function populateCustomerDropdown(customers) {
     const select = DOM.selectKhachHang;
     if (!select) return;
-    // Giữ option đầu tiên "Khách lẻ (mặc định)"
     select.innerHTML = '<option value="">👤 Khách lẻ (mặc định)</option>';
     if (Array.isArray(customers)) {
         customers.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c.id;
-            // Hiển thị họ tên + SĐT, nếu thiếu SĐT thì dùng email
             const display = `${c.hoTen} (${c.soDienThoai || c.email || 'Không có SĐT'})`;
             opt.textContent = display;
             select.appendChild(opt);
@@ -1227,9 +1178,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initSearch();
     initCheckout();
     initBillModal();
-    initCustomerSearch();     // <-- khởi tạo tìm kiếm khách hàng
+    initCustomerSearch();
     loadProducts();
-    loadCustomers();          // <-- load danh sách khách hàng mặc định khi vào trang
+    loadCustomers();
 });
 
 /* Expose tới onclick="" attributes trong HTML */
