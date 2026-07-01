@@ -60,4 +60,14 @@ public interface TonKhoRepository extends JpaRepository<TonKho, Integer> {
             ORDER BY sp.tenSanPham ASC
             """)
     List<TonKho> layDanhSachChoPos(@Param("loaiKho") String loaiKho);
+
+    @Query("""
+            SELECT t.bienTheSanPham.id, COALESCE(SUM(t.soLuong), 0)
+            FROM TonKho t
+            WHERE t.kho.loai = :loaiKho
+              AND t.bienTheSanPham.id IN :bienTheIds
+            GROUP BY t.bienTheSanPham.id
+            """)
+    List<Object[]> tongTonKhoTheoBienTheIds(@Param("loaiKho") String loaiKho,
+                                            @Param("bienTheIds") List<Integer> bienTheIds);
 }

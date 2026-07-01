@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle} + ' | PrimeMobile'">Đơn hàng của tôi | PrimeMobile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --pm-primary:#0d9488;
+            --pm-primary-dark:#115e59;
+            --pm-bg:#f8fafc;
+            --pm-text:#0f172a;
+            --pm-muted:#64748b;
+            --pm-line:#e2e8f0;
+        }
+        body { font-family:'Inter',sans-serif; background:var(--pm-bg); color:var(--pm-text); min-height:100vh; }
+        .pm-page { padding:32px 0 56px; }
+        .pm-toolbar { display:flex; align-items:end; justify-content:space-between; gap:16px; margin-bottom:18px; }
+        .pm-panel { background:#fff; border:1px solid var(--pm-line); border-radius:8px; box-shadow:0 10px 28px rgba(15,23,42,.06); }
+        .pm-order { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:16px; padding:18px 20px; border-bottom:1px solid var(--pm-line); }
+        .pm-order:last-child { border-bottom:0; }
+        .pm-meta { color:var(--pm-muted); font-size:.92rem; }
+        .pm-total { color:#ea580c; font-size:1.2rem; font-weight:900; white-space:nowrap; }
+        .pm-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
+        .btn-pm { background:var(--pm-primary); color:#fff; border:0; border-radius:8px; font-weight:800; }
+        .btn-pm:hover { background:var(--pm-primary-dark); color:#fff; }
+        .pm-empty { padding:48px 20px; text-align:center; color:var(--pm-muted); }
+        .pm-detail-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; padding:12px 0; border-bottom:1px solid var(--pm-line); }
+        .pm-detail-row:last-child { border-bottom:0; }
+        .status-cho_xac_nhan { background:#fff7ed; color:#c2410c; }
+        .status-da_xac_nhan { background:#eff6ff; color:#1d4ed8; }
+        .status-dang_giao { background:#ecfeff; color:#0e7490; }
+        .status-da_giao { background:#ecfdf5; color:#047857; }
+        .status-da_huy { background:#f1f5f9; color:#475569; }
+        @media (max-width: 768px) {
+            .pm-toolbar { align-items:flex-start; flex-direction:column; }
+            .pm-order { grid-template-columns:1fr; }
+            .pm-actions { justify-content:flex-start; }
+            .pm-total { white-space:normal; }
+        }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/header :: navbar}"></div>
+
+<main class="pm-page">
+    <div class="container">
+        <div class="pm-toolbar">
+            <div>
+                <h1 class="h3 mb-1" style="font-weight:900;">Đơn hàng của tôi</h1>
+                <div class="text-muted">Theo dõi trạng thái và xem lại các sản phẩm đã đặt</div>
+            </div>
+            <a href="/san-pham" class="btn btn-outline-secondary">
+                <i class="fa fa-arrow-left me-1"></i> Tiếp tục mua
+            </a>
+        </div>
+
+        <div class="alert alert-danger d-none" id="order-error"></div>
+
+        <section class="pm-panel" id="orders-panel">
+            <div class="p-4 text-center text-muted" id="orders-loading">
+                <i class="fa fa-spinner fa-spin me-1"></i>Đang tải đơn hàng
+            </div>
+            <div id="orders-list"></div>
+            <div class="pm-empty d-none" id="orders-empty">
+                <i class="fa fa-receipt fa-2x mb-3"></i>
+                <div class="fw-bold mb-1">Bạn chưa có đơn hàng nào</div>
+                <a href="/san-pham" class="btn btn-pm mt-3">Mua sắm ngay</a>
+            </div>
+        </section>
+    </div>
+</main>
+
+<div class="modal fade" id="orderDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius:8px;">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title h5 fw-bold" id="detail-title">Chi tiết đơn hàng</h2>
+                    <div class="small text-muted" id="detail-date"></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger d-none" id="detail-error"></div>
+                <div id="detail-content">
+                    <div class="text-center text-muted py-4">
+                        <i class="fa fa-spinner fa-spin me-1"></i>Đang tải chi tiết
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const els = {
+        loading: document.getElementById('orders-loading'),
+        list: document.getElementById('orders-list'),
+        empty: document.getElementById('orders-empty'),
+        error: document.getElementById('order-error'),
+        detailTitle: document.getElementById('detail-title'),
+        detailDate: document.getElementById('detail-date'),
+        detailContent: document.getElementById('detail-content'),
+        detailError: document.getElementById('detail-error')
+    };
+    const detailModal = new bootstrap.Modal(document.getElementById('orderDetailModal'));
+
+    function money(value) {
+        return Number(value || 0).toLocaleString('vi-VN') + 'đ';
+    }
+
+    function dateTime(value) {
+        if (!value) return '';
+        return new Date(value).toLocaleString('vi-VN');
+    }
+
+    function esc(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({
+            '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;'
+        })[ch]);
+    }
+
+    async function fetchJson(url, options = {}) {
+        const response = await fetch(url, { credentials:'include', ...options });
+        const text = await response.text();
+        if (response.status === 401) {
+            window.location.href = '/dang-nhap';
+            return null;
+        }
+        if (!response.ok) {
+            let message = text || 'Không thể xử lý yêu cầu.';
+            try {
+                const error = JSON.parse(text);
+                message = error.message || message;
+            } catch {
+                // Keep plain text when the server does not return JSON.
+            }
+            throw new Error(message);
+        }
+        return text ? JSON.parse(text) : null;
+    }
+
+    function renderOrders(orders) {
+        els.loading.classList.add('d-none');
+        if (!orders.length) {
+            els.empty.classList.remove('d-none');
+            els.list.innerHTML = '';
+            return;
+        }
+        els.empty.classList.add('d-none');
+        els.list.innerHTML = orders.map(order => `
+            <article class="pm-order" data-order-id="${order.id}">
+                <div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                        <strong>${esc(order.maDonHang)}</strong>
+                        <span class="badge status-${esc(order.trangThai)}">${esc(order.trangThaiText)}</span>
+                        <span class="badge text-bg-light">${esc(order.trangThaiThanhToanText)}</span>
+                    </div>
+                    <div class="pm-meta">
+                        <i class="fa fa-clock me-1"></i>${esc(dateTime(order.ngayDat))}
+                        ${order.nguoiNhan ? `<span class="ms-2"><i class="fa fa-user me-1"></i>${esc(order.nguoiNhan)}</span>` : ''}
+                    </div>
+                    ${order.diaChiNhan ? `<div class="pm-meta mt-1"><i class="fa fa-location-dot me-1"></i>${esc(order.diaChiNhan)}</div>` : ''}
+                </div>
+                <div class="text-lg-end">
+                    <div class="pm-total mb-2">${money(order.tongThanhToan)}</div>
+                    <div class="pm-actions">
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-action="detail" data-id="${order.id}">
+                            <i class="fa fa-eye me-1"></i>Chi tiết
+                        </button>
+                        ${order.coTheHuy ? `
+                            <button class="btn btn-sm btn-outline-danger" type="button" data-action="cancel" data-id="${order.id}">
+                                <i class="fa fa-ban me-1"></i>Hủy đơn
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </article>
+        `).join('');
+    }
+
+    function renderDetail(order) {
+        const items = order.chiTiet || [];
+        els.detailTitle.textContent = `Chi tiết ${order.maDonHang}`;
+        els.detailDate.textContent = dateTime(order.ngayDat);
+        els.detailError.classList.add('d-none');
+        els.detailContent.innerHTML = `
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <div class="fw-bold mb-1">Người nhận</div>
+                    <div>${esc(order.nguoiNhan || '')}</div>
+                    <div class="text-muted small">${esc(order.soDienThoaiNhan || '')}</div>
+                    <div class="text-muted small">${esc(order.diaChiNhan || '')}</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="fw-bold mb-1">Trạng thái</div>
+                    <span class="badge status-${esc(order.trangThai)}">${esc(order.trangThaiText)}</span>
+                    <span class="badge text-bg-light">${esc(order.trangThaiThanhToanText)}</span>
+                </div>
+            </div>
+            <div class="fw-bold mb-2">Sản phẩm</div>
+            <div>
+                ${items.map(item => `
+                    <div class="pm-detail-row">
+                        <div>
+                            <div class="fw-bold">${esc(item.tenSanPham)}</div>
+                            <div class="small text-muted">${esc(item.mauSac)} - ${item.ramGb || 0}GB/${item.luuTruGb || 0}GB - SL: ${item.soLuong}</div>
+                        </div>
+                        <div class="fw-bold text-end">${money(item.thanhTien)}</div>
+                    </div>
+                `).join('') || '<div class="text-muted">Không có sản phẩm.</div>'}
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between mb-2"><span class="text-muted">Tiền hàng</span><strong>${money(order.tongTienHang)}</strong></div>
+            <div class="d-flex justify-content-between mb-2"><span class="text-muted">Giảm giá</span><strong>${money(order.tienGiamGia)}</strong></div>
+            <div class="d-flex justify-content-between mb-2"><span class="text-muted">Phí vận chuyển</span><strong>${money(order.phiShip)}</strong></div>
+            <div class="d-flex justify-content-between align-items-end">
+                <span class="text-muted">Tổng thanh toán</span>
+                <span class="pm-total">${money(order.tongThanhToan)}</span>
+            </div>
+            ${order.ghiChu ? `<div class="alert alert-light border mt-3 mb-0">${esc(order.ghiChu)}</div>` : ''}
+        `;
+    }
+
+    async function loadOrders() {
+        try {
+            const data = await fetchJson('/api/public/don-hang-cua-toi');
+            renderOrders(data?.danhSachDonHang || []);
+        } catch (error) {
+            els.loading.classList.add('d-none');
+            els.error.textContent = error.message;
+            els.error.classList.remove('d-none');
+        }
+    }
+
+    async function showDetail(id) {
+        els.detailTitle.textContent = 'Chi tiết đơn hàng';
+        els.detailDate.textContent = '';
+        els.detailError.classList.add('d-none');
+        els.detailContent.innerHTML = '<div class="text-center text-muted py-4"><i class="fa fa-spinner fa-spin me-1"></i>Đang tải chi tiết</div>';
+        detailModal.show();
+        try {
+            const data = await fetchJson(`/api/public/don-hang-cua-toi/${encodeURIComponent(id)}`);
+            renderDetail(data?.donHang || {});
+        } catch (error) {
+            els.detailContent.innerHTML = '';
+            els.detailError.textContent = error.message;
+            els.detailError.classList.remove('d-none');
+        }
+    }
+
+    async function cancelOrder(id) {
+        if (!confirm('Bạn muốn hủy đơn hàng này?')) return;
+        const button = document.querySelector(`[data-action="cancel"][data-id="${CSS.escape(String(id))}"]`);
+        const oldText = button?.innerHTML;
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Đang hủy';
+        }
+        try {
+            await fetchJson(`/api/public/don-hang-cua-toi/${encodeURIComponent(id)}/huy`, { method:'PUT' });
+            await loadOrders();
+        } catch (error) {
+            els.error.textContent = error.message;
+            els.error.classList.remove('d-none');
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = oldText;
+            }
+        }
+    }
+
+    els.list.addEventListener('click', event => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+        const id = button.dataset.id;
+        if (button.dataset.action === 'detail') showDetail(id);
+        if (button.dataset.action === 'cancel') cancelOrder(id);
+    });
+
+    loadOrders();
+</script>
+</body>
+</html>

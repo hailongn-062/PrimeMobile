@@ -2,7 +2,11 @@ package org.example.primemobile.controller;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.example.primemobile.entity.BienTheSanPham;
+import org.example.primemobile.entity.ChiTietGioHang;
 import org.example.primemobile.entity.GioHang;
+import org.example.primemobile.entity.HinhAnhSanPham;
+import org.example.primemobile.entity.SanPham;
 import org.example.primemobile.service.IGioHangService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.util.LinkedHashMap;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -71,20 +76,11 @@ public class GioHangController {
         GioHang gioHang = gioHangService.layGioHang(khachHangId, sessionId);
 
         if (gioHang == null) {
-            return ResponseEntity.ok(Map.of(
-                    "gioHang", (Object) null,
-                    "tongTienTamTinh", BigDecimal.ZERO,
-                    "soLuongSanPham", 0));
+            return ResponseEntity.ok(toResponse(null, BigDecimal.ZERO));
         }
 
         BigDecimal tongTien = gioHangService.tinhTongTienTamTinh(gioHang);
-        int soLuong = gioHang.getChiTietGioHangs() == null ? 0 : gioHang.getChiTietGioHangs().size();
-
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("gioHang", gioHang);
-        response.put("tongTienTamTinh", tongTien);
-        response.put("soLuongSanPham", soLuong);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(toResponse(gioHang, tongTien));
     }
 
     // =========================================================================
@@ -118,7 +114,7 @@ public class GioHangController {
                     request.bienTheSanPhamId(),
                     request.soLuong());
             BigDecimal tongTien = gioHangService.tinhTongTienTamTinh(gioHang);
-            return ResponseEntity.ok(Map.of("gioHang", gioHang, "tongTienTamTinh", tongTien));
+            return ResponseEntity.ok(toResponse(gioHang, tongTien));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (IllegalArgumentException e) {
@@ -146,7 +142,7 @@ public class GioHangController {
         try {
             GioHang gioHang = gioHangService.capNhatSoLuong(itemId, soLuongMoi);
             BigDecimal tongTien = gioHangService.tinhTongTienTamTinh(gioHang);
-            return ResponseEntity.ok(Map.of("gioHang", gioHang, "tongTienTamTinh", tongTien));
+            return ResponseEntity.ok(toResponse(gioHang, tongTien));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (IllegalArgumentException e) {
@@ -212,5 +208,87 @@ public class GioHangController {
             String sessionId,
             Integer bienTheSanPhamId,
             Integer soLuong) {
+    }
+
+    private GioHangResponse toResponse(GioHang gioHang, BigDecimal tongTienTamTinh) {
+        if (gioHang == null) {
+            return new GioHangResponse(null, null, List.of(), 0, BigDecimal.ZERO);
+        }
+
+        List<GioHangItemResponse> items = gioHang.getChiTietGioHangs() == null
+                ? List.of()
+                : gioHang.getChiTietGioHangs().stream()
+                .map(this::toItemResponse)
+                .toList();
+
+        int soLuongSanPham = items.stream()
+                .mapToInt(GioHangItemResponse::soLuong)
+                .sum();
+
+        return new GioHangResponse(
+                gioHang.getId(),
+                gioHang.getSessionId(),
+                items,
+                soLuongSanPham,
+                tongTienTamTinh == null ? BigDecimal.ZERO : tongTienTamTinh);
+    }
+
+    private GioHangItemResponse toItemResponse(ChiTietGioHang chiTiet) {
+        BienTheSanPham bienThe = chiTiet.getBienTheSanPham();
+        SanPham sanPham = bienThe.getSanPham();
+        BigDecimal donGia = bienThe.getGiaBan() == null ? BigDecimal.ZERO : bienThe.getGiaBan();
+        int soLuong = chiTiet.getSoLuong() == null ? 0 : chiTiet.getSoLuong();
+
+        return new GioHangItemResponse(
+                chiTiet.getId(),
+                bienThe.getId(),
+                sanPham.getId(),
+                sanPham.getTenSanPham(),
+                bienThe.getMaSku(),
+                bienThe.getMauSac(),
+                bienThe.getRamGb(),
+                bienThe.getLuuTruGb(),
+                donGia,
+                soLuong,
+                donGia.multiply(BigDecimal.valueOf(soLuong)),
+                resolveImageUrl(bienThe));
+    }
+
+    private String resolveImageUrl(BienTheSanPham bienThe) {
+        if (bienThe.getHinhAnhSanPhams() == null || bienThe.getHinhAnhSanPhams().isEmpty()) {
+            return null;
+        }
+
+        return bienThe.getHinhAnhSanPhams().stream()
+                .sorted(Comparator
+                        .comparing((HinhAnhSanPham img) -> !Boolean.TRUE.equals(img.getLaAnhChinh()))
+                        .thenComparing(img -> img.getThuTu() == null ? 0 : img.getThuTu()))
+                .map(HinhAnhSanPham::getDuongDan)
+                .filter(url -> url != null && !url.isBlank())
+                .findFirst()
+                .orElse(null);
+    }
+
+    public record GioHangResponse(
+            Integer gioHangId,
+            String sessionId,
+            List<GioHangItemResponse> items,
+            int soLuongSanPham,
+            BigDecimal tongTienTamTinh) {
+    }
+
+    public record GioHangItemResponse(
+            Integer itemId,
+            Integer bienTheSanPhamId,
+            Integer sanPhamId,
+            String tenSanPham,
+            String maSku,
+            String mauSac,
+            Integer ramGb,
+            Integer luuTruGb,
+            BigDecimal donGia,
+            int soLuong,
+            BigDecimal thanhTien,
+            String hinhAnh) {
     }
 }

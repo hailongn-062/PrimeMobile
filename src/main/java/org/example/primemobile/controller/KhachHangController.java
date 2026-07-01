@@ -104,6 +104,31 @@ public class KhachHangController {
     }
 
     // =========================================================================
+    // POST /api/admin/khach-hang/vang-lai
+    // =========================================================================
+
+    /**
+     * Tạo nhanh khách vãng lai (guest) — dùng trên màn hình POS.
+     * <p>
+     * Body JSON bắt buộc: {@code hoTen}, {@code soDienThoai}.
+     * Nếu SĐT đã tồn tại → trả về khách cũ (không tạo trùng).
+     *
+     * @param khachHang Dữ liệu khách vãng lai.
+     * @return HTTP 200 kèm {@link KhachHang} đã tạo hoặc đã tồn tại.
+     */
+    @PostMapping("/vang-lai")
+    public ResponseEntity<?> taoKhachVangLai(@RequestBody KhachHang khachHang) {
+        log.info("[KhachHangController] Tạo khách vãng lai — hoTen={}, sdt={}",
+                khachHang.getHoTen(), khachHang.getSoDienThoai());
+        try {
+            KhachHang result = khachHangService.taoKhachVangLai(khachHang);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // =========================================================================
     // Exception Handler cục bộ (fallback)
     // =========================================================================
 

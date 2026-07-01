@@ -62,7 +62,12 @@
                 <div class="row g-3">
                     <div class="col-md-3 col-sm-4 col-6" th:each="anh : ${hinhAnhs}">
                         <div class="card h-100 position-relative shadow-sm" th:classappend="${anh.laAnhChinh} ? 'border-primary border-2' : ''">
-                            <img th:src="${anh.duongDan}" class="card-img-top p-2" style="height: 150px; object-fit: contain;" alt="Ảnh sản phẩm">
+                            <img th:src="${anh.duongDan}" class="card-img-top p-2" style="height: 150px; object-fit: contain;" alt="Ảnh sản phẩm"
+                                 referrerpolicy="no-referrer"
+                                 onerror="this.style.display='none';this.nextElementSibling.classList.remove('d-none');">
+                            <div class="d-none align-items-center justify-content-center text-muted bg-light" style="height: 150px;">
+                                <i class="fa fa-mobile-alt fa-3x opacity-50"></i>
+                            </div>
                             
                             <div th:if="${anh.laAnhChinh}" class="position-absolute top-0 start-0 badge bg-primary m-1">
                                 Ảnh chính

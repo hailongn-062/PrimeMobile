@@ -48,4 +48,16 @@ public interface IKhachHangService {
      * @throws IllegalArgumentException nếu email hoặc SĐT mới trùng với khách khác.
      */
     KhachHang capNhat(Integer id, KhachHang khachHang);
+
+    /**
+     * Tạo nhanh khách vãng lai (guest) — không cần tài khoản {@code NguoiDung}.
+     * <p>
+     * Nếu SĐT đã tồn tại trong hệ thống → trả về khách hàng cũ thay vì tạo mới
+     * (tránh duplicate). Điều này giúp nhân viên không cần nhớ khách đã từng mua.
+     *
+     * @param khachHang Dữ liệu khách vãng lai (bắt buộc: {@code hoTen}, {@code soDienThoai}).
+     * @return {@link KhachHang} mới tạo hoặc đã tồn tại.
+     * @throws IllegalArgumentException nếu thiếu {@code hoTen} hoặc {@code soDienThoai}.
+     */
+    KhachHang taoKhachVangLai(KhachHang khachHang);
 }

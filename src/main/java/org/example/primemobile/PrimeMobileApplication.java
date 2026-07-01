@@ -6,7 +6,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableScheduling
-public class PrimeMobileApplication {
+public class 	PrimeMobileApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(PrimeMobileApplication.class, args);

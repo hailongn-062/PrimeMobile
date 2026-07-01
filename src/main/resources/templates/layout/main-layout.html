@@ -41,14 +41,14 @@
            ══════════════════════════════════════════════════════════ */
 
         :root {
-            --pm-primary:      #1565C0;
-            --pm-primary-dark: #0D47A1;
-            --pm-accent:       #FF6F00;
-            --pm-bg-light:     #F4F7FC;
-            --pm-text-dark:    #1A1A2E;
-            --pm-text-muted:   #6B7280;
+            --pm-primary:      #0d9488;
+            --pm-primary-dark: #115e59;
+            --pm-accent:       #d97706;
+            --pm-bg-light:     #f8fafc;
+            --pm-text-dark:    #0f172a;
+            --pm-text-muted:   #64748b;
             --pm-radius:       12px;
-            --pm-shadow:       0 2px 16px rgba(21,101,192,.10);
+            --pm-shadow:       0 4px 20px rgba(13, 148, 136, 0.08);
         }
 
         * { box-sizing: border-box; }
@@ -70,6 +70,10 @@
         .pm-cart-badge { position: relative; }
         .pm-cart-badge .badge { position: absolute; top: -6px; right: -8px; font-size: .6rem; min-width: 18px; }
 
+        /* Brand links (sub-nav) */
+        .pm-brand-link { transition: opacity .2s, transform .15s; }
+        .pm-brand-link:hover { opacity: 1 !important; transform: scale(1.08); }
+
         /* Product cards */
         .pm-product-card {
             border: none; border-radius: var(--pm-radius);
@@ -78,7 +82,7 @@
         }
         .pm-product-card:hover { transform: translateY(-5px); box-shadow: 0 8px 32px rgba(21,101,192,.18); }
         .pm-product-card img { height: 200px; object-fit: contain; padding: 12px; background: #fafbff; }
-        .pm-price { color: var(--pm-primary); font-weight: 700; font-size: 1.05rem; }
+        .pm-price { color: #ea580c; font-weight: 700; font-size: 1.05rem; }
 
         /* Category pills */
         .pm-cat-pill {

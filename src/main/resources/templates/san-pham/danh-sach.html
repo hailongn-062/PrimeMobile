@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle != null ? pageTitle + ' | PrimeMobile' : 'Sản phẩm | PrimeMobile'}">Sản phẩm | PrimeMobile</title>
+    <link rel="icon" href="/images/PrimeMobile_logo.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --pm-primary:#0d9488; --pm-primary-dark:#115e59; --pm-bg:#f8fafc; --pm-text:#0f172a; --pm-muted:#64748b; --pm-line:#e2e8f0; }
+        * { box-sizing:border-box; }
+        body { font-family:'Inter',sans-serif; background:var(--pm-bg); color:var(--pm-text); min-height:100vh; }
+        .pm-shell { max-width:1320px; }
+        .pm-page-title { font-weight:800; border-left:4px solid var(--pm-primary); padding-left:12px; }
+        .pm-layout { display:grid; grid-template-columns:280px minmax(0,1fr); gap:18px; align-items:start; }
+        .pm-sidebar { background:#fff; border:1px solid var(--pm-line); border-radius:8px; padding:16px; position:sticky; top:92px; box-shadow:0 8px 24px rgba(15,23,42,.05); }
+        .pm-filter-title { font-size:.84rem; font-weight:800; color:#334155; text-transform:uppercase; letter-spacing:0; margin:16px 0 8px; }
+        .pm-filter-link { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; border-radius:8px; color:#334155; text-decoration:none; font-weight:700; font-size:.9rem; }
+        .pm-filter-link:hover, .pm-filter-link.active { background:#e6fffb; color:#0f766e; }
+        .pm-product-card { border:0; border-radius:8px; overflow:hidden; background:#fff; box-shadow:0 8px 24px rgba(15,23,42,.06); transition:transform .18s, box-shadow .18s; }
+        .pm-product-card:hover { transform:translateY(-3px); box-shadow:0 12px 30px rgba(15,23,42,.12); }
+        .pm-img-wrap { height:210px; display:flex; align-items:center; justify-content:center; background:#fafbff; padding:14px; }
+        .pm-img-wrap img { max-width:100%; max-height:180px; object-fit:contain; }
+        .pm-image-fallback { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--pm-muted); gap:8px; text-align:center; }
+        .pm-image-fallback i { font-size:3rem; opacity:.35; }
+        .pm-image-fallback span { font-size:.75rem; font-weight:800; }
+        .pm-image-fallback.d-none { display:none!important; }
+        .pm-name { font-size:.94rem; line-height:1.35; font-weight:800; color:var(--pm-text); min-height:2.55em; }
+        .pm-price { color:#ea580c; font-weight:800; font-size:1.05rem; }
+        .btn-pm { background:var(--pm-primary); color:#fff; border:0; border-radius:8px; font-weight:800; }
+        .btn-pm:hover { background:var(--pm-primary-dark); color:#fff; }
+        .pm-pagination .page-link { color:var(--pm-primary); font-weight:700; }
+        .pm-pagination .active .page-link { background:var(--pm-primary); border-color:var(--pm-primary); color:#fff; }
+        .pm-empty { background:#fff; border:1px solid var(--pm-line); border-radius:8px; padding:44px 20px; text-align:center; }
+        @media (max-width: 991px) {
+            .pm-layout { grid-template-columns:1fr; }
+            .pm-sidebar { position:static; }
+        }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/header :: navbar}"></div>
+
+<main class="container pm-shell py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+        <div>
+            <h1 class="pm-page-title h3 mb-1" th:text="${filterLabel}">Tất cả sản phẩm</h1>
+            <div class="text-muted small">
+                <span th:text="${totalItems}">0</span> sản phẩm
+                <span th:if="${keyword != null and !#strings.isEmpty(keyword)}">
+                    cho từ khóa "<strong th:text="${keyword}">keyword</strong>"
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="pm-layout">
+        <aside class="pm-sidebar">
+            <form action="/san-pham" method="get" class="mb-3">
+                <input type="hidden" name="danhMucId" th:value="${selectedDanhMucId}" th:if="${selectedDanhMucId != null}">
+                <input type="hidden" name="hangSanXuatId" th:value="${selectedHangSanXuatId}" th:if="${selectedHangSanXuatId != null}">
+                <label class="form-label fw-bold" for="pm-product-search">Tìm kiếm</label>
+                <div class="input-group">
+                    <input id="pm-product-search" class="form-control" type="search" name="tuKhoa" th:value="${keyword}" placeholder="Tên, hãng, danh mục">
+                    <button class="btn btn-pm px-3" type="submit" title="Tìm kiếm"><i class="fa fa-search"></i></button>
+                </div>
+            </form>
+
+            <a class="pm-filter-link"
+               th:classappend="${selectedDanhMucId == null and selectedHangSanXuatId == null and (keyword == null or #strings.isEmpty(keyword))} ? ' active' : ''"
+               href="/san-pham">
+                <span><i class="fa fa-border-all me-2"></i>Tất cả</span>
+            </a>
+
+            <div class="pm-filter-title">Danh mục</div>
+            <a class="pm-filter-link"
+               th:each="dm : ${danhMucs}"
+               th:href="@{/san-pham(danhMucId=${dm.id}, tuKhoa=${keyword})}"
+               th:classappend="${selectedDanhMucId != null and selectedDanhMucId == dm.id} ? ' active' : ''">
+                <span th:text="${dm.tenDanhMuc}">Danh mục</span>
+                <i class="fa fa-chevron-right small"></i>
+            </a>
+
+            <div class="pm-filter-title">Hãng</div>
+            <a class="pm-filter-link"
+               th:each="hang : ${hangSanXuats}"
+               th:href="@{/san-pham(hangSanXuatId=${hang.id}, tuKhoa=${keyword})}"
+               th:classappend="${selectedHangSanXuatId != null and selectedHangSanXuatId == hang.id} ? ' active' : ''">
+                <span th:text="${hang.tenHang}">Hãng</span>
+                <i class="fa fa-chevron-right small"></i>
+            </a>
+        </aside>
+
+        <section>
+            <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-3" th:if="${sanPhams != null and !#lists.isEmpty(sanPhams)}">
+                <div class="col" th:each="sp : ${sanPhams}">
+                    <article class="card pm-product-card h-100">
+                        <a th:href="@{/san-pham/{id}(id=${sp.id})}" class="text-decoration-none">
+                            <div class="pm-img-wrap">
+                                <img th:if="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams) and sp.bienTheSanPhams[0].hinhAnhSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams[0].hinhAnhSanPhams)}"
+                                     th:src="${sp.bienTheSanPhams[0].hinhAnhSanPhams[0].duongDan}"
+                                     th:alt="${sp.tenSanPham}"
+                                     th:attr="data-brand=${sp.hangSanXuat != null ? sp.hangSanXuat.tenHang : ''}"
+                                     loading="lazy"
+                                     decoding="async"
+                                     referrerpolicy="no-referrer"
+                                     onerror="replaceProductImage(this)">
+                                <span th:if="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams) and sp.bienTheSanPhams[0].hinhAnhSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams[0].hinhAnhSanPhams)}"
+                                      class="pm-image-fallback d-none" aria-hidden="true">
+                                    <i class="fa fa-mobile-alt"></i>
+                                    <span th:text="${sp.hangSanXuat != null ? sp.hangSanXuat.tenHang : 'PrimeMobile'}">PrimeMobile</span>
+                                </span>
+                                <span th:unless="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams) and sp.bienTheSanPhams[0].hinhAnhSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams[0].hinhAnhSanPhams)}"
+                                      class="pm-image-fallback" aria-hidden="true">
+                                    <i class="fa fa-mobile-alt"></i>
+                                    <span th:text="${sp.hangSanXuat != null ? sp.hangSanXuat.tenHang : 'PrimeMobile'}">PrimeMobile</span>
+                                </span>
+                            </div>
+                        </a>
+                        <div class="card-body p-3 d-flex flex-column">
+                            <span class="badge bg-light text-secondary border align-self-start mb-2"
+                                  th:if="${sp.hangSanXuat != null}"
+                                  th:text="${sp.hangSanXuat.tenHang}">Hãng</span>
+                            <a th:href="@{/san-pham/{id}(id=${sp.id})}" class="pm-name text-decoration-none mb-2" th:text="${sp.tenSanPham}">Tên sản phẩm</a>
+                            <div class="mt-auto">
+                                <div class="pm-price mb-2" th:if="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams)}">
+                                    <th:block th:text="${#numbers.formatDecimal(sp.bienTheSanPhams[0].giaBan, 0, 'COMMA', 0, 'POINT')}">0</th:block>đ
+                                </div>
+                                <div class="text-muted small mb-2" th:unless="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams)}">Liên hệ báo giá</div>
+                                <a th:href="@{/san-pham/{id}(id=${sp.id})}" class="btn btn-pm btn-sm w-100">
+                                    <i class="fa fa-eye me-1"></i> Xem chi tiết
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+
+            <div th:if="${sanPhams == null or #lists.isEmpty(sanPhams)}" class="pm-empty">
+                <i class="fa fa-box-open fa-3x text-muted opacity-50 mb-3"></i>
+                <h2 class="h5 fw-bold">Không tìm thấy sản phẩm</h2>
+                <p class="text-muted mb-3">Hãy thử đổi từ khóa hoặc bỏ bộ lọc hiện tại.</p>
+                <a href="/san-pham" class="btn btn-pm px-4">Xem tất cả</a>
+            </div>
+
+            <nav class="mt-4 pm-pagination" th:if="${totalPages > 1}">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item" th:classappend="${!hasPrevious} ? ' disabled' : ''">
+                        <a class="page-link" th:href="@{/san-pham(page=${currentPage - 1}, danhMucId=${selectedDanhMucId}, hangSanXuatId=${selectedHangSanXuatId}, tuKhoa=${keyword})}">Trước</a>
+                    </li>
+                    <li class="page-item active">
+                        <span class="page-link"><span th:text="${currentPage + 1}">1</span>/<span th:text="${totalPages}">1</span></span>
+                    </li>
+                    <li class="page-item" th:classappend="${!hasNext} ? ' disabled' : ''">
+                        <a class="page-link" th:href="@{/san-pham(page=${currentPage + 1}, danhMucId=${selectedDanhMucId}, hangSanXuatId=${selectedHangSanXuatId}, tuKhoa=${keyword})}">Sau</a>
+                    </li>
+                </ul>
+            </nav>
+        </section>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function brandFallbackImage(img) {
+        const text = `${img.dataset.brand || ''} ${img.alt || ''}`.toLowerCase();
+        if (text.includes('apple') || text.includes('iphone')) return '/images/brands/apple.png';
+        if (text.includes('samsung')) return '/images/brands/samsung.png';
+        if (text.includes('xiaomi') || text.includes('redmi')) return '/images/brands/xiaomi.png';
+        if (text.includes('oppo')) return '/images/brands/oppo.png';
+        if (text.includes('vivo')) return '/images/brands/vivo.png';
+        return '/images/PrimeMobile_logo.png';
+    }
+
+    function replaceProductImage(img) {
+        const fallbackSrc = brandFallbackImage(img);
+        if (!img.dataset.fallbackApplied && img.getAttribute('src') !== fallbackSrc) {
+            img.dataset.fallbackApplied = 'true';
+            img.src = fallbackSrc;
+            img.classList.remove('d-none');
+            return;
+        }
+        img.classList.add('d-none');
+        const fallback = img.parentElement ? img.parentElement.querySelector('.pm-image-fallback') : null;
+        if (fallback) fallback.classList.remove('d-none');
+    }
+</script>
+</body>
+</html>

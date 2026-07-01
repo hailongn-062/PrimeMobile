@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle != null ? pageTitle + ' | PrimeMobile' : 'Chi tiết sản phẩm | PrimeMobile'}">Chi tiết sản phẩm | PrimeMobile</title>
+    <link rel="icon" href="/images/PrimeMobile_logo.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --pm-primary:#0d9488; --pm-primary-dark:#115e59; --pm-bg:#f8fafc; --pm-text:#0f172a; --pm-muted:#64748b; --pm-line:#e2e8f0; }
+        * { box-sizing:border-box; }
+        body { font-family:'Inter',sans-serif; background:var(--pm-bg); color:var(--pm-text); min-height:100vh; }
+        .pm-shell { max-width:1180px; }
+        .pm-panel { background:#fff; border:1px solid var(--pm-line); border-radius:8px; box-shadow:0 10px 30px rgba(15,23,42,.06); }
+        .pm-main-image { min-height:360px; display:flex; align-items:center; justify-content:center; background:#f9fbff; border-radius:8px; padding:20px; }
+        .pm-main-image img { max-width:100%; max-height:330px; object-fit:contain; }
+        .pm-image-fallback { width:100%; min-height:260px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:var(--pm-muted); }
+        .pm-image-fallback i { font-size:4rem; opacity:.35; }
+        .pm-image-fallback.d-none { display:none!important; }
+        .pm-price { color:#ea580c; font-weight:800; font-size:1.65rem; }
+        .pm-variant { border:1px solid var(--pm-line); border-radius:8px; padding:14px; background:#fff; }
+        .pm-variant + .pm-variant { margin-top:10px; }
+        .pm-variant:hover { border-color:var(--pm-primary); }
+        .pm-variant-unavailable { background:#f8fafc; opacity:.82; }
+        .pm-stock-badge { display:inline-flex; align-items:center; gap:5px; border-radius:999px; padding:4px 9px; font-size:.78rem; font-weight:800; }
+        .pm-stock-in { background:#dcfce7; color:#166534; }
+        .pm-stock-out { background:#fee2e2; color:#991b1b; }
+        .pm-color-dot { width:14px; height:14px; display:inline-block; border-radius:999px; border:1px solid #cbd5e1; vertical-align:-2px; }
+        .pm-qty { display:inline-grid; grid-template-columns:34px 54px 34px; height:34px; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; background:#fff; }
+        .pm-qty button { border:0; background:#f8fafc; color:#0f172a; font-weight:800; }
+        .pm-qty input { border:0; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0; text-align:center; font-weight:800; outline:0; }
+        .btn-pm { background:var(--pm-primary); color:#fff; border:0; border-radius:8px; font-weight:800; }
+        .btn-pm:hover { background:var(--pm-primary-dark); color:#fff; }
+        .btn-pm:disabled { background:#94a3b8; cursor:not-allowed; }
+        .btn-buy { background:#ea580c; color:#fff; border:0; border-radius:8px; font-weight:800; }
+        .btn-buy:hover { background:#c2410c; color:#fff; }
+        .pm-spec-table th { width:34%; color:#475569; font-weight:700; }
+        .pm-empty { border:1px dashed #cbd5e1; border-radius:8px; padding:16px; color:#64748b; background:#fff; }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/header :: navbar}"></div>
+
+<main class="container pm-shell py-4">
+    <div class="mb-3">
+        <a href="/san-pham" class="text-decoration-none fw-bold" style="color:var(--pm-primary);">
+            <i class="fa fa-arrow-left me-1"></i> Quay lại danh sách
+        </a>
+    </div>
+
+    <section class="pm-panel p-3 p-lg-4 mb-4">
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="pm-main-image">
+                    <img th:if="${bienTheSanPhams != null and !#lists.isEmpty(bienTheSanPhams) and bienTheSanPhams[0].hinhAnhSanPhams != null and !#lists.isEmpty(bienTheSanPhams[0].hinhAnhSanPhams)}"
+                         th:src="${bienTheSanPhams[0].hinhAnhSanPhams[0].duongDan}"
+                         th:alt="${sanPham.tenSanPham}"
+                         th:attr="data-brand=${sanPham.hangSanXuat != null ? sanPham.hangSanXuat.tenHang : ''}"
+                         referrerpolicy="no-referrer"
+                         onerror="replaceProductImage(this)">
+                    <div th:if="${bienTheSanPhams != null and !#lists.isEmpty(bienTheSanPhams) and bienTheSanPhams[0].hinhAnhSanPhams != null and !#lists.isEmpty(bienTheSanPhams[0].hinhAnhSanPhams)}"
+                         class="pm-image-fallback d-none">
+                        <i class="fa fa-mobile-alt"></i>
+                        <strong th:text="${sanPham.hangSanXuat != null ? sanPham.hangSanXuat.tenHang : 'PrimeMobile'}">PrimeMobile</strong>
+                    </div>
+                    <div th:unless="${bienTheSanPhams != null and !#lists.isEmpty(bienTheSanPhams) and bienTheSanPhams[0].hinhAnhSanPhams != null and !#lists.isEmpty(bienTheSanPhams[0].hinhAnhSanPhams)}"
+                         class="pm-image-fallback">
+                        <i class="fa fa-mobile-alt"></i>
+                        <strong th:text="${sanPham.hangSanXuat != null ? sanPham.hangSanXuat.tenHang : 'PrimeMobile'}">PrimeMobile</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <span class="badge bg-light text-secondary border mb-2" th:if="${sanPham.hangSanXuat != null}" th:text="${sanPham.hangSanXuat.tenHang}">Hãng</span>
+                <h1 class="h3 fw-bold mb-2" th:text="${sanPham.tenSanPham}">Tên sản phẩm</h1>
+                <p class="text-muted" th:if="${sanPham.moTaNgan != null and !#strings.isEmpty(sanPham.moTaNgan)}" th:text="${sanPham.moTaNgan}">Mô tả ngắn</p>
+                <div class="pm-price mb-3" th:if="${bienTheSanPhams != null and !#lists.isEmpty(bienTheSanPhams)}">
+                    <span th:text="${#numbers.formatDecimal(bienTheSanPhams[0].giaBan, 0, 'COMMA', 0, 'POINT')}">0</span>đ
+                </div>
+
+                <h2 class="h6 fw-bold mb-2">Phiên bản</h2>
+                <div th:if="${bienTheSanPhams != null and !#lists.isEmpty(bienTheSanPhams)}">
+                    <div class="pm-variant"
+                         th:each="bt : ${bienTheSanPhams}"
+                         th:with="tonKho=${tonKhoTheoBienThe != null and tonKhoTheoBienThe[bt.id] != null ? tonKhoTheoBienThe[bt.id] : 0},
+                                  coTheBan=${soLuongCoTheBanTheoBienThe != null and soLuongCoTheBanTheoBienThe[bt.id] != null ? soLuongCoTheBanTheoBienThe[bt.id] : 0},
+                                  duocBan=${bt.trangThai == 'con_hang' and coTheBan > 0},
+                                  mau=${bt.maMauHex != null and !#strings.isEmpty(bt.maMauHex) ? bt.maMauHex : '#e5e7eb'}"
+                         th:classappend="${duocBan} ? '' : ' pm-variant-unavailable'">
+                        <div class="d-flex flex-column flex-xl-row justify-content-between gap-3">
+                            <div>
+                                <div class="fw-bold">
+                                    <span class="pm-color-dot me-1" th:style="'background-color:' + ${mau}"></span>
+                                    <span th:text="${bt.mauSac}">Màu</span>
+                                    <span class="text-muted" th:text="' · ' + ${bt.ramGb} + 'GB/' + ${bt.luuTruGb} + 'GB'"> · RAM/ROM</span>
+                                </div>
+                                <div class="small text-muted" th:text="${bt.maSku}">SKU</div>
+                                <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
+                                    <span class="pm-stock-badge pm-stock-in" th:if="${duocBan}">
+                                        <i class="fa fa-check-circle"></i> Còn hàng
+                                    </span>
+                                    <span class="pm-stock-badge pm-stock-out" th:unless="${duocBan}">
+                                        <i class="fa fa-times-circle"></i> Hết hàng
+                                    </span>
+                                    <span class="small text-muted" th:if="${duocBan}">
+                                        Có thể đặt: <strong th:text="${coTheBan}">0</strong>
+                                    </span>
+                                    <span class="small text-muted" th:unless="${duocBan}">
+                                        Chỉ bán khi tồn kho online lớn hơn <span th:text="${tonKhoToiThieuDeBan}">5</span>.
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="text-xl-end">
+                                <div class="fw-bold text-danger mb-2" th:text="${#numbers.formatDecimal(bt.giaBan, 0, 'COMMA', 0, 'POINT')} + 'đ'">0đ</div>
+                                <div class="d-flex flex-wrap justify-content-xl-end align-items-center gap-2">
+                                    <div class="pm-qty" th:if="${duocBan}">
+                                        <button type="button" title="Giảm số lượng" onclick="stepQty(this, -1)">-</button>
+                                        <input type="number" value="1" min="1" th:max="${coTheBan}" inputmode="numeric" aria-label="Số lượng">
+                                        <button type="button" title="Tăng số lượng" onclick="stepQty(this, 1)">+</button>
+                                    </div>
+                                    <button class="btn btn-pm btn-sm"
+                                            type="button"
+                                            th:attr="data-bien-the-id=${bt.id},data-max=${coTheBan}"
+                                            th:disabled="${!duocBan}"
+                                            onclick="addToCart(this, false)">
+                                        <i class="fa fa-cart-plus me-1"></i> Thêm
+                                    </button>
+                                    <button class="btn btn-buy btn-sm"
+                                            type="button"
+                                            th:attr="data-bien-the-id=${bt.id},data-max=${coTheBan}"
+                                            th:disabled="${!duocBan}"
+                                            onclick="addToCart(this, true)">
+                                        <i class="fa fa-credit-card me-1"></i> Mua ngay
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pm-empty" th:if="${bienTheSanPhams == null or #lists.isEmpty(bienTheSanPhams)}">
+                    Sản phẩm này chưa có phiên bản để bán.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="pm-panel p-3 p-lg-4 mb-4">
+        <h2 class="h5 fw-bold mb-3">Thông số kỹ thuật</h2>
+        <div class="table-responsive" th:if="${thongSoKyThuats != null and !#lists.isEmpty(thongSoKyThuats)}">
+            <table class="table table-striped align-middle pm-spec-table mb-0">
+                <tbody>
+                <tr th:each="ts : ${thongSoKyThuats}">
+                    <th>
+                        <span th:if="${ts.nhom != null and !#strings.isEmpty(ts.nhom)}" th:text="${ts.nhom} + ' · '">Nhóm · </span>
+                        <span th:text="${ts.tenThongSo}">Thông số</span>
+                    </th>
+                    <td th:text="${ts.giaTri}">Giá trị</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="pm-empty" th:if="${thongSoKyThuats == null or #lists.isEmpty(thongSoKyThuats)}">
+            Chưa có thông số kỹ thuật cho sản phẩm này.
+        </div>
+    </section>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:inline="javascript">
+    const currentCustomerId = /*[[${session.CURRENT_CUSTOMER != null ? session.CURRENT_CUSTOMER.khachHangId : null}]]*/ null;
+
+    function brandFallbackImage(img) {
+        const text = `${img.dataset.brand || ''} ${img.alt || ''}`.toLowerCase();
+        if (text.includes('apple') || text.includes('iphone')) return '/images/brands/apple.png';
+        if (text.includes('samsung')) return '/images/brands/samsung.png';
+        if (text.includes('xiaomi') || text.includes('redmi')) return '/images/brands/xiaomi.png';
+        if (text.includes('oppo')) return '/images/brands/oppo.png';
+        if (text.includes('vivo')) return '/images/brands/vivo.png';
+        return '/images/PrimeMobile_logo.png';
+    }
+
+    function replaceProductImage(img) {
+        const fallbackSrc = brandFallbackImage(img);
+        if (!img.dataset.fallbackApplied && img.getAttribute('src') !== fallbackSrc) {
+            img.dataset.fallbackApplied = 'true';
+            img.src = fallbackSrc;
+            img.classList.remove('d-none');
+            return;
+        }
+        img.classList.add('d-none');
+        const fallback = img.parentElement ? img.parentElement.querySelector('.pm-image-fallback') : null;
+        if (fallback) fallback.classList.remove('d-none');
+    }
+
+    function stepQty(button, delta) {
+        const input = button.parentElement.querySelector('input');
+        const max = Number(input.max || 1);
+        const next = Math.min(Math.max(Number(input.value || 1) + delta, 1), max);
+        input.value = next;
+    }
+
+    function readQty(button) {
+        const variant = button.closest('.pm-variant');
+        const input = variant ? variant.querySelector('.pm-qty input') : null;
+        const max = Number(button.dataset.max || 0);
+        const qty = Number(input ? input.value : 1);
+        if (!Number.isInteger(qty) || qty < 1 || qty > max) {
+            throw new Error(`Bạn chỉ có thể đặt từ 1 đến ${max} sản phẩm.`);
+        }
+        return qty;
+    }
+
+    function getGuestSessionId() {
+        const key = 'pm_guest_session_id';
+        let sessionId = localStorage.getItem(key);
+        if (!sessionId) {
+            sessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+            localStorage.setItem(key, sessionId);
+        }
+        return sessionId;
+    }
+
+    async function addToCart(button, buyNow) {
+        let soLuong;
+        try {
+            soLuong = readQty(button);
+        } catch (error) {
+            alert(error.message);
+            return;
+        }
+
+        const bienTheSanPhamId = Number(button.dataset.bienTheId);
+        const oldHtml = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Đang xử lý';
+
+        try {
+            const response = await fetch('/api/public/gio-hang/them', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'include',
+                body: JSON.stringify({
+                    khachHangId: currentCustomerId,
+                    sessionId: currentCustomerId ? null : getGuestSessionId(),
+                    bienTheSanPhamId,
+                    soLuong
+                })
+            });
+
+            if (!response.ok) {
+                const message = await response.text();
+                throw new Error(message || 'Không thể thêm vào giỏ hàng.');
+            }
+
+            const cartCount = document.getElementById('cart-count');
+            if (cartCount) cartCount.textContent = String(Number(cartCount.textContent || 0) + soLuong);
+            if (buyNow) {
+                window.location.href = currentCustomerId ? '/thanh-toan' : '/dang-nhap';
+                return;
+            }
+            alert('Đã thêm sản phẩm vào giỏ hàng.');
+        } catch (error) {
+            alert(error.message || 'Có lỗi xảy ra khi thêm sản phẩm.');
+        } finally {
+            button.disabled = false;
+            button.innerHTML = oldHtml;
+        }
+    }
+</script>
+</body>
+</html>

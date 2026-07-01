@@ -3,162 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${pageTitle != null ? pageTitle + ' | PrimeMobile Admin' : 'Đăng nhập | PrimeMobile Admin'}">Đăng nhập</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
-
-    <!-- Bootstrap 5.3 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-          rel="stylesheet"
-          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-          crossorigin="anonymous">
-    <!-- Font Awesome 6 -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-          rel="stylesheet" crossorigin="anonymous">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
+    <title th:text="${pageTitle != null ? pageTitle + ' | PrimeMobile' : 'Đăng nhập | PrimeMobile'}">Đăng nhập | PrimeMobile</title>
+    <link rel="icon" href="/images/PrimeMobile_logo.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --pm-primary:      #1565C0;
-            --pm-primary-dark: #0D47A1;
-            --pm-accent:       #FF6F00;
+        :root { --pm-primary:#0d9488; --pm-primary-dark:#115e59; --pm-accent:#dc2626; --pm-bg:#f5f7fb; --pm-text:#0f172a; --pm-muted:#64748b; --pm-line:#e2e8f0; }
+        * { box-sizing:border-box; }
+        body { font-family:'Inter',sans-serif; min-height:100vh; background:var(--pm-bg); color:var(--pm-text); }
+        .pm-auth-page { min-height:100vh; display:flex; align-items:center; padding:32px 0; }
+        .pm-auth-shell { max-width:1040px; }
+        .pm-auth-card { display:grid; grid-template-columns:1fr 420px; background:#fff; border:1px solid var(--pm-line); border-radius:8px; overflow:hidden; box-shadow:0 18px 50px rgba(15,23,42,.10); }
+        .pm-auth-side { background:#115e59; color:#fff; padding:34px; display:flex; flex-direction:column; justify-content:space-between; min-height:560px; }
+        .pm-logo { width:170px; height:auto; object-fit:contain; }
+        .pm-side-title { font-size:2rem; line-height:1.15; font-weight:900; margin:28px 0 12px; }
+        .pm-side-list { display:grid; gap:12px; margin-top:28px; }
+        .pm-side-item { display:flex; gap:10px; align-items:center; color:rgba(255,255,255,.9); font-weight:700; }
+        .pm-side-item i { width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; background:rgba(255,255,255,.14); color:#fbbf24; }
+        .pm-auth-form { padding:34px; }
+        .pm-eyebrow { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:#fef2f2; color:var(--pm-accent); font-weight:800; font-size:.78rem; }
+        .pm-form-title { font-weight:900; margin:14px 0 6px; }
+        .pm-field { margin-bottom:16px; }
+        .pm-field label { font-size:.84rem; color:#334155; font-weight:800; margin-bottom:7px; }
+        .pm-input { display:grid; grid-template-columns:42px minmax(0,1fr) 38px; align-items:center; border:1px solid #cbd5e1; border-radius:8px; background:#fff; min-height:46px; transition:border-color .18s, box-shadow .18s; }
+        .pm-input:focus-within { border-color:var(--pm-primary); box-shadow:0 0 0 3px rgba(13,148,136,.13); }
+        .pm-input i { color:#94a3b8; text-align:center; }
+        .pm-input input { width:100%; border:0; outline:0; padding:11px 0; font-weight:600; color:var(--pm-text); }
+        .pm-input input::placeholder { color:#94a3b8; font-weight:500; }
+        .pm-icon-btn { border:0; background:transparent; color:#94a3b8; width:38px; height:38px; }
+        .btn-pm { width:100%; border:0; border-radius:8px; background:#0d9488; color:#fff; font-weight:900; padding:12px 16px; }
+        .btn-pm:hover { background:#115e59; color:#fff; }
+        .pm-link { color:#0d9488; font-weight:800; text-decoration:none; }
+        .pm-link:hover { color:#115e59; }
+        .pm-alert { border:1px solid #fecaca; background:#fef2f2; color:#991b1b; border-radius:8px; padding:10px 12px; }
+        @media (max-width: 900px) {
+            .pm-auth-card { grid-template-columns:1fr; }
+            .pm-auth-side { min-height:auto; padding:24px; }
+            .pm-side-title { font-size:1.45rem; }
+            .pm-auth-form { padding:24px; }
         }
-        * { box-sizing: border-box; }
-        body {
-            font-family: 'Inter', sans-serif;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #0D47A1 0%, #1976D2 50%, #283593 100%);
-            display: flex; align-items: center; justify-content: center;
-        }
-        .login-card {
-            background: #fff;
-            border-radius: 20px;
-            box-shadow: 0 24px 64px rgba(0,0,0,.25);
-            padding: 2.5rem 2.5rem;
-            width: 100%;
-            max-width: 420px;
-        }
-        .login-logo {
-            width: 60px; height: 60px; border-radius: 16px;
-            background: linear-gradient(135deg, var(--pm-primary), var(--pm-primary-dark));
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.6rem; margin: 0 auto 1rem;
-            box-shadow: 0 8px 24px rgba(21,101,192,.35);
-        }
-        .form-control {
-            border-radius: 10px; padding: .65rem 1rem;
-            border: 1.5px solid #E0E7FF;
-            transition: border-color .2s, box-shadow .2s;
-        }
-        .form-control:focus {
-            border-color: var(--pm-primary);
-            box-shadow: 0 0 0 3px rgba(21,101,192,.15);
-        }
-        .input-group-text {
-            border-radius: 10px 0 0 10px !important;
-            border: 1.5px solid #E0E7FF; border-right: none;
-            background: #F8FAFF; color: #9CA3AF;
-        }
-        .input-group .form-control { border-radius: 0 10px 10px 0 !important; border-left: none; }
-        .input-group:focus-within .input-group-text { border-color: var(--pm-primary); }
-        .btn-login {
-            background: linear-gradient(135deg, var(--pm-primary), var(--pm-primary-dark));
-            border: none; border-radius: 10px; color: #fff;
-            font-weight: 700; font-size: 1rem; padding: .7rem;
-            width: 100%; transition: all .2s;
-            box-shadow: 0 4px 16px rgba(21,101,192,.35);
-        }
-        .btn-login:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(21,101,192,.45); color: #fff; }
-        .btn-login:active { transform: translateY(0); }
-        .alert-danger { border-radius: 10px; border: none; background: #FFF0F0; color: #C0392B; }
-        .divider { height: 1px; background: #E0E7FF; margin: 1.25rem 0; }
-        .show-pw-btn { cursor: pointer; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #9CA3AF; background: none; border: none; padding: 0; z-index: 5; }
     </style>
 </head>
 <body>
+<main class="pm-auth-page">
+    <div class="container pm-auth-shell">
+        <div class="pm-auth-card">
+            <section class="pm-auth-side">
+                <div>
+                    <a href="/"><img src="/images/PrimeMobile_logo.png" alt="PrimeMobile" class="pm-logo"></a>
+                    <h1 class="pm-side-title">Mua điện thoại nhanh hơn với tài khoản PrimeMobile</h1>
+                    <p class="mb-0" style="color:rgba(255,255,255,.78);">Theo dõi đơn hàng, lưu địa chỉ và nhận ưu đãi đúng lúc.</p>
+                    <div class="pm-side-list">
+                        <div class="pm-side-item"><i class="fa fa-receipt"></i><span>Tra cứu đơn hàng</span></div>
+                        <div class="pm-side-item"><i class="fa fa-shield-halved"></i><span>Bảo hành chính hãng</span></div>
+                        <div class="pm-side-item"><i class="fa fa-truck-fast"></i><span>Giao hàng 2-4 giờ</span></div>
+                    </div>
+                </div>
+                <a href="/" class="text-white text-decoration-none fw-bold"><i class="fa fa-arrow-left me-2"></i>Về trang chủ</a>
+            </section>
 
-<div class="login-card">
+            <section class="pm-auth-form">
+                <span class="pm-eyebrow"><i class="fa fa-user-check"></i> Khách hàng</span>
+                <h2 class="pm-form-title h3">Đăng nhập</h2>
+                <p class="text-muted mb-4">Nhập thông tin để tiếp tục mua hàng.</p>
 
-    <!-- Logo & Tiêu đề -->
-    <div class="text-center mb-4">
-        <div class="login-logo">📱</div>
-        <h1 class="fw-bold mb-1" style="font-size:1.5rem; color:#1A1A2E;">PrimeMobile</h1>
-        <p class="text-muted small mb-0">Đăng nhập hệ thống</p>
-    </div>
+                <div th:if="${errorMessage}" class="pm-alert d-flex align-items-center gap-2 mb-3" role="alert">
+                    <i class="fa fa-circle-exclamation"></i>
+                    <span th:text="${errorMessage}">Lỗi đăng nhập</span>
+                </div>
 
-    <!-- Alert lỗi (chỉ hiện khi có ?error=true) -->
-    <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center gap-2 mb-3 py-2" role="alert">
-        <i class="fa fa-exclamation-circle"></i>
-        <span th:text="${errorMessage}">Lỗi đăng nhập</span>
-    </div>
+                <form action="/dang-nhap" method="post" id="loginForm" novalidate>
+                    <div class="pm-field">
+                        <label for="email">Email hoặc số điện thoại</label>
+                        <div class="pm-input">
+                            <i class="fa fa-user"></i>
+                            <input type="text" id="email" name="email" placeholder="email@example.com hoặc 090..." autocomplete="username" required autofocus>
+                            <span></span>
+                        </div>
+                    </div>
 
-    <!-- Form đăng nhập -->
-    <form action="/dang-nhap" method="post" id="loginForm" novalidate>
+                    <div class="pm-field">
+                        <label for="matKhau">Mật khẩu</label>
+                        <div class="pm-input">
+                            <i class="fa fa-lock"></i>
+                            <input type="password" id="matKhau" name="matKhau" placeholder="Nhập mật khẩu" autocomplete="current-password" required>
+                            <button type="button" class="pm-icon-btn" id="togglePw" title="Hiện hoặc ẩn mật khẩu">
+                                <i class="fa fa-eye-slash" id="pwIcon"></i>
+                            </button>
+                        </div>
+                    </div>
 
-        <!-- Email hoặc Số điện thoại -->
-        <div class="mb-3">
-            <label for="email" class="form-label fw-semibold small text-muted">Email hoặc Số điện thoại</label>
-            <div class="input-group">
-                <span class="input-group-text"><i class="fa fa-user fa-sm"></i></span>
-                <input type="text" class="form-control" id="email" name="email"
-                       placeholder="Nhập email hoặc số điện thoại..."
-                       autocomplete="username" required autofocus>
-            </div>
+                    <button type="submit" class="btn btn-pm mt-2" id="btnLogin">
+                        <i class="fa fa-right-to-bracket me-2"></i>Đăng nhập
+                    </button>
+                </form>
+
+                <div class="mt-4 pt-3 border-top text-center">
+                    <span class="text-muted">Chưa có tài khoản?</span>
+                    <a href="/dang-ky" class="pm-link ms-1">Đăng ký ngay</a>
+                </div>
+            </section>
         </div>
-
-        <!-- Mật khẩu -->
-        <div class="mb-4">
-            <label for="matKhau" class="form-label fw-semibold small text-muted">Mật khẩu</label>
-            <div class="input-group position-relative">
-                <span class="input-group-text"><i class="fa fa-lock fa-sm"></i></span>
-                <input type="password" class="form-control pe-5" id="matKhau" name="matKhau"
-                       placeholder="••••••••" autocomplete="current-password" required>
-                <button type="button" class="show-pw-btn" id="togglePw" title="Hiện/ẩn mật khẩu">
-                    <i class="fa fa-eye-slash fa-sm" id="pwIcon"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- Nút đăng nhập -->
-        <button type="submit" class="btn btn-login" id="btnLogin">
-            <i class="fa fa-sign-in-alt me-2"></i>Đăng nhập
-        </button>
-
-    </form>
-
-    <div class="divider"></div>
-
-    <!-- Footer -->
-    <div class="text-center mt-3">
-        <p class="text-muted mb-2" style="font-size:.9rem;">
-            Chưa có tài khoản? <a href="/dang-ky" class="fw-bold text-decoration-none" style="color: var(--pm-primary);">Đăng ký ngay</a>
-        </p>
-        <p class="text-muted mb-0" style="font-size:.85rem;">
-            <a href="/" class="text-decoration-none text-muted">
-                <i class="fa fa-arrow-left me-1"></i>Trở về trang chủ (Khách vãng lai)
-            </a>
-        </p>
     </div>
-</div>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Toggle hiện/ẩn mật khẩu
     const toggleBtn = document.getElementById('togglePw');
-    const pwInput   = document.getElementById('matKhau');
-    const pwIcon    = document.getElementById('pwIcon');
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', function () {
-            const isHidden = pwInput.type === 'password';
-            pwInput.type = isHidden ? 'text' : 'password';
-            pwIcon.className = isHidden ? 'fa fa-eye fa-sm' : 'fa fa-eye-slash fa-sm';
-        });
-    }
+    const pwInput = document.getElementById('matKhau');
+    const pwIcon = document.getElementById('pwIcon');
+    toggleBtn?.addEventListener('click', () => {
+        const show = pwInput.type === 'password';
+        pwInput.type = show ? 'text' : 'password';
+        pwIcon.className = show ? 'fa fa-eye' : 'fa fa-eye-slash';
+    });
 
-    // Loading state khi submit
-    document.getElementById('loginForm')?.addEventListener('submit', function () {
+    document.getElementById('loginForm')?.addEventListener('submit', () => {
         const btn = document.getElementById('btnLogin');
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang đăng nhập...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang đăng nhập';
         btn.disabled = true;
     });
 </script>

@@ -110,4 +110,55 @@ public class KhachHangServiceImpl implements IKhachHangService {
         log.info("[KhachHang] Đã cập nhật thông tin — id={}, hoTen={}", updated.getId(), updated.getHoTen());
         return updated;
     }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Luồng xử lý:
+     * <ol>
+     * <li>Validate {@code hoTen} và {@code soDienThoai} bắt buộc.</li>
+     * <li>Kiểm tra SĐT đã tồn tại → trả về khách cũ (tránh duplicate).</li>
+     * <li>Tạo mới {@code KhachHang} với {@code nguoiDung = null} (guest).</li>
+     * </ol>
+     */
+    @Override
+    @Transactional
+    public KhachHang taoKhachVangLai(KhachHang khachHangMoi) {
+        // Validate bắt buộc
+        if (khachHangMoi.getHoTen() == null || khachHangMoi.getHoTen().isBlank()) {
+            throw new IllegalArgumentException("Họ tên không được để trống.");
+        }
+        if (khachHangMoi.getSoDienThoai() == null || khachHangMoi.getSoDienThoai().isBlank()) {
+            throw new IllegalArgumentException("Số điện thoại không được để trống.");
+        }
+
+        String sdt = khachHangMoi.getSoDienThoai().trim();
+        String hoTen = khachHangMoi.getHoTen().trim();
+
+        // Kiểm tra SĐT đã tồn tại → trả về khách cũ (tránh tạo trùng)
+        var existing = khachHangRepository.findBySoDienThoai(sdt);
+        if (existing.isPresent()) {
+            log.info("[KhachHang] SĐT '{}' đã tồn tại → trả về khách hàng cũ id={}",
+                    sdt, existing.get().getId());
+            return existing.get();
+        }
+
+        // Tạo mới khách vãng lai (nguoiDung = null → không có tài khoản)
+        KhachHang khachMoi = KhachHang.builder()
+                .hoTen(hoTen)
+                .soDienThoai(sdt)
+                .email(khachHangMoi.getEmail() != null && !khachHangMoi.getEmail().isBlank()
+                        ? khachHangMoi.getEmail().trim().toLowerCase()
+                        : null)
+                .gioiTinh(khachHangMoi.getGioiTinh())
+                .nguoiDung(null) // Guest — không liên kết tài khoản
+                .ngayTao(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        khachMoi = khachHangRepository.save(khachMoi);
+        log.info("[KhachHang] Đã tạo khách vãng lai — id={}, hoTen='{}', sdt='{}'",
+                khachMoi.getId(), khachMoi.getHoTen(), khachMoi.getSoDienThoai());
+        return khachMoi;
+    }
 }

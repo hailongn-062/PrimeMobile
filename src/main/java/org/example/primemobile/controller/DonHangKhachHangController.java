@@ -5,16 +5,21 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.example.primemobile.dto.auth.SessionKhachHang;
+import org.example.primemobile.entity.BienTheSanPham;
+import org.example.primemobile.entity.ChiTietDonHang;
 import org.example.primemobile.entity.DonHang;
+import org.example.primemobile.entity.SanPham;
 import org.example.primemobile.repository.DonHangRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * REST Controller lịch sử đơn hàng dành cho Khách Hàng đã đăng nhập.
@@ -74,7 +79,11 @@ public class DonHangKhachHangController {
 
         log.info("[DonHangKhachHang] Lấy lịch sử — khachHangId={}", session.getKhachHangId());
 
-        List<DonHang> danhSach = donHangRepository.findByKhachHangIdOrderByNgayDatDesc(session.getKhachHangId());
+        List<Map<String, Object>> danhSach = donHangRepository
+                .findByKhachHangIdOrderByNgayDatDesc(session.getKhachHangId())
+                .stream()
+                .map(this::buildOrderSummary)
+                .toList();
 
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("success", true);
@@ -131,7 +140,10 @@ public class DonHangKhachHangController {
                     .body(buildErrorResponse("Bạn không có quyền xem đơn hàng này."));
         }
 
-        return ResponseEntity.ok(donHang);
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+        response.put("donHang", buildOrderDetail(donHang));
+        return ResponseEntity.ok(response);
     }
 
     // =========================================================================
@@ -209,7 +221,7 @@ public class DonHangKhachHangController {
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("success", true);
         response.put("message", "Hủy đơn hàng thành công.");
-        response.put("donHang", donHang);
+        response.put("donHang", buildOrderSummary(donHang));
 
         return ResponseEntity.ok(response);
     }
@@ -235,5 +247,108 @@ public class DonHangKhachHangController {
         r.put("success", false);
         r.put("message", message);
         return r;
+    }
+
+    private Map<String, Object> buildOrderSummary(DonHang donHang) {
+        Map<String, Object> r = new LinkedHashMap<>();
+        r.put("id", donHang.getId());
+        r.put("maDonHang", donHang.getMaDonHang());
+        r.put("ngayDat", donHang.getNgayDat());
+        r.put("trangThai", donHang.getTrangThai());
+        r.put("trangThaiText", labelTrangThai(donHang.getTrangThai()));
+        r.put("trangThaiThanhToan", donHang.getTrangThaiThanhToan());
+        r.put("trangThaiThanhToanText", labelThanhToan(donHang.getTrangThaiThanhToan()));
+        r.put("kenhBan", donHang.getKenhBan());
+        r.put("tongTienHang", valueOrZero(donHang.getTongTienHang()));
+        r.put("tienGiamGia", valueOrZero(donHang.getTienGiamGia()));
+        r.put("phiShip", valueOrZero(donHang.getPhiShip()));
+        r.put("tongThanhToan", calculateTotal(donHang));
+        r.put("nguoiNhan", donHang.getHoTenNguoiNhan());
+        r.put("soDienThoaiNhan", donHang.getSdtNguoiNhan());
+        r.put("diaChiNhan", buildAddress(donHang));
+        r.put("ghiChu", donHang.getGhiChu());
+        r.put("coTheHuy", "cho_xac_nhan".equals(donHang.getTrangThai()));
+        return r;
+    }
+
+    private Map<String, Object> buildOrderDetail(DonHang donHang) {
+        Map<String, Object> r = buildOrderSummary(donHang);
+        List<Map<String, Object>> items = donHang.getChiTietDonHangs().stream()
+                .map(this::buildOrderItem)
+                .toList();
+        r.put("chiTiet", items);
+        return r;
+    }
+
+    private Map<String, Object> buildOrderItem(ChiTietDonHang chiTiet) {
+        BienTheSanPham bienThe = chiTiet.getBienTheSanPham();
+        SanPham sanPham = bienThe != null ? bienThe.getSanPham() : null;
+
+        Map<String, Object> r = new LinkedHashMap<>();
+        r.put("id", chiTiet.getId());
+        r.put("bienTheId", bienThe != null ? bienThe.getId() : null);
+        r.put("tenSanPham", sanPham != null ? sanPham.getTenSanPham() : "Sản phẩm");
+        r.put("maSku", bienThe != null ? bienThe.getMaSku() : null);
+        r.put("mauSac", bienThe != null ? bienThe.getMauSac() : null);
+        r.put("ramGb", bienThe != null ? bienThe.getRamGb() : null);
+        r.put("luuTruGb", bienThe != null ? bienThe.getLuuTruGb() : null);
+        r.put("soLuong", chiTiet.getSoLuong());
+        r.put("donGiaBan", valueOrZero(chiTiet.getDonGiaBan()));
+        r.put("thanhTien", chiTiet.getThanhTien() != null
+                ? chiTiet.getThanhTien()
+                : valueOrZero(chiTiet.getDonGiaBan()).multiply(BigDecimal.valueOf(chiTiet.getSoLuong())));
+        return r;
+    }
+
+    private BigDecimal calculateTotal(DonHang donHang) {
+        if (donHang.getTongThanhToan() != null) {
+            return donHang.getTongThanhToan();
+        }
+        return valueOrZero(donHang.getTongTienHang())
+                .subtract(valueOrZero(donHang.getTienGiamGia()))
+                .add(valueOrZero(donHang.getPhiShip()));
+    }
+
+    private BigDecimal valueOrZero(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
+    }
+
+    private String buildAddress(DonHang donHang) {
+        return Stream.of(
+                        donHang.getDiaChiGiaCuThe(),
+                        donHang.getPhuongXaGiao(),
+                        donHang.getQuanHuyenGiao(),
+                        donHang.getTinhThanhGiao()
+                )
+                .filter(part -> part != null && !part.isBlank())
+                .reduce((left, right) -> left + ", " + right)
+                .orElse("");
+    }
+
+    private String labelTrangThai(String status) {
+        if (status == null) {
+            return "";
+        }
+        return switch (status) {
+            case "cho_xac_nhan" -> "Chờ xác nhận";
+            case "da_xac_nhan" -> "Đã xác nhận";
+            case "dang_giao" -> "Đang giao";
+            case "da_giao" -> "Đã giao";
+            case "da_huy" -> "Đã hủy";
+            default -> status;
+        };
+    }
+
+    private String labelThanhToan(String status) {
+        if (status == null) {
+            return "";
+        }
+        return switch (status) {
+            case "chua_thanh_toan" -> "Chưa thanh toán";
+            case "dang_chuyen_huong" -> "Đang thanh toán";
+            case "da_thanh_toan" -> "Đã thanh toán";
+            case "that_bai" -> "Thanh toán thất bại";
+            default -> status;
+        };
     }
 }

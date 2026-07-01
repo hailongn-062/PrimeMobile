@@ -2,6 +2,11 @@ package org.example.primemobile.controller;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.example.primemobile.entity.BienTheSanPham;
+import org.example.primemobile.entity.DanhMuc;
+import org.example.primemobile.entity.HangSanXuat;
+import org.example.primemobile.entity.SanPham;
+import org.example.primemobile.entity.ThongSoKyThuat;
 import org.example.primemobile.service.IBienTheSanPhamService;
 import org.example.primemobile.service.IDanhMucService;
 import org.example.primemobile.service.IHangSanXuatService;
@@ -13,47 +18,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-/**
- * REST Controller công khai — Catalog dữ liệu sản phẩm dành cho Frontend (Khách vãng lai).
- * <p>
- * Base path: {@code /api/public/catalog} — KHÔNG được bảo vệ bởi
- * {@link org.example.primemobile.interceptor.AuthInterceptor} (chỉ chặn
- * {@code /api/admin/**} và {@code /admin/**}).
- * <p>
- * Mọi endpoint ở đây chỉ là <b>READ-ONLY</b> (GET). Không có write operation.
- * Các endpoint tương ứng trên {@code /api/admin/} vẫn còn nguyên và yêu cầu session.
- *
- * <h3>Endpoints:</h3>
- * <pre>
- *   ── Sản phẩm ──────────────────────────────────────────────────────────────
- *   GET /api/public/catalog/san-pham
- *       ?danhMucId=&hangSanXuatId=&page=0&size=10&sort=ngayTao,desc
- *       → Danh sách sản phẩm đang bán, có phân trang và lọc
- *
- *   GET /api/public/catalog/san-pham/{id}
- *       → Chi tiết 1 sản phẩm theo ID
- *
- *   ── Biến thể SKU ──────────────────────────────────────────────────────────
- *   GET /api/public/catalog/bien-the/san-pham/{sanPhamId}
- *       → Tất cả biến thể (màu sắc, RAM, ROM, giá) của 1 sản phẩm
- *
- *   GET /api/public/catalog/bien-the/{id}
- *       → Chi tiết 1 biến thể theo ID (bao gồm giá, tồn kho...)
- *
- *   ── Thông số kỹ thuật ─────────────────────────────────────────────────────
- *   GET /api/public/catalog/thong-so/{sanPhamId}
- *       → Toàn bộ thông số kỹ thuật của 1 sản phẩm
- *
- *   ── Danh mục & Hãng (dùng cho thanh lọc Frontend) ────────────────────────
- *   GET /api/public/catalog/danh-muc
- *       → Danh sách danh mục đang kích hoạt (dùng làm filter nav)
- *
- *   GET /api/public/catalog/hang-san-xuat
- *       → Danh sách tất cả hãng sản xuất (dùng làm filter)
- * </pre>
- */
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/public/catalog")
 @RequiredArgsConstructor
@@ -61,179 +34,177 @@ public class CatalogPublicController {
 
     private static final Logger log = LoggerFactory.getLogger(CatalogPublicController.class);
 
-    private final ISanPhamService          sanPhamService;
-    private final IBienTheSanPhamService   bienTheSanPhamService;
-    private final IThongSoKyThuatService   thongSoKyThuatService;
-    private final IDanhMucService          danhMucService;
-    private final IHangSanXuatService      hangSanXuatService;
+    private final ISanPhamService sanPhamService;
+    private final IBienTheSanPhamService bienTheSanPhamService;
+    private final IThongSoKyThuatService thongSoKyThuatService;
+    private final IDanhMucService danhMucService;
+    private final IHangSanXuatService hangSanXuatService;
 
-    // =========================================================================
-    // SẢN PHẨM
-    // =========================================================================
-
-    /**
-     * Lấy danh sách sản phẩm có phân trang và lọc — dành cho trang chủ / trang danh sách.
-     * <p>
-     * Ví dụ:
-     * <ul>
-     *   <li>{@code GET /api/public/catalog/san-pham} → Tất cả</li>
-     *   <li>{@code GET /api/public/catalog/san-pham?danhMucId=1&page=0&size=12}</li>
-     *   <li>{@code GET /api/public/catalog/san-pham?hangSanXuatId=2&sort=giaBan,asc}</li>
-     * </ul>
-     *
-     * @param danhMucId     (optional) Lọc theo ID danh mục.
-     * @param hangSanXuatId (optional) Lọc theo ID hãng sản xuất.
-     * @param page          Số trang, bắt đầu từ 0 (mặc định 0).
-     * @param size          Số bản ghi mỗi trang (mặc định 12).
-     * @param sort          Sắp xếp theo trường, ví dụ {@code "giaBan,asc"} (mặc định mới nhất lên đầu).
-     */
     @GetMapping("/san-pham")
     public ResponseEntity<?> layDanhSachSanPham(
             @RequestParam(required = false) Integer danhMucId,
             @RequestParam(required = false) Integer hangSanXuatId,
-            @RequestParam(defaultValue = "0")              int    page,
-            @RequestParam(defaultValue = "12")             int    size,
-            @RequestParam(defaultValue = "ngayTao,desc")   String sort) {
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(defaultValue = "ngayTao,desc") String sort) {
 
-        log.debug("[CatalogPublic] GET /san-pham — danhMucId={}, hangSanXuatId={}, page={}, size={}",
+        log.debug("[CatalogPublic] GET /san-pham danhMucId={}, hangSanXuatId={}, page={}, size={}",
                 danhMucId, hangSanXuatId, page, size);
 
         Pageable pageable = buildPageable(page, size, sort);
-        // layDanhSachCongKhai chỉ trả sản phẩm trangThai = 'dang_ban'
-        return ResponseEntity.ok(sanPhamService.layDanhSachCongKhai(danhMucId, hangSanXuatId, pageable));
+        return ResponseEntity.ok(sanPhamService
+                .layDanhSachCongKhai(danhMucId, hangSanXuatId, pageable)
+                .map(this::productDto));
     }
 
-    /**
-     * Lấy chi tiết một sản phẩm theo ID — dành cho trang chi tiết sản phẩm.
-     *
-     * @param id ID sản phẩm.
-     * @return HTTP 200 kèm {@code SanPham}. HTTP 404 nếu không tìm thấy.
-     */
     @GetMapping("/san-pham/{id}")
     public ResponseEntity<?> layChiTietSanPham(@PathVariable Integer id) {
         log.debug("[CatalogPublic] GET /san-pham/{}", id);
         try {
-            return ResponseEntity.ok(sanPhamService.layTheoId(id));
+            SanPham sanPham = sanPhamService.layTheoId(id);
+            Map<String, Object> dto = productDto(sanPham);
+            dto.put("bienTheSanPhams", bienTheSanPhamService.layTheoSanPhamId(id).stream()
+                    .map(this::variantDto)
+                    .toList());
+            dto.put("thongSoKyThuats", thongSoKyThuatService.layTheoSanPham(id).stream()
+                    .map(this::specDto)
+                    .toList());
+            return ResponseEntity.ok(dto);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    // =========================================================================
-    // BIẾN THỂ SKU
-    // =========================================================================
-
-    /**
-     * Lấy tất cả biến thể (màu sắc, RAM, ROM, giá bán) của một sản phẩm.
-     * <p>
-     * Frontend gọi endpoint này khi người dùng mở trang chi tiết sản phẩm
-     * để render bộ chọn màu sắc và dung lượng.
-     *
-     * @param sanPhamId ID sản phẩm cha.
-     * @return HTTP 200 kèm danh sách {@code BienTheSanPham}. HTTP 404 nếu sản phẩm không tồn tại.
-     */
     @GetMapping("/bien-the/san-pham/{sanPhamId}")
     public ResponseEntity<?> layBienTheCuaSanPham(@PathVariable Integer sanPhamId) {
         log.debug("[CatalogPublic] GET /bien-the/san-pham/{}", sanPhamId);
         try {
-            return ResponseEntity.ok(bienTheSanPhamService.layTheoSanPhamId(sanPhamId));
+            return ResponseEntity.ok(bienTheSanPhamService.layTheoSanPhamId(sanPhamId).stream()
+                    .map(this::variantDto)
+                    .toList());
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    /**
-     * Lấy chi tiết một biến thể SKU theo ID.
-     * <p>
-     * Frontend gọi khi người dùng chọn 1 cấu hình cụ thể (ví dụ: iPhone 15 Pro Max Titan Đen 256GB)
-     * để hiển thị giá và tình trạng hàng.
-     *
-     * @param id ID biến thể.
-     * @return HTTP 200 kèm {@code BienTheSanPham}. HTTP 404 nếu không tìm thấy.
-     */
     @GetMapping("/bien-the/{id}")
     public ResponseEntity<?> layChiTietBienThe(@PathVariable Integer id) {
         log.debug("[CatalogPublic] GET /bien-the/{}", id);
         try {
-            return ResponseEntity.ok(bienTheSanPhamService.getBienTheSanPham(id));
+            return ResponseEntity.ok(variantDto(bienTheSanPhamService.getBienTheSanPham(id)));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    // =========================================================================
-    // THÔNG SỐ KỸ THUẬT
-    // =========================================================================
-
-    /**
-     * Lấy toàn bộ thông số kỹ thuật của một sản phẩm.
-     * <p>
-     * Frontend dùng để render bảng thông số kỹ thuật ở trang chi tiết sản phẩm
-     * (màn hình, pin, camera, chip...).
-     *
-     * @param sanPhamId ID sản phẩm.
-     * @return HTTP 200 kèm {@code List<ThongSoKyThuat>}. HTTP 404 nếu sản phẩm không tồn tại.
-     */
     @GetMapping("/thong-so/{sanPhamId}")
     public ResponseEntity<?> layThongSoKyThuat(@PathVariable Integer sanPhamId) {
         log.debug("[CatalogPublic] GET /thong-so/{}", sanPhamId);
         try {
-            return ResponseEntity.ok(thongSoKyThuatService.layTheoSanPham(sanPhamId));
+            return ResponseEntity.ok(thongSoKyThuatService.layTheoSanPham(sanPhamId).stream()
+                    .map(this::specDto)
+                    .toList());
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    // =========================================================================
-    // DANH MỤC (dùng cho thanh lọc)
-    // =========================================================================
-
-    /**
-     * Lấy danh sách danh mục đang kích hoạt — dùng cho thanh lọc / navigation menu.
-     * <p>
-     * Ví dụ: iPhone, Samsung Galaxy, Xiaomi, Oppo...
-     *
-     * @return HTTP 200 kèm {@code List<DanhMuc>} đang kích hoạt.
-     */
     @GetMapping("/danh-muc")
     public ResponseEntity<?> layDanhMucKichHoat() {
         log.debug("[CatalogPublic] GET /danh-muc");
-        return ResponseEntity.ok(danhMucService.layDanhSachKichHoat());
+        return ResponseEntity.ok(danhMucService.layDanhSachKichHoat().stream()
+                .map(this::categoryDto)
+                .toList());
     }
 
-    // =========================================================================
-    // HÃNG SẢN XUẤT (dùng cho thanh lọc)
-    // =========================================================================
-
-    /**
-     * Lấy danh sách tất cả hãng sản xuất — dùng cho bộ lọc theo thương hiệu.
-     * <p>
-     * Ví dụ: Apple, Samsung, Xiaomi...
-     *
-     * @return HTTP 200 kèm {@code List<HangSanXuat>}.
-     */
     @GetMapping("/hang-san-xuat")
     public ResponseEntity<?> layDanhSachHangSanXuat() {
         log.debug("[CatalogPublic] GET /hang-san-xuat");
-        return ResponseEntity.ok(hangSanXuatService.layTatCa());
+        return ResponseEntity.ok(hangSanXuatService.layTatCa().stream()
+                .map(this::brandDto)
+                .toList());
     }
 
-    // =========================================================================
-    // PRIVATE HELPER
-    // =========================================================================
-
-    /**
-     * Parse chuỗi sort "field,direction" thành {@link Pageable}.
-     * Mặc định sort theo {@code ngayTao DESC} nếu format không hợp lệ.
-     */
     private Pageable buildPageable(int page, int size, String sort) {
         try {
             String[] parts = sort.split(",");
-            Sort.Direction dir = (parts.length > 1 && "asc".equalsIgnoreCase(parts[1]))
-                    ? Sort.Direction.ASC : Sort.Direction.DESC;
-            return PageRequest.of(page, size, Sort.by(dir, parts[0].trim()));
+            Sort.Direction direction = (parts.length > 1 && "asc".equalsIgnoreCase(parts[1]))
+                    ? Sort.Direction.ASC
+                    : Sort.Direction.DESC;
+            return PageRequest.of(Math.max(page, 0), Math.max(size, 1), Sort.by(direction, parts[0].trim()));
         } catch (Exception e) {
-            return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao"));
+            return PageRequest.of(Math.max(page, 0), Math.max(size, 1), Sort.by(Sort.Direction.DESC, "ngayTao"));
         }
+    }
+
+    private Map<String, Object> productDto(SanPham sanPham) {
+        Map<String, Object> dto = new LinkedHashMap<>();
+        dto.put("id", sanPham.getId());
+        dto.put("maSanPham", sanPham.getMaSanPham());
+        dto.put("tenSanPham", sanPham.getTenSanPham());
+        dto.put("moTaNgan", sanPham.getMoTaNgan());
+        dto.put("moTaChiTiet", sanPham.getMoTaChiTiet());
+        dto.put("namRaMat", sanPham.getNamRaMat());
+        dto.put("baoHanhThang", sanPham.getBaoHanhThang());
+        dto.put("trangThai", sanPham.getTrangThai());
+        dto.put("luotXem", sanPham.getLuotXem());
+        dto.put("ngayTao", sanPham.getNgayTao());
+        dto.put("updatedAt", sanPham.getUpdatedAt());
+        dto.put("danhMuc", categoryDto(sanPham.getDanhMuc()));
+        dto.put("hangSanXuat", brandDto(sanPham.getHangSanXuat()));
+        return dto;
+    }
+
+    private Map<String, Object> variantDto(BienTheSanPham bienThe) {
+        Map<String, Object> dto = new LinkedHashMap<>();
+        dto.put("id", bienThe.getId());
+        dto.put("sanPhamId", bienThe.getSanPham() != null ? bienThe.getSanPham().getId() : null);
+        dto.put("maSku", bienThe.getMaSku());
+        dto.put("mauSac", bienThe.getMauSac());
+        dto.put("maMauHex", bienThe.getMaMauHex());
+        dto.put("ramGb", bienThe.getRamGb());
+        dto.put("luuTruGb", bienThe.getLuuTruGb());
+        dto.put("loaiLuuTru", bienThe.getLoaiLuuTru());
+        dto.put("giaBan", bienThe.getGiaBan());
+        dto.put("trongLuongGram", bienThe.getTrongLuongGram());
+        dto.put("pinMah", bienThe.getPinMah());
+        dto.put("trangThai", bienThe.getTrangThai());
+        return dto;
+    }
+
+    private Map<String, Object> specDto(ThongSoKyThuat thongSo) {
+        Map<String, Object> dto = new LinkedHashMap<>();
+        dto.put("id", thongSo.getId());
+        dto.put("nhom", thongSo.getNhom());
+        dto.put("tenThongSo", thongSo.getTenThongSo());
+        dto.put("giaTri", thongSo.getGiaTri());
+        dto.put("thuTu", thongSo.getThuTu());
+        return dto;
+    }
+
+    private Map<String, Object> categoryDto(DanhMuc danhMuc) {
+        if (danhMuc == null) {
+            return null;
+        }
+        Map<String, Object> dto = new LinkedHashMap<>();
+        dto.put("id", danhMuc.getId());
+        dto.put("tenDanhMuc", danhMuc.getTenDanhMuc());
+        dto.put("slug", danhMuc.getSlug());
+        dto.put("moTa", danhMuc.getMoTa());
+        dto.put("thuTu", danhMuc.getThuTu());
+        dto.put("kichHoat", danhMuc.getKichHoat());
+        return dto;
+    }
+
+    private Map<String, Object> brandDto(HangSanXuat hangSanXuat) {
+        if (hangSanXuat == null) {
+            return null;
+        }
+        Map<String, Object> dto = new LinkedHashMap<>();
+        dto.put("id", hangSanXuat.getId());
+        dto.put("tenHang", hangSanXuat.getTenHang());
+        dto.put("logo", hangSanXuat.getLogo());
+        dto.put("quocGia", hangSanXuat.getQuocGia());
+        return dto;
     }
 }

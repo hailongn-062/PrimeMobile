@@ -710,6 +710,484 @@
                 max-width: 45%;
             }
         }
+
+        /* ══════════════════════════════════════════════
+           KHÁCH VÃNG LAI — 3-TAB CUSTOMER FORM
+           Thiết kế kiểu CellphoneS + Bảng màu POS
+        ══════════════════════════════════════════════ */
+
+        /* Tab bar wrapper */
+        .cust-tab-bar {
+            display: flex;
+            gap: 4px;
+            background: rgba(255, 255, 255, .04);
+            border-radius: 10px;
+            padding: 3px;
+            margin-bottom: .6rem;
+        }
+
+        .cust-tab-btn {
+            flex: 1;
+            padding: .4rem .3rem;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: rgba(255, 255, 255, .45);
+            font-size: .7rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .3rem;
+            white-space: nowrap;
+            letter-spacing: .2px;
+        }
+
+        .cust-tab-btn:hover {
+            background: rgba(255, 255, 255, .08);
+            color: rgba(255, 255, 255, .7);
+        }
+
+        .cust-tab-btn.active {
+            background: var(--pos-accent);
+            color: #fff;
+            box-shadow: 0 2px 10px rgba(21, 101, 192, .4);
+        }
+
+        .cust-tab-btn i {
+            font-size: .72rem;
+        }
+
+        /* Tab panels */
+        .cust-tab-panel {
+            display: none;
+            animation: fadeSlideIn .25s ease;
+        }
+
+        .cust-tab-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Khách lẻ panel ── */
+        .guest-default-badge {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .55rem .8rem;
+            background: rgba(21, 101, 192, .12);
+            border: 1px solid rgba(21, 101, 192, .25);
+            border-radius: 10px;
+            color: #93C5FD;
+            font-size: .8rem;
+            font-weight: 600;
+        }
+
+        .guest-default-badge .badge-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--pos-accent), #1E88E5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .95rem;
+            flex-shrink: 0;
+        }
+
+        .guest-default-badge .badge-text small {
+            display: block;
+            font-size: .65rem;
+            color: rgba(255, 255, 255, .35);
+            font-weight: 500;
+            margin-top: 1px;
+        }
+
+        /* ═══════════════════════════════════════════
+           KHÁCH VÃNG LAI — CellphoneS-inspired Card
+        ═══════════════════════════════════════════ */
+
+        /* Card wrapper */
+        .vl-card {
+            background: var(--pos-cart-bg);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, .07);
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, .25);
+        }
+
+        /* Card header — CellphoneS-style colored strip */
+        .vl-card-header {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .6rem .85rem;
+            background: linear-gradient(135deg, rgba(21, 101, 192, .35), rgba(30, 136, 229, .18));
+            border-bottom: 1px solid rgba(21, 101, 192, .25);
+        }
+
+        .vl-card-header .vl-header-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 9px;
+            background: linear-gradient(135deg, var(--pos-accent), #1E88E5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .85rem;
+            color: #fff;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(21, 101, 192, .4);
+        }
+
+        .vl-card-header .vl-header-text {
+            font-size: .78rem;
+            font-weight: 700;
+            color: #E3F2FD;
+            letter-spacing: .2px;
+        }
+
+        .vl-card-header .vl-header-text small {
+            display: block;
+            font-size: .62rem;
+            color: rgba(255, 255, 255, .4);
+            font-weight: 500;
+            margin-top: 1px;
+        }
+
+        .vl-card-header .vl-header-badge {
+            margin-left: auto;
+            font-size: .58rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            background: rgba(21, 101, 192, .35);
+            color: #90CAF9;
+            border: 1px solid rgba(21, 101, 192, .4);
+        }
+
+        /* Card body */
+        .vl-card-body {
+            padding: .7rem .85rem .6rem;
+        }
+
+        /* Section divider within card */
+        .vl-section-label {
+            font-size: .6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .8px;
+            color: rgba(255, 255, 255, .3);
+            margin-bottom: .35rem;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+        }
+
+        .vl-section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, .06);
+        }
+
+        .vl-section-divider {
+            border: none;
+            border-top: 1px dashed rgba(255, 255, 255, .08);
+            margin: .55rem 0 .45rem;
+        }
+
+        /* ── Form group ── */
+        .vl-form-group {
+            margin-bottom: .5rem;
+        }
+
+        .vl-form-group label {
+            font-size: .68rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, .5);
+            margin-bottom: 3px;
+            display: flex;
+            align-items: center;
+            gap: .3rem;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .vl-form-group label .required {
+            color: #f87171;
+            font-weight: 700;
+        }
+
+        .vl-form-group label .optional-tag {
+            font-size: .56rem;
+            padding: 1px 5px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, .06);
+            color: rgba(255, 255, 255, .3);
+            font-weight: 500;
+            margin-left: .15rem;
+        }
+
+        .vl-input-wrap {
+            position: relative;
+        }
+
+        .vl-input-wrap .vl-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, .25);
+            font-size: .75rem;
+            pointer-events: none;
+            transition: color .25s ease;
+        }
+
+        .vl-input {
+            width: 100%;
+            padding: .5rem .7rem .5rem 2.1rem;
+            border-radius: 10px;
+            border: 1.5px solid rgba(255, 255, 255, .1);
+            background: rgba(255, 255, 255, .04);
+            color: #fff;
+            font-size: .82rem;
+            font-weight: 500;
+            outline: none;
+            transition: all .25s ease;
+        }
+
+        .vl-input::placeholder {
+            color: rgba(255, 255, 255, .2);
+            font-weight: 400;
+        }
+
+        .vl-input:hover {
+            border-color: rgba(255, 255, 255, .18);
+            background: rgba(255, 255, 255, .06);
+        }
+
+        .vl-input:focus {
+            border-color: var(--pos-accent);
+            box-shadow: 0 0 0 3px rgba(21, 101, 192, .2);
+            background: rgba(255, 255, 255, .08);
+        }
+
+        .vl-input:focus + .vl-icon,
+        .vl-input:focus ~ .vl-icon {
+            color: #60A5FA;
+        }
+
+        .vl-input.error {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, .15);
+        }
+
+        .vl-input.error ~ .vl-icon {
+            color: #f87171;
+        }
+
+        .vl-input.success {
+            border-color: #16a34a;
+        }
+
+        .vl-input.success ~ .vl-icon {
+            color: #4ade80;
+        }
+
+        .vl-error-msg {
+            font-size: .63rem;
+            color: #f87171;
+            margin-top: 2px;
+            display: none;
+            padding-left: 2.1rem;
+        }
+
+        .vl-error-msg.show {
+            display: flex;
+            align-items: center;
+            gap: .25rem;
+            animation: shakeIn .3s ease;
+        }
+
+        @keyframes shakeIn {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            50% { transform: translateX(4px); }
+            75% { transform: translateX(-2px); }
+        }
+
+        /* Gender select */
+        .vl-select {
+            width: 100%;
+            padding: .5rem .7rem .5rem 2.1rem;
+            border-radius: 10px;
+            border: 1.5px solid rgba(255, 255, 255, .1);
+            background: rgba(255, 255, 255, .04);
+            color: #fff;
+            font-size: .82rem;
+            font-weight: 500;
+            outline: none;
+            cursor: pointer;
+            transition: all .25s ease;
+            appearance: auto;
+        }
+
+        .vl-select option {
+            background: #1A1F2E;
+            color: #fff;
+        }
+
+        .vl-select:hover {
+            border-color: rgba(255, 255, 255, .18);
+        }
+
+        .vl-select:focus {
+            border-color: var(--pos-accent);
+            box-shadow: 0 0 0 3px rgba(21, 101, 192, .2);
+        }
+
+        /* Row layout for form */
+        .vl-form-row {
+            display: flex;
+            gap: .5rem;
+        }
+
+        .vl-form-row .vl-form-group {
+            flex: 1;
+        }
+
+        /* ── Save button — CellphoneS style CTA ── */
+        .vl-btn-save {
+            width: 100%;
+            padding: .5rem .8rem;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--pos-accent), #1E88E5);
+            color: #fff;
+            font-size: .78rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .4rem;
+            margin-top: .5rem;
+            box-shadow: 0 3px 12px rgba(21, 101, 192, .35);
+            letter-spacing: .2px;
+        }
+
+        .vl-btn-save:hover {
+            background: linear-gradient(135deg, #0D47A1, #1565C0);
+            transform: translateY(-1px);
+            box-shadow: 0 5px 18px rgba(21, 101, 192, .5);
+        }
+
+        .vl-btn-save:active {
+            transform: scale(.98);
+        }
+
+        .vl-btn-save:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .vl-btn-save .btn-spinner {
+            display: none;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, .3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+        }
+
+        .vl-btn-save.loading .btn-spinner {
+            display: inline-block;
+        }
+
+        .vl-btn-save.loading .btn-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ── Status message for guest form ── */
+        .vl-status {
+            display: none;
+            padding: .45rem .7rem;
+            border-radius: 9px;
+            font-size: .72rem;
+            font-weight: 600;
+            margin-top: .45rem;
+            align-items: center;
+            gap: .4rem;
+        }
+
+        .vl-status.success {
+            display: flex;
+            background: rgba(22, 163, 74, .12);
+            border: 1px solid rgba(22, 163, 74, .25);
+            color: #4ade80;
+            animation: fadeSlideIn .3s ease;
+        }
+
+        .vl-status.info {
+            display: flex;
+            background: rgba(21, 101, 192, .12);
+            border: 1px solid rgba(21, 101, 192, .25);
+            color: #93C5FD;
+        }
+
+        .vl-status.success .vl-status-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(22, 163, 74, .2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .7rem;
+            flex-shrink: 0;
+        }
+
+        /* ── Hint text ── */
+        .vl-hint {
+            display: flex;
+            align-items: flex-start;
+            gap: .4rem;
+            padding: .35rem .55rem;
+            margin-top: .1rem;
+            font-size: .6rem;
+            color: rgba(255, 255, 255, .28);
+            line-height: 1.45;
+        }
+
+        .vl-hint i {
+            font-size: .62rem;
+            margin-top: 1px;
+            color: rgba(255, 255, 255, .2);
+            flex-shrink: 0;
+        }
     </style>
 </head>
 
@@ -736,7 +1214,7 @@
                 </button>
 
                 <div class="pos-topbar-brand">
-                    <div class="brand-icon">📱</div>
+                    <img src="/images/PrimeMobile_logo.png" alt="PrimeMobile" class="brand-icon" style="object-fit:cover;">
                     <span>POS — Bán hàng tại quầy</span>
                     <span style="background:#E8F5E9;color:#2e7d32;border-radius:20px;
                              padding:2px 10px;font-size:.68rem;font-weight:700;
@@ -804,16 +1282,152 @@
                         </button>
                     </div>
 
-                    <!-- Chọn khách hàng -->
+                    <!-- ══════════════════════════════════════
+                         KHÁCH HÀNG — 3 TAB (CellphoneS style)
+                    ══════════════════════════════════════ -->
                     <div class="cart-customer">
                         <label><i class="fa fa-user-circle me-1"></i>Khách hàng</label>
-                        <!-- Ô tìm kiếm khách hàng (sẽ được JS xử lý) -->
-                        <input type="text" id="searchCustomer" placeholder="Tìm theo tên hoặc SĐT..."
-                            autocomplete="off">
-                        <select id="selectKhachHang">
-                            <option value="">👤 Khách lẻ (mặc định)</option>
-                            <!-- Các khách hàng sẽ được load thêm bởi JS -->
-                        </select>
+
+                        <!-- Tab bar -->
+                        <div class="cust-tab-bar">
+                            <button class="cust-tab-btn active" data-tab="khach_le" id="tabKhachLe" type="button">
+                                <i class="fa fa-user"></i> Khách lẻ
+                            </button>
+                            <button class="cust-tab-btn" data-tab="vang_lai" id="tabVangLai" type="button">
+                                <i class="fa fa-user-plus"></i> Vãng lai
+                            </button>
+                            <button class="cust-tab-btn" data-tab="chon_cu" id="tabChonCu" type="button">
+                                <i class="fa fa-address-book"></i> Chọn khách
+                            </button>
+                        </div>
+
+                        <!-- ── Panel 1: Khách lẻ (mặc định) ── -->
+                        <div class="cust-tab-panel active" id="panelKhachLe">
+                            <div class="guest-default-badge">
+                                <div class="badge-icon">👤</div>
+                                <div class="badge-text">
+                                    Khách lẻ (mặc định)
+                                    <small>Không cần nhập thông tin</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ── Panel 2: Khách vãng lai (CellphoneS-style form card) ── -->
+                        <div class="cust-tab-panel" id="panelVangLai">
+                            <div class="vl-card">
+                                <!-- Card header strip -->
+                                <div class="vl-card-header">
+                                    <div class="vl-header-icon"
+                                         style="background:linear-gradient(135deg,#1565C0,#FF6F00);border-radius:10px;">
+                                        📱
+                                    </div>
+                                    <div class="vl-header-text">
+                                        <span style="font-weight:800;letter-spacing:-.2px;">PrimeMobile</span>
+                                        — Khách vãng lai
+                                        <small>Nhập để lưu bảo hành &amp; tích điểm</small>
+                                    </div>
+                                    <span class="vl-header-badge">Guest</span>
+                                </div>
+
+                                <!-- Card body -->
+                                <div class="vl-card-body">
+                                    <!-- Section: Required info -->
+                                    <div class="vl-section-label">
+                                        <i class="fa fa-asterisk" style="font-size:.5rem;color:#f87171;"></i>
+                                        Thông tin bắt buộc
+                                    </div>
+
+                                    <div class="vl-form-group">
+                                        <label>
+                                            <i class="fa fa-user" style="font-size:.6rem;color:rgba(255,255,255,.3);"></i>
+                                            Họ và tên <span class="required">*</span>
+                                        </label>
+                                        <div class="vl-input-wrap">
+                                            <input type="text" class="vl-input" id="vlHoTen"
+                                                   placeholder="VD: Nguyễn Văn A" autocomplete="off">
+                                            <i class="fa fa-user vl-icon"></i>
+                                        </div>
+                                        <div class="vl-error-msg" id="vlHoTenErr">
+                                            <i class="fa fa-exclamation-circle"></i> Vui lòng nhập họ tên khách hàng
+                                        </div>
+                                    </div>
+
+                                    <div class="vl-form-group">
+                                        <label>
+                                            <i class="fa fa-phone-alt" style="font-size:.6rem;color:rgba(255,255,255,.3);"></i>
+                                            Số điện thoại <span class="required">*</span>
+                                        </label>
+                                        <div class="vl-input-wrap">
+                                            <input type="tel" class="vl-input" id="vlSoDienThoai"
+                                                   placeholder="VD: 0912 345 678" autocomplete="off" maxlength="15">
+                                            <i class="fa fa-phone-alt vl-icon"></i>
+                                        </div>
+                                        <div class="vl-error-msg" id="vlSdtErr">
+                                            <i class="fa fa-exclamation-circle"></i> Vui lòng nhập số điện thoại
+                                        </div>
+                                    </div>
+
+                                    <!-- Divider -->
+                                    <hr class="vl-section-divider">
+
+                                    <!-- Section: Optional info -->
+                                    <div class="vl-section-label">
+                                        <i class="fa fa-info-circle" style="font-size:.55rem;color:rgba(255,255,255,.2);"></i>
+                                        Thông tin thêm
+                                    </div>
+
+                                    <div class="vl-form-row">
+                                        <div class="vl-form-group">
+                                            <label>
+                                                Email <span class="optional-tag">Tùy chọn</span>
+                                            </label>
+                                            <div class="vl-input-wrap">
+                                                <input type="email" class="vl-input" id="vlEmail"
+                                                       placeholder="email@gmail.com" autocomplete="off">
+                                                <i class="fa fa-envelope vl-icon"></i>
+                                            </div>
+                                        </div>
+                                        <div class="vl-form-group">
+                                            <label>
+                                                Giới tính <span class="optional-tag">Tùy chọn</span>
+                                            </label>
+                                            <div class="vl-input-wrap">
+                                                <select class="vl-select" id="vlGioiTinh" style="padding-left:2.1rem;">
+                                                    <option value="">-- Chọn --</option>
+                                                    <option value="Nam">Nam</option>
+                                                    <option value="Nu">Nữ</option>
+                                                    <option value="Khac">Khác</option>
+                                                </select>
+                                                <i class="fa fa-venus-mars vl-icon"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Hint -->
+                                    <div class="vl-hint">
+                                        <i class="fa fa-shield-alt"></i>
+                                        <span>SĐT dùng để tra cứu bảo hành. Nếu SĐT đã tồn tại, hệ thống sẽ tự động liên kết khách cũ.</span>
+                                    </div>
+
+                                    <!-- Status messages -->
+                                    <div class="vl-status" id="vlStatus"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ── Panel 3: Chọn khách cũ (search + dropdown) ── -->
+                        <div class="cust-tab-panel" id="panelChonCu">
+                            <input type="text" id="searchCustomer" placeholder="Tìm theo tên hoặc SĐT..."
+                                autocomplete="off"
+                                style="width:100%;margin-bottom:6px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
+                                       background:rgba(255,255,255,.06);color:#fff;padding:.45rem .8rem;font-size:.85rem;outline:none;">
+                            <select id="selectKhachHang"
+                                style="width:100%;border-radius:10px;border:1px solid rgba(255,255,255,.12);
+                                       background:rgba(255,255,255,.06);color:#fff;padding:.45rem .8rem;font-size:.85rem;cursor:pointer;">
+                                <option value="">👤 Khách lẻ (mặc định)</option>
+                                <!-- Các khách hàng sẽ được load thêm bởi JS -->
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Cart items -->

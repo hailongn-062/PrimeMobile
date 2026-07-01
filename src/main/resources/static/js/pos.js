@@ -73,7 +73,17 @@ const API = {
     THANH_TOAN: '/api/admin/pos/thanh-toan',
     IMEI_DANH_SACH: '/api/admin/imei/danh-sach',
     KHACH_HANG: '/api/admin/khach-hang',
+    KHACH_HANG_VANG_LAI: '/api/admin/khach-hang/vang-lai',  // Tạo khách vãng lai
 };
+
+/**
+ * Customer mode — quản lý 3 chế độ chọn khách hàng:
+ *   'khach_le'  → Khách lẻ mặc định (sdt 0000000000)
+ *   'vang_lai'  → Nhập thông tin khách vãng lai mới
+ *   'chon_cu'   → Chọn khách hàng đã có từ dropdown
+ */
+let customerMode = 'khach_le';
+let vlKhachHangId = null;  // ID khách vãng lai đã tạo (cache để không tạo lại)
 
 const LOAI_KHO_TONG = 'kho_tong';
 const PROMO_DEBOUNCE_MS = 450;
@@ -129,6 +139,20 @@ function resolveDOM() {
         searchCustomer: el('searchCustomer'),
         posClock: el('pos-clock'),
         btnToggleSidebar: el('btnToggleSidebar'),
+        // Customer tabs
+        tabKhachLe: el('tabKhachLe'),
+        tabVangLai: el('tabVangLai'),
+        tabChonCu: el('tabChonCu'),
+        panelKhachLe: el('panelKhachLe'),
+        panelVangLai: el('panelVangLai'),
+        panelChonCu: el('panelChonCu'),
+        vlHoTen: el('vlHoTen'),
+        vlSoDienThoai: el('vlSoDienThoai'),
+        vlEmail: el('vlEmail'),
+        vlGioiTinh: el('vlGioiTinh'),
+        vlHoTenErr: el('vlHoTenErr'),
+        vlSdtErr: el('vlSdtErr'),
+        vlStatus: el('vlStatus'),
         // Summary
         sumTongTien: el('sum-tong-tien'),
         sumTienGiam: el('sum-tien-giam'),
@@ -248,10 +272,14 @@ function buildProductCardHtml(p) {
     const donGia = isOnSale ? giaBan : giaGoc;
     const isOutOfStock = (p.tonKho ?? 0) <= 0;
 
+    const imgFallbackHtml = `<span style="display:inline-flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:2.5rem;color:#9CA3AF;">
+            <i class="fa fa-mobile-alt"></i>
+        </span>`;
     const imgHtml = p.anhDaiDien
-        ? `<img src="${p.anhDaiDien}" alt="${escHtml(p.tenSanPham)}" loading="lazy"
-               style="max-height:100%;max-width:100%;object-fit:contain;">`
-        : `<span style="font-size:2.8rem;">📱</span>`;
+        ? `<img src="${escHtml(p.anhDaiDien)}" alt="${escHtml(p.tenSanPham)}" loading="lazy" referrerpolicy="no-referrer"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex';"
+               style="max-height:100%;max-width:100%;object-fit:contain;">${imgFallbackHtml.replace('display:inline-flex', 'display:none')}`
+        : imgFallbackHtml;
 
     // Hiển thị giá gốc (gạch ngang) và giá bán hiện tại
     const priceHtml = isOnSale
@@ -616,6 +644,7 @@ async function changeQty(bienTheId, delta) {
 function clearCart() {
     cart = [];
     promoState = { ctkmId: null, tenCtkm: null, giaTriUuDai: 0, tienGiam: 0 };
+    resetVangLaiForm(); // Reset form khách vãng lai khi xoá giỏ
     onCartChanged();
 }
 
@@ -899,9 +928,22 @@ async function handleCheckout() {
 
     if (!confirm.isConfirmed) return;
 
-    const khachHangId = DOM.selectKhachHang?.value
-        ? parseInt(DOM.selectKhachHang.value, 10)
-        : null;
+    // ── BƯỚC 3: Xử lý khách hàng theo mode ────────────────
+    let khachHangId = null;
+
+    if (customerMode === 'vang_lai') {
+        // Validate form khách vãng lai
+        if (!validateVangLaiForm()) return;
+        // Tạo/lấy khách vãng lai từ API
+        const vlResult = await createOrGetVangLai();
+        if (!vlResult) return; // Lỗi đã được hiển thị
+        khachHangId = vlResult;
+    } else if (customerMode === 'chon_cu') {
+        khachHangId = DOM.selectKhachHang?.value
+            ? parseInt(DOM.selectKhachHang.value, 10)
+            : null;
+    }
+    // customerMode === 'khach_le' → khachHangId = null (server fallback)
 
     const payload = {
         khachHangId: khachHangId,
@@ -1106,8 +1148,154 @@ function initBillModal() {
 }
 
 /* ════════════════════════════════════════════════════════════
-   13. KHÁCH HÀNG SEARCH — GET /api/admin/khach-hang
+   13. KHÁCH HÀNG — TAB SWITCHING + SEARCH + VÃNG LAI
 ════════════════════════════════════════════════════════════ */
+
+/** Khởi tạo 3-tab chọn khách hàng */
+function initCustomerTabs() {
+    const tabs = [DOM.tabKhachLe, DOM.tabVangLai, DOM.tabChonCu];
+    const panels = [DOM.panelKhachLe, DOM.panelVangLai, DOM.panelChonCu];
+    const modes = ['khach_le', 'vang_lai', 'chon_cu'];
+
+    tabs.forEach((tab, i) => {
+        if (!tab) return;
+        tab.addEventListener('click', () => {
+            // Deactivate all
+            tabs.forEach(t => t?.classList.remove('active'));
+            panels.forEach(p => p?.classList.remove('active'));
+            // Activate selected
+            tab.classList.add('active');
+            panels[i]?.classList.add('active');
+            customerMode = modes[i];
+            // Reset vãng lai cache khi chuyển tab
+            if (customerMode !== 'vang_lai') {
+                vlKhachHangId = null;
+                clearVlStatus();
+            }
+            console.log('[POS] Customer mode →', customerMode);
+        });
+    });
+}
+
+/** Validate form khách vãng lai — return true nếu hợp lệ */
+function validateVangLaiForm() {
+    let ok = true;
+
+    // Validate họ tên
+    const hoTen = DOM.vlHoTen?.value?.trim() || '';
+    if (!hoTen) {
+        DOM.vlHoTen?.classList.add('error');
+        DOM.vlHoTenErr?.classList.add('show');
+        ok = false;
+    } else {
+        DOM.vlHoTen?.classList.remove('error');
+        DOM.vlHoTenErr?.classList.remove('show');
+    }
+
+    // Validate SĐT
+    const sdt = DOM.vlSoDienThoai?.value?.trim() || '';
+    if (!sdt) {
+        DOM.vlSoDienThoai?.classList.add('error');
+        DOM.vlSdtErr?.classList.add('show');
+        ok = false;
+    } else {
+        DOM.vlSoDienThoai?.classList.remove('error');
+        DOM.vlSdtErr?.classList.remove('show');
+    }
+
+    if (!ok) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Thiếu thông tin khách hàng',
+            text: 'Vui lòng nhập Họ tên và Số điện thoại cho khách vãng lai.',
+            confirmButtonColor: '#1565C0',
+        });
+    }
+
+    return ok;
+}
+
+/**
+ * Gọi API tạo hoặc lấy khách vãng lai.
+ * Trả về khachHangId (Integer) nếu thành công, null nếu lỗi.
+ */
+async function createOrGetVangLai() {
+    // Nếu đã tạo trước đó (cache) → dùng lại
+    if (vlKhachHangId) return vlKhachHangId;
+
+    const payload = {
+        hoTen: DOM.vlHoTen?.value?.trim(),
+        soDienThoai: DOM.vlSoDienThoai?.value?.trim(),
+        email: DOM.vlEmail?.value?.trim() || null,
+        gioiTinh: DOM.vlGioiTinh?.value || null,
+    };
+
+    try {
+        showVlStatus('info', '<i class="fa fa-spinner fa-spin"></i> Đang lưu thông tin khách...');
+
+        const res = await fetch(API.KHACH_HANG_VANG_LAI, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const errText = await res.text().catch(() => `Lỗi server (HTTP ${res.status})`);
+            throw new Error(errText);
+        }
+
+        const khachHang = await res.json();
+        vlKhachHangId = khachHang.id;
+
+        showVlStatus('success',
+            `<i class="fa fa-check-circle"></i> Đã lưu: ${escHtml(khachHang.hoTen)} (${escHtml(khachHang.soDienThoai)})`);
+
+        console.log('[POS] Khách vãng lai tạo/lấy thành công — id=', vlKhachHangId);
+        return vlKhachHangId;
+
+    } catch (err) {
+        console.error('[POS] createOrGetVangLai error:', err);
+        showVlStatus('info', '');
+        clearVlStatus();
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi tạo khách hàng',
+            html: `<div style="font-size:.88rem;text-align:left;">${escHtml(err.message)}</div>`,
+            confirmButtonColor: '#1565C0',
+        });
+        return null;
+    }
+}
+
+/** Hiển thị trạng thái trên form vãng lai */
+function showVlStatus(type, html) {
+    if (!DOM.vlStatus) return;
+    DOM.vlStatus.className = 'vl-status ' + type;
+    DOM.vlStatus.innerHTML = html;
+}
+
+/** Xóa trạng thái vãng lai */
+function clearVlStatus() {
+    if (!DOM.vlStatus) return;
+    DOM.vlStatus.className = 'vl-status';
+    DOM.vlStatus.innerHTML = '';
+    DOM.vlStatus.style.display = 'none';
+}
+
+/** Reset form vãng lai về trạng thái ban đầu */
+function resetVangLaiForm() {
+    if (DOM.vlHoTen) DOM.vlHoTen.value = '';
+    if (DOM.vlSoDienThoai) DOM.vlSoDienThoai.value = '';
+    if (DOM.vlEmail) DOM.vlEmail.value = '';
+    if (DOM.vlGioiTinh) DOM.vlGioiTinh.value = '';
+    DOM.vlHoTen?.classList.remove('error');
+    DOM.vlSoDienThoai?.classList.remove('error');
+    DOM.vlHoTenErr?.classList.remove('show');
+    DOM.vlSdtErr?.classList.remove('show');
+    vlKhachHangId = null;
+    clearVlStatus();
+}
 
 /** Tải danh sách khách hàng từ API (có từ khóa tìm kiếm) */
 async function loadCustomers(keyword = '') {
@@ -1149,6 +1337,18 @@ function initCustomerSearch() {
         const keyword = e.target.value.trim();
         loadCustomers(keyword);
     }, CUSTOMER_SEARCH_DEBOUNCE_MS));
+
+    // Clear validation errors khi user bắt đầu gõ vào form vãng lai
+    DOM.vlHoTen?.addEventListener('input', () => {
+        DOM.vlHoTen?.classList.remove('error');
+        DOM.vlHoTenErr?.classList.remove('show');
+        vlKhachHangId = null; // Reset cache vì thông tin thay đổi
+    });
+    DOM.vlSoDienThoai?.addEventListener('input', () => {
+        DOM.vlSoDienThoai?.classList.remove('error');
+        DOM.vlSdtErr?.classList.remove('show');
+        vlKhachHangId = null;
+    });
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -1178,9 +1378,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initSearch();
     initCheckout();
     initBillModal();
-    initCustomerSearch();
+    initCustomerTabs();       // Khởi tạo 3-tab khách hàng
+    initCustomerSearch();     // Tìm kiếm khách hàng + validate vãng lai
     loadProducts();
-    loadCustomers();
+    loadCustomers();          // Load danh sách khách hàng mặc định
 });
 
 /* Expose tới onclick="" attributes trong HTML */

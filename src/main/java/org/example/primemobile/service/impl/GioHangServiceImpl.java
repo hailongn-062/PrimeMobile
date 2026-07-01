@@ -40,6 +40,7 @@ public class GioHangServiceImpl implements IGioHangService {
     // CONSTANTS
     // -----------------------------------------------------------------------
     private static final String LOAI_KHO_ONLINE = "kho_online";
+    private static final int TON_KHO_TOI_THIEU_DE_BAN = 5;
 
     // -----------------------------------------------------------------------
     // DEPENDENCIES
@@ -125,6 +126,7 @@ public class GioHangServiceImpl implements IGioHangService {
                     .ngayThem(LocalDateTime.now())
                     .build();
             chiTietGioHangRepository.save(chiTietMoi);
+            gioHang.getChiTietGioHangs().add(chiTietMoi);
             log.debug("[GioHang] Thêm SKU mới vào giỏ — gioHangId={}, maSku={}",
                     gioHang.getId(), bienThe.getMaSku());
         }
@@ -225,10 +227,17 @@ public class GioHangServiceImpl implements IGioHangService {
                 .map(TonKho::getSoLuong)
                 .orElse(0);
 
-        if (soLuong > tonKhoHienTai) {
+        int soLuongCoTheBan = Math.max(tonKhoHienTai - TON_KHO_TOI_THIEU_DE_BAN, 0);
+        if (tonKhoHienTai <= TON_KHO_TOI_THIEU_DE_BAN) {
+            throw new IllegalArgumentException(
+                    "Sản phẩm này chưa đủ tồn kho để bán online. Tồn kho phải lớn hơn "
+                            + TON_KHO_TOI_THIEU_DE_BAN + ".");
+        }
+
+        if (soLuong > soLuongCoTheBan) {
             throw new IllegalArgumentException(
                     "Số lượng sản phẩm trong kho online không đủ. " +
-                            "Yêu cầu: " + soLuong + ", còn lại: " + tonKhoHienTai + ".");
+                            "Yêu cầu: " + soLuong + ", có thể bán: " + soLuongCoTheBan + ".");
         }
     }
 

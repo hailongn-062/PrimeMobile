@@ -1,33 +1,59 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <body>
-
-<!--
-    Fragment: footer
-    Nhúng bằng: th:replace="~{fragments/footer :: footer}"
--->
 <footer th:fragment="footer" class="pm-footer mt-5 pt-5 pb-3">
+    <style>
+        .pm-footer { background:#115e59; color:rgba(255,255,255,.88); width:100%; }
+        .pm-footer a { color:rgba(255,255,255,.78); text-decoration:none; transition:color .18s ease, opacity .18s ease; }
+        .pm-footer a:hover { color:#fff; opacity:1; }
+        .pm-footer-title { color:#fff; font-weight:800; margin-bottom:.75rem; }
+        .pm-footer hr { border-color:rgba(255,255,255,.35); }
+        .pm-social-link { width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; background:rgba(255,255,255,.1); color:#fff; }
+        .pm-social-link:hover { background:rgba(255,255,255,.18); }
+        .pm-footer-logo { max-width:190px; height:auto; object-fit:contain; display:block; }
+        .pm-chatbot { position:fixed; right:22px; bottom:22px; z-index:1060; font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+        .pm-chatbot-toggle { width:58px; height:58px; border:0; border-radius:50%; background:#0d9488; color:#fff; box-shadow:0 14px 35px rgba(13,148,136,.32); display:inline-flex; align-items:center; justify-content:center; font-size:1.35rem; }
+        .pm-chatbot-toggle:hover { background:#115e59; }
+        .pm-chatbot-panel { width:min(360px,calc(100vw - 32px)); height:min(560px,calc(100vh - 120px)); display:none; flex-direction:column; overflow:hidden; border:1px solid #dbe4ef; border-radius:8px; background:#fff; box-shadow:0 20px 50px rgba(15,23,42,.22); }
+        .pm-chatbot.open .pm-chatbot-panel { display:flex; }
+        .pm-chatbot.open .pm-chatbot-toggle { display:none; }
+        .pm-chatbot-head { background:#115e59; color:#fff; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+        .pm-chatbot-head strong { display:block; line-height:1.2; }
+        .pm-chatbot-head span { display:block; color:rgba(255,255,255,.78); font-size:.78rem; margin-top:2px; }
+        .pm-chatbot-close { border:0; background:rgba(255,255,255,.12); color:#fff; border-radius:8px; width:34px; height:34px; }
+        .pm-chatbot-body { flex:1; padding:14px; overflow-y:auto; background:#f8fafc; }
+        .pm-chatbot-msg { max-width:88%; margin-bottom:10px; padding:10px 12px; border-radius:8px; line-height:1.45; font-size:.9rem; }
+        .pm-chatbot-msg.bot { background:#fff; color:#0f172a; border:1px solid #e2e8f0; }
+        .pm-chatbot-msg.user { margin-left:auto; background:#0d9488; color:#fff; }
+        .pm-chatbot-products { display:grid; gap:8px; margin:6px 0 10px; }
+        .pm-chatbot-product { background:#fff; color:#0f172a; border:1px solid #e2e8f0; border-radius:8px; padding:10px; text-decoration:none; }
+        .pm-chatbot-product:hover { color:#0f172a; border-color:#0d9488; }
+        .pm-chatbot-product strong { display:block; font-size:.86rem; margin-bottom:3px; }
+        .pm-chatbot-product span { color:#ea580c; font-weight:800; font-size:.86rem; }
+        .pm-chatbot-quick { display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 12px; background:#f8fafc; }
+        .pm-chatbot-quick button { border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:999px; padding:6px 10px; font-size:.78rem; font-weight:700; }
+        .pm-chatbot-form { display:flex; gap:8px; padding:12px; border-top:1px solid #e2e8f0; background:#fff; }
+        .pm-chatbot-form input { flex:1; min-width:0; border:1px solid #cbd5e1; border-radius:8px; padding:10px 12px; font-size:.9rem; outline:0; }
+        .pm-chatbot-form input:focus { border-color:#0d9488; box-shadow:0 0 0 3px rgba(13,148,136,.13); }
+        .pm-chatbot-form button { border:0; border-radius:8px; background:#0d9488; color:#fff; width:44px; font-weight:800; }
+        @media (max-width:576px) { .pm-chatbot { right:14px; bottom:14px; } .pm-chatbot-panel { height:min(560px,calc(100vh - 80px)); } }
+    </style>
+
     <div class="container">
         <div class="row g-4">
-
-            <!-- Cột 1: Về PrimeMobile -->
             <div class="col-12 col-md-4">
                 <p class="pm-footer-title fs-5 mb-2">
-                    <span class="bg-white text-primary rounded-2 px-2 py-1 fw-bold me-1" style="font-size:.9rem;">P</span>
-                    PrimeMobile
+                    <img src="/images/PrimeMobile_logo.png" alt="PrimeMobile" class="pm-footer-logo">
                 </p>
-                <p class="small opacity-75 mb-2">
-                    Hệ thống bán điện thoại chính hãng, uy tín hàng đầu Việt Nam. Cam kết giá tốt nhất, giao hàng trong 2–4 giờ.
-                </p>
+                <p class="small opacity-75 mb-2">Hệ thống bán điện thoại chính hãng, uy tín hàng đầu Việt Nam. Cam kết giá tốt nhất, giao hàng trong 2-4 giờ.</p>
                 <div class="d-flex gap-3 mt-3">
-                    <a href="#" class="text-white opacity-75" title="Facebook"><i class="fab fa-facebook-square fa-xl"></i></a>
-                    <a href="#" class="text-white opacity-75" title="Zalo"><i class="fas fa-comment-dots fa-xl"></i></a>
-                    <a href="#" class="text-white opacity-75" title="YouTube"><i class="fab fa-youtube fa-xl"></i></a>
-                    <a href="#" class="text-white opacity-75" title="Instagram"><i class="fab fa-instagram fa-xl"></i></a>
+                    <a href="#" class="pm-social-link" title="Facebook"><i class="fab fa-facebook-square fa-xl"></i></a>
+                    <a href="#" class="pm-social-link" title="Zalo"><i class="fas fa-comment-dots fa-xl"></i></a>
+                    <a href="#" class="pm-social-link" title="YouTube"><i class="fab fa-youtube fa-xl"></i></a>
+                    <a href="#" class="pm-social-link" title="Instagram"><i class="fab fa-instagram fa-xl"></i></a>
                 </div>
             </div>
 
-            <!-- Cột 2: Hỗ trợ khách hàng -->
             <div class="col-6 col-md-2">
                 <p class="pm-footer-title small">Hỗ trợ khách hàng</p>
                 <ul class="list-unstyled small">
@@ -39,7 +65,6 @@
                 </ul>
             </div>
 
-            <!-- Cột 3: Sản phẩm nổi bật -->
             <div class="col-6 col-md-2">
                 <p class="pm-footer-title small">Danh mục</p>
                 <ul class="list-unstyled small">
@@ -51,42 +76,148 @@
                 </ul>
             </div>
 
-            <!-- Cột 4: Thông tin liên hệ -->
             <div class="col-12 col-md-4">
                 <p class="pm-footer-title small">Thông tin cửa hàng</p>
                 <ul class="list-unstyled small">
-                    <li class="mb-2 d-flex gap-2">
-                        <i class="fa fa-map-marker-alt mt-1 text-warning"></i>
-                        <span>123 Đường Láng, Đống Đa, Hà Nội</span>
-                    </li>
-                    <li class="mb-2 d-flex gap-2">
-                        <i class="fa fa-phone mt-1 text-warning"></i>
-                        <span>Hotline: <a href="tel:19001234" class="fw-bold">1900 1234</a> (8:00 – 22:00)</span>
-                    </li>
-                    <li class="mb-2 d-flex gap-2">
-                        <i class="fa fa-envelope mt-1 text-warning"></i>
-                        <span><a href="mailto:support@primemobile.vn">support@primemobile.vn</a></span>
-                    </li>
-                    <li class="mb-2 d-flex gap-2">
-                        <i class="fa fa-clock mt-1 text-warning"></i>
-                        <span>Giờ mở cửa: 8:00 – 22:00 (Thứ 2 – CN)</span>
-                    </li>
+                    <li class="mb-2 d-flex gap-2"><i class="fa fa-map-marker-alt mt-1 text-warning"></i><span>123 Đường Láng, Đống Đa, Hà Nội</span></li>
+                    <li class="mb-2 d-flex gap-2"><i class="fa fa-phone mt-1 text-warning"></i><span>Hotline: <a href="tel:19001234" class="fw-bold">1900 1234</a> (8:00 - 22:00)</span></li>
+                    <li class="mb-2 d-flex gap-2"><i class="fa fa-envelope mt-1 text-warning"></i><span><a href="mailto:support@primemobile.vn">support@primemobile.vn</a></span></li>
+                    <li class="mb-2 d-flex gap-2"><i class="fa fa-clock mt-1 text-warning"></i><span>Giờ mở cửa: 8:00 - 22:00 (Thứ 2 - CN)</span></li>
                 </ul>
             </div>
-
         </div>
 
-        <!-- ── Divider & Copyright ───────────────────────────────── -->
         <hr class="mt-4 opacity-25">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 small opacity-75">
-            <span>© 2024 PrimeMobile. Tất cả quyền được bảo lưu.</span>
+            <span>&copy; 2024 PrimeMobile. Tất cả quyền được bảo lưu.</span>
             <div class="d-flex gap-3">
                 <a href="/chinh-sach-bao-mat">Chính sách bảo mật</a>
                 <a href="/dieu-khoan-su-dung">Điều khoản sử dụng</a>
             </div>
         </div>
     </div>
-</footer>
 
+    <div class="pm-chatbot" id="pm-chatbot" aria-live="polite">
+        <button type="button" class="pm-chatbot-toggle" id="pm-chatbot-toggle" title="Tư vấn khách hàng">
+            <i class="fa fa-comments"></i>
+        </button>
+        <section class="pm-chatbot-panel" aria-label="Chat tư vấn PrimeMobile">
+            <div class="pm-chatbot-head">
+                <div>
+                    <strong>PrimeMobile tư vấn</strong>
+                    <span>Hỏi về sản phẩm, giá, đặt hàng, bảo hành</span>
+                </div>
+                <button type="button" class="pm-chatbot-close" id="pm-chatbot-close" title="Đóng">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="pm-chatbot-body" id="pm-chatbot-body"></div>
+            <div class="pm-chatbot-quick" id="pm-chatbot-quick"></div>
+            <form class="pm-chatbot-form" id="pm-chatbot-form">
+                <input id="pm-chatbot-input" type="text" autocomplete="off" placeholder="Bạn cần tư vấn gì?">
+                <button type="submit" title="Gửi"><i class="fa fa-paper-plane"></i></button>
+            </form>
+        </section>
+    </div>
+
+    <script>
+        (() => {
+            if (window.pmChatbotLoaded) return;
+            window.pmChatbotLoaded = true;
+
+            const root = document.getElementById('pm-chatbot');
+            const body = document.getElementById('pm-chatbot-body');
+            const form = document.getElementById('pm-chatbot-form');
+            const input = document.getElementById('pm-chatbot-input');
+            const quick = document.getElementById('pm-chatbot-quick');
+            const toggle = document.getElementById('pm-chatbot-toggle');
+            const close = document.getElementById('pm-chatbot-close');
+            if (!root || !body || !form || !input || !quick || !toggle || !close) return;
+
+            const money = value => Number(value || 0).toLocaleString('vi-VN') + 'đ';
+            const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+                '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;'
+            })[ch]);
+
+            function addMessage(text, type = 'bot') {
+                const item = document.createElement('div');
+                item.className = `pm-chatbot-msg ${type}`;
+                item.innerHTML = esc(text);
+                body.appendChild(item);
+                body.scrollTop = body.scrollHeight;
+            }
+
+            function renderProducts(products = []) {
+                if (!products.length) return;
+                const wrap = document.createElement('div');
+                wrap.className = 'pm-chatbot-products';
+                wrap.innerHTML = products.map(product => `
+                    <a class="pm-chatbot-product" href="${esc(product.url)}">
+                        <strong>${esc(product.name)}</strong>
+                        <small>${esc(product.brand || 'PrimeMobile')}</small><br>
+                        <span>${money(product.price)}</span>
+                    </a>
+                `).join('');
+                body.appendChild(wrap);
+                body.scrollTop = body.scrollHeight;
+            }
+
+            function renderQuick(replies = []) {
+                quick.innerHTML = replies.map(reply => `<button type="button">${esc(reply)}</button>`).join('');
+            }
+
+            async function ask(message) {
+                const response = await fetch('/api/public/chatbot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                const text = await response.text();
+                if (!response.ok) throw new Error(text || 'Không thể gửi câu hỏi.');
+                return text ? JSON.parse(text) : {};
+            }
+
+            async function send(message) {
+                const trimmed = message.trim();
+                if (!trimmed) return;
+                addMessage(trimmed, 'user');
+                input.value = '';
+                input.disabled = true;
+                form.querySelector('button').disabled = true;
+                try {
+                    const data = await ask(trimmed);
+                    addMessage(data.reply || 'Mình chưa hiểu rõ câu hỏi. Bạn thử hỏi theo hãng, giá hoặc nhu cầu nhé.');
+                    renderProducts(data.products || []);
+                    renderQuick(data.quickReplies || []);
+                } catch (error) {
+                    addMessage('Hiện mình chưa trả lời được. Bạn có thể liên hệ hotline 1900 1234 để được hỗ trợ nhanh.');
+                } finally {
+                    input.disabled = false;
+                    form.querySelector('button').disabled = false;
+                    input.focus();
+                }
+            }
+
+            toggle.addEventListener('click', () => {
+                root.classList.add('open');
+                if (!body.dataset.ready) {
+                    body.dataset.ready = 'true';
+                    addMessage('Chào bạn, mình có thể tư vấn chọn điện thoại theo hãng, giá hoặc nhu cầu sử dụng.');
+                    renderQuick(['Máy dưới 10 triệu', 'iPhone', 'Samsung camera đẹp', 'Cách đặt hàng']);
+                }
+                input.focus();
+            });
+            close.addEventListener('click', () => root.classList.remove('open'));
+            form.addEventListener('submit', event => {
+                event.preventDefault();
+                send(input.value);
+            });
+            quick.addEventListener('click', event => {
+                const button = event.target.closest('button');
+                if (button) send(button.textContent || '');
+            });
+        })();
+    </script>
+</footer>
 </body>
 </html>

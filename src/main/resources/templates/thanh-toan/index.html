@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle} + ' | PrimeMobile'">Thanh toán | PrimeMobile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root { --pm-primary:#0d9488; --pm-primary-dark:#115e59; --pm-accent:#dc2626; --pm-bg:#f5f7fb; --pm-text:#0f172a; --pm-muted:#64748b; --pm-line:#e2e8f0; }
+        body { font-family:'Inter',sans-serif; background:var(--pm-bg); color:var(--pm-text); min-height:100vh; }
+        .pm-page { padding:28px 0 56px; }
+        .pm-shell { max-width:1180px; }
+        .pm-grid { display:grid; grid-template-columns:minmax(0,1fr) 372px; gap:18px; align-items:start; }
+        .pm-panel { background:#fff; border:1px solid var(--pm-line); border-radius:8px; box-shadow:0 10px 28px rgba(15,23,42,.06); overflow:hidden; }
+        .pm-panel-header { padding:16px 18px; border-bottom:1px solid var(--pm-line); font-weight:900; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+        .pm-panel-body { padding:18px; }
+        .pm-option { border:1px solid var(--pm-line); border-radius:8px; padding:14px; margin-bottom:12px; cursor:pointer; transition:border-color .18s, box-shadow .18s, background .18s; }
+        .pm-option:hover { border-color:#99f6e4; background:#f8fffd; }
+        .pm-option:has(input:checked) { border-color:var(--pm-primary); box-shadow:0 0 0 3px rgba(13,148,136,.12); background:#f0fdfa; }
+        .pm-summary { padding:18px; position:sticky; top:96px; }
+        .pm-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; color:var(--pm-muted); }
+        .pm-total { color:#ea580c; font-size:1.5rem; font-weight:900; }
+        .pm-item { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; padding:12px 0; border-bottom:1px solid var(--pm-line); }
+        .pm-item:last-child { border-bottom:0; }
+        .pm-step { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:#0d9488; color:#fff; font-size:.8rem; font-weight:900; }
+        .btn-pm { background:var(--pm-primary); color:#fff; border:0; border-radius:8px; font-weight:900; }
+        .btn-pm:hover { background:var(--pm-primary-dark); color:#fff; }
+        .pm-muted { color:var(--pm-muted); }
+        .pm-success { display:none; border:1px solid #86efac; background:#f0fdf4; color:#166534; border-radius:8px; padding:16px; }
+        .pm-note { border:1px solid #fde68a; background:#fffbeb; color:#92400e; border-radius:8px; padding:12px; }
+        textarea.form-control { border-radius:8px; border-color:#cbd5e1; }
+        textarea.form-control:focus { border-color:var(--pm-primary); box-shadow:0 0 0 3px rgba(13,148,136,.13); }
+        @media (max-width: 992px) { .pm-grid { grid-template-columns:1fr; } .pm-summary { position:static; } }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/header :: navbar}"></div>
+
+<main class="pm-page">
+    <div class="container pm-shell">
+        <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+            <div>
+                <h1 class="h3 mb-1" style="font-weight:900;">Thanh toán</h1>
+                <div class="text-muted">Kiểm tra thông tin trước khi đặt hàng</div>
+            </div>
+            <a href="/gio-hang" class="btn btn-outline-secondary">
+                <i class="fa fa-arrow-left me-1"></i> Quay lại giỏ
+            </a>
+        </div>
+
+        <div class="pm-success mb-3" id="success-box">
+            <div class="fw-bold mb-1"><i class="fa fa-check-circle me-1"></i>Đặt hàng thành công</div>
+            <div id="success-message">Đơn hàng đã được tạo.</div>
+            <a href="/tra-cuu-don-hang" class="btn btn-sm btn-success mt-3">Xem đơn hàng</a>
+        </div>
+
+        <div class="pm-grid" id="checkout-grid">
+            <section class="d-grid gap-3">
+                <div class="pm-panel">
+                    <div class="pm-panel-header">
+                        <span><span class="pm-step me-2">1</span>Địa chỉ nhận hàng</span>
+                    </div>
+                    <div class="pm-panel-body">
+                        <div th:if="${#lists.isEmpty(diaChis)}" class="pm-note mb-0">
+                            Tài khoản chưa có địa chỉ giao hàng. Vui lòng thêm địa chỉ trong tài khoản trước khi đặt hàng.
+                        </div>
+                        <label class="pm-option d-block" th:each="dc, stat : ${diaChis}">
+                            <div class="d-flex gap-2 align-items-start">
+                                <input class="form-check-input mt-1" type="radio" name="diaChiGiaoId" th:value="${dc.id}" th:checked="${stat.index == 0}">
+                                <div>
+                                    <div class="fw-bold">
+                                        <span th:text="${dc.hoTenNguoiNhan}">Người nhận</span>
+                                        <span class="text-muted fw-normal" th:text="' - ' + ${dc.soDienThoaiNguoiNhan}"> - SĐT</span>
+                                        <span class="badge bg-success ms-1" th:if="${dc.macDinh}">Mặc định</span>
+                                    </div>
+                                    <div class="pm-muted small">
+                                        <span th:text="${dc.diaChiChiTiet}">Địa chỉ</span>,
+                                        <span th:text="${dc.phuongXaTen}">Phường</span>,
+                                        <span th:text="${dc.quanHuyenTen}">Quận</span>,
+                                        <span th:text="${dc.tinhThanhTen}">Tỉnh</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pm-panel">
+                    <div class="pm-panel-header">
+                        <span><span class="pm-step me-2">2</span>Phương thức thanh toán</span>
+                    </div>
+                    <div class="pm-panel-body">
+                        <label class="pm-option d-block" th:each="pt, stat : ${phuongThucs}">
+                            <div class="d-flex gap-2 align-items-start">
+                                <input class="form-check-input mt-1" type="radio" name="phuongThucThanhToanId" th:value="${pt.id}" th:checked="${stat.index == 0}">
+                                <div>
+                                    <div class="fw-bold" th:text="${pt.tenPttt == 'Tien mat' ? 'Thanh toán khi nhận hàng' : pt.tenPttt}">COD</div>
+                                    <div class="pm-muted small" th:text="${pt.moTa}">Mô tả</div>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="form-label fw-bold mt-2" for="ghiChu">Ghi chú</label>
+                        <textarea id="ghiChu" class="form-control" rows="3" placeholder="Ví dụ: gọi trước khi giao"></textarea>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="pm-panel pm-summary">
+                <h2 class="h5 fw-bold mb-3">Đơn hàng</h2>
+                <div id="cart-loading" class="text-muted py-3"><i class="fa fa-spinner fa-spin me-1"></i>Đang tải giỏ hàng</div>
+                <div id="cart-items"></div>
+                <hr>
+                <div class="pm-row">
+                    <span>Số lượng</span>
+                    <strong id="summary-count">0</strong>
+                </div>
+                <div class="pm-row">
+                    <span>Tiền hàng</span>
+                    <strong id="summary-subtotal">0đ</strong>
+                </div>
+                <div class="pm-row">
+                    <span>Phí vận chuyển</span>
+                    <strong id="summary-ship">0đ</strong>
+                </div>
+                <div class="d-flex align-items-end justify-content-between mb-3">
+                    <span class="text-muted">Tổng thanh toán</span>
+                    <span class="pm-total" id="summary-total">0đ</span>
+                </div>
+                <button class="btn btn-pm w-100 py-2" id="btn-place-order" th:disabled="${#lists.isEmpty(diaChis) or #lists.isEmpty(phuongThucs)}">
+                    <i class="fa fa-check me-1"></i> Đặt hàng
+                </button>
+                <div class="small text-danger mt-2 d-none" id="checkout-error"></div>
+            </aside>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:inline="javascript">
+    const currentCustomerId = /*[[${currentCustomer.khachHangId}]]*/ null;
+    const shipFee = 0;
+    const els = {
+        loading: document.getElementById('cart-loading'),
+        items: document.getElementById('cart-items'),
+        count: document.getElementById('summary-count'),
+        subtotal: document.getElementById('summary-subtotal'),
+        ship: document.getElementById('summary-ship'),
+        total: document.getElementById('summary-total'),
+        button: document.getElementById('btn-place-order'),
+        error: document.getElementById('checkout-error'),
+        success: document.getElementById('success-box'),
+        successMessage: document.getElementById('success-message'),
+        grid: document.getElementById('checkout-grid'),
+        badge: document.getElementById('cart-count')
+    };
+
+    function money(value) {
+        return Number(value || 0).toLocaleString('vi-VN') + 'đ';
+    }
+
+    function esc(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({
+            '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;'
+        })[ch]);
+    }
+
+    function showError(message) {
+        els.error.textContent = message || 'Không thể đặt hàng.';
+        els.error.classList.remove('d-none');
+    }
+
+    async function fetchJson(url, options = {}) {
+        const response = await fetch(url, { credentials:'include', ...options });
+        const text = await response.text();
+        if (!response.ok) {
+            let message = text || 'Không thể xử lý yêu cầu.';
+            try {
+                const error = JSON.parse(text);
+                message = error.message || message;
+            } catch {
+                // Keep the plain response text when the server does not return JSON.
+            }
+            throw new Error(message);
+        }
+        return text ? JSON.parse(text) : null;
+    }
+
+    function renderCart(cart) {
+        const items = cart?.items || [];
+        const subtotal = Number(cart?.tongTienTamTinh || 0);
+        els.loading.classList.add('d-none');
+        els.count.textContent = String(cart?.soLuongSanPham || 0);
+        els.subtotal.textContent = money(subtotal);
+        els.ship.textContent = money(shipFee);
+        els.total.textContent = money(subtotal + shipFee);
+        if (els.badge) els.badge.textContent = String(cart?.soLuongSanPham || 0);
+
+        if (!items.length) {
+            els.items.innerHTML = '<div class="pm-note mb-0">Giỏ hàng đang trống.</div>';
+            els.button.disabled = true;
+            return;
+        }
+
+        els.items.innerHTML = items.map(item => `
+            <div class="pm-item">
+                <div>
+                    <div class="fw-bold">${esc(item.tenSanPham)}</div>
+                    <div class="small text-muted">${esc(item.mauSac)} · ${item.ramGb || 0}GB/${item.luuTruGb || 0}GB × ${item.soLuong}</div>
+                </div>
+                <div class="fw-bold text-end">${money(item.thanhTien)}</div>
+            </div>
+        `).join('');
+    }
+
+    async function loadCart() {
+        try {
+            const cart = await fetchJson(`/api/public/gio-hang?khachHangId=${encodeURIComponent(currentCustomerId)}`);
+            renderCart(cart);
+        } catch (error) {
+            els.loading.innerHTML = `<span class="text-danger">${esc(error.message)}</span>`;
+            els.button.disabled = true;
+        }
+    }
+
+    async function placeOrder() {
+        const diaChi = document.querySelector('input[name="diaChiGiaoId"]:checked');
+        const pttt = document.querySelector('input[name="phuongThucThanhToanId"]:checked');
+        if (!diaChi || !pttt) {
+            showError('Vui lòng chọn địa chỉ và phương thức thanh toán.');
+            return;
+        }
+
+        els.error.classList.add('d-none');
+        els.button.disabled = true;
+        const oldText = els.button.innerHTML;
+        els.button.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Đang đặt hàng';
+
+        try {
+            const result = await fetchJson('/api/public/dat-hang', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    khachHangId: currentCustomerId,
+                    sessionId: null,
+                    diaChiGiaoId: Number(diaChi.value),
+                    phuongThucThanhToanId: Number(pttt.value),
+                    phiShip: shipFee,
+                    ghiChu: document.getElementById('ghiChu').value.trim() || null
+                })
+            });
+            sessionStorage.setItem('pm_cart_count', '0');
+            if (els.badge) els.badge.textContent = '0';
+            els.grid.style.display = 'none';
+            els.successMessage.textContent = `Mã đơn hàng: ${result.maDonHang}. PrimeMobile sẽ xác nhận đơn trong thời gian sớm nhất.`;
+            els.success.style.display = 'block';
+        } catch (error) {
+            showError(error.message);
+            els.button.disabled = false;
+            els.button.innerHTML = oldText;
+        }
+    }
+
+    els.button.addEventListener('click', placeOrder);
+    document.addEventListener('DOMContentLoaded', loadCart);
+</script>
+</body>
+</html>

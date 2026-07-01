@@ -1,100 +1,90 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <body>
-
-<!--
-    Fragment: navbar
-    Nhúng bằng: th:replace="~{fragments/header :: navbar}"
--->
-<nav th:fragment="navbar" class="navbar navbar-expand-lg pm-navbar sticky-top shadow-sm py-2">
-    <div class="container">
-
-        <!-- ── Logo ──────────────────────────────────────────────── -->
-        <a class="navbar-brand text-white d-flex align-items-center gap-2" href="/">
-            <span class="d-flex align-items-center justify-content-center rounded-2 bg-white text-primary fw-bold"
-                  style="width:32px;height:32px;font-size:.9rem;">P</span>
-            PrimeMobile
+<nav th:fragment="navbar" class="navbar navbar-expand-lg pm-navbar sticky-top shadow-sm py-1">
+    <div class="container d-flex align-items-center justify-content-between">
+        <a class="navbar-brand d-flex align-items-center" href="/">
+            <img src="/images/PrimeMobile_logo.png" alt="PrimeMobile" height="72" style="object-fit:contain;">
         </a>
 
-        <!-- ── Hamburger (mobile) ─────────────────────────────────── -->
-        <button class="navbar-toggler border-0 text-white" type="button"
-                data-bs-toggle="collapse" data-bs-target="#pmNavbar"
-                aria-controls="pmNavbar" aria-expanded="false">
+        <button class="navbar-toggler border-0 text-white" type="button" data-bs-toggle="collapse"
+                data-bs-target="#pmNavbar" aria-controls="pmNavbar" aria-expanded="false" aria-label="Mở menu">
             <i class="fa fa-bars"></i>
         </button>
 
-        <div class="collapse navbar-collapse" id="pmNavbar">
+        <div class="collapse navbar-collapse d-lg-flex align-items-center" id="pmNavbar">
+            <div class="d-none d-lg-flex align-items-center gap-1 ms-4">
+                <a href="/san-pham?danhMuc=iphone" class="text-decoration-none pm-brand-link">iPhone</a>
+                <a href="/san-pham?danhMuc=samsung" class="text-decoration-none pm-brand-link">Samsung</a>
+                <a href="/san-pham?danhMuc=xiaomi" class="text-decoration-none pm-brand-link">Xiaomi</a>
+                <a href="/san-pham?danhMuc=oppo" class="text-decoration-none pm-brand-link">OPPO</a>
+                <a href="/san-pham?danhMuc=vivo" class="text-decoration-none pm-brand-link">Vivo</a>
+            </div>
 
-            <!-- ── Search Bar (center) ──────────────────────────── -->
-            <form class="d-flex mx-auto pm-search-bar w-100" style="max-width:460px;"
-                  action="/san-pham" method="get">
-                <input class="form-control form-control-sm"
+            <form class="d-flex pm-search-bar my-2 my-lg-0 ms-lg-4 flex-grow-1" style="max-width:380px;" action="/san-pham" method="get">
+                <input class="form-control form-control-sm rounded-start-pill border-0 px-3 py-2"
                        type="search" name="tuKhoa"
-                       placeholder="Tìm điện thoại, hãng, model..."
-                       aria-label="Tìm kiếm sản phẩm">
-                <button class="btn btn-sm px-3 text-white" type="submit">
+                       placeholder="Bạn cần tìm điện thoại gì hôm nay?"
+                       aria-label="Tìm kiếm sản phẩm"
+                       style="box-shadow:none;font-size:.88rem;">
+                <button class="btn btn-sm btn-light rounded-end-pill px-3 py-2" type="submit"
+                        title="Tìm kiếm"
+                        style="background:#fff;border:0;font-weight:800;color:#0d9488!important;">
                     <i class="fa fa-search"></i>
                 </button>
             </form>
 
-            <!-- ── Right nav ─────────────────────────────────────── -->
-            <ul class="navbar-nav ms-3 align-items-center gap-1">
+            <ul class="navbar-nav ms-auto align-items-center gap-3 flex-row my-2 my-lg-0">
+                <li class="nav-item" th:if="${session.CURRENT_CUSTOMER != null}">
+                    <a class="nav-link text-white px-2 d-flex align-items-center gap-1" href="/tra-cuu-don-hang" title="Đơn hàng">
+                        <i class="fa fa-receipt fa-lg"></i>
+                        <span class="d-none d-xl-inline fw-semibold" style="font-size:.9rem;">Đơn hàng</span>
+                    </a>
+                </li>
 
-                <!-- Giỏ hàng -->
                 <li class="nav-item">
-                    <a class="nav-link position-relative pm-cart-badge px-2" href="/gio-hang"
-                       id="nav-gio-hang" title="Giỏ hàng">
-                        <i class="fa fa-shopping-cart fa-lg"></i>
-                        <span class="badge rounded-pill bg-danger" id="cart-count">0</span>
+                    <a class="nav-link position-relative text-white px-2 d-flex align-items-center gap-1" href="/gio-hang" id="nav-gio-hang" title="Giỏ hàng">
+                        <div class="position-relative">
+                            <i class="fa fa-shopping-cart fa-lg"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:.65rem;" id="cart-count">0</span>
+                        </div>
+                        <span class="d-none d-xl-inline fw-semibold" style="font-size:.9rem;">Giỏ hàng</span>
                     </a>
                 </li>
 
-                <!-- Đăng nhập / Tài khoản -->
-                <!-- Khách vãng lai -->
                 <li class="nav-item" th:if="${session.CURRENT_CUSTOMER == null}">
-                    <a class="nav-link px-2" href="/dang-nhap" id="nav-dang-nhap" title="Đăng nhập">
+                    <a class="nav-link text-white px-2 d-flex align-items-center gap-1" href="/dang-nhap" id="nav-dang-nhap" title="Đăng nhập">
                         <i class="fa fa-user-circle fa-lg"></i>
-                        <span class="d-none d-lg-inline ms-1" style="font-size:.88rem;">Đăng nhập</span>
+                        <span class="d-none d-lg-inline fw-semibold" style="font-size:.9rem;">Đăng nhập</span>
                     </a>
                 </li>
-                <!-- Khách hàng đã đăng nhập -->
+
                 <li class="nav-item dropdown" th:if="${session.CURRENT_CUSTOMER != null}">
-                    <button class="btn btn-link nav-link px-2 dropdown-toggle text-warning text-decoration-none border-0" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button class="btn btn-link nav-link px-2 d-flex align-items-center gap-1 dropdown-toggle text-warning fw-bold text-decoration-none border-0"
+                            type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fa fa-user-check fa-lg"></i>
-                        <span class="d-none d-lg-inline ms-1 fw-bold" style="font-size:.88rem;" th:text="${session.CURRENT_CUSTOMER.hoTen}">Tên</span>
+                        <span class="d-none d-lg-inline" style="font-size:.9rem;" th:text="${session.CURRENT_CUSTOMER.hoTen}">Tên khách hàng</span>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="userDropdown" style="font-size: 0.9rem; border-radius: 8px; z-index: 1050 !important; position: absolute;">
-                        <li><a class="dropdown-item py-2" href="/toi"><i class="fa fa-user me-2 text-muted"></i>Tài khoản</a></li>
-                        <li><a class="dropdown-item py-2" href="/tra-cuu-don-hang"><i class="fa fa-box me-2 text-muted"></i>Đơn hàng của tôi</a></li>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="userDropdown" style="font-size:.95rem;border-radius:8px;z-index:1050!important;">
+                        <li><a class="dropdown-item py-2" href="/toi"><i class="fa fa-user me-3 text-muted"></i>Tài khoản</a></li>
+                        <li><a class="dropdown-item py-2" href="/tra-cuu-don-hang"><i class="fa fa-box me-3 text-muted"></i>Đơn hàng của tôi</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item py-2 text-danger" href="/dang-xuat"><i class="fa fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
+                        <li><a class="dropdown-item py-2 text-danger" href="/dang-xuat"><i class="fa fa-sign-out-alt me-3"></i>Đăng xuất</a></li>
                     </ul>
                 </li>
-
-                <!-- Tra cứu đơn hàng -->
-                <li class="nav-item">
-                    <a class="nav-link px-2" href="/tra-cuu-don-hang" title="Tra cứu đơn hàng">
-                        <i class="fa fa-receipt fa-lg"></i>
-                        <span class="d-none d-lg-inline ms-1" style="font-size:.88rem;">Đơn hàng</span>
-                    </a>
-                </li>
-
             </ul>
         </div>
     </div>
 
-    <!-- ── Sub-nav: Danh mục nhanh ──────────────────────────────── -->
-    <div class="w-100 border-top border-white border-opacity-25 mt-1 d-none d-lg-block">
-        <div class="container d-flex gap-3 py-1" style="font-size:.83rem; overflow-x:auto; flex-wrap:nowrap;">
-            <a href="/san-pham?danhMuc=iphone"  class="text-white text-decoration-none opacity-85 text-nowrap fw-500 hover-text-white">📱 iPhone</a>
-            <a href="/san-pham?danhMuc=samsung"  class="text-white text-decoration-none opacity-85 text-nowrap">📱 Samsung</a>
-            <a href="/san-pham?danhMuc=xiaomi"   class="text-white text-decoration-none opacity-85 text-nowrap">📱 Xiaomi</a>
-            <a href="/san-pham?danhMuc=oppo"     class="text-white text-decoration-none opacity-85 text-nowrap">📱 OPPO</a>
-            <a href="/san-pham?danhMuc=vivo"     class="text-white text-decoration-none opacity-85 text-nowrap">📱 Vivo</a>
-            <a href="/khuyen-mai"                 class="text-warning text-decoration-none text-nowrap fw-bold">🔥 Khuyến mãi</a>
-        </div>
-    </div>
+    <style>
+        .pm-navbar { background:#115e59!important; box-shadow:0 4px 12px rgba(17,94,89,.15)!important; padding-top:.4rem!important; padding-bottom:.4rem!important; border-bottom:0!important; }
+        .pm-brand-link { color:rgba(255,255,255,.9)!important; font-weight:600; font-size:.9rem; padding:6px 12px; border-radius:6px; white-space:nowrap; transition:all .2s ease-in-out; }
+        .pm-brand-link:hover { color:#fff!important; background-color:rgba(255,255,255,.15); }
+        .pm-navbar .nav-link { color:rgba(255,255,255,.9)!important; font-weight:600!important; transition:color .2s ease-in-out; }
+        .pm-navbar .nav-link:hover { color:#ffc107!important; }
+        .navbar-brand { transition:transform .2s; }
+        .navbar-brand:hover { transform:scale(1.03); }
+    </style>
 </nav>
-
 </body>
 </html>

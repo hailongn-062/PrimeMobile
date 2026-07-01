@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle} + ' | PrimeMobile'">Giỏ hàng | PrimeMobile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --pm-primary:#0d9488;
+            --pm-primary-dark:#115e59;
+            --pm-bg:#f8fafc;
+            --pm-text:#0f172a;
+            --pm-muted:#64748b;
+            --pm-line:#e2e8f0;
+            --pm-danger:#dc2626;
+        }
+        body { font-family:'Inter',sans-serif; background:var(--pm-bg); color:var(--pm-text); min-height:100vh; }
+        .pm-page { padding:32px 0 56px; }
+        .pm-cart-shell { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:20px; align-items:start; }
+        .pm-panel { background:#fff; border:1px solid var(--pm-line); border-radius:8px; box-shadow:0 10px 28px rgba(15,23,42,.06); }
+        .pm-panel-header { padding:18px 20px; border-bottom:1px solid var(--pm-line); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+        .pm-cart-list { padding:0; margin:0; list-style:none; }
+        .pm-cart-item { padding:18px 20px; display:grid; grid-template-columns:96px minmax(0,1fr) 142px 110px 36px; gap:16px; align-items:center; border-bottom:1px solid var(--pm-line); }
+        .pm-cart-item:last-child { border-bottom:0; }
+        .pm-img { width:96px; height:96px; display:flex; align-items:center; justify-content:center; background:#f8fafc; border-radius:8px; overflow:hidden; }
+        .pm-img img { max-width:100%; max-height:100%; object-fit:contain; }
+        .pm-image-fallback { width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:2.1rem; }
+        .pm-image-fallback.d-none { display:none!important; }
+        .pm-name { font-weight:800; margin-bottom:4px; line-height:1.35; }
+        .pm-meta { color:var(--pm-muted); font-size:.88rem; }
+        .pm-price { color:#ea580c; font-weight:800; }
+        .pm-qty { display:grid; grid-template-columns:34px 42px 34px; border:1px solid var(--pm-line); border-radius:8px; overflow:hidden; background:#fff; }
+        .pm-qty button { border:0; background:#f8fafc; height:34px; font-weight:800; color:var(--pm-primary-dark); }
+        .pm-qty span { display:flex; align-items:center; justify-content:center; font-weight:800; border-left:1px solid var(--pm-line); border-right:1px solid var(--pm-line); }
+        .pm-remove { border:0; background:transparent; color:var(--pm-danger); width:36px; height:36px; border-radius:8px; }
+        .pm-remove:hover { background:#fee2e2; }
+        .pm-summary { padding:20px; position:sticky; top:96px; }
+        .pm-summary-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; color:var(--pm-muted); }
+        .pm-total { color:#ea580c; font-size:1.45rem; font-weight:900; }
+        .btn-pm { background:var(--pm-primary); color:#fff; font-weight:800; border-radius:8px; border:0; }
+        .btn-pm:hover { background:var(--pm-primary-dark); color:#fff; }
+        .pm-empty { padding:54px 24px; text-align:center; color:var(--pm-muted); }
+        .pm-empty i { font-size:4rem; color:#cbd5e1; margin-bottom:16px; }
+        .pm-loading { padding:48px 24px; text-align:center; color:var(--pm-muted); }
+        @media (max-width: 992px) {
+            .pm-cart-shell { grid-template-columns:1fr; }
+            .pm-summary { position:static; }
+            .pm-cart-item { grid-template-columns:82px minmax(0,1fr); }
+            .pm-img { width:82px; height:82px; }
+            .pm-qty, .pm-price, .pm-remove { grid-column:2; }
+            .pm-price { margin-top:4px; }
+            .pm-remove { justify-self:start; }
+        }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/header :: navbar}"></div>
+
+<main class="pm-page">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+            <div>
+                <h1 class="h3 fw-black mb-1" style="font-weight:900;">Giỏ hàng</h1>
+                <div class="text-muted">Kiểm tra sản phẩm trước khi đặt hàng</div>
+            </div>
+            <a href="/san-pham" class="btn btn-outline-secondary">
+                <i class="fa fa-arrow-left me-1"></i> Tiếp tục mua
+            </a>
+        </div>
+
+        <div class="pm-cart-shell">
+            <section class="pm-panel">
+                <div class="pm-panel-header">
+                    <div class="fw-bold"><i class="fa fa-shopping-cart me-2 text-success"></i>Sản phẩm đã chọn</div>
+                    <button class="btn btn-sm btn-outline-danger" id="btn-clear-cart" type="button">
+                        <i class="fa fa-trash me-1"></i> Xóa giỏ
+                    </button>
+                </div>
+                <div id="cart-loading" class="pm-loading">
+                    <i class="fa fa-spinner fa-spin me-2"></i>Đang tải giỏ hàng
+                </div>
+                <div id="cart-empty" class="pm-empty d-none">
+                    <i class="fa fa-cart-shopping"></i>
+                    <h2 class="h5 fw-bold text-dark">Giỏ hàng đang trống</h2>
+                    <p class="mb-3">Chọn một chiếc điện thoại bạn thích rồi quay lại đây.</p>
+                    <a href="/san-pham" class="btn btn-pm px-4">Xem sản phẩm</a>
+                </div>
+                <ul class="pm-cart-list d-none" id="cart-list"></ul>
+            </section>
+
+            <aside class="pm-panel pm-summary">
+                <h2 class="h5 fw-bold mb-3">Tạm tính</h2>
+                <div class="pm-summary-row">
+                    <span>Số lượng</span>
+                    <strong id="summary-count">0</strong>
+                </div>
+                <div class="pm-summary-row">
+                    <span>Tiền hàng</span>
+                    <strong id="summary-subtotal">0đ</strong>
+                </div>
+                <hr>
+                <div class="d-flex align-items-end justify-content-between mb-3">
+                    <span class="text-muted">Tổng cộng</span>
+                    <span class="pm-total" id="summary-total">0đ</span>
+                </div>
+                <a th:href="${session.CURRENT_CUSTOMER != null ? '/thanh-toan' : '/dang-nhap'}"
+                   class="btn btn-pm w-100 py-2" id="btn-checkout">
+                    <i class="fa fa-credit-card me-1"></i>
+                    <span th:text="${session.CURRENT_CUSTOMER != null ? 'Tiến hành đặt hàng' : 'Đăng nhập để đặt hàng'}">Đặt hàng</span>
+                </a>
+            </aside>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:inline="javascript">
+    const currentCustomerId = /*[[${session.CURRENT_CUSTOMER != null ? session.CURRENT_CUSTOMER.khachHangId : null}]]*/ null;
+    const els = {
+        loading: document.getElementById('cart-loading'),
+        empty: document.getElementById('cart-empty'),
+        list: document.getElementById('cart-list'),
+        clear: document.getElementById('btn-clear-cart'),
+        summaryCount: document.getElementById('summary-count'),
+        summarySubtotal: document.getElementById('summary-subtotal'),
+        summaryTotal: document.getElementById('summary-total'),
+        checkout: document.getElementById('btn-checkout'),
+        badge: document.getElementById('cart-count')
+    };
+
+    function getGuestSessionId() {
+        const key = 'pm_guest_session_id';
+        let sessionId = localStorage.getItem(key);
+        if (!sessionId) {
+            sessionId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
+            localStorage.setItem(key, sessionId);
+        }
+        return sessionId;
+    }
+
+    function cartQuery() {
+        return currentCustomerId
+            ? `khachHangId=${encodeURIComponent(currentCustomerId)}`
+            : `sessionId=${encodeURIComponent(getGuestSessionId())}`;
+    }
+
+    function money(value) {
+        return Number(value || 0).toLocaleString('vi-VN') + 'đ';
+    }
+
+    function esc(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({
+            '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;'
+        })[ch]);
+    }
+
+    function setBusy(isBusy) {
+        els.list.querySelectorAll('button').forEach(btn => btn.disabled = isBusy);
+        els.clear.disabled = isBusy;
+    }
+
+    function updateBadge(count) {
+        sessionStorage.setItem('pm_cart_count', String(count || 0));
+        if (els.badge) els.badge.textContent = String(count || 0);
+    }
+
+    async function fetchJson(url, options = {}) {
+        const response = await fetch(url, { credentials:'include', ...options });
+        if (!response.ok) {
+            const message = await response.text();
+            throw new Error(message || 'Không thể xử lý giỏ hàng.');
+        }
+        const text = await response.text();
+        return text ? JSON.parse(text) : null;
+    }
+
+    function render(cart) {
+        const items = cart?.items || [];
+        const totalCount = cart?.soLuongSanPham || 0;
+        const total = cart?.tongTienTamTinh || 0;
+
+        els.loading.classList.add('d-none');
+        els.summaryCount.textContent = String(totalCount);
+        els.summarySubtotal.textContent = money(total);
+        els.summaryTotal.textContent = money(total);
+        updateBadge(totalCount);
+
+        if (!items.length) {
+            els.empty.classList.remove('d-none');
+            els.list.classList.add('d-none');
+            els.list.innerHTML = '';
+            els.clear.disabled = true;
+            els.checkout.classList.add('disabled');
+            return;
+        }
+
+        els.empty.classList.add('d-none');
+        els.list.classList.remove('d-none');
+        els.clear.disabled = false;
+        els.checkout.classList.remove('disabled');
+        els.list.innerHTML = items.map(item => {
+            const image = item.hinhAnh
+                ? `<img src="${esc(item.hinhAnh)}" alt="${esc(item.tenSanPham)}" referrerpolicy="no-referrer" onerror="replaceCartImage(this)">
+                   <span class="pm-image-fallback d-none"><i class="fa fa-mobile-alt"></i></span>`
+                : `<span class="pm-image-fallback"><i class="fa fa-mobile-alt"></i></span>`;
+            return `
+                <li class="pm-cart-item" data-item-id="${item.itemId}" data-qty="${item.soLuong}">
+                    <a class="pm-img" href="/san-pham/${item.sanPhamId}">${image}</a>
+                    <div>
+                        <a href="/san-pham/${item.sanPhamId}" class="pm-name text-decoration-none text-dark">${esc(item.tenSanPham)}</a>
+                        <div class="pm-meta">${esc(item.mauSac)} · ${item.ramGb || 0}GB/${item.luuTruGb || 0}GB</div>
+                        <div class="pm-meta">${esc(item.maSku)}</div>
+                    </div>
+                    <div class="pm-qty" aria-label="Số lượng">
+                        <button type="button" data-action="decrease">-</button>
+                        <span>${item.soLuong}</span>
+                        <button type="button" data-action="increase">+</button>
+                    </div>
+                    <div class="pm-price">${money(item.thanhTien)}</div>
+                    <button class="pm-remove" type="button" data-action="remove" title="Xóa sản phẩm">
+                        <i class="fa fa-xmark"></i>
+                    </button>
+                </li>`;
+        }).join('');
+    }
+
+    async function loadCart() {
+        els.loading.classList.remove('d-none');
+        try {
+            render(await fetchJson(`/api/public/gio-hang?${cartQuery()}`));
+        } catch (error) {
+            els.loading.innerHTML = `<span class="text-danger">${esc(error.message)}</span>`;
+        }
+    }
+
+    function cartFallbackImage(img) {
+        const text = (img.alt || '').toLowerCase();
+        if (text.includes('apple') || text.includes('iphone')) return '/images/brands/apple.png';
+        if (text.includes('samsung')) return '/images/brands/samsung.png';
+        if (text.includes('xiaomi') || text.includes('redmi')) return '/images/brands/xiaomi.png';
+        if (text.includes('oppo')) return '/images/brands/oppo.png';
+        if (text.includes('vivo')) return '/images/brands/vivo.png';
+        return '/images/PrimeMobile_logo.png';
+    }
+
+    function replaceCartImage(img) {
+        const fallbackSrc = cartFallbackImage(img);
+        if (!img.dataset.fallbackApplied && img.getAttribute('src') !== fallbackSrc) {
+            img.dataset.fallbackApplied = 'true';
+            img.src = fallbackSrc;
+            img.classList.remove('d-none');
+            return;
+        }
+        img.classList.add('d-none');
+        if (img.nextElementSibling) img.nextElementSibling.classList.remove('d-none');
+    }
+
+    async function updateQuantity(itemId, quantity) {
+        setBusy(true);
+        try {
+            await fetchJson(`/api/public/gio-hang/item/${itemId}?soLuongMoi=${quantity}`, { method:'PUT' });
+            await loadCart();
+        } catch (error) {
+            alert(error.message);
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function removeItem(itemId) {
+        setBusy(true);
+        try {
+            await fetch(`/api/public/gio-hang/item/${itemId}`, { method:'DELETE', credentials:'include' });
+            await loadCart();
+        } catch (error) {
+            alert('Không thể xóa sản phẩm khỏi giỏ hàng.');
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    els.list.addEventListener('click', event => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+        const row = button.closest('.pm-cart-item');
+        const itemId = Number(row.dataset.itemId);
+        const currentQty = Number(row.dataset.qty);
+        const action = button.dataset.action;
+
+        if (action === 'increase') updateQuantity(itemId, currentQty + 1);
+        if (action === 'decrease' && currentQty > 1) updateQuantity(itemId, currentQty - 1);
+        if (action === 'remove') removeItem(itemId);
+    });
+
+    els.clear.addEventListener('click', async () => {
+        if (!confirm('Xóa toàn bộ sản phẩm khỏi giỏ hàng?')) return;
+        setBusy(true);
+        try {
+            await fetch(`/api/public/gio-hang?${cartQuery()}`, { method:'DELETE', credentials:'include' });
+            await loadCart();
+        } catch (error) {
+            alert('Không thể xóa giỏ hàng.');
+        } finally {
+            setBusy(false);
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', loadCart);
+</script>
+</body>
+</html>
