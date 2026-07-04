@@ -33,6 +33,8 @@
                 Đặt lúc <span th:text="${#temporals.format(donHang.ngayDat, 'HH:mm dd/MM/yyyy')}">08:00 01/01/2024</span>
                 &nbsp;·&nbsp; Kênh:
                 <span th:text="${donHang.kenhBan == 'online' ? '🌐 Online' : '🏪 Tại quầy'}" class="fw-semibold">Online</span>
+                &nbsp;·&nbsp; Người xử lý:
+                <span th:text="${donHang.tenNguoiXuLy != null ? donHang.tenNguoiXuLy : '—'}" class="fw-semibold">—</span>
             </small>
         </div>
 
@@ -75,10 +77,21 @@
                 </button>
             </th:block>
 
-            <!-- DA_GIAO: Chỉ thông báo -->
+            <!-- DA_GIAO: Nút Xác nhận thanh toán (COD) + thông báo -->
             <th:block th:if="${donHang.trangThai == 'da_giao'}">
-                <span class="badge bg-success fs-6 px-3 py-2 rounded-pill">
-                    <i class="fa fa-check me-1"></i>Đơn hàng đã hoàn tất
+                <span th:if="${donHang.trangThaiThanhToan == 'chua_thanh_toan'}">
+                    <button class="btn btn-warning px-3" id="btn-thanh-toan"
+                            th:data-id="${donHang.id}">
+                        <i class="fa fa-money-bill me-1"></i>Xác nhận thanh toán
+                    </button>
+                </span>
+                <span th:unless="${donHang.trangThaiThanhToan == 'chua_thanh_toan'}">
+                    <span class="badge bg-success fs-6 px-3 py-2 rounded-pill">
+                        <i class="fa fa-check me-1"></i>Đã thanh toán
+                    </span>
+                </span>
+                <span class="badge bg-success fs-6 px-3 py-2 rounded-pill ms-2">
+                    <i class="fa fa-check-double me-1"></i>Đã giao
                 </span>
             </th:block>
 
@@ -111,68 +124,84 @@
                 <div class="table-responsive">
                     <table class="table align-middle mb-0" style="font-size:.875rem;">
                         <thead class="table-light">
-                            <tr>
-                                <th class="ps-3" style="width:50px;">#</th>
-                                <th>Sản phẩm / SKU</th>
-                                <th class="text-center" style="width:80px;">SL</th>
-                                <th class="text-end" style="width:130px;">Đơn giá</th>
-                                <th class="text-end pe-3" style="width:130px;">Thành tiền</th>
-                            </tr>
+                        <tr>
+                            <th class="ps-3" style="width:50px;">#</th>
+                            <th>Sản phẩm / SKU</th>
+                            <th class="text-center" style="width:80px;">SL</th>
+                            <th class="text-end" style="width:130px;">Đơn giá</th>
+                            <th class="text-end pe-3" style="width:130px;">Thành tiền</th>
+                        </tr>
                         </thead>
                         <tbody>
-                            <tr th:each="ct, stat : ${donHang.chiTietDonHangs}">
-                                <td class="ps-3 text-muted" th:text="${stat.index + 1}">1</td>
-                                <td>
-                                    <div class="fw-semibold"
-                                         th:text="${ct.bienTheSanPham != null ? ct.bienTheSanPham.sanPham.tenSanPham : 'Sản phẩm'}">
-                                        Tên SP
-                                    </div>
-                                    <div class="text-muted small"
-                                         th:if="${ct.bienTheSanPham != null}"
-                                         th:text="${ct.bienTheSanPham.maSku + ' · ' + ct.bienTheSanPham.mauSac + ' · ' + ct.bienTheSanPham.dungLuongRam + 'GB/' + ct.bienTheSanPham.dungLuongRom + 'GB'}">
-                                        SKU · Màu · RAM/ROM
-                                    </div>
-                                </td>
-                                <td class="text-center fw-bold" th:text="${ct.soLuong}">1</td>
-                                <td class="text-end"
-                                    th:text="${#numbers.formatDecimal(ct.giaBanTaiThoiDiem, 0, 'COMMA', 0, 'POINT')} + '₫'">
-                                    0₫
-                                </td>
-                                <td class="text-end pe-3 fw-bold text-primary"
-                                    th:text="${#numbers.formatDecimal(ct.thanhTien, 0, 'COMMA', 0, 'POINT')} + '₫'">
-                                    0₫
-                                </td>
-                            </tr>
+                        <tr th:each="ct, stat : ${donHang.chiTietDonHangs}">
+                            <td class="ps-3 text-muted" th:text="${stat.index + 1}">1</td>
+                            <td>
+                                <div class="fw-semibold" th:text="${ct.tenSanPham}">Tên SP</div>
+                                <div class="text-muted small" th:text="${ct.maSku + ' · ' + ct.mauSac + ' · ' + ct.ramGb + 'GB/' + ct.luuTruGb + 'GB'}">
+                                    SKU · Màu · RAM/ROM
+                                </div>
+                            </td>
+                            <td class="text-center fw-bold" th:text="${ct.soLuong}">1</td>
+                            <td class="text-end"
+                                th:text="${#numbers.formatDecimal(ct.donGiaBan, 0, 'COMMA', 0, 'POINT')} + '₫'">
+                                0₫
+                            </td>
+                            <td class="text-end pe-3 fw-bold text-primary"
+                                th:text="${#numbers.formatDecimal(ct.thanhTien, 0, 'COMMA', 0, 'POINT')} + '₫'">
+                                0₫
+                            </td>
+                        </tr>
                         </tbody>
                         <tfoot class="table-light">
-                            <tr>
-                                <td colspan="4" class="text-end pe-3 fw-semibold">Tổng tiền hàng:</td>
-                                <td class="text-end pe-3 fw-bold"
-                                    th:text="${#numbers.formatDecimal(donHang.tongTienHang, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
-                            </tr>
-                            <tr th:if="${donHang.tienGiamGia != null and donHang.tienGiamGia.compareTo(0B) > 0}">
-                                <td colspan="4" class="text-end pe-3 text-success fw-semibold">Giảm giá:</td>
-                                <td class="text-end pe-3 fw-bold text-success"
-                                    th:text="'- ' + ${#numbers.formatDecimal(donHang.tienGiamGia, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
-                            </tr>
-                            <tr>
-                                <td colspan="4" class="text-end pe-3 fw-semibold">Phí vận chuyển:</td>
-                                <td class="text-end pe-3 fw-bold"
-                                    th:text="${#numbers.formatDecimal(donHang.phiShip, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
-                            </tr>
-                            <tr class="table-primary">
-                                <td colspan="4" class="text-end pe-3 fw-bold fs-6">Tổng thanh toán:</td>
-                                <td class="text-end pe-3 fw-bold fs-6 text-primary"
-                                    th:text="${#numbers.formatDecimal(donHang.tongThanhToan, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
-                            </tr>
+                        <tr>
+                            <td colspan="4" class="text-end pe-3 fw-semibold">Tổng tiền hàng:</td>
+                            <td class="text-end pe-3 fw-bold"
+                                th:text="${#numbers.formatDecimal(donHang.tongTienHang, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
+                        </tr>
+                        <tr th:if="${donHang.tienGiamGia != null and donHang.tienGiamGia > 0}">
+                            <td colspan="4" class="text-end pe-3 text-success fw-semibold">Giảm giá:</td>
+                            <td class="text-end pe-3 fw-bold text-success"
+                                th:text="'- ' + ${#numbers.formatDecimal(donHang.tienGiamGia, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4" class="text-end pe-3 fw-semibold">Phí vận chuyển:</td>
+                            <td class="text-end pe-3 fw-bold"
+                                th:text="${#numbers.formatDecimal(donHang.phiShip, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
+                        </tr>
+                        <tr class="table-primary">
+                            <td colspan="4" class="text-end pe-3 fw-bold fs-6">Tổng thanh toán:</td>
+                            <td class="text-end pe-3 fw-bold fs-6 text-primary"
+                                th:text="${#numbers.formatDecimal(donHang.tongThanhToan, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
+                        </tr>
                         </tfoot>
                     </table>
                 </div>
             </div>
 
+            <!-- Danh sách IMEI đã gán cho đơn hàng -->
+            <div class="pm-card mb-4" th:if="${donHang.imeiList != null and !#lists.isEmpty(donHang.imeiList)}">
+                <div class="pm-card-header">
+                    <span><i class="fa fa-barcode me-2"></i>Danh sách IMEI đã xuất</span>
+                    <span class="badge bg-primary rounded-pill" th:text="${#lists.size(donHang.imeiList)} + ' IMEI'">0 IMEI</span>
+                </div>
+                <div class="card-body p-3">
+                    <div class="d-flex flex-wrap gap-2">
+                        <span th:each="imei : ${donHang.imeiList}"
+                              class="badge bg-light text-dark border fw-normal p-2"
+                              style="font-family: monospace; font-size: .85rem;">
+                            <i class="fa fa-microchip me-1 text-primary"></i>
+                            <span th:text="${imei.imei1}">IMEI</span>
+                            <span th:if="${imei.serial != null}"
+                                  class="text-muted ms-1 small"
+                                  th:text="'(' + ${imei.serial} + ')'">(SN)</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Ghi chú -->
             <div class="pm-card" th:if="${donHang.ghiChu != null and !#strings.isEmpty(donHang.ghiChu)}">
-                <div class="pm-card-header"><span><i class="fa fa-comment-alt me-2"></i>Ghi chú của khách</span></div>
+                <div class="pm-card-header"><span><i class="fa fa-comment-alt me-2"></i>Ghi chú</span></div>
                 <div class="p-3 text-muted" th:text="${donHang.ghiChu}">Ghi chú...</div>
             </div>
         </div>
@@ -199,48 +228,70 @@
                         <span th:if="${donHang.trangThaiThanhToan == 'that_bai'}"           class="badge bg-danger">Thất bại</span>
                         <span th:if="${donHang.trangThaiThanhToan == 'dang_chuyen_huong'}"  class="badge bg-warning text-dark">Đang xử lý</span>
                     </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between" style="font-size:.82rem;">
+                        <span class="text-muted">Ngày giao dự kiến:</span>
+                        <span th:text="${donHang.ngayGiaoDuKien != null ? #temporals.format(donHang.ngayGiaoDuKien, 'dd/MM/yyyy') : '—'}">—</span>
+                    </div>
+                    <div class="d-flex justify-content-between" style="font-size:.82rem;">
+                        <span class="text-muted">Ngày giao thực tế:</span>
+                        <span th:text="${donHang.ngayGiaoThucTe != null ? #temporals.format(donHang.ngayGiaoThucTe, 'dd/MM/yyyy HH:mm') : '—'}">—</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Thông tin giao hàng -->
+            <!-- Thông tin khách hàng -->
             <div class="pm-card mb-3">
-                <div class="pm-card-header"><span><i class="fa fa-map-marker-alt me-2"></i>Thông tin giao hàng</span></div>
+                <div class="pm-card-header"><span><i class="fa fa-user me-2"></i>Khách hàng</span></div>
                 <div class="p-3">
                     <ul class="list-unstyled mb-0" style="font-size:.87rem;">
                         <li class="mb-2">
-                            <span class="text-muted d-block" style="font-size:.75rem;">Người nhận</span>
-                            <span class="fw-semibold" th:text="${donHang.hoTenNguoiNhan ?: '—'}">Tên</span>
+                            <span class="text-muted d-block" style="font-size:.75rem;">Tên khách hàng</span>
+                            <span class="fw-semibold" th:text="${donHang.tenKhachHang != null ? donHang.tenKhachHang : '—'}">—</span>
                         </li>
                         <li class="mb-2">
-                            <span class="text-muted d-block" style="font-size:.75rem;">Điện thoại</span>
-                            <span th:text="${donHang.sdtNguoiNhan ?: '—'}">SĐT</span>
+                            <span class="text-muted d-block" style="font-size:.75rem;">Số điện thoại</span>
+                            <span th:text="${donHang.soDienThoaiKhach != null ? donHang.soDienThoaiKhach : '—'}">—</span>
                         </li>
                         <li class="mb-2">
-                            <span class="text-muted d-block" style="font-size:.75rem;">Địa chỉ</span>
-                            <span th:text="${(donHang.diaChiGiaCuThe ?: '') + ', ' + (donHang.phuongXaGiao ?: '') + ', ' + (donHang.quanHuyenGiao ?: '') + ', ' + (donHang.tinhThanhGiao ?: '')}">
-                                Địa chỉ
-                            </span>
-                        </li>
-                        <li th:if="${donHang.ngayGiaoDuKien != null}">
-                            <span class="text-muted d-block" style="font-size:.75rem;">Ngày giao dự kiến</span>
-                            <span th:text="${#temporals.format(donHang.ngayGiaoDuKien, 'dd/MM/yyyy')}">01/01/2024</span>
+                            <span class="text-muted d-block" style="font-size:.75rem;">Email</span>
+                            <span th:text="${donHang.emailKhach != null ? donHang.emailKhach : '—'}">—</span>
                         </li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Thông tin khách hàng -->
-            <div class="pm-card" th:if="${donHang.khachHang != null}">
-                <div class="pm-card-header"><span><i class="fa fa-user me-2"></i>Khách hàng</span></div>
+            <!-- Thông tin giao hàng -->
+            <div class="pm-card mb-3">
+                <div class="pm-card-header"><span><i class="fa fa-map-marker-alt me-2"></i>Địa chỉ giao hàng</span></div>
+                <div class="p-3">
+                    <ul class="list-unstyled mb-0" style="font-size:.87rem;">
+                        <li class="mb-2">
+                            <span class="text-muted d-block" style="font-size:.75rem;">Người nhận</span>
+                            <span class="fw-semibold" th:text="${donHang.hoTenNguoiNhan ?: '—'}">—</span>
+                        </li>
+                        <li class="mb-2">
+                            <span class="text-muted d-block" style="font-size:.75rem;">Điện thoại</span>
+                            <span th:text="${donHang.sdtNguoiNhan ?: '—'}">—</span>
+                        </li>
+                        <li class="mb-2">
+                            <span class="text-muted d-block" style="font-size:.75rem;">Địa chỉ</span>
+                            <span th:text="${(donHang.diaChiGiaoCuThe ?: '') + ', ' + (donHang.phuongXaGiao ?: '') + ', ' + (donHang.quanHuyenGiao ?: '') + ', ' + (donHang.tinhThanhGiao ?: '')}">
+                                Địa chỉ
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Thông tin nhân viên xử lý -->
+            <div class="pm-card" th:if="${donHang.tenNguoiXuLy != null}">
+                <div class="pm-card-header"><span><i class="fa fa-user-tie me-2"></i>Nhân viên xử lý</span></div>
                 <div class="p-3">
                     <ul class="list-unstyled mb-0" style="font-size:.87rem;">
                         <li class="mb-1">
                             <span class="text-muted">Tên: </span>
-                            <span class="fw-semibold" th:text="${donHang.khachHang.hoTen}">Tên KH</span>
-                        </li>
-                        <li class="mb-1">
-                            <span class="text-muted">Email: </span>
-                            <span th:text="${donHang.khachHang.email ?: '—'}">Email</span>
+                            <span class="fw-semibold" th:text="${donHang.tenNguoiXuLy}">—</span>
                         </li>
                     </ul>
                 </div>
@@ -251,69 +302,248 @@
 
 </main>
 
+<!-- ════════════════════════════════════════════════════════════════
+     MODAL CHỌN IMEI KHI XÁC NHẬN ĐƠN (sao chép từ danh-sach.html)
+═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="imeiModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold text-primary">
+                    <i class="fa fa-barcode me-2"></i>Xác nhận đơn <span id="imeiModalMaDon" class="text-dark">#DH001</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="imeiModalLoading" class="text-center py-4">
+                    <i class="fa fa-spinner fa-spin me-2"></i>Đang tải thông tin đơn hàng...
+                </div>
+                <div id="imeiModalContent" style="display:none;">
+                    <div class="alert alert-info small mb-3">
+                        <i class="fa fa-info-circle me-1"></i>
+                        Chọn <strong>mã IMEI</strong> tương ứng với từng sản phẩm trong đơn hàng.
+                        Số lượng IMEI phải khớp với số lượng sản phẩm.
+                        <br><small>Chỉ hiển thị IMEI <strong>đang có ở Kho Online</strong>.</small>
+                    </div>
+                    <div id="imeiProductList" class="row g-3">
+                        <!-- Render từ JS -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-success" id="imeiModalConfirm">
+                    <i class="fa fa-check me-1"></i>Xác nhận đơn hàng
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div th:replace="~{layout/admin-layout :: adminScripts}"></div>
 
 <!-- SweetAlert2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<!-- ════════════════════════════════════════════════════════════
-     JAVASCRIPT: Gọi REST API qua fetch() + SweetAlert2
-════════════════════════════════════════════════════════════ -->
+<!-- ════════════════════════════════════════════════════════════════
+     JAVASCRIPT CHÍNH
+═══════════════════════════════════════════════════════════════ -->
 <script th:inline="javascript">
     const DON_HANG_ID = /*[[${donHang.id}]]*/ 0;
     const TRANG_THAI  = /*[[${donHang.trangThai}]]*/ '';
+    const KHO_ONLINE_ID = 2; // Mặc định Kho Online có id = 2
 
-    // ── Helper: Gọi API ────────────────────────────────────────
+    // ── HÀM GỌI API ──────────────────────────────────────────────
     async function callApi(url, method = 'POST', body = null) {
         const opts = {
             method,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
         };
         if (body) opts.body = JSON.stringify(body);
         const res = await fetch(url, opts);
         return res.json();
     }
 
-    // ── Helper: Hiển thị kết quả ───────────────────────────────
+    // ── HIỂN THỊ SWEETALERT ──────────────────────────────────────
     function showSuccess(msg) {
-        Swal.fire({
-            icon: 'success', title: 'Thành công!', text: msg,
-            confirmButtonColor: '#1565C0', confirmButtonText: 'OK'
-        }).then(() => location.reload());
+        Swal.fire({ icon: 'success', title: 'Thành công!', text: msg, timer: 2000, showConfirmButton: false });
     }
 
     function showError(msg) {
-        Swal.fire({
-            icon: 'error', title: 'Lỗi!',
-            text: msg || 'Đã xảy ra lỗi. Vui lòng thử lại.',
-            confirmButtonColor: '#C0392B'
-        });
+        Swal.fire({ icon: 'error', title: 'Lỗi!', text: msg || 'Đã xảy ra lỗi.', confirmButtonColor: '#C0392B' });
     }
 
     function showLoading(title = 'Đang xử lý...') {
         Swal.fire({ title, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     }
 
-    // ── 1. Xác nhận đơn hàng (POST /xac-nhan) ─────────────────
-    document.getElementById('btn-xac-nhan')?.addEventListener('click', async function () {
-        const result = await Swal.fire({
-            icon: 'question',
-            title: 'Xác nhận đơn hàng?',
-            html: 'Thao tác này sẽ <strong>trừ kho Online</strong> tương ứng.<br>Vui lòng kiểm tra tồn kho trước khi xác nhận.',
-            showCancelButton: true,
-            confirmButtonText: '<i class="fa fa-check"></i> Xác nhận & Trừ kho',
-            cancelButtonText: 'Hủy bỏ',
-            confirmButtonColor: '#1565C0'
-        });
-        if (!result.isConfirmed) return;
+    // ── RELOAD TRANG SAU HÀNH ĐỘNG ──────────────────────────────
+    function reloadPage() {
+        setTimeout(() => location.reload(), 1500);
+    }
 
+    // =========================================================================
+    // 1. XỬ LÝ NÚT "XÁC NHẬN" → MỞ MODAL IMEI (thay vì gọi API trực tiếp)
+    // =========================================================================
+    document.getElementById('btn-xac-nhan')?.addEventListener('click', function () {
+        const maDon = document.querySelector('.text-primary')?.textContent || DON_HANG_ID;
+        document.getElementById('imeiModalMaDon').textContent = '#' + maDon;
+        document.getElementById('imeiModalConfirm').dataset.donHangId = DON_HANG_ID;
+        openImeiModal(DON_HANG_ID);
+    });
+
+    // ── MỞ MODAL VÀ TẢI DỮ LIỆU ──────────────────────────────────
+    async function openImeiModal(donHangId) {
+        const loading = document.getElementById('imeiModalLoading');
+        const content = document.getElementById('imeiModalContent');
+        const productList = document.getElementById('imeiProductList');
+
+        loading.style.display = 'block';
+        content.style.display = 'none';
+        productList.innerHTML = '';
+
+        const modal = new bootstrap.Modal(document.getElementById('imeiModal'));
+        modal.show();
+
+        try {
+            // Lấy chi tiết đơn hàng (API giờ trả thẳng DTO, không wrap trong "donHang")
+            const donHang = await callApi(`/api/admin/don-hang/${donHangId}`, 'GET');
+
+            // Kiểm tra dữ liệu
+            if (!donHang || !donHang.chiTietDonHangs || donHang.chiTietDonHangs.length === 0) {
+                throw new Error('Không tìm thấy sản phẩm trong đơn hàng.');
+            }
+
+            // Render từng sản phẩm (dùng DTO)
+            let html = '';
+            for (const ct of donHang.chiTietDonHangs) {
+                // DTO có các trường trực tiếp, không cần truy cập qua biến thể
+                const bienTheId = ct.bienTheSanPhamId;
+                const tenSp = ct.tenSanPham || 'Sản phẩm';
+                const maSku = ct.maSku || 'SKU';
+                const soLuong = ct.soLuong;
+                const chiTietId = ct.id;
+
+                // Gọi API lấy danh sách IMEI ở Kho Online
+                let imeiList = [];
+                try {
+                    const imeiData = await callApi(
+                        `/api/admin/imei/danh-sach?bienTheSanPhamId=${bienTheId}&tinhTrang=trong_kho&khoId=${KHO_ONLINE_ID}`,
+                        'GET'
+                    );
+                    imeiList = imeiData || [];
+                } catch (e) {
+                    imeiList = [];
+                }
+
+                // Tạo HTML cho sản phẩm
+                html += `
+                    <div class="col-md-6 col-xl-4">
+                        <div class="card h-100 border">
+                            <div class="card-header bg-light fw-semibold small">
+                                ${tenSp} <span class="text-muted">(${maSku})</span>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="small text-muted mb-2">Số lượng: <strong>${soLuong}</strong></div>
+                                <div class="imei-checkbox-group" data-chi-tiet-id="${chiTietId}" data-so-luong="${soLuong}">
+                                    ${imeiList.length === 0 ? `
+                                        <div class="text-danger small">Không có IMEI nào trong kho online cho sản phẩm này.</div>
+                                    ` : imeiList.map(imei => `
+                                        <label class="imei-checkbox-item d-flex align-items-center">
+                                            <input type="checkbox" class="imei-checkbox me-2" value="${imei.imei1}">
+                                            <span class="fw-semibold">${imei.imei1}</span>
+                                            ${imei.serial ? `<span class="text-muted small ms-2">(SN: ${imei.serial})</span>` : ''}
+                                        </label>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            productList.innerHTML = html;
+            loading.style.display = 'none';
+            content.style.display = 'block';
+
+            // Gắn sự kiện cho checkbox: giới hạn số lượng chọn theo soLuong
+            document.querySelectorAll('.imei-checkbox-group').forEach(group => {
+                const max = parseInt(group.dataset.soLuong);
+                const checkboxes = group.querySelectorAll('.imei-checkbox');
+                checkboxes.forEach(cb => {
+                    cb.addEventListener('change', function() {
+                        const checked = group.querySelectorAll('.imei-checkbox:checked');
+                        if (checked.length > max) {
+                            this.checked = false;
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Vượt quá số lượng',
+                                text: `Chỉ được chọn tối đa ${max} IMEI cho sản phẩm này.`,
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                        }
+                    });
+                });
+            });
+
+        } catch (error) {
+            loading.innerHTML = `<div class="text-danger">${error.message || 'Không thể tải dữ liệu.'}</div>`;
+        }
+    }
+
+    // ── XÁC NHẬN IMEI ─────────────────────────────────────────────
+    document.getElementById('imeiModalConfirm').addEventListener('click', async function() {
+        const donHangId = this.dataset.donHangId;
+        const selections = [];
+
+        document.querySelectorAll('.imei-checkbox-group').forEach(group => {
+            const chiTietId = parseInt(group.dataset.chiTietId);
+            const checked = group.querySelectorAll('.imei-checkbox:checked');
+            const imeiList = Array.from(checked).map(cb => cb.value);
+            selections.push({
+                chiTietDonHangId: chiTietId,
+                imeiList: imeiList
+            });
+        });
+
+        // Kiểm tra tất cả sản phẩm đã chọn đủ số lượng
+        let hasError = false;
+        document.querySelectorAll('.imei-checkbox-group').forEach(group => {
+            const soLuong = parseInt(group.dataset.soLuong);
+            const checked = group.querySelectorAll('.imei-checkbox:checked');
+            if (checked.length !== soLuong) {
+                hasError = true;
+                group.closest('.card').style.borderColor = '#dc3545';
+            } else {
+                group.closest('.card').style.borderColor = '#198754';
+            }
+        });
+
+        if (hasError) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Chưa chọn đủ IMEI',
+                text: 'Vui lòng chọn đúng số lượng IMEI cho từng sản phẩm (các sản phẩm thiếu sẽ có viền đỏ).'
+            });
+            return;
+        }
+
+        // Submit
         showLoading('Đang xác nhận đơn hàng...');
         try {
-            const data = await callApi(`/api/admin/don-hang/${DON_HANG_ID}/xac-nhan`);
-            if (data.success) showSuccess(data.message || 'Xác nhận đơn hàng thành công.');
-            else showError(data.message);
+            const result = await callApi(`/api/admin/don-hang/${donHangId}/xac-nhan-imei`, 'POST', { selections });
+            if (result.success) {
+                showSuccess(result.message || 'Xác nhận đơn hàng thành công!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('imeiModal'));
+                modal.hide();
+                reloadPage();
+            } else {
+                showError(result.message || 'Không thể xác nhận đơn hàng.');
+            }
         } catch (e) {
-            showError('Lỗi kết nối đến server.');
+            showError(e.message || 'Lỗi kết nối.');
         }
     });
 
@@ -367,14 +597,37 @@
         }
     });
 
-    // ── 4. Hủy đơn (POST /huy) ────────────────────────────────
+    // ── 4. Xác nhận thanh toán COD (PATCH /thanh-toan) ────────
+    document.getElementById('btn-thanh-toan')?.addEventListener('click', async function () {
+        const result = await Swal.fire({
+            icon: 'question',
+            title: 'Xác nhận đã thanh toán?',
+            text: 'Xác nhận khách hàng đã thanh toán tiền mặt cho đơn hàng này?',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Xác nhận',
+            cancelButtonText: 'Hủy bỏ',
+            confirmButtonColor: '#F59E0B'
+        });
+        if (!result.isConfirmed) return;
+
+        showLoading('Đang cập nhật...');
+        try {
+            const data = await callApi(`/api/admin/don-hang/${DON_HANG_ID}/thanh-toan`, 'PATCH');
+            if (data.success) showSuccess(data.message || 'Xác nhận thanh toán thành công.');
+            else showError(data.message);
+        } catch (e) {
+            showError('Lỗi kết nối đến server.');
+        }
+    });
+
+    // ── 5. Hủy đơn (POST /huy) ────────────────────────────────
     document.getElementById('btn-huy')?.addEventListener('click', async function () {
         const result = await Swal.fire({
             icon: 'warning',
             title: 'Xác nhận hủy đơn?',
             html: '<p>Thao tác này <strong>không thể hoàn tác</strong>.</p>' +
-                  '<textarea id="ly-do-huy" class="form-control mt-2" rows="2" ' +
-                  'placeholder="Lý do hủy (tùy chọn)..."></textarea>',
+                '<textarea id="ly-do-huy" class="form-control mt-2" rows="2" ' +
+                'placeholder="Lý do hủy (tùy chọn)..."></textarea>',
             showCancelButton: true,
             confirmButtonText: '<i class="fa fa-times"></i> Xác nhận hủy',
             cancelButtonText: 'Quay lại',

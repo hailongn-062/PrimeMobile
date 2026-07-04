@@ -40,6 +40,8 @@ import java.util.stream.Collectors;
  * dưới 5 đơn vị/SKU.</li>
  * <li>Phiếu chuyển <b>CHỐT LUÔN</b> khi tạo — không qua bước duyệt.</li>
  * <li>Tồn kho 2 bên được cập nhật ngay lập tức khi lưu phiếu.</li>
+ * <li><b>Hỗ trợ chọn IMEI cụ thể khi chuyển kho:</b> Nếu request có danh sách IMEI,
+ * hệ thống sẽ cập nhật kho_id của các IMEI đó sang kho đích (số lượng IMEI phải bằng soLuong).</li>
  * </ul>
  *
  * <h3>Endpoints:</h3>
@@ -68,36 +70,56 @@ public class PhieuChuyenKhoController {
 
     /**
      * Tạo phiếu chuyển kho, kiểm tra Safety Stock, trừ kho nguồn và cộng kho đích
-     * (chốt luôn).
+     * (chốt luôn). Hỗ trợ chọn IMEI cụ thể để cập nhật kho_id.
      *
-     * <h3>Request Body mẫu (Kho Tổng → Kho Online):</h3>
+     * <h3>Request Body mẫu (Kho Tổng → Kho Online) với IMEI:</h3>
      * <pre>{@code
      * {
-     * "khoNguonId": 1,
-     * "khoDichId": 2,
-     * "lyDo": "Bổ sung hàng kho online cho mùa Flash Sale",
-     * "chiTiets": [
-     * { "bienTheSanPhamId": 5, "soLuong": 10 },
-     * { "bienTheSanPhamId": 8, "soLuong": 5 }
-     * ]
+     *   "khoNguonId": 1,
+     *   "khoDichId": 2,
+     *   "lyDo": "Bổ sung hàng kho online cho mùa Flash Sale",
+     *   "chiTiets": [
+     *     {
+     *       "bienTheSanPhamId": 5,
+     *       "soLuong": 2,
+     *       "imeiList": ["IMEI_001", "IMEI_002"]
+     *     },
+     *     {
+     *       "bienTheSanPhamId": 8,
+     *       "soLuong": 1,
+     *       "imeiList": ["IMEI_003"]
+     *     }
+     *   ]
      * }
      * }</pre>
      *
-     * @param request DTO chứa thông tin phiếu chuyển.
+     * @param request DTO chứa thông tin phiếu chuyển (có thể bao gồm danh sách IMEI).
      * @param sessionUser Nhân viên đang đăng nhập (lấy từ session).
      * @return HTTP 201 Created kèm phiếu chuyển vừa tạo.
-     * HTTP 400 nếu vi phạm Safety Stock, khoNguon = khoDich, soLuong <= 0.
-     * HTTP 404 nếu không tìm thấy kho, biến thể, hoặc tồn kho tại kho nguồn.
+     * HTTP 400 nếu vi phạm Safety Stock, khoNguon = khoDich, soLuong <= 0,
+     * hoặc IMEI không hợp lệ.
+     * HTTP 404 nếu không tìm thấy kho, biến thể, tồn kho, hoặc IMEI.
      */
     @PostMapping
     public ResponseEntity<?> taoPhieuChuyenKho(
             @RequestBody TaoPhieuChuyenKhoRequest request,
             @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
 
-        log.info("[PhieuChuyenKho] ▶ Tạo phiếu chuyển — nguonId={}, dichId={}, nhanVienId={}, {} dòng CT",
+        // Đếm tổng số IMEI trong request (để log)
+        int totalImei = 0;
+        if (request.getChiTiets() != null) {
+            totalImei = request.getChiTiets().stream()
+                    .filter(ct -> ct.getImeiList() != null)
+                    .mapToInt(ct -> ct.getImeiList().size())
+                    .sum();
+        }
+
+        log.info("[PhieuChuyenKho] ▶ Tạo phiếu chuyển — nguonId={}, dichId={}, nhanVienId={}, {} dòng CT, {} IMEI",
                 request.getKhoNguonId(), request.getKhoDichId(),
                 sessionUser.getId(),
-                request.getChiTiets() == null ? 0 : request.getChiTiets().size());
+                request.getChiTiets() == null ? 0 : request.getChiTiets().size(),
+                totalImei);
+
         try {
             PhieuChuyenKho phieu = khoService.taoPhieuChuyenKho(request, sessionUser.getId());
 
@@ -107,12 +129,12 @@ public class PhieuChuyenKhoController {
                             "Tạo phiếu chuyển kho thành công. Tồn kho hai đầu đã được cập nhật.", phieu));
 
         } catch (IllegalArgumentException e) {
-            // Vi phạm Safety Stock §3.1, khoNguon = khoDich, soLuong <= 0
+            // Vi phạm Safety Stock §3.1, khoNguon = khoDich, soLuong <= 0, hoặc IMEI không hợp lệ
             log.warn("[PhieuChuyenKho] ❌ Lỗi nghiệp vụ (400): {}", e.getMessage());
             return ResponseEntity.badRequest().body(buildErrorResponse(e.getMessage()));
 
         } catch (EntityNotFoundException e) {
-            // Không tìm thấy kho, biến thể, hoặc tồn kho
+            // Không tìm thấy kho, biến thể, tồn kho, hoặc IMEI
             log.warn("[PhieuChuyenKho] ❌ Không tìm thấy entity (404): {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(buildErrorResponse(e.getMessage()));
 

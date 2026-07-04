@@ -1,5 +1,6 @@
 package org.example.primemobile.service;
 
+import org.example.primemobile.dto.KhuyenMaiResult;
 import org.example.primemobile.entity.ChiTietFlashSale;
 import org.example.primemobile.entity.ChuongTrinhKhuyenMai;
 import org.example.primemobile.entity.PhamViKhuyenMai;
@@ -110,8 +111,7 @@ public interface IKhuyenMaiService {
      * Công thức tính tiền giảm:
      * <ul>
      * <li>{@code "phan_tram"}: {@code tongTienHang × (giaTriUuDai / 100)}</li>
-     * <li>{@code "don_hang_toi_thieu"}:
-     * {@code tongTienHang × (giaTriUuDai / 100)}</li>
+     * <li>{@code "don_hang_toi_thieu"}: {@code tongTienHang × (giaTriUuDai / 100)}</li>
      * </ul>
      *
      * @param tongTienHang Tổng tiền hàng của đơn (chưa giảm, chưa cộng phí ship).
@@ -148,4 +148,25 @@ public interface IKhuyenMaiService {
      * @return Giá bán thực tế sau khuyến mãi, hoặc {@code giaBan} nếu không có KM.
      */
     BigDecimal tinhGiaSauKhuyenMai(Integer bienTheId, BigDecimal tongTienHang);
+
+    // ── Tính khuyến mãi cho đơn hàng (dùng chung Online & POS) ────────────
+
+    /**
+     * Tính khuyến mãi tốt nhất cho một đơn hàng dựa trên tổng tiền hàng gốc.
+     * Chỉ áp dụng các CTKM loại toàn đơn: 'phan_tram' và 'don_hang_toi_thieu'.
+     * Trả về kết quả gồm CTKM được chọn và số tiền giảm.
+     *
+     * <p>
+     * Phương thức này được sử dụng thống nhất cho cả:
+     * <ul>
+     *   <li><b>Bán hàng Online:</b> Khi tạo đơn, tính tiền giảm để lưu vào DonHang.</li>
+     *   <li><b>Bán hàng POS:</b> Tính khuyến mãi trước khi thanh toán.</li>
+     *   <li><b>Giỏ hàng:</b> Hiển thị tổng tiền sau giảm.</li>
+     * </ul>
+     *
+     * @param tongTienHang Tổng tiền hàng gốc (chưa áp dụng bất kỳ khuyến mãi nào).
+     * @return {@link KhuyenMaiResult} chứa thông tin CTKM và tiền giảm;
+     *         nếu không có CTKM phù hợp, tienGiam = 0 và tongSauGiam = tongTienHang.
+     */
+    KhuyenMaiResult tinhKhuyenMaiChoDonHang(BigDecimal tongTienHang);
 }

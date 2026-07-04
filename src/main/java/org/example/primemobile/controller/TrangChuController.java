@@ -2,8 +2,10 @@ package org.example.primemobile.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.primemobile.entity.BienTheSanPham;
 import org.example.primemobile.entity.SanPham;
 import org.example.primemobile.service.IDanhMucService;
+import org.example.primemobile.service.IKhuyenMaiService;
 import org.example.primemobile.service.ISanPhamService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -11,6 +13,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Controller
@@ -21,6 +28,7 @@ public class TrangChuController {
 
     private final IDanhMucService danhMucService;
     private final ISanPhamService sanPhamService;
+    private final IKhuyenMaiService khuyenMaiService; // ✅ Inject service khuyến mãi
 
     @GetMapping({"/", "/trang-chu"})
     public String trangChu(Model model) {
@@ -33,7 +41,20 @@ public class TrangChuController {
                 null,
                 PageRequest.of(0, SO_LUONG_NOI_BAT, Sort.by(Sort.Direction.DESC, "id"))
         );
-        model.addAttribute("sanPhamNoiBat", trangSanPham.getContent());
+        List<SanPham> sanPhamNoiBat = trangSanPham.getContent();
+
+        // ── Tính giá sau khuyến mãi cho từng sản phẩm nổi bật ──
+        Map<Integer, BigDecimal> giaSauKhuyenMaiTheoSanPham = new HashMap<>();
+        for (SanPham sp : sanPhamNoiBat) {
+            if (sp.getBienTheSanPhams() != null && !sp.getBienTheSanPhams().isEmpty()) {
+                BienTheSanPham firstBt = sp.getBienTheSanPhams().get(0);
+                BigDecimal giaSauKM = khuyenMaiService.tinhGiaSauKhuyenMai(firstBt.getId(), null);
+                giaSauKhuyenMaiTheoSanPham.put(sp.getId(), giaSauKM != null ? giaSauKM : firstBt.getGiaBan());
+            }
+        }
+
+        model.addAttribute("sanPhamNoiBat", sanPhamNoiBat);
+        model.addAttribute("giaSauKhuyenMaiTheoSanPham", giaSauKhuyenMaiTheoSanPham); // ✅ Truyền vào view
 
         model.addAttribute("pageTitle", "Trang Chủ");
         model.addAttribute("pageDescription",

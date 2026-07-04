@@ -4,7 +4,12 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.primemobile.dto.auth.SessionUser;
+import org.example.primemobile.dto.order.ChiTietDonHangDto;
+import org.example.primemobile.dto.order.DonHangChiTietDto;
+import org.example.primemobile.entity.BienTheSanPham;
+import org.example.primemobile.entity.ChiTietDonHang;
 import org.example.primemobile.entity.DonHang;
+import org.example.primemobile.entity.SanPham;
 import org.example.primemobile.service.IQuanLyDonHangService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -12,6 +17,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Controller UI (Thymeleaf) cho phân hệ Quản lý Đơn Hàng.
@@ -46,8 +54,8 @@ public class QuanLyDonHangUIController {
             HttpSession session) {
 
         SessionUser currentUser = (SessionUser) session.getAttribute(SESSION_KEY);
-        log.info("[DonHangUI] Danh sách — user={}, trangThai={}, page={}", 
-                 currentUser != null ? currentUser.getEmail() : "?", trangThai, page);
+        log.info("[DonHangUI] Danh sách — user={}, trangThai={}, page={}",
+                currentUser != null ? currentUser.getEmail() : "?", trangThai, page);
 
         Page<DonHang> result = quanLyDonHangService.layDanhSachDonHang(
                 trangThai, maDonHang, soDienThoai,
@@ -78,15 +86,112 @@ public class QuanLyDonHangUIController {
     public String chiTiet(@PathVariable Integer id, Model model, HttpSession session) {
         SessionUser currentUser = (SessionUser) session.getAttribute(SESSION_KEY);
         log.info("[DonHangUI] Chi tiết — donHangId={}, user={}", id,
-                 currentUser != null ? currentUser.getEmail() : "?");
+                currentUser != null ? currentUser.getEmail() : "?");
 
+        // Lấy entity đơn hàng
         DonHang donHang = quanLyDonHangService.layChiTietDonHang(id);
+
+        // Map sang DTO để view sử dụng
+        DonHangChiTietDto dto = mapToDonHangChiTietDto(donHang);
 
         model.addAttribute("currentUser", currentUser);
         model.addAttribute("pageTitle",   "Chi tiết Đơn hàng #" + donHang.getMaDonHang());
         model.addAttribute("activePage",  "don-hang");
-        model.addAttribute("donHang",     donHang);
+        model.addAttribute("donHang",     dto); // Đưa DTO vào model thay vì entity
 
         return "admin/don-hang/chi-tiet";
+    }
+
+    // =========================================================================
+    // PRIVATE HELPERS — Map entity sang DTO (tái sử dụng từ REST Controller)
+    // =========================================================================
+
+    /**
+     * Chuyển đổi entity {@link DonHang} sang DTO {@link DonHangChiTietDto}.
+     */
+    private DonHangChiTietDto mapToDonHangChiTietDto(DonHang donHang) {
+        if (donHang == null) {
+            return null;
+        }
+
+        // Map danh sách chi tiết đơn hàng
+        List<ChiTietDonHangDto> chiTietDtos = donHang.getChiTietDonHangs().stream()
+                .map(this::mapChiTietToDto)
+                .collect(Collectors.toList());
+
+        // Lấy thông tin khách hàng
+        String tenKhachHang = donHang.getKhachHang() != null
+                ? donHang.getKhachHang().getHoTen()
+                : donHang.getHoTenNguoiNhan();
+
+        String soDienThoaiKhach = donHang.getKhachHang() != null
+                ? donHang.getKhachHang().getSoDienThoai()
+                : donHang.getSdtNguoiNhan();
+
+        String emailKhach = donHang.getKhachHang() != null
+                ? donHang.getKhachHang().getEmail()
+                : null;
+
+        // Lấy tên nhân viên xử lý
+        String tenNguoiXuLy = donHang.getNguoiXuLy() != null
+                ? donHang.getNguoiXuLy().getHoTen()
+                : null;
+
+        // Lấy danh sách IMEI đã gán cho đơn hàng (trạng thái 'da_ban')
+        List<org.example.primemobile.entity.MayDienThoai> imeiList = null;
+        try {
+            imeiList = quanLyDonHangService.layDanhSachImeiTheoDonHang(donHang.getId());
+        } catch (Exception e) {
+            log.warn("[DonHangUI] Không thể lấy danh sách IMEI cho đơn hàng {}: {}", donHang.getId(), e.getMessage());
+        }
+
+        return DonHangChiTietDto.builder()
+                .id(donHang.getId())
+                .maDonHang(donHang.getMaDonHang())
+                .ngayDat(donHang.getNgayDat())
+                .trangThai(donHang.getTrangThai())
+                .trangThaiThanhToan(donHang.getTrangThaiThanhToan())
+                .kenhBan(donHang.getKenhBan())
+                .tenKhachHang(tenKhachHang)
+                .soDienThoaiKhach(soDienThoaiKhach)
+                .emailKhach(emailKhach)
+                .hoTenNguoiNhan(donHang.getHoTenNguoiNhan())
+                .sdtNguoiNhan(donHang.getSdtNguoiNhan())
+                .diaChiGiaoCuThe(donHang.getDiaChiGiaCuThe())
+                .phuongXaGiao(donHang.getPhuongXaGiao())
+                .quanHuyenGiao(donHang.getQuanHuyenGiao())
+                .tinhThanhGiao(donHang.getTinhThanhGiao())
+                .ngayGiaoDuKien(donHang.getNgayGiaoDuKien())
+                .ngayGiaoThucTe(donHang.getNgayGiaoThucTe())
+                .tenNguoiXuLy(tenNguoiXuLy)
+                .tongTienHang(donHang.getTongTienHang())
+                .tienGiamGia(donHang.getTienGiamGia())
+                .phiShip(donHang.getPhiShip())
+                .tongThanhToan(donHang.getTongThanhToan())
+                .ghiChu(donHang.getGhiChu())
+                .imeiList(imeiList)
+                .chiTietDonHangs(chiTietDtos)
+                .build();
+    }
+
+    /**
+     * Chuyển đổi entity {@link ChiTietDonHang} sang DTO {@link ChiTietDonHangDto}.
+     */
+    private ChiTietDonHangDto mapChiTietToDto(ChiTietDonHang chiTiet) {
+        BienTheSanPham bt = chiTiet.getBienTheSanPham();
+        SanPham sp = (bt != null) ? bt.getSanPham() : null;
+
+        return ChiTietDonHangDto.builder()
+                .id(chiTiet.getId())
+                .soLuong(chiTiet.getSoLuong())
+                .donGiaBan(chiTiet.getDonGiaBan())
+                .thanhTien(chiTiet.getThanhTien())
+                .bienTheSanPhamId(bt != null ? bt.getId() : null)
+                .maSku(bt != null ? bt.getMaSku() : null)
+                .mauSac(bt != null ? bt.getMauSac() : null)
+                .ramGb(bt != null ? bt.getRamGb() : null)
+                .luuTruGb(bt != null ? bt.getLuuTruGb() : null)
+                .tenSanPham(sp != null ? sp.getTenSanPham() : null)
+                .build();
     }
 }

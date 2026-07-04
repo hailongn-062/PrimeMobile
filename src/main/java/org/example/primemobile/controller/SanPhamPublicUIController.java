@@ -8,11 +8,7 @@ import org.example.primemobile.entity.DanhMuc;
 import org.example.primemobile.entity.HangSanXuat;
 import org.example.primemobile.entity.SanPham;
 import org.example.primemobile.repository.TonKhoRepository;
-import org.example.primemobile.service.IBienTheSanPhamService;
-import org.example.primemobile.service.IDanhMucService;
-import org.example.primemobile.service.IHangSanXuatService;
-import org.example.primemobile.service.ISanPhamService;
-import org.example.primemobile.service.IThongSoKyThuatService;
+import org.example.primemobile.service.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +19,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -44,6 +42,7 @@ public class SanPhamPublicUIController {
     private final IBienTheSanPhamService bienTheSanPhamService;
     private final IThongSoKyThuatService thongSoKyThuatService;
     private final TonKhoRepository tonKhoRepository;
+    private final IKhuyenMaiService khuyenMaiService; // ✅ Inject service khuyến mãi
 
     @GetMapping("/san-pham")
     public String danhSachSanPham(
@@ -122,6 +121,16 @@ public class SanPhamPublicUIController {
             hasNext = productPage.hasNext();
         }
 
+        // ── Tính giá sau khuyến mãi cho từng sản phẩm (lấy biến thể đầu tiên) ──
+        Map<Integer, BigDecimal> giaSauKhuyenMaiTheoSanPham = new HashMap<>();
+        for (SanPham sp : sanPhams) {
+            if (sp.getBienTheSanPhams() != null && !sp.getBienTheSanPhams().isEmpty()) {
+                BienTheSanPham firstBt = sp.getBienTheSanPhams().get(0);
+                BigDecimal giaSauKM = khuyenMaiService.tinhGiaSauKhuyenMai(firstBt.getId(), null);
+                giaSauKhuyenMaiTheoSanPham.put(sp.getId(), giaSauKM != null ? giaSauKM : firstBt.getGiaBan());
+            }
+        }
+
         model.addAttribute("sanPhams", sanPhams);
         model.addAttribute("danhMucs", danhMucs);
         model.addAttribute("hangSanXuats", hangSanXuats);
@@ -135,6 +144,7 @@ public class SanPhamPublicUIController {
         model.addAttribute("hasPrevious", hasPrevious);
         model.addAttribute("hasNext", hasNext);
         model.addAttribute("pageTitle", hasText(keyword) ? "Tìm kiếm sản phẩm" : "Sản phẩm");
+        model.addAttribute("giaSauKhuyenMaiTheoSanPham", giaSauKhuyenMaiTheoSanPham); // ✅ Truyền vào view
 
         return "san-pham/danh-sach";
     }
@@ -154,12 +164,21 @@ public class SanPhamPublicUIController {
                         Map.Entry::getKey,
                         entry -> Math.max(entry.getValue() - TON_KHO_TOI_THIEU_DE_BAN, 0)));
 
+        // ── Tính giá sau khuyến mãi cho từng biến thể (Flash Sale và Giảm trực tiếp) ──
+        Map<Integer, BigDecimal> giaSauKhuyenMaiTheoBienThe = new HashMap<>();
+        for (BienTheSanPham bt : bienTheSanPhams) {
+            // Truyền tongTienHang = null vì chưa có tổng đơn, chỉ áp dụng Flash Sale và Giảm trực tiếp
+            BigDecimal giaSauKM = khuyenMaiService.tinhGiaSauKhuyenMai(bt.getId(), null);
+            giaSauKhuyenMaiTheoBienThe.put(bt.getId(), giaSauKM != null ? giaSauKM : bt.getGiaBan());
+        }
+
         model.addAttribute("sanPham", sanPham);
         model.addAttribute("bienTheSanPhams", bienTheSanPhams);
         model.addAttribute("tonKhoTheoBienThe", tonKhoTheoBienThe);
         model.addAttribute("soLuongCoTheBanTheoBienThe", soLuongCoTheBanTheoBienThe);
         model.addAttribute("tonKhoToiThieuDeBan", TON_KHO_TOI_THIEU_DE_BAN);
         model.addAttribute("thongSoKyThuats", thongSoKyThuatService.layTheoSanPham(id));
+        model.addAttribute("giaSauKhuyenMaiTheoBienThe", giaSauKhuyenMaiTheoBienThe); // ✅ Truyền vào view
         model.addAttribute("pageTitle", sanPham.getTenSanPham());
         return "san-pham/chi-tiet";
     }

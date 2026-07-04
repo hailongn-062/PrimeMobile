@@ -13,6 +13,7 @@ package org.example.primemobile.dto.kho;
  *   <li>{@code imei1}  – IMEI khe SIM 1, bắt buộc (chuẩn GSMA: 15 chữ số).</li>
  *   <li>{@code imei2}  – IMEI khe SIM 2, tùy chọn (NULL với máy 1 SIM).</li>
  *   <li>{@code serial} – Số serial của máy, tùy chọn.</li>
+ *   <li>{@code khoId}  – ID kho nhập IMEI, bắt buộc để xác định kho vật lý chứa máy.</li>
  * </ul>
  */
 public class ThemImeiRequest {
@@ -26,6 +27,12 @@ public class ThemImeiRequest {
     /** Số serial của máy – tùy chọn. */
     private String serial;
 
+    /**
+     * ID kho nhập IMEI – bắt buộc.
+     * Xác định kho vật lý chứa máy (Kho Tổng hoặc Kho Online).
+     */
+    private Integer khoId;
+
     // -------------------------------------------------------------------------
     // Constructors
     // -------------------------------------------------------------------------
@@ -33,10 +40,11 @@ public class ThemImeiRequest {
     public ThemImeiRequest() {
     }
 
-    public ThemImeiRequest(String imei1, String imei2, String serial) {
+    public ThemImeiRequest(String imei1, String imei2, String serial, Integer khoId) {
         this.imei1  = imei1;
         this.imei2  = imei2;
         this.serial = serial;
+        this.khoId  = khoId;
     }
 
     // -------------------------------------------------------------------------
@@ -65,5 +73,13 @@ public class ThemImeiRequest {
 
     public void setSerial(String serial) {
         this.serial = serial;
+    }
+
+    public Integer getKhoId() {
+        return khoId;
+    }
+
+    public void setKhoId(Integer khoId) {
+        this.khoId = khoId;
     }
 }

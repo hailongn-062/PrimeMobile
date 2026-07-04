@@ -1,5 +1,6 @@
 package org.example.primemobile.service;
 
+import org.example.primemobile.dto.VnPayPaymentResponse;
 import org.example.primemobile.dto.request.DatHangRequest;
 import org.example.primemobile.entity.DonHang;
 
@@ -40,4 +41,27 @@ public interface IDatHangOnlineService {
      * @throws jakarta.persistence.EntityNotFoundException nếu không tìm thấy entity liên quan.
      */
     DonHang taoDonHang(DatHangRequest request);
+
+    /**
+     * Tạo đơn hàng và URL thanh toán VNPay (dành cho phương thức thanh toán VNPay).
+     * <p>
+     * Phương thức này tương tự {@link #taoDonHang(DatHangRequest)} nhưng thay vì trả về
+     * {@link DonHang}, nó trả về {@link VnPayPaymentResponse} chứa URL thanh toán.
+     * <p>
+     * Luồng xử lý khác biệt:
+     * <ul>
+     *   <li>Tạo đơn hàng với {@code trangThaiThanhToan = "dang_chuyen_huong"}.</li>
+     *   <li>Thiết lập {@code thoiGianHetHanTt = now + 15 phút} (theo quy định của VNPay).</li>
+     *   <li>Tạo bản ghi {@code ThanhToan} với {@code trangThai = "cho"}.</li>
+     *   <li>Gọi {@link IVnPayService#createPaymentUrl(DonHang, String)} để tạo URL.</li>
+     *   <li>Trả về DTO chứa URL để frontend redirect.</li>
+     * </ul>
+     *
+     * @param request  DTO chứa thông tin đặt hàng từ frontend.
+     * @param clientIp Địa chỉ IP của khách hàng (lấy từ HttpServletRequest).
+     * @return {@link VnPayPaymentResponse} chứa URL thanh toán và thông tin đơn hàng.
+     * @throws IllegalArgumentException             nếu giỏ trống, kho không đủ, mã giảm giá không hợp lệ.
+     * @throws jakarta.persistence.EntityNotFoundException nếu không tìm thấy entity liên quan.
+     */
+    VnPayPaymentResponse taoDonHangVnPay(DatHangRequest request, String clientIp);
 }

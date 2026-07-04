@@ -32,7 +32,7 @@ public class KhoController {
     @GetMapping("/ton-kho")
     public List<TonKhoResponse> getTonKho(@RequestParam(required = false) Integer khoId) {
         List<TonKho> list;
-        
+
         if (khoId != null && khoId > 0) {
             // Sử dụng IKhoService đã có sẵn để lấy tồn kho của 1 kho (eager fetch)
             list = khoService.getTonKhoByKho(khoId);
@@ -43,10 +43,12 @@ public class KhoController {
 
         return list.stream().map(tk -> new TonKhoResponse(
                 tk.getKho() != null ? tk.getKho().getTenKho() : "N/A",
-                tk.getBienTheSanPham() != null && tk.getBienTheSanPham().getSanPham() != null 
-                        ? tk.getBienTheSanPham().getSanPham().getTenSanPham() : "N/A",
                 tk.getBienTheSanPham() != null ? tk.getBienTheSanPham().getMaSku() : "N/A",
-                tk.getSoLuong()
+                tk.getBienTheSanPham() != null && tk.getBienTheSanPham().getSanPham() != null
+                        ? tk.getBienTheSanPham().getSanPham().getTenSanPham() : "N/A",
+                tk.getSoLuong(),
+                tk.getBienTheSanPham() != null ? tk.getBienTheSanPham().getId() : null,
+                tk.getKho() != null ? tk.getKho().getId() : null
         )).collect(Collectors.toList());
     }
 
@@ -57,8 +59,10 @@ public class KhoController {
     @AllArgsConstructor
     public static class TonKhoResponse {
         private String tenKho;
-        private String tenSanPham;
         private String maSku;
+        private String tenSanPham;
         private int soLuong;
+        private Integer bienTheSanPhamId;  // ← THÊM MỚI
+        private Integer khoId;             // ← THÊM MỚI
     }
 }

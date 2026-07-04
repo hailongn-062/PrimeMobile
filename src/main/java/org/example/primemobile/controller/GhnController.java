@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -35,6 +36,15 @@ import java.util.Map;
  *   GET /api/public/giao-hang-nhanh/thoi-gian-giao
  *       ?toDistrictId={id}&toWardCode={code}
  *       → Trả về ngày giao dự kiến (ISO date)
+ *
+ *   GET /api/public/giao-hang-nhanh/provinces
+ *       → Lấy danh sách tỉnh/thành phố
+ *
+ *   GET /api/public/giao-hang-nhanh/districts?provinceId={id}
+ *       → Lấy danh sách quận/huyện theo tỉnh
+ *
+ *   GET /api/public/giao-hang-nhanh/wards?districtId={id}
+ *       → Lấy danh sách phường/xã theo quận
  * </pre>
  */
 @RestController
@@ -168,6 +178,120 @@ public class GhnController {
 
         log.info("[GhnController] Trả ngày giao = {} (fallback={})", ngayGiao, laFallback);
         // Luôn HTTP 200 — Frontend không bị sập dù GHN lỗi
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================================
+    // MASTER DATA ENDPOINTS — Lấy danh sách tỉnh/thành, quận/huyện, phường/xã
+    // Các endpoint này là Read-only, an toàn, không tạo đơn hàng.
+    // =========================================================================
+
+    /**
+     * Lấy danh sách tỉnh/thành phố từ GHN.
+     * <p>
+     * Frontend gọi endpoint này khi load trang thanh toán để đổ dữ liệu
+     * vào dropdown chọn tỉnh/thành.
+     *
+     * <h3>Response thành công:</h3>
+     * <pre>{@code
+     * {
+     *   "success": true,
+     *   "data": [
+     *     { "ProvinceID": 201, "ProvinceName": "Hà Nội", "CountryID": 1 },
+     *     { "ProvinceID": 202, "ProvinceName": "TP. Hồ Chí Minh", "CountryID": 1 },
+     *     ...
+     *   ]
+     * }
+     * }</pre>
+     *
+     * @return Luôn HTTP 200. Trả về danh sách rỗng nếu GHN lỗi.
+     */
+    @GetMapping("/provinces")
+    public ResponseEntity<?> getProvinces() {
+        log.info("[GhnController] Lấy danh sách tỉnh/thành");
+
+        List<Map<String, Object>> data = ghnService.getProvinces();
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+        response.put("data", data);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Lấy danh sách quận/huyện theo tỉnh/thành từ GHN.
+     * <p>
+     * Frontend gọi endpoint này khi khách hàng chọn một tỉnh/thành
+     * để đổ dữ liệu vào dropdown chọn quận/huyện.
+     *
+     * <h3>Ví dụ request:</h3>
+     * <pre>
+     *   GET /api/public/giao-hang-nhanh/districts?provinceId=201
+     * </pre>
+     *
+     * <h3>Response thành công:</h3>
+     * <pre>{@code
+     * {
+     *   "success": true,
+     *   "data": [
+     *     { "DistrictID": 1482, "DistrictName": "Quận Cầu Giấy", "ProvinceID": 201 },
+     *     ...
+     *   ]
+     * }
+     * }</pre>
+     *
+     * @param provinceId ID của tỉnh/thành (lấy từ {@code /provinces}).
+     * @return Luôn HTTP 200. Trả về danh sách rỗng nếu GHN lỗi hoặc provinceId null.
+     */
+    @GetMapping("/districts")
+    public ResponseEntity<?> getDistricts(@RequestParam(required = false) Integer provinceId) {
+        log.info("[GhnController] Lấy danh sách quận/huyện theo tỉnh — provinceId={}", provinceId);
+
+        List<Map<String, Object>> data = ghnService.getDistricts(provinceId);
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+        response.put("data", data);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Lấy danh sách phường/xã theo quận/huyện từ GHN.
+     * <p>
+     * Frontend gọi endpoint này khi khách hàng chọn một quận/huyện
+     * để đổ dữ liệu vào dropdown chọn phường/xã.
+     *
+     * <h3>Ví dụ request:</h3>
+     * <pre>
+     *   GET /api/public/giao-hang-nhanh/wards?districtId=1482
+     * </pre>
+     *
+     * <h3>Response thành công:</h3>
+     * <pre>{@code
+     * {
+     *   "success": true,
+     *   "data": [
+     *     { "WardCode": "1A03", "WardName": "Phường Dịch Vọng", "DistrictID": 1482 },
+     *     ...
+     *   ]
+     * }
+     * }</pre>
+     *
+     * @param districtId ID của quận/huyện (lấy từ {@code /districts}).
+     * @return Luôn HTTP 200. Trả về danh sách rỗng nếu GHN lỗi hoặc districtId null.
+     */
+    @GetMapping("/wards")
+    public ResponseEntity<?> getWards(@RequestParam(required = false) Integer districtId) {
+        log.info("[GhnController] Lấy danh sách phường/xã theo quận — districtId={}", districtId);
+
+        List<Map<String, Object>> data = ghnService.getWards(districtId);
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+        response.put("data", data);
+
         return ResponseEntity.ok(response);
     }
 }

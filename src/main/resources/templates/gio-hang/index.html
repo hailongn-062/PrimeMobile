@@ -34,6 +34,7 @@
         .pm-name { font-weight:800; margin-bottom:4px; line-height:1.35; }
         .pm-meta { color:var(--pm-muted); font-size:.88rem; }
         .pm-price { color:#ea580c; font-weight:800; }
+        .pm-price-old { color:#94a3b8; font-size:0.88rem; text-decoration:line-through; margin-right:8px; font-weight:500; }
         .pm-qty { display:grid; grid-template-columns:34px 42px 34px; border:1px solid var(--pm-line); border-radius:8px; overflow:hidden; background:#fff; }
         .pm-qty button { border:0; background:#f8fafc; height:34px; font-weight:800; color:var(--pm-primary-dark); }
         .pm-qty span { display:flex; align-items:center; justify-content:center; font-weight:800; border-left:1px solid var(--pm-line); border-right:1px solid var(--pm-line); }
@@ -210,6 +211,16 @@
                 ? `<img src="${esc(item.hinhAnh)}" alt="${esc(item.tenSanPham)}" referrerpolicy="no-referrer" onerror="replaceCartImage(this)">
                    <span class="pm-image-fallback d-none"><i class="fa fa-mobile-alt"></i></span>`
                 : `<span class="pm-image-fallback"><i class="fa fa-mobile-alt"></i></span>`;
+
+            // Hiển thị giá sau khuyến mãi + giá gốc gạch ngang nếu có
+            let priceHtml = '';
+            const giaGoc = item.giaGoc || 0;
+            const giaSauKM = item.giaSauKhuyenMai || giaGoc;
+            if (giaSauKM < giaGoc) {
+                priceHtml = `<span class="pm-price-old">${money(giaGoc)}</span>`;
+            }
+            priceHtml += `<span class="pm-price">${money(giaSauKM)}</span>`;
+
             return `
                 <li class="pm-cart-item" data-item-id="${item.itemId}" data-qty="${item.soLuong}">
                     <a class="pm-img" href="/san-pham/${item.sanPhamId}">${image}</a>
@@ -217,6 +228,7 @@
                         <a href="/san-pham/${item.sanPhamId}" class="pm-name text-decoration-none text-dark">${esc(item.tenSanPham)}</a>
                         <div class="pm-meta">${esc(item.mauSac)} · ${item.ramGb || 0}GB/${item.luuTruGb || 0}GB</div>
                         <div class="pm-meta">${esc(item.maSku)}</div>
+                        <div class="mt-1">${priceHtml}</div>
                     </div>
                     <div class="pm-qty" aria-label="Số lượng">
                         <button type="button" data-action="decrease">-</button>

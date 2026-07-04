@@ -61,6 +61,7 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
     private final KhoRepository                 khoRepository;
     private final TonKhoRepository              tonKhoRepository;
     private final NguoiDungRepository           nguoiDungRepository;
+    private final MayDienThoaiRepository        mayDienThoaiRepository; // ✅ Thêm để kiểm tra IMEI
 
     // =========================================================================
     // 1. XEM DANH SÁCH & CHI TIẾT
@@ -74,7 +75,7 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
     @Override
     @Transactional(readOnly = true)
     public Page<DonHang> layDanhSachDonHang(String trangThai, String maDonHang,
-                                             String soDienThoai, Pageable pageable) {
+                                            String soDienThoai, Pageable pageable) {
         // Chuẩn hoá: chuỗi rỗng → null để query JPQL xử lý đúng điều kiện IS NULL
         String tt  = (trangThai   != null && !trangThai.isBlank())   ? trangThai.trim()   : null;
         String ma  = (maDonHang   != null && !maDonHang.isBlank())   ? maDonHang.trim()   : null;
@@ -130,7 +131,7 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
         if (!"cho_xac_nhan".equals(donHang.getTrangThai())) {
             throw new IllegalArgumentException(String.format(
                     "Đơn hàng [%s] đang ở trạng thái '%s', không thể xác nhận. " +
-                    "Chỉ được xác nhận khi trạng thái là 'cho_xac_nhan'.",
+                            "Chỉ được xác nhận khi trạng thái là 'cho_xac_nhan'.",
                     donHang.getMaDonHang(), donHang.getTrangThai()));
         }
 
@@ -141,7 +142,7 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
         if (danhSachChiTiet.isEmpty()) {
             throw new IllegalArgumentException(
                     "Đơn hàng [" + donHang.getMaDonHang() + "] không có sản phẩm nào. " +
-                    "Không thể xác nhận đơn rỗng.");
+                            "Không thể xác nhận đơn rỗng.");
         }
 
         // --- Lấy kho online ---
@@ -157,7 +158,7 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
                     .findByKhoAndBienTheSanPham(khoOnline, bienThe)
                     .orElseThrow(() -> new EntityNotFoundException(String.format(
                             "Không tìm thấy tồn kho cho sản phẩm [%s] tại kho online. " +
-                            "Vui lòng kiểm tra dữ liệu kho.",
+                                    "Vui lòng kiểm tra dữ liệu kho.",
                             bienThe.getMaSku())));
 
             int tonKhoSauKhiTru = tonKho.getSoLuong() - chiTiet.getSoLuong();
@@ -166,8 +167,8 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
             if (tonKhoSauKhiTru < TON_KHO_TOI_THIEU) {
                 throw new IllegalArgumentException(String.format(
                         "Vi phạm quy tắc tồn kho tối thiểu khi xác nhận đơn [%s]. " +
-                        "Sản phẩm [%s] tại kho online: Tồn kho = %d, Bán = %d, " +
-                        "Còn lại = %d (< mức tối thiểu %d).",
+                                "Sản phẩm [%s] tại kho online: Tồn kho = %d, Bán = %d, " +
+                                "Còn lại = %d (< mức tối thiểu %d).",
                         donHang.getMaDonHang(), bienThe.getMaSku(),
                         tonKho.getSoLuong(), chiTiet.getSoLuong(),
                         tonKhoSauKhiTru, TON_KHO_TOI_THIEU));
@@ -206,6 +207,194 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
 
         log.info("[QuanLyDonHang] ✅ Xác nhận thành công — maDonHang={}, trangThai=da_xac_nhan, đã trừ {} SKU",
                 donHang.getMaDonHang(), danhSachChiTiet.size());
+        return donHang;
+    }
+
+    // =========================================================================
+    // 2b. XÁC NHẬN ĐƠN HÀNG VỚI IMEI
+    // =========================================================================
+
+    /**
+     * {@inheritDoc}
+     *
+     * <h3>Luồng chi tiết:</h3>
+     * <ol>
+     *   <li>Validate đơn hàng ở trạng thái {@code "cho_xac_nhan"}.</li>
+     *   <li>Load ChiTietDonHang với FETCH JOIN (tránh N+1).</li>
+     *   <li>Lấy kho online.</li>
+     *   <li><b>Fail-Fast — PRE-VALIDATE toàn bộ:</b>
+     *       <ul>
+     *         <li>Với mỗi {@link ImeiSelection}: kiểm tra chi tiết đơn tồn tại, số lượng IMEI khớp.</li>
+     *         <li>Với mỗi IMEI: kiểm tra tồn tại, tinhTrang='trong_kho', kho_id = kho online, thuộc đúng biến thể.</li>
+     *         <li>Kiểm tra tồn kho kho_online đủ (Safety Stock).</li>
+     *       </ul>
+     *       Ném lỗi ngay nếu bất kỳ vi phạm nào — chưa thay đổi dữ liệu.
+     *   </li>
+     *   <li><b>EXECUTE:</b>
+     *       <ul>
+     *         <li>Cập nhật IMEI: tinhTrang='da_ban', gán donHang.</li>
+     *         <li>Trừ tồn kho từng dòng.</li>
+     *         <li>Cập nhật trạng thái đơn → {@code "da_xac_nhan"}, ghi nhân viên xử lý.</li>
+     *       </ul>
+     *   </li>
+     * </ol>
+     */
+    @Override
+    @Transactional
+    public DonHang xacNhanDonHangVoiImei(Integer donHangId, Integer nhanVienId,
+                                         List<ImeiSelection> imeiSelections) {
+
+        log.info("[QuanLyDonHang] ▶ Xác nhận đơn với IMEI — donHangId={}, nhanVienId={}, {} selection",
+                donHangId, nhanVienId, imeiSelections == null ? 0 : imeiSelections.size());
+
+        // --- Validate đơn hàng ---
+        DonHang donHang = donHangRepository.findById(donHangId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Không tìm thấy đơn hàng có ID: " + donHangId));
+
+        if (!"cho_xac_nhan".equals(donHang.getTrangThai())) {
+            throw new IllegalArgumentException(String.format(
+                    "Đơn hàng [%s] đang ở trạng thái '%s', không thể xác nhận. " +
+                            "Chỉ được xác nhận khi trạng thái là 'cho_xac_nhan'.",
+                    donHang.getMaDonHang(), donHang.getTrangThai()));
+        }
+
+        // --- Lấy danh sách chi tiết đơn (eager-load) ---
+        List<ChiTietDonHang> danhSachChiTiet =
+                chiTietDonHangRepository.findByDonHangIdWithDetails(donHangId);
+
+        if (danhSachChiTiet.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Đơn hàng [" + donHang.getMaDonHang() + "] không có sản phẩm nào. " +
+                            "Không thể xác nhận đơn rỗng.");
+        }
+
+        // --- Lấy kho online ---
+        Kho khoOnline = layKhoOnlineHoacNemLoi();
+
+        // ═══════════════════════════════════════════════════════════════════
+        // BƯỚC FAIL-FAST: PRE-VALIDATE TOÀN BỘ trước khi thay đổi dữ liệu
+        // ═══════════════════════════════════════════════════════════════════
+
+        // Map chiTietId -> ChiTietDonHang để kiểm tra nhanh
+        java.util.Map<Integer, ChiTietDonHang> chiTietMap = new java.util.HashMap<>();
+        for (ChiTietDonHang ct : danhSachChiTiet) {
+            chiTietMap.put(ct.getId(), ct);
+        }
+
+        // Danh sách các IMEI cần cập nhật (sau khi validate) — lưu để execute
+        java.util.List<MayDienThoai> imeiToUpdate = new java.util.ArrayList<>();
+
+        for (ImeiSelection sel : imeiSelections) {
+            ChiTietDonHang chiTiet = chiTietMap.get(sel.getChiTietDonHangId());
+            if (chiTiet == null) {
+                throw new IllegalArgumentException(
+                        "Chi tiết đơn hàng ID " + sel.getChiTietDonHangId() + " không thuộc đơn hàng này.");
+            }
+
+            List<String> imeiList = sel.getImeiList();
+            if (imeiList == null || imeiList.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Chưa có IMEI cho sản phẩm: " + chiTiet.getBienTheSanPham().getMaSku());
+            }
+
+            if (imeiList.size() != chiTiet.getSoLuong()) {
+                throw new IllegalArgumentException(String.format(
+                        "Số lượng IMEI (%d) không khớp với số lượng sản phẩm (%d) cho SKU [%s].",
+                        imeiList.size(), chiTiet.getSoLuong(), chiTiet.getBienTheSanPham().getMaSku()));
+            }
+
+            // Kiểm tra từng IMEI
+            for (String imei : imeiList) {
+                String imeiClean = imei.trim();
+                MayDienThoai may = mayDienThoaiRepository.findByImei1(imeiClean)
+                        .orElseThrow(() -> new EntityNotFoundException(
+                                "Không tìm thấy IMEI: " + imeiClean));
+
+                // Kiểm tra IMEI thuộc đúng biến thể
+                if (!may.getBienTheSanPham().getId().equals(chiTiet.getBienTheSanPham().getId())) {
+                    throw new IllegalArgumentException(String.format(
+                            "IMEI [%s] không thuộc biến thể [%s].",
+                            imeiClean, chiTiet.getBienTheSanPham().getMaSku()));
+                }
+
+                // Kiểm tra IMEI đang trong kho
+                if (!"trong_kho".equals(may.getTinhTrang())) {
+                    throw new IllegalArgumentException(String.format(
+                            "IMEI [%s] không ở trạng thái 'trong_kho' (hiện tại: '%s').",
+                            imeiClean, may.getTinhTrang()));
+                }
+
+                // Kiểm tra IMEI ở kho online
+                if (may.getKho() == null || !may.getKho().getId().equals(khoOnline.getId())) {
+                    throw new IllegalArgumentException(String.format(
+                            "IMEI [%s] không ở kho online. Vui lòng chỉ chọn IMEI từ kho online.",
+                            imeiClean));
+                }
+
+                // Lưu tạm để execute sau
+                imeiToUpdate.add(may);
+            }
+
+            // Kiểm tra tồn kho online (Safety Stock)
+            TonKho tonKho = tonKhoRepository
+                    .findByKhoAndBienTheSanPham(khoOnline, chiTiet.getBienTheSanPham())
+                    .orElseThrow(() -> new EntityNotFoundException(String.format(
+                            "Không tìm thấy tồn kho cho sản phẩm [%s] tại kho online.",
+                            chiTiet.getBienTheSanPham().getMaSku())));
+
+            int tonKhoSauKhiTru = tonKho.getSoLuong() - chiTiet.getSoLuong();
+            if (tonKhoSauKhiTru < TON_KHO_TOI_THIEU) {
+                throw new IllegalArgumentException(String.format(
+                        "Vi phạm quy tắc tồn kho tối thiểu khi xác nhận đơn [%s]. " +
+                                "Sản phẩm [%s] tại kho online: Tồn kho = %d, Bán = %d, " +
+                                "Còn lại = %d (< mức tối thiểu %d).",
+                        donHang.getMaDonHang(), chiTiet.getBienTheSanPham().getMaSku(),
+                        tonKho.getSoLuong(), chiTiet.getSoLuong(),
+                        tonKhoSauKhiTru, TON_KHO_TOI_THIEU));
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // EXECUTE: Tất cả đã pass → Cập nhật IMEI và trừ kho
+        // ═══════════════════════════════════════════════════════════════════
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1. Cập nhật IMEI
+        for (MayDienThoai may : imeiToUpdate) {
+            may.setTinhTrang("da_ban");
+            may.setDonHang(donHang);
+            mayDienThoaiRepository.save(may);
+        }
+        log.info("[QuanLyDonHang] Đã cập nhật {} IMEI thành da_ban.", imeiToUpdate.size());
+
+        // 2. Trừ kho online
+        for (ChiTietDonHang chiTiet : danhSachChiTiet) {
+            TonKho tonKho = tonKhoRepository
+                    .findByKhoAndBienTheSanPham(khoOnline, chiTiet.getBienTheSanPham())
+                    .orElseThrow(); // Đã validate ở trên
+
+            tonKho.setSoLuong(tonKho.getSoLuong() - chiTiet.getSoLuong());
+            tonKho.setUpdatedAt(now);
+            tonKhoRepository.save(tonKho);
+
+            log.debug("[QuanLyDonHang] Trừ kho — sku=[{}]: còn lại {}",
+                    chiTiet.getBienTheSanPham().getMaSku(), tonKho.getSoLuong());
+        }
+
+        // 3. Cập nhật trạng thái đơn hàng
+        donHang.setTrangThai("da_xac_nhan");
+        donHang.setUpdatedAt(now);
+
+        if (nhanVienId != null) {
+            nguoiDungRepository.findById(nhanVienId).ifPresent(donHang::setNguoiXuLy);
+        }
+
+        donHangRepository.save(donHang);
+
+        log.info("[QuanLyDonHang] ✅ Xác nhận với IMEI thành công — maDonHang={}, trangThai=da_xac_nhan",
+                donHang.getMaDonHang());
         return donHang;
     }
 
@@ -353,6 +542,95 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
     }
 
     // =========================================================================
+    // 5. XÁC NHẬN THANH TOÁN CHO ĐƠN HÀNG COD
+    // =========================================================================
+
+    /**
+     * {@inheritDoc}
+     *
+     * <h3>Luồng chi tiết:</h3>
+     * <ol>
+     *   <li>Kiểm tra đơn hàng tồn tại.</li>
+     *   <li>Kiểm tra trạng thái đơn hàng phải là {@code "da_giao"}.</li>
+     *   <li>Kiểm tra trạng thái thanh toán phải là {@code "chua_thanh_toan"}.</li>
+     *   <li>Cập nhật trạng thái thanh toán → {@code "da_thanh_toan"}.</li>
+     * </ol>
+     */
+    @Override
+    @Transactional
+    public DonHang xacNhanThanhToan(Integer donHangId) {
+
+        log.info("[QuanLyDonHang] ▶ Xác nhận thanh toán — donHangId={}", donHangId);
+
+        // Lấy đơn hàng
+        DonHang donHang = donHangRepository.findById(donHangId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Không tìm thấy đơn hàng có ID: " + donHangId));
+
+        // Kiểm tra trạng thái đơn hàng
+        if (!"da_giao".equals(donHang.getTrangThai())) {
+            throw new IllegalArgumentException(String.format(
+                    "Đơn hàng [%s] đang ở trạng thái '%s', không thể xác nhận thanh toán. " +
+                            "Chỉ được xác nhận khi đơn hàng đã giao ('da_giao').",
+                    donHang.getMaDonHang(), donHang.getTrangThai()));
+        }
+
+        // Kiểm tra trạng thái thanh toán
+        if (!"chua_thanh_toan".equals(donHang.getTrangThaiThanhToan())) {
+            throw new IllegalArgumentException(String.format(
+                    "Đơn hàng [%s] đang ở trạng thái thanh toán '%s', không thể xác nhận thanh toán. " +
+                            "Chỉ áp dụng cho đơn chưa thanh toán ('chua_thanh_toan').",
+                    donHang.getMaDonHang(), donHang.getTrangThaiThanhToan()));
+        }
+
+        // Cập nhật trạng thái thanh toán
+        donHang.setTrangThaiThanhToan("da_thanh_toan");
+        donHang.setUpdatedAt(LocalDateTime.now());
+
+        DonHang saved = donHangRepository.save(donHang);
+
+        log.info("[QuanLyDonHang] ✅ Xác nhận thanh toán thành công — maDonHang={}, trangThaiThanhToan=da_thanh_toan",
+                saved.getMaDonHang());
+
+        return saved;
+    }
+
+    // =========================================================================
+    // 6. LẤY DANH SÁCH IMEI THEO ĐƠN HÀNG (OPTIMIZED VERSION)
+    // =========================================================================
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Phương thức này lấy tất cả IMEI đã được gán cho đơn hàng (trạng thái 'da_ban').
+     * Dùng để hiển thị danh sách IMEI trên trang chi tiết đơn hàng.
+     * <p>
+     * <b>Optimized:</b> Sử dụng repository method {@link MayDienThoaiRepository#findByDonHangIdAndTinhTrang}
+     * để query trực tiếp, tránh load toàn bộ bảng may_dien_thoai.
+     *
+     * @param donHangId ID đơn hàng cần lấy danh sách IMEI.
+     * @return Danh sách {@link MayDienThoai} thuộc đơn hàng đó.
+     * @throws EntityNotFoundException nếu đơn hàng không tồn tại.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<MayDienThoai> layDanhSachImeiTheoDonHang(Integer donHangId) {
+        log.debug("[QuanLyDonHang] Lấy danh sách IMEI theo đơn hàng — donHangId={}", donHangId);
+
+        // Kiểm tra đơn hàng tồn tại
+        if (!donHangRepository.existsById(donHangId)) {
+            throw new EntityNotFoundException("Không tìm thấy đơn hàng có ID: " + donHangId);
+        }
+
+        // Sử dụng repository method mới để query trực tiếp, tối ưu hiệu năng
+        List<MayDienThoai> danhSach = mayDienThoaiRepository
+                .findByDonHangIdAndTinhTrang(donHangId, "da_ban");
+
+        log.debug("[QuanLyDonHang] Tìm thấy {} IMEI cho đơn hàng {}", danhSach.size(), donHangId);
+        return danhSach;
+    }
+
+    // =========================================================================
     // PRIVATE HELPER METHODS
     // =========================================================================
 
@@ -363,7 +641,7 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
         return khoRepository.findByLoai(LOAI_KHO_ONLINE)
                 .orElseThrow(() -> new IllegalStateException(
                         "Không tìm thấy kho online trong hệ thống. " +
-                        "Vui lòng kiểm tra dữ liệu bảng kho."));
+                                "Vui lòng kiểm tra dữ liệu bảng kho."));
     }
 
     /**
@@ -390,7 +668,7 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
         if (!hopLe) {
             throw new IllegalArgumentException(String.format(
                     "Không thể chuyển trạng thái đơn hàng [%s] từ '%s' sang '%s'. " +
-                    "Luồng hợp lệ: da_xac_nhan → dang_giao → da_giao.",
+                            "Luồng hợp lệ: da_xac_nhan → dang_giao → da_giao.",
                     maDonHang, trangThaiHienTai, trangThaiMoi));
         }
     }

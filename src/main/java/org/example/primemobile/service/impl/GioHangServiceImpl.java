@@ -3,6 +3,7 @@ package org.example.primemobile.service.impl;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.primemobile.dto.KhuyenMaiResult;
 import org.example.primemobile.entity.*;
 import org.example.primemobile.repository.*;
 import org.example.primemobile.service.IGioHangService;
@@ -78,7 +79,7 @@ public class GioHangServiceImpl implements IGioHangService {
     @Override
     @Transactional
     public GioHang themVaoGioHang(Integer khachHangId, String sessionId,
-            Integer bienTheSanPhamId, Integer soLuong) {
+                                  Integer bienTheSanPhamId, Integer soLuong) {
         // Validate đầu vào cơ bản
         if (soLuong == null || soLuong <= 0) {
             throw new IllegalArgumentException("Số lượng phải lớn hơn 0.");
@@ -316,6 +317,26 @@ public class GioHangServiceImpl implements IGioHangService {
 
     /**
      * {@inheritDoc}
+     *
+     * <p>
+     * Cách tính:
+     * <ol>
+     *   <li>Tính tổng tiền sau khi áp dụng Flash Sale và Giảm giá trực tiếp
+     *       cho từng sản phẩm (gọi {@link IKhuyenMaiService#tinhGiaSauKhuyenMai}
+     *       với {@code tongTienHang = null}).</li>
+     *   <li>Gọi {@link IKhuyenMaiService#tinhKhuyenMaiChoDonHang(BigDecimal)} để
+     *       tính khuyến mãi toàn đơn (phần trăm và đơn hàng tối thiểu) trên
+     *       tổng tiền đã có Flash Sale/Giảm trực tiếp.</li>
+     *   <li>Trả về tổng tiền cuối cùng sau tất cả khuyến mãi.</li>
+     * </ol>
+     *
+     * <p>
+     * <b>Lưu ý:</b> Phương thức này đảm bảo áp dụng đúng thứ tự ưu tiên:
+     * Flash Sale/Giảm trực tiếp (trên từng sản phẩm) trước,
+     * sau đó mới giảm toàn đơn (phần trăm, đơn hàng tối thiểu).
+     *
+     * @param gioHang Giỏ hàng cần tính tổng.
+     * @return Tổng tiền sau tất cả khuyến mãi.
      */
     @Override
     @Transactional(readOnly = true)
@@ -323,14 +344,21 @@ public class GioHangServiceImpl implements IGioHangService {
         if (gioHang == null || gioHang.getChiTietGioHangs() == null) {
             return BigDecimal.ZERO;
         }
-        return gioHang.getChiTietGioHangs().stream()
+
+        // 1. Tính tổng tiền sau Flash Sale và Giảm trực tiếp
+        BigDecimal tongSauFlashVaTrucTiep = gioHang.getChiTietGioHangs().stream()
                 .map(ct -> {
                     BienTheSanPham bt = ct.getBienTheSanPham();
-                    // Gọi service để tính giá sau khuyến mãi (ưu tiên flash sale, giảm trực tiếp)
-                    // Truyền tongTienHang = null vì chưa có tổng tiền để áp dụng loại toàn đơn
+                    // Tính giá sau flash / giảm trực tiếp (không áp dụng toàn đơn)
                     BigDecimal donGia = khuyenMaiService.tinhGiaSauKhuyenMai(bt.getId(), null);
                     return donGia.multiply(BigDecimal.valueOf(ct.getSoLuong()));
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // 2. Áp dụng khuyến mãi toàn đơn (phần trăm, đơn hàng tối thiểu)
+        KhuyenMaiResult result = khuyenMaiService.tinhKhuyenMaiChoDonHang(tongSauFlashVaTrucTiep);
+
+        // 3. Trả về tổng cuối cùng
+        return result.getTongSauGiam();
     }
 }

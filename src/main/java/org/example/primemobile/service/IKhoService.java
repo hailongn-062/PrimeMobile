@@ -2,6 +2,7 @@ package org.example.primemobile.service;
 
 import org.example.primemobile.dto.kho.TaoPhieuChuyenKhoRequest;
 import org.example.primemobile.dto.kho.TaoPhieuNhapKhoRequest;
+import org.example.primemobile.entity.MayDienThoai;
 import org.example.primemobile.entity.PhieuChuyenKho;
 import org.example.primemobile.entity.PhieuNhapKho;
 import org.example.primemobile.entity.TonKho;
@@ -118,5 +119,24 @@ public interface IKhoService {
      * @throws jakarta.persistence.EntityNotFoundException Nếu ID không tồn tại.
      */
     PhieuChuyenKho layChiTietPhieuChuyen(Integer id);
-}
 
+    // =========================================================================
+    // QUẢN LÝ IMEI THEO KHO
+    // =========================================================================
+
+    /**
+     * Lấy danh sách IMEI đang trong kho (tinh_trang = 'trong_kho') của một biến thể.
+     * <p>
+     * Phục vụ cho:
+     * <ul>
+     *   <li>Xác nhận đơn online: lấy IMEI ở Kho Online để nhân viên chọn.</li>
+     *   <li>Chuyển kho: lấy IMEI ở kho nguồn để nhân viên chọn chuyển đi.</li>
+     * </ul>
+     *
+     * @param khoId            ID kho cần lấy IMEI.
+     * @param bienTheSanPhamId ID biến thể sản phẩm.
+     * @return Danh sách {@link MayDienThoai} có tinh_trang = 'trong_kho' và kho_id = khoId.
+     * @throws jakarta.persistence.EntityNotFoundException Nếu không tìm thấy kho hoặc biến thể.
+     */
+    List<MayDienThoai> layDanhSachImeiTrongKho(Integer khoId, Integer bienTheSanPhamId);
+}

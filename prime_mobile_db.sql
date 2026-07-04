@@ -5,6 +5,7 @@ GO
 USE PrimeMobile;
 GO
 
+
 -- =====================================================
 -- MODULE 1: NGƯỜI DÙNG & PHÂN QUYỀN
 -- Bỏ bảng nhan_vien riêng, dùng nguoi_dung.vai_tro trực tiếp
@@ -351,11 +352,11 @@ GO
 -- =====================================================
 
 CREATE TABLE phuong_thuc_thanh_toan (
-    id INT IDENTITY (1, 1) PRIMARY KEY,
-    ten_pttt NVARCHAR(50) NOT NULL,
-    mo_ta NVARCHAR(255) NULL,
-    kich_hoat BIT NOT NULL DEFAULT 1,
-    CONSTRAINT uq_pttt_ten UNIQUE (ten_pttt)
+                                        id INT IDENTITY (1, 1) PRIMARY KEY,
+                                        ten_pttt NVARCHAR(50) NOT NULL,
+                                        mo_ta NVARCHAR(255) NULL,
+                                        kich_hoat BIT NOT NULL DEFAULT 1,
+                                        CONSTRAINT uq_pttt_ten UNIQUE (ten_pttt)
 );
 GO
 
@@ -371,7 +372,7 @@ CREATE TABLE don_hang (
                           ma_don_hang VARCHAR(50) NOT NULL,
                           khach_hang_id INT NOT NULL,
                           nguoi_xu_ly_id INT NULL,
-                          -- Đã xóa cuoc_hoi_thoai_id
+    -- Đã xóa cuoc_hoi_thoai_id
                           kenh_ban VARCHAR(10) NOT NULL DEFAULT 'online',
                           ngay_dat DATETIME2 NOT NULL DEFAULT GETDATE(),
                           dia_chi_giao_id INT NULL,
@@ -684,49 +685,49 @@ GO
 
 CREATE TRIGGER trg_nd_updated ON nguoi_dung AFTER UPDATE AS
 BEGIN
-    UPDATE nguoi_dung SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
+UPDATE nguoi_dung SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
 END;
 GO
 
 CREATE TRIGGER trg_kh_updated ON khach_hang AFTER UPDATE AS
 BEGIN
-    UPDATE khach_hang SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
+UPDATE khach_hang SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
 END;
 GO
 
 CREATE TRIGGER trg_sp_updated ON san_pham AFTER UPDATE AS
 BEGIN
-    UPDATE san_pham SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
+UPDATE san_pham SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
 END;
 GO
 
 CREATE TRIGGER trg_bt_updated ON bien_the_san_pham AFTER UPDATE AS
 BEGIN
-    UPDATE bien_the_san_pham SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
+UPDATE bien_the_san_pham SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
 END;
 GO
 
 CREATE TRIGGER trg_dh_updated ON don_hang AFTER UPDATE AS
 BEGIN
-    UPDATE don_hang SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
+UPDATE don_hang SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
 END;
 GO
 
 CREATE TRIGGER trg_tk_updated ON ton_kho AFTER UPDATE AS
 BEGIN
-    UPDATE ton_kho SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
+UPDATE ton_kho SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
 END;
 GO
 
 CREATE TRIGGER trg_gh_updated ON gio_hang AFTER UPDATE AS
 BEGIN
-    UPDATE gio_hang SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
+UPDATE gio_hang SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
 END;
 GO
 
 CREATE TRIGGER trg_cht_updated ON cuoc_hoi_thoai AFTER UPDATE AS
 BEGIN
-    UPDATE cuoc_hoi_thoai SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
+UPDATE cuoc_hoi_thoai SET updated_at = GETDATE() WHERE id IN (SELECT id FROM inserted);
 END;
 GO
 
@@ -736,12 +737,12 @@ ALTER TABLE may_dien_thoai DROP CONSTRAINT uq_may_serial;
 ALTER TABLE may_dien_thoai DROP CONSTRAINT uq_may_imei2; -- Chắc chắn imei2 cũng sẽ bị lỗi tương tự, xóa luôn
 
 -- 2. Tạo lại UNIQUE bằng Filtered Index (Chỉ áp dụng Unique khi khác NULL)
-CREATE UNIQUE NONCLUSTERED INDEX idx_uq_may_serial 
-ON may_dien_thoai(serial) 
+CREATE UNIQUE NONCLUSTERED INDEX idx_uq_may_serial
+ON may_dien_thoai(serial)
 WHERE serial IS NOT NULL;
 
-CREATE UNIQUE NONCLUSTERED INDEX idx_uq_may_imei2 
-ON may_dien_thoai(imei2) 
+CREATE UNIQUE NONCLUSTERED INDEX idx_uq_may_imei2
+ON may_dien_thoai(imei2)
 WHERE imei2 IS NOT NULL;
 
 USE PrimeMobile;
@@ -751,6 +752,9 @@ USE PrimeMobile;
 SELECT COLUMN_NAME, IS_NULLABLE
 FROM INFORMATION_SCHEMA.COLUMNS
 WHERE TABLE_NAME = 'bien_the_san_pham' AND COLUMN_NAME = 'gia_nhap';
+
+ALTER TABLE may_dien_thoai ADD kho_id INT NULL;
+ALTER TABLE may_dien_thoai ADD CONSTRAINT fk_may_kho FOREIGN KEY (kho_id) REFERENCES kho(id);
 
 USE PrimeMobile;
 GO
@@ -882,15 +886,15 @@ INSERT INTO don_hang (ma_don_hang, khach_hang_id, nguoi_xu_ly_id, kenh_ban, dia_
 
 -- Đơn hàng 2: ĐANG GIAO - Thanh toán COD (Chưa thanh toán)
 INSERT INTO don_hang (ma_don_hang, khach_hang_id, nguoi_xu_ly_id, kenh_ban, dia_chi_giao_id, ho_ten_nguoi_nhan, sdt_nguoi_nhan, dia_chi_giao_cu_the, phuong_xa_giao, quan_huyen_giao, tinh_thanh_giao, tong_tien_hang, tien_giam_gia, phi_ship, ngay_giao_du_kien, trang_thai, trang_thai_thanh_toan, ngay_dat) VALUES
-('DH2', 2, 2, 'online', 2, N'Phạm Thị Hoa', '0987654321', N'Tòa nhà X, Đường Y', N'Phường Bến Nghé', N'Quận 1', N'TP.HCM', 25490000, 0, 45000, '2026-06-22', 'dang_giao', 'chua_thanh_toan', GETDATE());
+    ('DH2', 2, 2, 'online', 2, N'Phạm Thị Hoa', '0987654321', N'Tòa nhà X, Đường Y', N'Phường Bến Nghé', N'Quận 1', N'TP.HCM', 25490000, 0, 45000, '2026-06-22', 'dang_giao', 'chua_thanh_toan', GETDATE());
 
 -- Đơn hàng 3: CHỜ XÁC NHẬN - Đang đợi khách thao tác trên cổng VNPay
 INSERT INTO don_hang (ma_don_hang, khach_hang_id, kenh_ban, dia_chi_giao_id, ho_ten_nguoi_nhan, sdt_nguoi_nhan, dia_chi_giao_cu_the, phuong_xa_giao, quan_huyen_giao, tinh_thanh_giao, tong_tien_hang, tien_giam_gia, phi_ship, trang_thai, trang_thai_thanh_toan, thoi_gian_het_han_tt, ngay_dat) VALUES
-('DH3', 1, 'online', 1, N'Nguyễn Văn An', '0912345678', N'Số 1, Ngõ 2', N'Phường Dịch Vọng', N'Quận Cầu Giấy', N'Hà Nội', 19990000, 0, 25000, 'cho_xac_nhan', 'dang_chuyen_huong', DATEADD(MINUTE, 15, GETDATE()), GETDATE());
+    ('DH3', 1, 'online', 1, N'Nguyễn Văn An', '0912345678', N'Số 1, Ngõ 2', N'Phường Dịch Vọng', N'Quận Cầu Giấy', N'Hà Nội', 19990000, 0, 25000, 'cho_xac_nhan', 'dang_chuyen_huong', DATEADD(MINUTE, 15, GETDATE()), GETDATE());
 
 -- Đơn hàng 4: ĐÃ HỦY - Thanh toán VNPay thất bại/quá hạn
 INSERT INTO don_hang (ma_don_hang, khach_hang_id, kenh_ban, ho_ten_nguoi_nhan, sdt_nguoi_nhan, dia_chi_giao_cu_the, phuong_xa_giao, quan_huyen_giao, tinh_thanh_giao, tong_tien_hang, tien_giam_gia, phi_ship, trang_thai, trang_thai_thanh_toan, ngay_dat) VALUES
-('DH4', 3, 'online', N'Khách Lẻ Mặc Định', '0000000000', N'Tạm vắng', N'Phường X', N'Quận Y', N'Tỉnh Z', 10490000, 0, 30000, 'da_huy', 'that_bai', '2026-06-01');
+    ('DH4', 3, 'online', N'Khách Lẻ Mặc Định', '0000000000', N'Tạm vắng', N'Phường X', N'Quận Y', N'Tỉnh Z', 10490000, 0, 30000, 'da_huy', 'that_bai', '2026-06-01');
 GO
 
 INSERT INTO chi_tiet_don_hang (don_hang_id, bien_the_san_pham_id, so_luong, don_gia_ban) VALUES
@@ -912,11 +916,11 @@ GO
 -- =====================================================
 -- 11. IMEI (MÁY VẬT LÝ) & GẮN VÀO ĐƠN HÀNG
 -- =====================================================
-INSERT INTO may_dien_thoai (bien_the_san_pham_id, imei1, imei2, serial, tinh_trang, don_hang_id) VALUES
-(1, '351111111111111', '861111111111111', 'SN_IP15_001', 'da_ban', 1), 
-(4, '352222222222222', '862222222222222', 'SN_S24U_002', 'da_ban', 2), 
-(7, '353333333333333', '863333333333333', 'SN_XM14_003', 'trong_kho', NULL),
-(9, '354444444444444', '864444444444444', 'SN_RENO_004', 'trong_kho', NULL);
+INSERT INTO may_dien_thoai (bien_the_san_pham_id, imei1, imei2, serial, tinh_trang, don_hang_id, kho_id) VALUES
+(1, '351111111111111', '861111111111111', 'SN_IP15_001', 'da_ban', 1, 1),
+(4, '352222222222222', '862222222222222', 'SN_S24U_002', 'da_ban', 2, 1),
+(7, '353333333333333', '863333333333333', 'SN_XM14_003', 'trong_kho', NULL, 1),
+(9, '354444444444444', '864444444444444', 'SN_RENO_004', 'trong_kho', NULL, 1);
 GO
 
 -- =====================================================
@@ -929,7 +933,7 @@ GO
 -- Sinh bảo hành cho máy đã bán ở Đơn 1
 DECLARE @ActualMayId INT;
 SELECT @ActualMayId = id FROM may_dien_thoai WHERE imei1 = '351111111111111';
-INSERT INTO phieu_bao_hanh (ma_phieu, may_dien_thoai_id, khach_hang_id, don_hang_id, so_thang_bao_hanh, ngay_bat_dau, ngay_het_han) 
+INSERT INTO phieu_bao_hanh (ma_phieu, may_dien_thoai_id, khach_hang_id, don_hang_id, so_thang_bao_hanh, ngay_bat_dau, ngay_het_han)
 VALUES ('BH_IP15_001', @ActualMayId, 1, 1, 12, '2026-05-12', '2027-05-12');
 GO
 

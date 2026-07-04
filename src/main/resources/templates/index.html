@@ -53,6 +53,7 @@
         .pm-image-fallback span { font-size:.76rem; font-weight:800; }
         .pm-image-fallback.d-none { display:none!important; }
         .pm-price { color:var(--pm-accent); font-weight:900; font-size:1.05rem; }
+        .pm-price-old { color:#94a3b8; font-size:0.85rem; text-decoration:line-through; margin-right:6px; font-weight:500; }
         .btn-pm-primary { background:var(--pm-primary); color:#fff; border:0; border-radius:8px; font-weight:800; }
         .btn-pm-primary:hover { background:var(--pm-primary-dark); color:#fff; }
         .pm-promo { border-radius:8px; padding:22px; color:#fff; min-height:128px; display:flex; align-items:center; gap:16px; }
@@ -175,13 +176,15 @@
                             </a>
 
                             <div class="mt-auto">
-                                <div class="pm-price mb-2"
-                                     th:if="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams)}">
-                                    <th:block th:text="${#numbers.formatDecimal(sp.bienTheSanPhams[0].giaBan, 0, 'COMMA', 0, 'POINT')}">0</th:block>đ
-                                </div>
-                                <div class="mb-2"
-                                     th:unless="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams)}">
-                                    <span class="text-muted small">Liên hệ báo giá</span>
+                                <div th:with="giaGoc=${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams) ? sp.bienTheSanPhams[0].giaBan : null},
+                                              giaSauKM=${giaSauKhuyenMaiTheoSanPham != null ? giaSauKhuyenMaiTheoSanPham[sp.id] : giaGoc}">
+                                    <div th:if="${giaGoc != null}">
+                                        <span th:if="${giaSauKM != null and giaSauKM < giaGoc}" class="pm-price-old">
+                                            <span th:text="${#numbers.formatDecimal(giaGoc, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                                        </span>
+                                        <div class="pm-price mb-2" th:text="${#numbers.formatDecimal(giaSauKM, 0, 'COMMA', 0, 'POINT')} + 'đ'"></div>
+                                    </div>
+                                    <div th:unless="${giaGoc != null}" class="text-muted small mb-2">Liên hệ báo giá</div>
                                 </div>
 
                                 <a th:href="@{/san-pham/{id}(id=${sp.id})}"

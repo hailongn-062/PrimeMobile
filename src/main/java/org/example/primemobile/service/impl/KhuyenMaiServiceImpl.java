@@ -3,6 +3,7 @@ package org.example.primemobile.service.impl;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.primemobile.dto.KhuyenMaiResult;
 import org.example.primemobile.entity.*;
 import org.example.primemobile.repository.*;
 import org.example.primemobile.service.IKhuyenMaiService;
@@ -331,6 +332,10 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
      * (có ít nhất 1 sản phẩm trong giỏ). Chọn CTKM có phần trăm giảm cao nhất.</li>
      * </ol>
      * Nếu không có CTKM nào, trả về {@code giaBan} gốc.
+     *
+     * <p>
+     * <b>Lưu ý:</b> Flash Sale và Giảm giá trực tiếp được so sánh với nhau,
+     * khách hàng sẽ được hưởng mức giảm có lợi nhất (giá thấp nhất).
      */
     @Override
     @Transactional(readOnly = true)
@@ -340,40 +345,49 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy biến thể ID: " + bienTheId));
         BigDecimal giaGoc = bienThe.getGiaBan();
         BigDecimal giaSauKM = giaGoc;
-        LocalDateTime now = LocalDateTime.now();
 
-        // ── 1. Flash Sale (ưu tiên cao nhất) ──────────────────────────
+        // ── 1. Tính giá sau Flash Sale (nếu có) ──────────────────────
+        BigDecimal giaFlash = null;
         List<ChiTietFlashSale> flashList = chiTietFlashSaleRepo.findActiveFlashSaleByBienTheId(bienTheId);
         if (!flashList.isEmpty()) {
             ChiTietFlashSale flash = flashList.get(0);
             BigDecimal phanTram = flash.getPhanTramGiam();
-            giaSauKM = giaGoc.multiply(
+            giaFlash = giaGoc.multiply(
                     BigDecimal.ONE.subtract(phanTram.divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP)));
-            log.debug("[KhuyenMai] Áp dụng Flash Sale: biếnTheId={}, giá gốc={}, giảm {}%, giá mới={}",
-                    bienTheId, giaGoc, phanTram, giaSauKM);
-            return giaSauKM;
+            log.debug("[KhuyenMai] Flash Sale: biếnTheId={}, giá gốc={}, giảm {}%, giá flash={}",
+                    bienTheId, giaGoc, phanTram, giaFlash);
         }
 
-        // ── 2. Giảm giá trực tiếp ──────────────────────────────────────
+        // ── 2. Tính giá sau Giảm giá trực tiếp (nếu có) ──────────────
+        BigDecimal giaTrucTiep = null;
         SanPham sanPham = bienThe.getSanPham();
         List<PhamViKhuyenMai> pvList = phamViKhuyenMaiRepo.findActiveGiamGiaTrucTiepBySanPhamId(sanPham.getId());
         if (!pvList.isEmpty()) {
             PhamViKhuyenMai pv = pvList.get(0);
             BigDecimal phanTram = pv.getChuongTrinhKhuyenMai().getGiaTriUuDai();
-            giaSauKM = giaGoc.multiply(
+            giaTrucTiep = giaGoc.multiply(
                     BigDecimal.ONE.subtract(phanTram.divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP)));
-            log.debug("[KhuyenMai] Áp dụng Giảm giá trực tiếp: biếnTheId={}, giá gốc={}, giảm {}%, giá mới={}",
-                    bienTheId, giaGoc, phanTram, giaSauKM);
-            return giaSauKM;
+            log.debug("[KhuyenMai] Giảm trực tiếp: biếnTheId={}, giá gốc={}, giảm {}%, giá giảm trực tiếp={}",
+                    bienTheId, giaGoc, phanTram, giaTrucTiep);
         }
 
-        // ── 3. Phần trăm hoặc Đơn hàng tối thiểu ──────────────────────
-        // ✅ SỬA: Chỉ áp dụng khi tongTienHang > 0 (có sản phẩm trong giỏ)
+        // ── 3. Chọn giá thấp nhất giữa Flash Sale và Giảm trực tiếp ──
+        if (giaFlash != null && giaTrucTiep != null) {
+            giaSauKM = giaFlash.min(giaTrucTiep);
+            log.debug("[KhuyenMai] So sánh Flash ({}) và Giảm trực tiếp ({}) → chọn giá thấp nhất: {}",
+                    giaFlash, giaTrucTiep, giaSauKM);
+        } else if (giaFlash != null) {
+            giaSauKM = giaFlash;
+        } else if (giaTrucTiep != null) {
+            giaSauKM = giaTrucTiep;
+        }
+
+        // ── 4. Phần trăm hoặc Đơn hàng tối thiểu (toàn đơn) ──────────
+        // Áp dụng lên giá đã được chọn sau bước so sánh Flash/Giảm trực tiếp
         if (tongTienHang != null && tongTienHang.compareTo(BigDecimal.ZERO) > 0) {
             List<ChuongTrinhKhuyenMai> ctkmList = ctkmRepo.layKhuyenMaiApDungToanDonHang();
             Optional<ChuongTrinhKhuyenMai> bestCtkm = ctkmList.stream()
                     .filter(ctkm -> {
-                        // Kiểm tra điều kiện đơn tối thiểu
                         BigDecimal nguong = ctkm.getDonHangToiThieu();
                         if (nguong != null && tongTienHang.compareTo(nguong) < 0) {
                             return false;
@@ -384,17 +398,70 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
 
             if (bestCtkm.isPresent()) {
                 BigDecimal phanTram = bestCtkm.get().getGiaTriUuDai();
-                giaSauKM = giaGoc.multiply(
+                giaSauKM = giaSauKM.multiply(
                         BigDecimal.ONE.subtract(phanTram.divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP)));
-                log.debug("[KhuyenMai] Áp dụng %/Đơn tối thiểu: biếnTheId={}, giá gốc={}, giảm {}%, giá mới={}",
-                        bienTheId, giaGoc, phanTram, giaSauKM);
-                return giaSauKM;
+                log.debug("[KhuyenMai] Áp dụng toàn đơn: biếnTheId={}, giảm {}%, giá mới={}",
+                        bienTheId, phanTram, giaSauKM);
             }
         }
 
-        // ── Không có KM nào → giá gốc ──────────────────────────────────
-        log.debug("[KhuyenMai] Không có KM áp dụng cho biến thể {}, trả về giá gốc {}", bienTheId, giaGoc);
-        return giaGoc;
+        log.debug("[KhuyenMai] Kết quả cuối: biếnTheId={}, giá gốc={}, giá sau KM={}", bienTheId, giaGoc, giaSauKM);
+        return giaSauKM;
+    }
+
+    // ── Tính khuyến mãi cho đơn hàng (dùng chung Online & POS) ────────────
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Phương thức này được sử dụng thống nhất cho cả:
+     * <ul>
+     *   <li><b>Bán hàng Online:</b> Khi tạo đơn, tính tiền giảm để lưu vào DonHang.</li>
+     *   <li><b>Bán hàng POS:</b> Tính khuyến mãi trước khi thanh toán (tái sử dụng).</li>
+     *   <li><b>Giỏ hàng:</b> Hiển thị tổng tiền sau giảm.</li>
+     * </ul>
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public KhuyenMaiResult tinhKhuyenMaiChoDonHang(BigDecimal tongTienHang) {
+        // 1. Kiểm tra tổng tiền hợp lệ
+        if (tongTienHang == null || tongTienHang.compareTo(BigDecimal.ZERO) <= 0) {
+            log.debug("[KhuyenMai] tongTienHang không hợp lệ ({}), trả về không giảm giá.", tongTienHang);
+            return KhuyenMaiResult.builder()
+                    .tienGiam(BigDecimal.ZERO)
+                    .tongSauGiam(tongTienHang != null ? tongTienHang : BigDecimal.ZERO)
+                    .build();
+        }
+
+        // 2. Tìm CTKM tốt nhất cho đơn hàng
+        ChuongTrinhKhuyenMai best = timKhuyenMaiTotNhatChoDonHang(tongTienHang);
+
+        // 3. Nếu không có CTKM phù hợp
+        if (best == null) {
+            log.debug("[KhuyenMai] Không có CTKM phù hợp cho đơn hàng trị giá {}.", tongTienHang);
+            return KhuyenMaiResult.builder()
+                    .tienGiam(BigDecimal.ZERO)
+                    .tongSauGiam(tongTienHang)
+                    .build();
+        }
+
+        // 4. Tính tiền giảm
+        BigDecimal tienGiam = tongTienHang
+                .multiply(best.getGiaTriUuDai())
+                .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+
+        log.info("[KhuyenMai] Áp dụng CTKM cho đơn hàng: id={}, ten='{}', giảm {}%, tiền giảm={}, tổng sau giảm={}",
+                best.getId(), best.getTenCtkm(), best.getGiaTriUuDai(), tienGiam, tongTienHang.subtract(tienGiam));
+
+        // 5. Trả về kết quả
+        return KhuyenMaiResult.builder()
+                .ctkmId(best.getId())
+                .tenCtkm(best.getTenCtkm())
+                .giaTriUuDai(best.getGiaTriUuDai())
+                .tienGiam(tienGiam)
+                .tongSauGiam(tongTienHang.subtract(tienGiam))
+                .build();
     }
 
     // ═══════════════════════════════════════════════════════════════════════

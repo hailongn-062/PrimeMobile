@@ -32,6 +32,7 @@ import java.util.Map;
  *       TUYỆT ĐỐI KHÔNG được dưới {@value #TON_KHO_TOI_THIEU} đơn vị / SKU / kho.</li>
  *   <li>Phiếu nhập và phiếu chuyển kho đều được <b>chốt ngay</b> (hoan_thanh) khi tạo,
  *       không qua bước chờ duyệt.</li>
+ *   <li>Khi chuyển kho, nếu có danh sách IMEI cụ thể, hệ thống sẽ cập nhật kho_id của các IMEI đó.</li>
  * </ul>
  */
 @Slf4j
@@ -62,6 +63,7 @@ public class KhoService implements IKhoService {
     private final BienTheSanPhamRepository    bienTheSanPhamRepository;
     private final NhaCungCapRepository        nhaCungCapRepository;
     private final NguoiDungRepository         nguoiDungRepository;
+    private final MayDienThoaiRepository      mayDienThoaiRepository; // ✅ Thêm để quản lý IMEI
 
     // =======================================================================
     // PUBLIC METHODS — NGHIỆP VỤ CHÍNH
@@ -102,7 +104,7 @@ public class KhoService implements IKhoService {
         if (!"kho_tong".equals(kho.getLoai())) {
             throw new IllegalArgumentException(
                     "Vi phạm quy tắc nghiệp vụ: Chỉ được phép nhập hàng vào Kho Tổng. " +
-                    "Kho [" + kho.getTenKho() + "] có loại [" + kho.getLoai() + "] không hợp lệ.");
+                            "Kho [" + kho.getTenKho() + "] có loại [" + kho.getLoai() + "] không hợp lệ.");
         }
 
         if (Boolean.FALSE.equals(kho.getKichHoat())) {
@@ -205,31 +207,29 @@ public class KhoService implements IKhoService {
     }
 
     // -----------------------------------------------------------------------
-    // HÀM 2: TẠO PHIẾU CHUYỂN KHO (CÓ KIỂM TRA SAFETY STOCK)
+    // HÀM 2: TẠO PHIẾU CHUYỂN KHO (CÓ KIỂM TRA SAFETY STOCK & IMEI)
     // -----------------------------------------------------------------------
 
     /**
      * Tạo phiếu chuyển kho giữa 2 kho với kiểm tra Safety Stock Rule bắt buộc.
+     * <p>
+     * Nếu request có danh sách IMEI cụ thể cho từng chi tiết, hệ thống sẽ:
+     * <ul>
+     *   <li>Kiểm tra số lượng IMEI khớp với số lượng chuyển.</li>
+     *   <li>Kiểm tra từng IMEI có tinh_trang = 'trong_kho' và thuộc kho nguồn.</li>
+     *   <li>Cập nhật kho_id của các IMEI đó sang kho đích.</li>
+     * </ul>
      *
      * <h3>⚠️ Chiến lược Fail-Fast (Pre-validate ALL trước khi Execute):</h3>
-     * Toàn bộ danh sách được kiểm tra Safety Stock trong 1 vòng lặp đầu tiên.
-     * Nếu BẤT KỲ dòng nào vi phạm → ném ngoại lệ NGAY, không thực hiện bất cứ
-     * thay đổi nào lên DB. Điều này đảm bảo tính nhất quán dữ liệu tuyệt đối —
-     * hoặc chuyển kho thành công TOÀN BỘ, hoặc thất bại HOÀN TOÀN.
+     * Toàn bộ danh sách được kiểm tra Safety Stock và IMEI trong 1 vòng lặp đầu tiên.
+     * Nếu BẤT KỲ dòng nào vi phạm → ném ngoại lệ NGAY, không thực hiện bất cứ thay đổi nào.
      *
-     * <h3>Luồng xử lý:</h3>
-     * <ol>
-     *   <li>Validate: khoNguon ≠ khoDich, danh sách không rỗng.</li>
-     *   <li>Pre-validate tất cả dòng: Safety Stock Rule (tồn kho kho nguồn sau trừ >= 5).</li>
-     *   <li>Lưu header {@link PhieuChuyenKho}.</li>
-     *   <li>Execute: Trừ kho nguồn → Cộng kho đích → Lưu chi tiết.</li>
-     * </ol>
-     *
-     * @param request    Thông tin phiếu chuyển.
+     * @param request    Thông tin phiếu chuyển (có thể chứa danh sách IMEI).
      * @param nguoiTaoId ID nhân viên / admin tạo phiếu.
      * @return Phiếu chuyển kho đã được lưu.
-     * @throws IllegalArgumentException   Nếu vi phạm Safety Stock Rule hoặc khoNguon = khoDich.
-     * @throws EntityNotFoundException    Nếu không tìm thấy kho, biến thể, hoặc tồn kho tại kho nguồn.
+     * @throws IllegalArgumentException   Nếu vi phạm Safety Stock Rule, khoNguon = khoDich,
+     *                                    hoặc IMEI không hợp lệ.
+     * @throws EntityNotFoundException    Nếu không tìm thấy kho, biến thể, tồn kho, hoặc IMEI.
      */
     @Override
     @Transactional
@@ -266,15 +266,19 @@ public class KhoService implements IKhoService {
                         "Không tìm thấy người dùng ID: " + nguoiTaoId));
 
         // ------------------------------------------------------------------
-        // Bước 3: PRE-VALIDATE — Kiểm tra Safety Stock Rule TOÀN BỘ TRƯỚC
-        // Cache kết quả để tránh query 2 lần trong vòng lặp execute.
+        // Bước 3: PRE-VALIDATE — Kiểm tra Safety Stock Rule & IMEI
+        // Cache kết quả để tránh query 2 lần.
         // ------------------------------------------------------------------
         // Map<bienTheSanPhamId, TonKho tại khoNguon>
         Map<Integer, TonKho> tonKhoNguonCache = new HashMap<>();
         // Map<bienTheSanPhamId, BienTheSanPham>
         Map<Integer, BienTheSanPham> bienTheCache = new HashMap<>();
+        // Map<chiTietIndex, List<MayDienThoai>> để lưu IMEI đã validate
+        Map<Integer, List<MayDienThoai>> imeiCache = new HashMap<>();
 
+        int chiTietIndex = 0;
         for (ChiTietChuyenRequest dtoChiTiet : request.getChiTiets()) {
+            chiTietIndex++;
 
             // Validate số lượng đầu vào
             if (dtoChiTiet.getSoLuong() == null || dtoChiTiet.getSoLuong() <= 0) {
@@ -296,8 +300,7 @@ public class KhoService implements IKhoService {
             tonKhoNguonCache.put(dtoChiTiet.getBienTheSanPhamId(), tonKhoNguon);
 
             // ================================================================
-            // ⚠️ KIỂM TRA SAFETY STOCK RULE — RÀNG BUỘC SỐNG CÒN
-            // system_rules.md §3.1: Tồn kho tối thiểu = 5 sản phẩm/SKU/kho
+            // ⚠️ KIỂM TRA SAFETY STOCK RULE
             // ================================================================
             int soLuongHienTai   = tonKhoNguon.getSoLuong();
             int soLuongMuonChuyen = dtoChiTiet.getSoLuong();
@@ -306,13 +309,58 @@ public class KhoService implements IKhoService {
             if (soLuongSauKhiTru < TON_KHO_TOI_THIEU) {
                 throw new IllegalArgumentException(String.format(
                         "Vi phạm quy tắc tồn kho tối thiểu. " +
-                        "Sản phẩm [%s] tại kho [%s]: " +
-                        "Tồn kho hiện tại = %d, Muốn chuyển = %d, Còn lại = %d. " +
-                        "Số lượng còn lại trong kho không được dưới %d sản phẩm.",
+                                "Sản phẩm [%s] tại kho [%s]: " +
+                                "Tồn kho hiện tại = %d, Muốn chuyển = %d, Còn lại = %d. " +
+                                "Số lượng còn lại trong kho không được dưới %d sản phẩm.",
                         bienThe.getMaSku(), khoNguon.getTenKho(),
                         soLuongHienTai, soLuongMuonChuyen, soLuongSauKhiTru,
                         TON_KHO_TOI_THIEU
                 ));
+            }
+
+            // ================================================================
+            // ⚠️ KIỂM TRA IMEI (nếu có)
+            // ================================================================
+            List<String> imeiList = dtoChiTiet.getImeiList();
+            if (imeiList != null && !imeiList.isEmpty()) {
+                // Số lượng IMEI phải khớp với số lượng chuyển
+                if (imeiList.size() != soLuongMuonChuyen) {
+                    throw new IllegalArgumentException(String.format(
+                            "Số lượng IMEI (%d) không khớp với số lượng chuyển (%d) cho biến thể [%s].",
+                            imeiList.size(), soLuongMuonChuyen, bienThe.getMaSku()));
+                }
+
+                // Kiểm tra từng IMEI
+                List<MayDienThoai> imeiEntities = new ArrayList<>();
+                for (String imei : imeiList) {
+                    MayDienThoai may = mayDienThoaiRepository.findByImei1(imei.trim())
+                            .orElseThrow(() -> new EntityNotFoundException(
+                                    "Không tìm thấy IMEI: " + imei.trim()));
+
+                    // Kiểm tra IMEI thuộc đúng biến thể
+                    if (!may.getBienTheSanPham().getId().equals(bienThe.getId())) {
+                        throw new IllegalArgumentException(String.format(
+                                "IMEI [%s] không thuộc biến thể [%s].",
+                                imei.trim(), bienThe.getMaSku()));
+                    }
+
+                    // Kiểm tra IMEI đang trong kho
+                    if (!"trong_kho".equals(may.getTinhTrang())) {
+                        throw new IllegalArgumentException(String.format(
+                                "IMEI [%s] không ở trạng thái 'trong_kho' (hiện tại: '%s').",
+                                imei.trim(), may.getTinhTrang()));
+                    }
+
+                    // Kiểm tra IMEI đang ở kho nguồn
+                    if (may.getKho() == null || !may.getKho().getId().equals(khoNguon.getId())) {
+                        throw new IllegalArgumentException(String.format(
+                                "IMEI [%s] không ở kho nguồn [%s].",
+                                imei.trim(), khoNguon.getTenKho()));
+                    }
+
+                    imeiEntities.add(may);
+                }
+                imeiCache.put(chiTietIndex - 1, imeiEntities);
             }
             // ================================================================
         }
@@ -328,27 +376,38 @@ public class KhoService implements IKhoService {
                 .nguoiTao(nguoiTao)
                 .ngayChuyen(LocalDateTime.now())
                 .lyDo(request.getLyDo())
-                .trangThai("hoan_thanh")   // Chốt ngay — không qua duyệt (system_rules.md §3.2)
+                .trangThai("hoan_thanh")
                 .build();
 
         phieuChuyenKho = phieuChuyenKhoRepository.save(phieuChuyenKho);
 
         // ------------------------------------------------------------------
-        // Bước 5: EXECUTE — Trừ kho nguồn, Cộng kho đích, Lưu chi tiết
-        // Dùng cache đã build ở bước pre-validate, không query lại DB.
+        // Bước 5: EXECUTE — Trừ kho nguồn, Cộng kho đích, Lưu chi tiết, Cập nhật IMEI
         // ------------------------------------------------------------------
         List<ChiTietChuyenKho> danhSachChiTiet = new ArrayList<>();
+        chiTietIndex = 0;
 
         for (ChiTietChuyenRequest dtoChiTiet : request.getChiTiets()) {
             BienTheSanPham bienThe     = bienTheCache.get(dtoChiTiet.getBienTheSanPhamId());
             TonKho tonKhoNguon         = tonKhoNguonCache.get(dtoChiTiet.getBienTheSanPhamId());
             int soLuongChuyen          = dtoChiTiet.getSoLuong();
 
-            // Trừ số lượng tại kho nguồn (đã validated, an toàn để thực hiện)
+            // Trừ số lượng tại kho nguồn (đã validated)
             truTonKho(tonKhoNguon, soLuongChuyen);
 
-            // Cộng số lượng vào kho đích (tạo mới bản ghi nếu chưa có)
+            // Cộng số lượng vào kho đích
             congTonKho(khoDich, bienThe, soLuongChuyen);
+
+            // Cập nhật IMEI nếu có
+            List<MayDienThoai> imeiEntities = imeiCache.get(chiTietIndex);
+            if (imeiEntities != null && !imeiEntities.isEmpty()) {
+                for (MayDienThoai may : imeiEntities) {
+                    may.setKho(khoDich);
+                    mayDienThoaiRepository.save(may);
+                }
+                log.debug("[KhoService] Đã cập nhật {} IMEI sang kho [{}] cho SKU [{}]",
+                        imeiEntities.size(), khoDich.getTenKho(), bienThe.getMaSku());
+            }
 
             // Build dòng chi tiết
             ChiTietChuyenKho chiTiet = ChiTietChuyenKho.builder()
@@ -357,6 +416,8 @@ public class KhoService implements IKhoService {
                     .soLuong(soLuongChuyen)
                     .build();
             danhSachChiTiet.add(chiTiet);
+
+            chiTietIndex++;
         }
 
         chiTietChuyenKhoRepository.saveAll(danhSachChiTiet);
@@ -391,12 +452,6 @@ public class KhoService implements IKhoService {
     // HÀM 5: DANH SÁCH PHIẾU NHẬP KHO (phân trang)
     // -----------------------------------------------------------------------
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Ủy quyền cho {@link PhieuNhapKhoRepository#layDanhSachPhanTrang(Pageable)}.
-     * Query đã JOIN FETCH kho, NCC, người tạo để tránh N+1.
-     */
     @Override
     @Transactional(readOnly = true)
     public org.springframework.data.domain.Page<PhieuNhapKho> layDanhSachPhieuNhap(
@@ -410,12 +465,6 @@ public class KhoService implements IKhoService {
     // HÀM 6: CHI TIẾT PHIẾU NHẬP KHO
     // -----------------------------------------------------------------------
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Dùng {@link PhieuNhapKhoRepository#findByIdWithDetails(Integer)} để
-     * eager-load toàn bộ chi tiết dòng trong 1 query duy nhất.
-     */
     @Override
     @Transactional(readOnly = true)
     public PhieuNhapKho layChiTietPhieuNhap(Integer id) {
@@ -429,12 +478,6 @@ public class KhoService implements IKhoService {
     // HÀM 7: DANH SÁCH PHIẾU CHUYỂN KHO (phân trang)
     // -----------------------------------------------------------------------
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Ủy quyền cho {@link PhieuChuyenKhoRepository#layDanhSachPhanTrang(Pageable)}.
-     * Query đã JOIN FETCH kho nguồn, kho đích, người tạo để tránh N+1.
-     */
     @Override
     @Transactional(readOnly = true)
     public org.springframework.data.domain.Page<PhieuChuyenKho> layDanhSachPhieuChuyen(
@@ -448,12 +491,6 @@ public class KhoService implements IKhoService {
     // HÀM 8: CHI TIẾT PHIẾU CHUYỂN KHO
     // -----------------------------------------------------------------------
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Dùng {@link PhieuChuyenKhoRepository#findByIdWithDetails(Integer)} để
-     * eager-load toàn bộ chi tiết dòng trong 1 query duy nhất.
-     */
     @Override
     @Transactional(readOnly = true)
     public PhieuChuyenKho layChiTietPhieuChuyen(Integer id) {
@@ -464,12 +501,32 @@ public class KhoService implements IKhoService {
     }
 
     // =======================================================================
+    // PUBLIC METHOD — LẤY DANH SÁCH IMEI TRONG KHO
+    // =======================================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MayDienThoai> layDanhSachImeiTrongKho(Integer khoId, Integer bienTheSanPhamId) {
+        // Kiểm tra kho tồn tại
+        if (!khoRepository.existsById(khoId)) {
+            throw new EntityNotFoundException("Không tìm thấy kho có ID: " + khoId);
+        }
+
+        // Kiểm tra biến thể tồn tại
+        if (!bienTheSanPhamRepository.existsById(bienTheSanPhamId)) {
+            throw new EntityNotFoundException("Không tìm thấy biến thể sản phẩm có ID: " + bienTheSanPhamId);
+        }
+
+        return mayDienThoaiRepository.findTrongKhoByBienTheIdAndKhoId(bienTheSanPhamId, khoId);
+    }
+
+    // =======================================================================
     // PRIVATE HELPER METHODS
     // =======================================================================
 
     /**
      * Cộng thêm số lượng vào tồn kho của một SKU tại một kho.
-     * Nếu bản ghi tồn kho chưa tồn tại (lần đầu nhập SKU này vào kho), tự động khởi tạo mới.
+     * Nếu bản ghi tồn kho chưa tồn tại, tự động khởi tạo mới.
      *
      * @param kho           Kho nhận hàng.
      * @param bienTheSanPham Biến thể SKU.
@@ -496,10 +553,9 @@ public class KhoService implements IKhoService {
      * Trừ số lượng khỏi tồn kho (dùng đối tượng TonKho đã load sẵn từ cache).
      * <p>
      * <b>Lưu ý:</b> Hàm này KHÔNG tự kiểm tra Safety Stock vì việc đó đã được
-     * thực hiện ở bước pre-validate trong {@link #taoPhieuChuyenKho}. Không được
-     * gọi hàm này trực tiếp mà không qua bước pre-validate.
+     * thực hiện ở bước pre-validate.
      *
-     * @param tonKho     Bản ghi tồn kho cần trừ (đã load từ cache).
+     * @param tonKho     Bản ghi tồn kho cần trừ.
      * @param soLuong    Số lượng cần trừ.
      */
     private void truTonKho(TonKho tonKho, int soLuong) {
@@ -515,12 +571,6 @@ public class KhoService implements IKhoService {
 
     /**
      * Sinh mã phiếu tự động theo format: {@code PREFIX-YYYYMM-<6 chữ số cuối millis>}.
-     * <p>
-     * Ví dụ: {@code PNK-202406-334521}, {@code PCK-202406-891023}.
-     * <p>
-     * <i>Ghi chú: Đây là cách sinh mã đơn giản phù hợp cho môi trường demo đồ án.
-     * Môi trường production cần dùng Sequence hoặc Snowflake ID để đảm bảo uniqueness
-     * trong high-concurrency.</i>
      *
      * @param prefix Tiền tố mã phiếu (ví dụ: "PNK", "PCK").
      * @return Chuỗi mã phiếu duy nhất.

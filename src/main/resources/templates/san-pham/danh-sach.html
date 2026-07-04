@@ -29,6 +29,7 @@
         .pm-image-fallback.d-none { display:none!important; }
         .pm-name { font-size:.94rem; line-height:1.35; font-weight:800; color:var(--pm-text); min-height:2.55em; }
         .pm-price { color:#ea580c; font-weight:800; font-size:1.05rem; }
+        .pm-price-old { color:#94a3b8; font-size:0.88rem; text-decoration:line-through; margin-right:8px; font-weight:500; }
         .btn-pm { background:var(--pm-primary); color:#fff; border:0; border-radius:8px; font-weight:800; }
         .btn-pm:hover { background:var(--pm-primary-dark); color:#fff; }
         .pm-pagination .page-link { color:var(--pm-primary); font-weight:700; }
@@ -125,10 +126,16 @@
                                   th:text="${sp.hangSanXuat.tenHang}">Hãng</span>
                             <a th:href="@{/san-pham/{id}(id=${sp.id})}" class="pm-name text-decoration-none mb-2" th:text="${sp.tenSanPham}">Tên sản phẩm</a>
                             <div class="mt-auto">
-                                <div class="pm-price mb-2" th:if="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams)}">
-                                    <th:block th:text="${#numbers.formatDecimal(sp.bienTheSanPhams[0].giaBan, 0, 'COMMA', 0, 'POINT')}">0</th:block>đ
+                                <!-- ── Hiển thị giá sau khuyến mãi ── -->
+                                <div th:if="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams)}"
+                                     th:with="giaGoc=${sp.bienTheSanPhams[0].giaBan},
+                                              giaSauKM=${giaSauKhuyenMaiTheoSanPham != null ? giaSauKhuyenMaiTheoSanPham[sp.id] : giaGoc}">
+                                    <span th:if="${giaSauKM != null and giaSauKM < giaGoc}" class="pm-price-old">
+                                        <span th:text="${#numbers.formatDecimal(giaGoc, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                                    </span>
+                                    <div class="pm-price" th:text="${#numbers.formatDecimal(giaSauKM, 0, 'COMMA', 0, 'POINT')} + 'đ'"></div>
                                 </div>
-                                <div class="text-muted small mb-2" th:unless="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams)}">Liên hệ báo giá</div>
+                                <div th:unless="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams)}" class="text-muted small mb-2">Liên hệ báo giá</div>
                                 <a th:href="@{/san-pham/{id}(id=${sp.id})}" class="btn btn-pm btn-sm w-100">
                                     <i class="fa fa-eye me-1"></i> Xem chi tiết
                                 </a>

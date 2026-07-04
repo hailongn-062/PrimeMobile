@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
  * Quan hệ:
  *  - N:1 với {@link BienTheSanPham} (FK bien_the_san_pham_id)
  *  - N:1 với {@link DonHang} (FK don_hang_id, ON DELETE SET NULL, nullable — refactored từ Module 7)
+ *  - N:1 với {@link Kho} (FK kho_id, nullable — xác định kho vật lý chứa máy)
  * <p>
  * Ràng buộc nghiệp vụ quan trọng (system_rules.md §3.3):
  *  - Số lượng bản ghi IMEI có trạng thái 'trong_kho' của một SKU
@@ -104,6 +105,19 @@ public class MayDienThoai {
             foreignKey = @ForeignKey(name = "fk_may_dh")
     )
     private DonHang donHang;
+
+    /**
+     * Kho vật lý chứa chiếc máy này.
+     * NULL nếu chưa xác định kho (ví dụ: máy đã bán nhưng không cần biết kho cũ).
+     * Khi nhập IMEI mới, bắt buộc gán kho_id.
+     * Khi bán hàng online, chỉ chọn IMEI có kho_id = Kho Online.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "kho_id",
+            foreignKey = @ForeignKey(name = "fk_may_kho")
+    )
+    private Kho kho;
 
     /** Ghi chú nội bộ (hư hỏng, lịch sử sửa chữa...). */
     @Column(name = "ghi_chu", columnDefinition = "NVARCHAR(MAX)")

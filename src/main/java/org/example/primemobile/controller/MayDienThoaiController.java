@@ -32,14 +32,15 @@ import java.util.stream.Collectors;
  * <li><b>Chặn thêm thừa:</b> Số IMEI {@code trong_kho} của 1 SKU KHÔNG ĐƯỢC
  * vượt quá tổng tồn kho (kho_tong + kho_online) của SKU đó.</li>
  * <li>imei1, imei2, serial phải duy nhất toàn hệ thống.</li>
+ * <li>IMEI được gắn với một kho vật lý cụ thể (kho_id).</li>
  * </ul>
  *
  * <h3>Endpoints:</h3>
- * 
+ *
  * <pre>
  *   POST /api/admin/imei/nhap                               → Nhập danh sách IMEI mới cho 1 SKU
  *   GET  /api/admin/imei/can-them/{khoId}/{bienTheId}       → Xem số IMEI còn cần nhập thêm
- *   GET  /api/admin/imei/danh-sach                          → Lấy danh sách IMEI theo biến thể và trạng thái (dùng cho POS)
+ *   GET  /api/admin/imei/danh-sach                          → Lấy danh sách IMEI theo biến thể và trạng thái (có thể lọc theo kho)
  * </pre>
  */
 @RestController
@@ -59,7 +60,7 @@ public class MayDienThoaiController {
      * Nhập danh sách IMEI máy vật lý mới vào hệ thống cho 1 biến thể SKU.
      *
      * <h3>Request Body mẫu:</h3>
-     * 
+     *
      * <pre>{@code
      * [
      *   { "imei1": "123456789012345", "imei2": "123456789012346", "serial": "SN-A001" },
@@ -73,11 +74,11 @@ public class MayDienThoaiController {
      * <li><b>Chặn thêm thừa:</b> Nếu số lượng gửi lên > số còn thiếu → HTTP
      * 400.</li>
      * <li>Kiểm tra trùng lặp imei1/imei2/serial trong DB.</li>
-     * <li>Lưu tất cả với tinhTrang = {@code "trong_kho"}.</li>
+     * <li>Lưu tất cả với tinhTrang = {@code "trong_kho"} và gán kho_id.</li>
      * </ol>
      *
      * @param khoId            ID kho chứa hàng (dùng để tra cứu tồn kho làm mốc so
-     *                         sánh).
+     *                         sánh và gán kho cho IMEI).
      * @param bienTheSanPhamId ID biến thể SKU cần gắn IMEI.
      * @param danhSachImei     Danh sách IMEI cần nhập (imei1 bắt buộc).
      * @param sessionUser      Nhân viên đang đăng nhập.
@@ -171,42 +172,55 @@ public class MayDienThoaiController {
     }
 
     // =========================================================================
-    // GET /api/admin/imei/danh-sach — Lấy danh sách IMEI theo biến thể và trạng
-    // thái (POS)
+    // GET /api/admin/imei/danh-sach — Lấy danh sách IMEI theo biến thể, trạng thái và kho
     // =========================================================================
 
     /**
-     * Lấy danh sách IMEI của một biến thể sản phẩm theo trạng thái (mặc định
-     * 'trong_kho').
+     * Lấy danh sách IMEI của một biến thể sản phẩm theo trạng thái và kho.
      * <p>
-     * Endpoint này được dùng cho màn hình Bán hàng tại quầy (POS) để nhân viên chọn
-     * IMEI từ danh sách có sẵn thay vì nhập tay.
+     * Endpoint này được dùng cho:
+     * <ul>
+     *   <li>Màn hình POS: lấy IMEI có sẵn (trạng thái 'trong_kho') để nhân viên chọn.</li>
+     *   <li>Xác nhận đơn online: chỉ lấy IMEI ở Kho Online.</li>
+     * </ul>
      * <p>
      * <b>Lưu ý:</b> Nếu không truyền {@code tinhTrang}, sẽ lấy tất cả IMEI của biến
-     * thể (không lọc trạng thái).
+     * thể (không lọc trạng thái). Nếu không truyền {@code khoId}, sẽ lấy tất cả kho.
      *
      * @param bienTheSanPhamId ID biến thể sản phẩm (SKU) cần lấy danh sách IMEI.
      * @param tinhTrang        Trạng thái IMEI cần lọc (mặc định 'trong_kho').
      *                         Các giá trị hợp lệ: 'trong_kho', 'da_ban',
      *                         'bao_hanh', 'loi_hong'.
+     * @param khoId            ID kho cần lọc (tùy chọn). Nếu có, chỉ lấy IMEI thuộc kho đó.
      * @param sessionUser      Nhân viên đang đăng nhập (chỉ để log kiểm soát).
-     * @return HTTP 200 kèm danh sách {@link ImeiDto} có trạng thái tương ứng.
+     * @return HTTP 200 kèm danh sách {@link ImeiDto} có trạng thái và kho tương ứng.
      *         Luôn trả về mảng rỗng nếu không có IMEI nào.
      */
     @GetMapping("/danh-sach")
     public ResponseEntity<?> layDanhSachImei(
             @RequestParam Integer bienTheSanPhamId,
             @RequestParam(required = false) String tinhTrang,
+            @RequestParam(required = false) Integer khoId,
             @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
 
-        log.info("[IMEI] Lấy danh sách IMEI — bienTheId={}, tinhTrang={}, nhanVienId={}",
-                bienTheSanPhamId, tinhTrang, sessionUser.getId());
+        log.info("[IMEI] Lấy danh sách IMEI — bienTheId={}, tinhTrang={}, khoId={}, nhanVienId={}",
+                bienTheSanPhamId, tinhTrang, khoId, sessionUser.getId());
 
         try {
-            // Gọi service lấy danh sách entity
-            List<MayDienThoai> danhSachEntity = mayDienThoaiService.layDanhSachTheoBienTheVaTrangThai(
-                    bienTheSanPhamId,
-                    tinhTrang);
+            List<MayDienThoai> danhSachEntity;
+
+            if (khoId != null) {
+                // Lọc theo kho
+                danhSachEntity = mayDienThoaiService.layDanhSachTheoBienTheVaTrangThaiVaKho(
+                        bienTheSanPhamId,
+                        tinhTrang != null ? tinhTrang : "trong_kho",
+                        khoId);
+            } else {
+                // Không lọc theo kho
+                danhSachEntity = mayDienThoaiService.layDanhSachTheoBienTheVaTrangThai(
+                        bienTheSanPhamId,
+                        tinhTrang);
+            }
 
             // Đảm bảo danh sách không null
             if (danhSachEntity == null) {

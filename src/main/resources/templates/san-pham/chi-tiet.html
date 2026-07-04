@@ -20,6 +20,7 @@
         .pm-image-fallback i { font-size:4rem; opacity:.35; }
         .pm-image-fallback.d-none { display:none!important; }
         .pm-price { color:#ea580c; font-weight:800; font-size:1.65rem; }
+        .pm-price-old { color:#94a3b8; font-size:1.1rem; text-decoration:line-through; margin-right:12px; font-weight:500; }
         .pm-variant { border:1px solid var(--pm-line); border-radius:8px; padding:14px; background:#fff; }
         .pm-variant + .pm-variant { margin-top:10px; }
         .pm-variant:hover { border-color:var(--pm-primary); }
@@ -77,8 +78,17 @@
                 <span class="badge bg-light text-secondary border mb-2" th:if="${sanPham.hangSanXuat != null}" th:text="${sanPham.hangSanXuat.tenHang}">Hãng</span>
                 <h1 class="h3 fw-bold mb-2" th:text="${sanPham.tenSanPham}">Tên sản phẩm</h1>
                 <p class="text-muted" th:if="${sanPham.moTaNgan != null and !#strings.isEmpty(sanPham.moTaNgan)}" th:text="${sanPham.moTaNgan}">Mô tả ngắn</p>
-                <div class="pm-price mb-3" th:if="${bienTheSanPhams != null and !#lists.isEmpty(bienTheSanPhams)}">
-                    <span th:text="${#numbers.formatDecimal(bienTheSanPhams[0].giaBan, 0, 'COMMA', 0, 'POINT')}">0</span>đ
+
+                <!-- Hiển thị giá cho biến thể đầu tiên (mặc định) -->
+                <div th:if="${bienTheSanPhams != null and !#lists.isEmpty(bienTheSanPhams)}">
+                    <div th:with="firstBt=${bienTheSanPhams[0]}, giaSauKM=${giaSauKhuyenMaiTheoBienThe != null ? giaSauKhuyenMaiTheoBienThe[firstBt.id] : firstBt.giaBan}">
+                        <div class="mb-3">
+                            <span th:if="${giaSauKM != null and giaSauKM < firstBt.giaBan}" class="pm-price-old">
+                                <span th:text="${#numbers.formatDecimal(firstBt.giaBan, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                            </span>
+                            <span class="pm-price" th:text="${#numbers.formatDecimal(giaSauKM, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                        </div>
+                    </div>
                 </div>
 
                 <h2 class="h6 fw-bold mb-2">Phiên bản</h2>
@@ -88,7 +98,8 @@
                          th:with="tonKho=${tonKhoTheoBienThe != null and tonKhoTheoBienThe[bt.id] != null ? tonKhoTheoBienThe[bt.id] : 0},
                                   coTheBan=${soLuongCoTheBanTheoBienThe != null and soLuongCoTheBanTheoBienThe[bt.id] != null ? soLuongCoTheBanTheoBienThe[bt.id] : 0},
                                   duocBan=${bt.trangThai == 'con_hang' and coTheBan > 0},
-                                  mau=${bt.maMauHex != null and !#strings.isEmpty(bt.maMauHex) ? bt.maMauHex : '#e5e7eb'}"
+                                  mau=${bt.maMauHex != null and !#strings.isEmpty(bt.maMauHex) ? bt.maMauHex : '#e5e7eb'},
+                                  giaSauKM=${giaSauKhuyenMaiTheoBienThe != null ? giaSauKhuyenMaiTheoBienThe[bt.id] : bt.giaBan}"
                          th:classappend="${duocBan} ? '' : ' pm-variant-unavailable'">
                         <div class="d-flex flex-column flex-xl-row justify-content-between gap-3">
                             <div>
@@ -115,7 +126,14 @@
                             </div>
 
                             <div class="text-xl-end">
-                                <div class="fw-bold text-danger mb-2" th:text="${#numbers.formatDecimal(bt.giaBan, 0, 'COMMA', 0, 'POINT')} + 'đ'">0đ</div>
+                                <!-- Hiển thị giá sau khuyến mãi + giá gốc gạch ngang nếu có KM -->
+                                <div class="mb-2">
+                                    <span th:if="${giaSauKM != null and giaSauKM < bt.giaBan}" class="pm-price-old">
+                                        <span th:text="${#numbers.formatDecimal(bt.giaBan, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                                    </span>
+                                    <span class="fw-bold text-danger" style="font-size:1.2rem;"
+                                          th:text="${#numbers.formatDecimal(giaSauKM, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                                </div>
                                 <div class="d-flex flex-wrap justify-content-xl-end align-items-center gap-2">
                                     <div class="pm-qty" th:if="${duocBan}">
                                         <button type="button" title="Giảm số lượng" onclick="stepQty(this, -1)">-</button>

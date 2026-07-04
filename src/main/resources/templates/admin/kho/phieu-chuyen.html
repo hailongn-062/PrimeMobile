@@ -14,6 +14,44 @@
             margin-top: 4px;
             display: block;
         }
+        .imei-selected-list {
+            font-size: 0.75rem;
+            max-width: 200px;
+            max-height: 60px;
+            overflow-y: auto;
+            word-break: break-all;
+        }
+        .imei-selected-list .badge {
+            margin: 1px 2px;
+            font-size: 0.65rem;
+        }
+        .btn-choose-imei {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+        }
+        .imei-checkbox-item {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 4px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .imei-checkbox-item:hover {
+            background: #f1f5f9;
+        }
+        .imei-checkbox-item input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        .imei-checkbox-item .imei-info {
+            display: inline-block;
+            font-size: 0.82rem;
+        }
+        .imei-checkbox-item .imei-serial {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-left: 6px;
+        }
     </style>
 </head>
 <body>
@@ -21,7 +59,7 @@
 <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
 
 <main id="pmContent">
-    <div class="pm-card" style="max-width: 1100px; margin: 0 auto;">
+    <div class="pm-card" style="max-width: 1200px; margin: 0 auto;">
         <div class="pm-card-header d-flex justify-content-between align-items-center">
                 <span>
                     <i class="fa fa-exchange-alt me-2 text-warning"></i>
@@ -84,10 +122,11 @@
                             <table class="table table-bordered table-hover align-middle table-pck" id="chiTietTable">
                                 <thead>
                                 <tr>
-                                    <th style="width: 45%">Biến thể (SKU) <span class="text-danger">*</span></th>
-                                    <th style="width: 30%">Tồn kho khả dụng (Nguồn)</th>
-                                    <th style="width: 15%">Số lượng chuyển <span class="text-danger">*</span></th>
-                                    <th style="width: 10%" class="text-center">Xóa</th>
+                                    <th style="width: 30%">Biến thể (SKU) <span class="text-danger">*</span></th>
+                                    <th style="width: 20%">Tồn kho khả dụng (Nguồn)</th>
+                                    <th style="width: 12%">Số lượng chuyển <span class="text-danger">*</span></th>
+                                    <th style="width: 25%">IMEI đã chọn</th>
+                                    <th style="width: 8%" class="text-center">Xóa</th>
                                 </tr>
                                 </thead>
                                 <tbody id="chi-tiet-body">
@@ -123,6 +162,38 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CHỌN IMEI -->
+    <div class="modal fade" id="imeiModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-primary">
+                        <i class="fa fa-barcode me-2"></i>Chọn IMEI cho <span id="imeiModalSku">SKU</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="imeiModalLoading" class="text-center py-4">
+                        <i class="fa fa-spinner fa-spin me-2"></i>Đang tải danh sách IMEI...
+                    </div>
+                    <div id="imeiModalContent" style="display:none;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-muted">Số lượng cần chọn: <strong id="imeiModalRequired">0</strong></span>
+                            <span class="text-muted">Đã chọn: <strong id="imeiModalSelectedCount">0</strong></span>
+                        </div>
+                        <div id="imeiCheckboxList" class="row g-2"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" id="imeiModalConfirm">
+                        <i class="fa fa-check me-1"></i>Xác nhận
+                    </button>
                 </div>
             </div>
         </div>
@@ -176,7 +247,7 @@
 
 <!-- Template cho dòng chi tiết -->
 <template id="rowTemplate">
-    <tr class="chi-tiet-row">
+    <tr class="chi-tiet-row" data-row-index="0">
         <td>
             <select class="form-select form-select-sm sku-select" required>
                 <option value="">-- Chọn SKU --</option>
@@ -191,6 +262,15 @@
         </td>
         <td>
             <input type="number" class="form-control form-control-sm sl-input text-center" min="1" disabled required>
+        </td>
+        <td>
+            <div class="d-flex flex-column gap-1">
+                <button type="button" class="btn btn-sm btn-outline-primary btn-choose-imei" disabled>
+                    <i class="fa fa-barcode me-1"></i>Chọn IMEI
+                </button>
+                <div class="imei-selected-list text-muted small">Chưa chọn</div>
+                <input type="hidden" class="imei-data" value="">
+            </div>
         </td>
         <td class="text-center align-middle">
             <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" title="Xóa dòng">
@@ -220,6 +300,11 @@
         const lichSuBody = document.getElementById("lichSuBody");
 
         const chiTietModal = new bootstrap.Modal(document.getElementById('chiTietModal'));
+        const imeiModal = new bootstrap.Modal(document.getElementById('imeiModal'));
+
+        // ─── Lưu trạng thái IMEI cho từng dòng ───
+        // Mỗi dòng sẽ lưu: { bienTheId, soLuongCanChon, imeiList: [{id, imei1, imei2, serial, checked}] }
+        const imeiState = new Map(); // key: rowIndex
 
         // ─── VALIDATE KHO NGUỒN & KHO ĐÍCH KHÔNG TRÙNG ───
         function updateKhoDichOptions() {
@@ -231,7 +316,6 @@
                     opt.disabled = false;
                 }
             });
-            // Nếu Kho Đích đang chọn trùng với Kho Nguồn thì reset về rỗng
             if (khoDichId.value && khoDichId.value === selectedValue) {
                 khoDichId.value = '';
             }
@@ -239,12 +323,10 @@
 
         khoNguonId.addEventListener('change', function() {
             updateKhoDichOptions();
-            // Nếu đã có SKU được chọn, reset lại các dòng để tránh sai tồn kho
             const rows = chiTietBody.querySelectorAll(".chi-tiet-row");
             rows.forEach(row => {
                 const select = row.querySelector(".sku-select");
                 if (select && select.value) {
-                    // Kích hoạt lại sự kiện change để load lại tồn kho
                     select.dispatchEvent(new Event('change'));
                 }
             });
@@ -263,18 +345,36 @@
             }
         });
 
-        // ─── TẠO PHIẾU CHUYỂN ───
+        // ─── LẤY DANH SÁCH IMEI TỪ API ───
+        async function fetchImeiList(bienTheId, khoId) {
+            const url = `/api/admin/imei/danh-sach?bienTheSanPhamId=${bienTheId}&tinhTrang=trong_kho&khoId=${khoId}`;
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error('Không thể lấy danh sách IMEI');
+            }
+            return await response.json();
+        }
 
-        // Xử lý logic mỗi khi chọn SKU
+        // ─── XỬ LÝ KHI CHỌN SKU ───
         async function handleSkuChange(event) {
             const selectEl = event.target;
             const row = selectEl.closest("tr");
+            const rowIndex = Array.from(chiTietBody.children).indexOf(row);
             const tonKhoHienThi = row.querySelector(".ton-kho-hien-thi");
             const maxQtyLabel = row.querySelector(".max-qty-label");
             const slInput = row.querySelector(".sl-input");
+            const btnChooseImei = row.querySelector(".btn-choose-imei");
+            const imeiSelectedDiv = row.querySelector(".imei-selected-list");
+            const imeiDataInput = row.querySelector(".imei-data");
 
             const bienTheId = selectEl.value;
             const sourceKhoId = khoNguonId.value;
+
+            // Reset IMEI state cho dòng này
+            imeiState.delete(rowIndex);
+            imeiSelectedDiv.textContent = 'Chưa chọn';
+            imeiDataInput.value = '';
+            btnChooseImei.disabled = true;
 
             if (!bienTheId) {
                 tonKhoHienThi.textContent = "Chưa kiểm tra";
@@ -293,67 +393,261 @@
             }
 
             try {
-                // Hiển thị trạng thái đang tải
                 tonKhoHienThi.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang tải...';
                 tonKhoHienThi.className = "fw-semibold ton-kho-hien-thi text-primary";
                 slInput.disabled = true;
+                btnChooseImei.disabled = true;
 
-                // Gọi API lấy tồn kho theo khoNguon và bienThe
-                const response = await fetch(`/api/admin/phieu-chuyen/ton-kho/${sourceKhoId}/${bienTheId}`);
-
+                // Lấy tồn kho
+                const tonResponse = await fetch(`/api/admin/phieu-chuyen/ton-kho/${sourceKhoId}/${bienTheId}`);
                 let soLuongTon = 0;
-                if (response.status === 404) {
+                if (tonResponse.status === 404) {
                     soLuongTon = 0;
-                } else if (response.ok) {
-                    const tonKhoApi = await response.json();
+                } else if (tonResponse.ok) {
+                    const tonKhoApi = await tonResponse.json();
                     soLuongTon = parseInt(tonKhoApi.soLuong || tonKhoApi) || 0;
                 } else {
                     throw new Error("Lỗi kết nối");
                 }
 
-                const maxChuyen = soLuongTon - 5; // Safety Stock = 5
-
+                const maxChuyen = soLuongTon - 5;
                 maxQtyLabel.classList.remove("d-none");
 
                 if (maxChuyen <= 0) {
                     tonKhoHienThi.textContent = `Tồn kho khả dụng: ${soLuongTon} (Không đủ an toàn)`;
                     tonKhoHienThi.className = "fw-semibold ton-kho-hien-thi text-danger";
-
                     maxQtyLabel.textContent = "Tồn kho không đủ mức an toàn (5) để chuyển";
                     maxQtyLabel.className = "max-qty-label text-danger fw-bold";
-
                     slInput.value = "";
                     slInput.disabled = true;
                     slInput.removeAttribute("max");
-                } else {
-                    tonKhoHienThi.textContent = `Tồn hiện tại: ${soLuongTon}`;
-                    tonKhoHienThi.className = "fw-semibold ton-kho-hien-thi text-success";
-
-                    maxQtyLabel.textContent = `Tối đa được chuyển: ${maxChuyen}`;
-                    maxQtyLabel.className = "max-qty-label text-success fw-bold";
-
-                    slInput.disabled = false;
-                    slInput.setAttribute("max", maxChuyen);
-                    slInput.value = 1;
+                    btnChooseImei.disabled = true;
+                    return;
                 }
+
+                tonKhoHienThi.textContent = `Tồn hiện tại: ${soLuongTon}`;
+                tonKhoHienThi.className = "fw-semibold ton-kho-hien-thi text-success";
+                maxQtyLabel.textContent = `Tối đa được chuyển: ${maxChuyen}`;
+                maxQtyLabel.className = "max-qty-label text-success fw-bold";
+                slInput.disabled = false;
+                slInput.setAttribute("max", maxChuyen);
+                slInput.value = 1;
+                slInput.dispatchEvent(new Event('input'));
+
+                // Lấy danh sách IMEI
+                const imeiList = await fetchImeiList(parseInt(bienTheId), parseInt(sourceKhoId));
+
+                // Lưu state IMEI cho dòng này
+                imeiState.set(rowIndex, {
+                    bienTheId: parseInt(bienTheId),
+                    soLuongCanChon: 1,
+                    imeiList: imeiList.map(imei => ({
+                        ...imei,
+                        checked: false
+                    }))
+                });
+
+                // Cập nhật hiển thị IMEI
+                updateImeiDisplay(rowIndex);
+
+                // Enable nút chọn IMEI
+                btnChooseImei.disabled = false;
 
             } catch (error) {
                 tonKhoHienThi.textContent = "Lỗi kết nối";
                 tonKhoHienThi.className = "fw-semibold ton-kho-hien-thi text-danger";
                 maxQtyLabel.classList.add("d-none");
+                btnChooseImei.disabled = true;
             }
         }
 
-        // Thêm 1 dòng mới
+        // ─── CẬP NHẬT HIỂN THỊ IMEI ĐÃ CHỌN ───
+        function updateImeiDisplay(rowIndex) {
+            const rows = chiTietBody.querySelectorAll(".chi-tiet-row");
+            const row = rows[rowIndex];
+            if (!row) return;
+
+            const imeiSelectedDiv = row.querySelector(".imei-selected-list");
+            const imeiDataInput = row.querySelector(".imei-data");
+            const state = imeiState.get(rowIndex);
+
+            if (!state || !state.imeiList || state.imeiList.length === 0) {
+                imeiSelectedDiv.textContent = 'Không có IMEI trong kho';
+                imeiDataInput.value = '';
+                return;
+            }
+
+            const selected = state.imeiList.filter(item => item.checked);
+            if (selected.length === 0) {
+                imeiSelectedDiv.textContent = 'Chưa chọn IMEI';
+                imeiDataInput.value = '';
+                return;
+            }
+
+            // Hiển thị danh sách IMEI đã chọn dạng badge
+            const html = selected.map(item =>
+                `<span class="badge bg-primary">${item.imei1}</span>`
+            ).join(' ');
+            imeiSelectedDiv.innerHTML = html;
+
+            // Lưu danh sách IMEI đã chọn (dạng chuỗi JSON) vào input hidden để submit
+            const imeiList = selected.map(item => item.imei1);
+            imeiDataInput.value = JSON.stringify(imeiList);
+        }
+
+        // ─── MỞ MODAL CHỌN IMEI ───
+        function openImeiModal(rowIndex) {
+            const rows = chiTietBody.querySelectorAll(".chi-tiet-row");
+            const row = rows[rowIndex];
+            if (!row) return;
+
+            const state = imeiState.get(rowIndex);
+            if (!state) {
+                Swal.fire('Lỗi', 'Chưa có dữ liệu IMEI cho sản phẩm này', 'error');
+                return;
+            }
+
+            const slInput = row.querySelector(".sl-input");
+            const soLuong = parseInt(slInput.value) || 1;
+            state.soLuongCanChon = Math.min(soLuong, state.imeiList.length);
+
+            // Cập nhật modal
+            const skuSelect = row.querySelector(".sku-select");
+            const skuText = skuSelect.options[skuSelect.selectedIndex]?.text || 'SKU';
+            document.getElementById('imeiModalSku').textContent = skuText;
+            document.getElementById('imeiModalRequired').textContent = state.soLuongCanChon;
+
+            // Render danh sách checkbox
+            const container = document.getElementById('imeiCheckboxList');
+            container.innerHTML = '';
+            state.imeiList.forEach((imei, index) => {
+                const col = document.createElement('div');
+                col.className = 'col-md-6';
+                const label = document.createElement('label');
+                label.className = 'imei-checkbox-item d-flex align-items-center';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = imei.checked || false;
+                checkbox.dataset.index = index;
+                checkbox.addEventListener('change', function() {
+                    state.imeiList[index].checked = this.checked;
+                    const checkedCount = state.imeiList.filter(i => i.checked).length;
+                    document.getElementById('imeiModalSelectedCount').textContent = checkedCount;
+                });
+                const infoSpan = document.createElement('span');
+                infoSpan.className = 'imei-info';
+                infoSpan.innerHTML = `<strong>${imei.imei1}</strong>${imei.serial ? ` <span class="imei-serial">(SN: ${imei.serial})</span>` : ''}`;
+                label.appendChild(checkbox);
+                label.appendChild(infoSpan);
+                col.appendChild(label);
+                container.appendChild(col);
+            });
+
+            // Cập nhật số lượng đã chọn
+            const checkedCount = state.imeiList.filter(i => i.checked).length;
+            document.getElementById('imeiModalSelectedCount').textContent = checkedCount;
+
+            // Hiển thị modal
+            document.getElementById('imeiModalLoading').style.display = 'none';
+            document.getElementById('imeiModalContent').style.display = 'block';
+            imeiModal.show();
+
+            // Lưu rowIndex để dùng khi xác nhận
+            document.getElementById('imeiModalConfirm').dataset.rowIndex = rowIndex;
+        }
+
+        // ─── XÁC NHẬN CHỌN IMEI TỪ MODAL ───
+        document.getElementById('imeiModalConfirm').addEventListener('click', function() {
+            const rowIndex = parseInt(this.dataset.rowIndex);
+            const state = imeiState.get(rowIndex);
+            if (!state) return;
+
+            const selected = state.imeiList.filter(item => item.checked);
+            if (selected.length !== state.soLuongCanChon) {
+                Swal.fire('Số lượng không khớp', `Vui lòng chọn đúng ${state.soLuongCanChon} IMEI`, 'warning');
+                return;
+            }
+
+            // Cập nhật state và hiển thị
+            updateImeiDisplay(rowIndex);
+            imeiModal.hide();
+
+            // Cập nhật trạng thái của nút chọn IMEI
+            const rows = chiTietBody.querySelectorAll(".chi-tiet-row");
+            const row = rows[rowIndex];
+            if (row) {
+                const btn = row.querySelector('.btn-choose-imei');
+                btn.textContent = `✅ Đã chọn ${selected.length}`;
+                btn.classList.remove('btn-outline-primary');
+                btn.classList.add('btn-success');
+            }
+        });
+
+        // ─── KHI SỐ LƯỢNG THAY ĐỔI, CẬP NHẬT SỐ LƯỢNG CẦN CHỌN IMEI ───
+        chiTietBody.addEventListener('input', function(e) {
+            if (e.target.classList.contains('sl-input')) {
+                const row = e.target.closest('.chi-tiet-row');
+                const rowIndex = Array.from(chiTietBody.children).indexOf(row);
+                const state = imeiState.get(rowIndex);
+                if (state) {
+                    const soLuong = parseInt(e.target.value) || 1;
+                    state.soLuongCanChon = Math.min(soLuong, state.imeiList.length);
+                    // Nếu số lượng chọn lớn hơn số IMEI có sẵn, cảnh báo
+                    if (soLuong > state.imeiList.length && state.imeiList.length > 0) {
+                        Swal.fire('Cảnh báo', 'Số lượng yêu cầu vượt quá số IMEI có sẵn trong kho', 'warning');
+                        e.target.value = state.imeiList.length;
+                        state.soLuongCanChon = state.imeiList.length;
+                    }
+                    // Reset nút chọn IMEI nếu số lượng thay đổi và đã chọn quá nhiều
+                    const selected = state.imeiList.filter(item => item.checked);
+                    if (selected.length > state.soLuongCanChon) {
+                        // Bỏ chọn những IMEI thừa
+                        let count = 0;
+                        state.imeiList.forEach(item => {
+                            if (item.checked) {
+                                count++;
+                                if (count > state.soLuongCanChon) {
+                                    item.checked = false;
+                                }
+                            }
+                        });
+                        updateImeiDisplay(rowIndex);
+                        // Cập nhật nút
+                        const btn = row.querySelector('.btn-choose-imei');
+                        btn.textContent = 'Chọn IMEI';
+                        btn.classList.remove('btn-success');
+                        btn.classList.add('btn-outline-primary');
+                    }
+                }
+            }
+        });
+
+        // ─── NÚT CHỌN IMEI TRÊN MỖI DÒNG ───
+        chiTietBody.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-choose-imei');
+            if (btn) {
+                const row = btn.closest('.chi-tiet-row');
+                const rowIndex = Array.from(chiTietBody.children).indexOf(row);
+                openImeiModal(rowIndex);
+            }
+        });
+
+        // ─── THÊM DÒNG MỚI ───
         function addRow() {
             const clone = document.importNode(rowTemplate, true);
+            const rowIndex = chiTietBody.children.length;
+            clone.querySelector('.chi-tiet-row').dataset.rowIndex = rowIndex;
 
             // Gắn sự kiện change cho Select SKU
             clone.querySelector(".sku-select").addEventListener("change", handleSkuChange);
 
             // Nút xóa dòng
             clone.querySelector(".btn-remove-row").addEventListener("click", function(e) {
-                e.target.closest("tr").remove();
+                const row = e.target.closest("tr");
+                const idx = Array.from(chiTietBody.children).indexOf(row);
+                imeiState.delete(idx);
+                row.remove();
+                // Re-index lại các dòng (không cần thiết lắm)
             });
 
             chiTietBody.appendChild(clone);
@@ -361,39 +655,13 @@
 
         btnAddRow.addEventListener("click", addRow);
 
-        // Xử lý nếu người dùng đổi Kho Nguồn khi đã chọn SKU ở dưới
-        khoNguonId.addEventListener("change", function() {
-            const rows = chiTietBody.querySelectorAll(".chi-tiet-row");
-            if (rows.length > 0 && rows[0].querySelector(".sku-select").value) {
-                Swal.fire({
-                    title: 'Đổi Kho Nguồn?',
-                    text: "Việc đổi Kho Nguồn sẽ làm mới lại toàn bộ danh sách sản phẩm bên dưới. Bạn có chắc không?",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Đồng ý',
-                    cancelButtonText: 'Hủy'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        chiTietBody.innerHTML = '';
-                        addRow();
-                    } else {
-                        // Revert lại giá trị kho cũ (cần state management, nhưng để đơn giản ta cứ xóa cho chắc chắn)
-                        // Tùy theo logic ứng dụng
-                    }
-                });
-            }
-        });
-
-        // Khởi tạo 1 dòng ban đầu
+        // ─── KHỞI TẠO 1 DÒNG BAN ĐẦU ───
         addRow();
-
-        // Gọi cập nhật disable Kho Đích ban đầu
         updateKhoDichOptions();
 
-        // Submit Phiếu Chuyển
+        // ─── SUBMIT PHIẾU CHUYỂN ───
         btnSubmitPhieu.addEventListener("click", async function() {
 
-            // 1. Validate Form & Logical Rules
             const kn = khoNguonId.value;
             const kd = khoDichId.value;
 
@@ -423,6 +691,18 @@
                 const slInput = row.querySelector(".sl-input");
                 const soLuong = parseInt(slInput.value);
                 const maxChuyen = parseInt(slInput.getAttribute("max"));
+                const imeiDataInput = row.querySelector(".imei-data");
+                let imeiList = [];
+
+                // Lấy danh sách IMEI từ input hidden
+                try {
+                    const raw = imeiDataInput.value;
+                    if (raw) {
+                        imeiList = JSON.parse(raw);
+                    }
+                } catch (e) {
+                    imeiList = [];
+                }
 
                 if (!bienTheId) {
                     Swal.fire('Thiếu dữ liệu', `Dòng ${i + 1} chưa chọn Biến thể (SKU).`, 'error');
@@ -441,6 +721,12 @@
                     hasError = true; break;
                 }
 
+                // Kiểm tra IMEI: nếu có danh sách IMEI, số lượng phải khớp
+                if (imeiList.length > 0 && imeiList.length !== soLuong) {
+                    Swal.fire('Lỗi IMEI', `Dòng ${i + 1}: số lượng IMEI đã chọn (${imeiList.length}) không khớp với số lượng chuyển (${soLuong}).`, 'error');
+                    hasError = true; break;
+                }
+
                 // Chống trùng lặp SKU
                 if (skuSet.has(bienTheId)) {
                     Swal.fire('Trùng lặp sản phẩm', `Biến thể (SKU) ở dòng ${i + 1} đã được chọn trước đó. Vui lòng gộp chung!`, 'error');
@@ -450,13 +736,13 @@
 
                 chiTiets.push({
                     bienTheSanPhamId: parseInt(bienTheId),
-                    soLuong: soLuong
+                    soLuong: soLuong,
+                    imeiList: imeiList
                 });
             }
 
             if (hasError) return;
 
-            // 2. Chuẩn bị payload JSON
             const payload = {
                 khoNguonId: parseInt(kn),
                 khoDichId: parseInt(kd),
@@ -464,7 +750,6 @@
                 chiTiets: chiTiets
             };
 
-            // 3. Gọi API POST
             try {
                 btnSubmitPhieu.disabled = true;
                 btnSubmitPhieu.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>Đang tạo phiếu...';
@@ -479,17 +764,15 @@
                     Swal.fire({
                         icon: 'success',
                         title: 'Thành công!',
-                        text: 'Đã cập nhật tồn kho 2 đầu',
+                        text: 'Đã cập nhật tồn kho 2 đầu và IMEI (nếu có).',
                         timer: 2500,
                         showConfirmButton: false
                     });
 
-                    // Reset form
                     formTaoPhieu.reset();
                     chiTietBody.innerHTML = '';
-                    addRow(); // Thêm lại 1 dòng trống
-
-                    // Tự động chuyển qua load tab lịch sử
+                    imeiState.clear();
+                    addRow();
                     loadLichSu();
                 } else {
                     const errorData = await response.json();
@@ -504,7 +787,6 @@
         });
 
         // --- TAB 2: LỊCH SỬ PHIẾU CHUYỂN ---
-
         async function loadLichSu() {
             try {
                 lichSuBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted"><i class="fa fa-spinner fa-spin me-2"></i> Đang tải dữ liệu...</td></tr>';
@@ -539,7 +821,6 @@
                 });
                 lichSuBody.innerHTML = html;
 
-                // Gắn sự kiện cho các nút Xem
                 document.querySelectorAll('.btn-view-detail').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const id = this.getAttribute('data-id');
@@ -552,17 +833,14 @@
             }
         }
 
-        // Gọi tải lịch sử khi click sang tab Lịch sử
         lichSuTab.addEventListener('shown.bs.tab', loadLichSu);
 
-        // Hàm load và show Modal Chi Tiết
         async function showModalChiTiet(id) {
             try {
                 const response = await fetch(`/api/admin/phieu-chuyen/${id}`);
                 if (!response.ok) throw new Error('Lỗi lấy chi tiết');
 
                 const result = await response.json();
-                // API trả về { success, message, data: PhieuChuyenKhoDto }
                 const data = result.data;
                 if (!data) {
                     throw new Error('Không có dữ liệu chi tiết');
@@ -596,6 +874,12 @@
                 Swal.fire('Lỗi', 'Không thể xem chi tiết phiếu.', 'error');
             }
         }
+
+        // ─── ĐÓNG MODAL IMEI ───
+        document.getElementById('imeiModal').addEventListener('hidden.bs.modal', function() {
+            document.getElementById('imeiModalLoading').style.display = 'block';
+            document.getElementById('imeiModalContent').style.display = 'none';
+        });
     });
 </script>
 </body>

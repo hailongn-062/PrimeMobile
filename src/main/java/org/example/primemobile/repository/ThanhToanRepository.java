@@ -15,4 +15,14 @@ public interface ThanhToanRepository extends JpaRepository<ThanhToan, Integer> {
     List<ThanhToan> findByDonHangId(Integer donHangId);
 
     Optional<ThanhToan> findByDonHangIdAndTrangThai(Integer donHangId, String trangThai);
+
+    /**
+     * Tìm bản ghi thanh toán theo mã tham chiếu giao dịch VNPay (vnp_TxnRef).
+     * <p>
+     * Dùng để xử lý IPN và Return từ VNPay, tra cứu giao dịch khi VNPay gọi callback.
+     *
+     * @param vnpTxnRef Mã tham chiếu giao dịch do hệ thống tạo và gửi sang VNPay.
+     * @return Bản ghi thanh toán tương ứng, hoặc empty nếu không tìm thấy.
+     */
+    Optional<ThanhToan> findByVnpTxnRef(String vnpTxnRef);
 }

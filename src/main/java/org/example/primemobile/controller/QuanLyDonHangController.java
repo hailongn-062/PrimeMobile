@@ -3,7 +3,13 @@ package org.example.primemobile.controller;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.example.primemobile.dto.auth.SessionUser;
+import org.example.primemobile.dto.order.ChiTietDonHangDto;
+import org.example.primemobile.dto.order.DonHangChiTietDto;
+import org.example.primemobile.dto.request.XacNhanDonHangImeiRequest;
+import org.example.primemobile.entity.BienTheSanPham;
+import org.example.primemobile.entity.ChiTietDonHang;
 import org.example.primemobile.entity.DonHang;
+import org.example.primemobile.entity.SanPham;
 import org.example.primemobile.service.IQuanLyDonHangService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +21,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * REST Controller cho phân hệ Quản lý Đơn Hàng (dành cho Nhân viên / Admin).
@@ -29,8 +37,10 @@ import java.util.Map;
  *   GET  /api/admin/don-hang              → Danh sách đơn hàng (phân trang, lọc)
  *   GET  /api/admin/don-hang/{id}         → Chi tiết 1 đơn hàng kèm sản phẩm
  *   POST /api/admin/don-hang/{id}/xac-nhan      → Xác nhận đơn (trừ kho_online)
+ *   POST /api/admin/don-hang/{id}/xac-nhan-imei → Xác nhận đơn có chọn IMEI
  *   PUT  /api/admin/don-hang/{id}/trang-thai    → Cập nhật lộ trình giao hàng
  *   POST /api/admin/don-hang/{id}/huy           → Hủy đơn (kèm hoàn kho nếu cần)
+ *   PATCH /api/admin/don-hang/{id}/thanh-toan   → Xác nhận đã thanh toán (COD)
  * </pre>
  */
 @RestController
@@ -95,9 +105,12 @@ public class QuanLyDonHangController {
 
     /**
      * Lấy chi tiết 1 đơn hàng kèm toàn bộ danh sách sản phẩm bên trong (FETCH JOIN).
+     * <p>
+     * Trả về DTO {@link DonHangChiTietDto} thay vì entity {@link DonHang}
+     * để tránh vòng lặp vô hạn khi serialize JSON (do quan hệ 1-N với ChiTietDonHang).
      *
      * @param id ID của đơn hàng cần xem.
-     * @return HTTP 200 kèm {@link DonHang} đã load đầy đủ.
+     * @return HTTP 200 kèm {@link DonHangChiTietDto} đã load đầy đủ.
      *         HTTP 404 nếu không tìm thấy.
      */
     @GetMapping("/{id}")
@@ -109,7 +122,8 @@ public class QuanLyDonHangController {
                 id, sessionUser.getId());
         try {
             DonHang donHang = quanLyDonHangService.layChiTietDonHang(id);
-            return ResponseEntity.ok(donHang);
+            DonHangChiTietDto dto = mapToDonHangChiTietDto(donHang);
+            return ResponseEntity.ok(dto);
 
         } catch (EntityNotFoundException e) {
             log.warn("[QuanLyDonHang] Không tìm thấy đơn hàng id={}: {}", id, e.getMessage());
@@ -158,6 +172,112 @@ public class QuanLyDonHangController {
 
         } catch (EntityNotFoundException e) {
             log.warn("[QuanLyDonHang] ❌ Không tìm thấy tài nguyên khi xác nhận: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // =========================================================================
+    // POST /api/admin/don-hang/{id}/xac-nhan-imei — Xác nhận đơn với IMEI
+    // =========================================================================
+
+    /**
+     * Xác nhận đơn hàng online với danh sách IMEI được nhân viên chọn.
+     * <p>
+     * Thực hiện trong 1 transaction:
+     * <ol>
+     *   <li>Kiểm tra trạng thái phải là {@code "cho_xac_nhan"}.</li>
+     *   <li>Fail-Fast: Validate toàn bộ IMEI (tồn tại, trong kho, ở Kho Online, đúng biến thể).</li>
+     *   <li>Kiểm tra tồn kho Kho Online đủ (Safety Stock §3.1).</li>
+     *   <li>Cập nhật IMEI → {@code "da_ban"}, gán đơn hàng.</li>
+     *   <li>Trừ thực tế vào ton_kho của kho_online.</li>
+     *   <li>Chuyển trạng thái đơn → {@code "da_xac_nhan"}.</li>
+     * </ol>
+     *
+     * @param id          ID đơn hàng cần xác nhận.
+     * @param request     DTO chứa danh sách IMEI cho từng chi tiết đơn hàng.
+     * @param sessionUser Nhân viên đang đăng nhập.
+     * @return HTTP 200 kèm đơn hàng đã xác nhận.
+     *         HTTP 400 nếu sai trạng thái, IMEI không hợp lệ, hoặc vi phạm Safety Stock.
+     *         HTTP 404 nếu đơn, chi tiết đơn, hoặc IMEI không tồn tại.
+     */
+    @PostMapping("/{id}/xac-nhan-imei")
+    public ResponseEntity<?> xacNhanDonHangVoiImei(
+            @PathVariable Integer id,
+            @RequestBody XacNhanDonHangImeiRequest request,
+            @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
+
+        log.info("[QuanLyDonHang] ▶ Xác nhận đơn với IMEI — donHangId={}, nhanVienId={}, {} selections",
+                id, sessionUser.getId(),
+                request.getSelections() == null ? 0 : request.getSelections().size());
+
+        try {
+            // Chuyển đổi từ XacNhanDonHangImeiRequest.ImeiSelection sang IQuanLyDonHangService.ImeiSelection
+            List<IQuanLyDonHangService.ImeiSelection> imeiSelections = request.getSelections().stream()
+                    .map(sel -> {
+                        IQuanLyDonHangService.ImeiSelection s = new IQuanLyDonHangService.ImeiSelection();
+                        s.setChiTietDonHangId(sel.getChiTietDonHangId());
+                        s.setImeiList(sel.getImeiList());
+                        return s;
+                    })
+                    .collect(Collectors.toList());
+
+            DonHang donHang = quanLyDonHangService.xacNhanDonHangVoiImei(
+                    id, sessionUser.getId(), imeiSelections);
+
+            log.info("[QuanLyDonHang] ✅ Xác nhận với IMEI thành công — maDonHang={}", donHang.getMaDonHang());
+            return ResponseEntity.ok(buildSuccessResponse(
+                    "Xác nhận đơn hàng thành công. Đã cập nhật IMEI và trừ kho online.", donHang));
+
+        } catch (IllegalArgumentException e) {
+            log.warn("[QuanLyDonHang] ❌ Xác nhận với IMEI thất bại donHangId={}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(buildErrorResponse(e.getMessage()));
+
+        } catch (EntityNotFoundException e) {
+            log.warn("[QuanLyDonHang] ❌ Không tìm thấy tài nguyên khi xác nhận IMEI: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // =========================================================================
+    // PATCH /api/admin/don-hang/{id}/thanh-toan — Xác nhận đã thanh toán (COD)
+    // =========================================================================
+
+    /**
+     * Xác nhận đã thanh toán cho đơn hàng COD (Cash on Delivery).
+     * <p>
+     * Chỉ áp dụng khi đơn hàng đã ở trạng thái {@code da_giao}
+     * và trạng thái thanh toán {@code chua_thanh_toan}.
+     * <p>
+     * Ví dụ: {@code PATCH /api/admin/don-hang/5/thanh-toan}
+     *
+     * @param id          ID đơn hàng cần xác nhận thanh toán.
+     * @param sessionUser Nhân viên đang đăng nhập.
+     * @return HTTP 200 kèm đơn hàng đã cập nhật.
+     *         HTTP 400 nếu đơn không ở trạng thái {@code da_giao} hoặc đã thanh toán.
+     *         HTTP 404 nếu đơn hàng không tồn tại.
+     */
+    @PatchMapping("/{id}/thanh-toan")
+    public ResponseEntity<?> xacNhanThanhToan(
+            @PathVariable Integer id,
+            @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
+
+        log.info("[QuanLyDonHang] ▶ Xác nhận thanh toán — donHangId={}, nhanVienId={}",
+                id, sessionUser.getId());
+
+        try {
+            DonHang donHang = quanLyDonHangService.xacNhanThanhToan(id);
+            log.info("[QuanLyDonHang] ✅ Xác nhận thanh toán thành công — maDonHang={}",
+                    donHang.getMaDonHang());
+            return ResponseEntity.ok(buildSuccessResponse(
+                    "Xác nhận thanh toán thành công.", donHang));
+
+        } catch (IllegalArgumentException e) {
+            log.warn("[QuanLyDonHang] ❌ Xác nhận thanh toán thất bại donHangId={}: {}",
+                    id, e.getMessage());
+            return ResponseEntity.badRequest().body(buildErrorResponse(e.getMessage()));
+
+        } catch (EntityNotFoundException e) {
+            log.warn("[QuanLyDonHang] ❌ Không tìm thấy đơn hàng id={}", id);
             return ResponseEntity.notFound().build();
         }
     }
@@ -272,6 +392,105 @@ public class QuanLyDonHangController {
     // =========================================================================
     // PRIVATE HELPERS
     // =========================================================================
+
+    /**
+     * Chuyển đổi entity {@link DonHang} sang DTO {@link DonHangChiTietDto}.
+     * <p>
+     * Mục đích: Tránh vòng lặp vô hạn khi Jackson serialize entity
+     * (do quan hệ 1-N giữa DonHang và ChiTietDonHang).
+     * Đồng thời kiểm soát dữ liệu trả về API, chỉ expose các trường cần thiết.
+     *
+     * @param donHang Entity đơn hàng (đã load chi tiết).
+     * @return DTO đơn hàng chi tiết.
+     */
+    private DonHangChiTietDto mapToDonHangChiTietDto(DonHang donHang) {
+        if (donHang == null) {
+            return null;
+        }
+
+        // Map danh sách chi tiết đơn hàng
+        List<ChiTietDonHangDto> chiTietDtos = donHang.getChiTietDonHangs().stream()
+                .map(this::mapChiTietToDto)
+                .collect(Collectors.toList());
+
+        // Lấy thông tin khách hàng
+        String tenKhachHang = donHang.getKhachHang() != null
+                ? donHang.getKhachHang().getHoTen()
+                : donHang.getHoTenNguoiNhan();
+
+        String soDienThoaiKhach = donHang.getKhachHang() != null
+                ? donHang.getKhachHang().getSoDienThoai()
+                : donHang.getSdtNguoiNhan();
+
+        String emailKhach = donHang.getKhachHang() != null
+                ? donHang.getKhachHang().getEmail()
+                : null;
+
+        // Lấy tên nhân viên xử lý
+        String tenNguoiXuLy = donHang.getNguoiXuLy() != null
+                ? donHang.getNguoiXuLy().getHoTen()
+                : null;
+
+        // Lấy danh sách IMEI đã gán cho đơn hàng (trạng thái 'da_ban')
+        List<org.example.primemobile.entity.MayDienThoai> imeiList = null;
+        try {
+            imeiList = quanLyDonHangService.layDanhSachImeiTheoDonHang(donHang.getId());
+        } catch (Exception e) {
+            log.warn("[QuanLyDonHang] Không thể lấy danh sách IMEI cho đơn hàng {}: {}", donHang.getId(), e.getMessage());
+        }
+
+        return DonHangChiTietDto.builder()
+                .id(donHang.getId())
+                .maDonHang(donHang.getMaDonHang())
+                .ngayDat(donHang.getNgayDat())
+                .trangThai(donHang.getTrangThai())
+                .trangThaiThanhToan(donHang.getTrangThaiThanhToan())
+                .kenhBan(donHang.getKenhBan())
+                .tenKhachHang(tenKhachHang)
+                .soDienThoaiKhach(soDienThoaiKhach)
+                .emailKhach(emailKhach)
+                .hoTenNguoiNhan(donHang.getHoTenNguoiNhan())
+                .sdtNguoiNhan(donHang.getSdtNguoiNhan())
+                .diaChiGiaoCuThe(donHang.getDiaChiGiaCuThe())
+                .phuongXaGiao(donHang.getPhuongXaGiao())
+                .quanHuyenGiao(donHang.getQuanHuyenGiao())
+                .tinhThanhGiao(donHang.getTinhThanhGiao())
+                .ngayGiaoDuKien(donHang.getNgayGiaoDuKien())
+                .ngayGiaoThucTe(donHang.getNgayGiaoThucTe())
+                .tenNguoiXuLy(tenNguoiXuLy)
+                .tongTienHang(donHang.getTongTienHang())
+                .tienGiamGia(donHang.getTienGiamGia())
+                .phiShip(donHang.getPhiShip())
+                .tongThanhToan(donHang.getTongThanhToan())
+                .ghiChu(donHang.getGhiChu())
+                .imeiList(imeiList)
+                .chiTietDonHangs(chiTietDtos)
+                .build();
+    }
+
+    /**
+     * Chuyển đổi entity {@link ChiTietDonHang} sang DTO {@link ChiTietDonHangDto}.
+     *
+     * @param chiTiet Entity chi tiết đơn hàng.
+     * @return DTO chi tiết đơn hàng.
+     */
+    private ChiTietDonHangDto mapChiTietToDto(ChiTietDonHang chiTiet) {
+        BienTheSanPham bt = chiTiet.getBienTheSanPham();
+        SanPham sp = (bt != null) ? bt.getSanPham() : null;
+
+        return ChiTietDonHangDto.builder()
+                .id(chiTiet.getId())
+                .soLuong(chiTiet.getSoLuong())
+                .donGiaBan(chiTiet.getDonGiaBan())
+                .thanhTien(chiTiet.getThanhTien())
+                .bienTheSanPhamId(bt != null ? bt.getId() : null)
+                .maSku(bt != null ? bt.getMaSku() : null)
+                .mauSac(bt != null ? bt.getMauSac() : null)
+                .ramGb(bt != null ? bt.getRamGb() : null)
+                .luuTruGb(bt != null ? bt.getLuuTruGb() : null)
+                .tenSanPham(sp != null ? sp.getTenSanPham() : null)
+                .build();
+    }
 
     /**
      * Tạo response body thành công theo chuẩn thống nhất.

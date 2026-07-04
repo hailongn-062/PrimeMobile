@@ -3,6 +3,7 @@ package org.example.primemobile.controller;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.primemobile.dto.KhuyenMaiResult;
 import org.example.primemobile.dto.auth.SessionUser;
 import org.example.primemobile.dto.pos.BienThePosDto;
 import org.example.primemobile.dto.pos.KhuyenMaiPosDto;
@@ -107,9 +108,8 @@ public class PosController {
      * Tự động tính khuyến mãi tốt nhất cho tổng tiền hàng hiện tại.
      *
      * <p>
-     * Gọi {@link IKhuyenMaiService#timKhuyenMaiTotNhatChoDonHang(BigDecimal)}
-     * và trả về DTO chứa ID CTKM và số tiền giảm. Nếu không có CTKM,
-     * trả về {@code tienGiam = 0}.
+     * Gọi {@link IKhuyenMaiService#tinhKhuyenMaiChoDonHang(BigDecimal)}
+     * để lấy kết quả khuyến mãi thống nhất với luồng Online và Giỏ hàng.
      *
      * @param tongTien Tổng tiền hàng (query param, bắt buộc).
      * @return HTTP 200 kèm {@link KhuyenMaiPosDto}.
@@ -121,28 +121,15 @@ public class PosController {
 
         log.debug("[POS] GET /tinh-khuyen-mai — tongTien={}", tongTien);
 
-        ChuongTrinhKhuyenMai ctkm = khuyenMaiService.timKhuyenMaiTotNhatChoDonHang(tongTien);
+        // Sử dụng method thống nhất để tính khuyến mãi
+        KhuyenMaiResult result = khuyenMaiService.tinhKhuyenMaiChoDonHang(tongTien);
 
-        KhuyenMaiPosDto dto;
-        if (ctkm == null) {
-            dto = KhuyenMaiPosDto.builder()
-                    .ctkmId(null)
-                    .tenCtkm(null)
-                    .giaTriUuDai(BigDecimal.ZERO)
-                    .tienGiam(BigDecimal.ZERO)
-                    .build();
-        } else {
-            BigDecimal tienGiam = tongTien
-                    .multiply(ctkm.getGiaTriUuDai())
-                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-
-            dto = KhuyenMaiPosDto.builder()
-                    .ctkmId(ctkm.getId())
-                    .tenCtkm(ctkm.getTenCtkm())
-                    .giaTriUuDai(ctkm.getGiaTriUuDai())
-                    .tienGiam(tienGiam)
-                    .build();
-        }
+        KhuyenMaiPosDto dto = KhuyenMaiPosDto.builder()
+                .ctkmId(result.getCtkmId())
+                .tenCtkm(result.getTenCtkm())
+                .giaTriUuDai(result.getGiaTriUuDai())
+                .tienGiam(result.getTienGiam())
+                .build();
 
         log.info("[POS] tinhKhuyenMai — tongTien={}, ctkmId={}, tienGiam={}",
                 tongTien, dto.getCtkmId(), dto.getTienGiam());

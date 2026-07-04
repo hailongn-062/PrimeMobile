@@ -3,6 +3,10 @@
 <head th:replace="~{layout/admin-layout :: adminHead}">
     <title>Quản lý Đơn hàng | PrimeMobile Admin</title>
 </head>
+
+<!-- SweetAlert2 CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
 <body>
 
 <div th:replace="~{layout/admin-layout :: sidebar}"></div>
@@ -30,40 +34,67 @@
         </div>
     </div>
 
-    <!-- ── BỘ LỌC ──────────────────────────────────────────────── -->
+    <!-- ── TABS TRẠNG THÁI ──────────────────────────────────────────── -->
     <div class="pm-card mb-4">
-        <div class="p-3">
+        <div class="p-0">
+            <ul class="nav nav-tabs" style="border-bottom: 0; padding: 0.5rem 1rem 0;">
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold" th:classappend="${filterTrangThai == null or filterTrangThai == ''} ? 'active' : ''"
+                       href="/admin/don-hang">
+                        <i class="fa fa-list me-1"></i>Tất cả
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold" th:classappend="${filterTrangThai == 'cho_xac_nhan'} ? 'active' : ''"
+                       href="/admin/don-hang?trangThai=cho_xac_nhan">
+                        <i class="fa fa-clock me-1"></i>Chờ xác nhận
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold" th:classappend="${filterTrangThai == 'da_xac_nhan'} ? 'active' : ''"
+                       href="/admin/don-hang?trangThai=da_xac_nhan">
+                        <i class="fa fa-check-circle me-1"></i>Đã xác nhận
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold" th:classappend="${filterTrangThai == 'dang_giao'} ? 'active' : ''"
+                       href="/admin/don-hang?trangThai=dang_giao">
+                        <i class="fa fa-truck me-1"></i>Đang giao
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold" th:classappend="${filterTrangThai == 'da_giao'} ? 'active' : ''"
+                       href="/admin/don-hang?trangThai=da_giao">
+                        <i class="fa fa-check-double me-1"></i>Đã giao
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold" th:classappend="${filterTrangThai == 'da_huy'} ? 'active' : ''"
+                       href="/admin/don-hang?trangThai=da_huy">
+                        <i class="fa fa-ban me-1"></i>Đã hủy
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <!-- Form tìm kiếm -->
+        <div class="px-3 pb-3 pt-2 border-top">
             <form action="/admin/don-hang" method="get" class="row g-2 align-items-end">
-                <!-- Trạng thái -->
-                <div class="col-12 col-sm-6 col-md-3">
-                    <label class="form-label small fw-semibold mb-1">Trạng thái</label>
-                    <select class="form-select form-select-sm" name="trangThai" id="filter-trang-thai">
-                        <option value="" th:selected="${filterTrangThai == null or filterTrangThai == ''}">Tất cả</option>
-                        <option value="cho_xac_nhan"  th:selected="${filterTrangThai == 'cho_xac_nhan'}">⏳ Chờ xác nhận</option>
-                        <option value="da_xac_nhan"   th:selected="${filterTrangThai == 'da_xac_nhan'}">✅ Đã xác nhận</option>
-                        <option value="dang_giao"     th:selected="${filterTrangThai == 'dang_giao'}">🚚 Đang giao</option>
-                        <option value="da_giao"       th:selected="${filterTrangThai == 'da_giao'}">📦 Đã giao</option>
-                        <option value="da_huy"        th:selected="${filterTrangThai == 'da_huy'}">❌ Đã hủy</option>
-                    </select>
-                </div>
-                <!-- Mã đơn -->
-                <div class="col-12 col-sm-6 col-md-3">
+                <input type="hidden" name="trangThai" th:value="${filterTrangThai}">
+                <div class="col-12 col-sm-5 col-md-4">
                     <label class="form-label small fw-semibold mb-1">Mã đơn hàng</label>
                     <input type="text" class="form-control form-control-sm" name="maDonHang"
                            th:value="${filterMaDonHang}" placeholder="VD: DH2024001" id="filter-ma-don">
                 </div>
-                <!-- SĐT -->
-                <div class="col-12 col-sm-6 col-md-3">
+                <div class="col-12 col-sm-5 col-md-4">
                     <label class="form-label small fw-semibold mb-1">Số điện thoại</label>
                     <input type="text" class="form-control form-control-sm" name="soDienThoai"
                            th:value="${filterSoDienThoai}" placeholder="0912345678" id="filter-sdt">
                 </div>
-                <!-- Nút -->
-                <div class="col-12 col-sm-6 col-md-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-pm-primary btn-sm px-3 flex-fill" id="btn-loc">
+                <div class="col-12 col-sm-2 col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-pm-primary btn-sm px-3 flex-fill">
                         <i class="fa fa-search me-1"></i>Lọc
                     </button>
-                    <a href="/admin/don-hang" class="btn btn-outline-secondary btn-sm px-3 flex-fill" id="btn-reset">
+                    <a th:href="@{/admin/don-hang(trangThai=${filterTrangThai})}" class="btn btn-outline-secondary btn-sm px-3 flex-fill">
                         <i class="fa fa-redo me-1"></i>Reset
                     </a>
                 </div>
@@ -78,83 +109,129 @@
             <span class="badge bg-primary rounded-pill" th:text="${tongSoDonHang} + ' đơn'">0 đơn</span>
         </div>
 
-        <!-- Responsive table wrapper -->
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0" style="font-size:.875rem;">
                 <thead class="table-light">
-                    <tr>
-                        <th class="ps-3" style="width:140px;">Mã đơn hàng</th>
-                        <th>Khách hàng</th>
-                        <th style="width:160px;">Ngày đặt</th>
-                        <th class="text-end" style="width:140px;">Tổng thanh toán</th>
-                        <th class="text-center" style="width:140px;">Trạng thái</th>
-                        <th class="text-center" style="width:120px;">Thanh toán</th>
-                        <th class="text-center" style="width:110px;">Hành động</th>
-                    </tr>
+                <tr>
+                    <th class="ps-3" style="width:140px;">Mã đơn hàng</th>
+                    <th>Khách hàng</th>
+                    <th style="width:160px;">Ngày đặt</th>
+                    <th class="text-end" style="width:140px;">Tổng thanh toán</th>
+                    <th class="text-center" style="width:140px;">Trạng thái</th>
+                    <th class="text-center" style="width:120px;">Thanh toán</th>
+                    <th class="text-center" style="width:200px;">Hành động</th>
+                </tr>
                 </thead>
                 <tbody>
-                    <!-- Hàng dữ liệu -->
-                    <tr th:each="dh : ${danhSachDonHang}">
-                        <td class="ps-3">
-                            <span class="fw-semibold text-primary" th:text="${dh.maDonHang}">DH001</span>
-                        </td>
-                        <td>
-                            <div class="fw-semibold"
-                                 th:text="${dh.hoTenNguoiNhan ?: (dh.khachHang != null ? dh.khachHang.hoTen : 'Khách lẻ')}">
-                                Tên khách
-                            </div>
-                            <div class="text-muted small" th:text="${dh.sdtNguoiNhan}">SĐT</div>
-                        </td>
-                        <td>
-                            <div th:text="${#temporals.format(dh.ngayDat, 'dd/MM/yyyy')}">01/01/2024</div>
-                            <div class="text-muted small" th:text="${#temporals.format(dh.ngayDat, 'HH:mm')}">08:00</div>
-                        </td>
-                        <td class="text-end fw-bold text-primary">
+                <tr th:each="dh : ${danhSachDonHang}">
+                    <td class="ps-3">
+                        <span class="fw-semibold text-primary" th:text="${dh.maDonHang}">DH001</span>
+                    </td>
+                    <td>
+                        <div class="fw-semibold"
+                             th:text="${dh.hoTenNguoiNhan ?: (dh.khachHang != null ? dh.khachHang.hoTen : 'Khách lẻ')}">
+                            Tên khách
+                        </div>
+                        <div class="text-muted small" th:text="${dh.sdtNguoiNhan}">SĐT</div>
+                    </td>
+                    <td>
+                        <div th:text="${#temporals.format(dh.ngayDat, 'dd/MM/yyyy')}">01/01/2024</div>
+                        <div class="text-muted small" th:text="${#temporals.format(dh.ngayDat, 'HH:mm')}">08:00</div>
+                    </td>
+                    <td class="text-end fw-bold text-primary">
                             <span th:if="${dh.tongThanhToan != null}"
                                   th:text="${#numbers.formatDecimal(dh.tongThanhToan, 0, 'COMMA', 0, 'POINT')} + '₫'">
                                 0₫
                             </span>
-                            <span th:unless="${dh.tongThanhToan != null}" class="text-muted">—</span>
-                        </td>
-                        <td class="text-center">
-                            <!-- Badge trạng thái đơn hàng -->
+                        <span th:unless="${dh.tongThanhToan != null}" class="text-muted">—</span>
+                    </td>
+                    <td class="text-center">
                             <span th:if="${dh.trangThai == 'cho_xac_nhan'}"
                                   class="badge rounded-pill bg-warning text-dark">⏳ Chờ xác nhận</span>
-                            <span th:if="${dh.trangThai == 'da_xac_nhan'}"
-                                  class="badge rounded-pill bg-info text-dark">✅ Đã xác nhận</span>
-                            <span th:if="${dh.trangThai == 'dang_giao'}"
-                                  class="badge rounded-pill bg-primary">🚚 Đang giao</span>
-                            <span th:if="${dh.trangThai == 'da_giao'}"
-                                  class="badge rounded-pill bg-success">📦 Đã giao</span>
-                            <span th:if="${dh.trangThai == 'da_huy'}"
-                                  class="badge rounded-pill bg-danger">❌ Đã hủy</span>
-                        </td>
-                        <td class="text-center">
+                        <span th:if="${dh.trangThai == 'da_xac_nhan'}"
+                              class="badge rounded-pill bg-info text-dark">✅ Đã xác nhận</span>
+                        <span th:if="${dh.trangThai == 'dang_giao'}"
+                              class="badge rounded-pill bg-primary">🚚 Đang giao</span>
+                        <span th:if="${dh.trangThai == 'da_giao'}"
+                              class="badge rounded-pill bg-success">📦 Đã giao</span>
+                        <span th:if="${dh.trangThai == 'da_huy'}"
+                              class="badge rounded-pill bg-danger">❌ Đã hủy</span>
+                    </td>
+                    <td class="text-center">
                             <span th:if="${dh.trangThaiThanhToan == 'da_thanh_toan'}"
                                   class="badge rounded-pill bg-success">Đã TT</span>
-                            <span th:if="${dh.trangThaiThanhToan == 'chua_thanh_toan'}"
-                                  class="badge rounded-pill bg-secondary">Chưa TT</span>
-                            <span th:if="${dh.trangThaiThanhToan == 'that_bai'}"
-                                  class="badge rounded-pill bg-danger">Thất bại</span>
-                            <span th:if="${dh.trangThaiThanhToan == 'dang_chuyen_huong'}"
-                                  class="badge rounded-pill bg-warning text-dark">Đang TT</span>
-                        </td>
-                        <td class="text-center">
-                            <a th:href="@{/admin/don-hang/{id}(id=${dh.id})}"
-                               class="btn btn-outline-primary btn-sm rounded-pill px-3"
-                               title="Xem chi tiết">
-                                <i class="fa fa-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
+                        <span th:if="${dh.trangThaiThanhToan == 'chua_thanh_toan'}"
+                              class="badge rounded-pill bg-secondary">Chưa TT</span>
+                        <span th:if="${dh.trangThaiThanhToan == 'that_bai'}"
+                              class="badge rounded-pill bg-danger">Thất bại</span>
+                        <span th:if="${dh.trangThaiThanhToan == 'dang_chuyen_huong'}"
+                              class="badge rounded-pill bg-warning text-dark">Đang TT</span>
+                    </td>
+                    <td class="text-center">
+                        <!-- Nút Xem chi tiết -->
+                        <a th:href="@{/admin/don-hang/{id}(id=${dh.id})}"
+                           class="btn btn-outline-primary btn-sm rounded-pill px-2 me-1"
+                           title="Xem chi tiết">
+                            <i class="fa fa-eye"></i>
+                        </a>
 
-                    <!-- Empty state -->
-                    <tr th:if="${#lists.isEmpty(danhSachDonHang)}">
-                        <td colspan="7" class="text-center py-5 text-muted">
-                            <i class="fa fa-inbox fa-3x d-block mb-3 opacity-25"></i>
-                            Không có đơn hàng nào phù hợp với bộ lọc.
-                        </td>
-                    </tr>
+                        <!-- Nút hành động theo trạng thái -->
+                        <th:block th:if="${dh.trangThai == 'cho_xac_nhan'}">
+                            <button class="btn btn-success btn-sm rounded-pill px-2 btn-xac-nhan-imei"
+                                    th:data-id="${dh.id}"
+                                    th:data-madon="${dh.maDonHang}"
+                                    title="Xác nhận đơn (chọn IMEI)">
+                                <i class="fa fa-check"></i>
+                            </button>
+                        </th:block>
+
+                        <th:block th:if="${dh.trangThai == 'da_xac_nhan'}">
+                            <button class="btn btn-primary btn-sm rounded-pill px-2 btn-chuyen-giao"
+                                    th:data-id="${dh.id}"
+                                    th:data-madon="${dh.maDonHang}"
+                                    title="Chuyển sang giao hàng">
+                                <i class="fa fa-truck"></i>
+                            </button>
+                        </th:block>
+
+                        <th:block th:if="${dh.trangThai == 'dang_giao'}">
+                            <button class="btn btn-success btn-sm rounded-pill px-2 btn-hoan-thanh"
+                                    th:data-id="${dh.id}"
+                                    th:data-madon="${dh.maDonHang}"
+                                    title="Hoàn thành giao hàng">
+                                <i class="fa fa-check-double"></i>
+                            </button>
+                        </th:block>
+
+                        <!-- Nút Xác nhận thanh toán cho đơn COD đã giao -->
+                        <th:block th:if="${dh.trangThai == 'da_giao' and dh.trangThaiThanhToan == 'chua_thanh_toan'}">
+                            <button class="btn btn-warning btn-sm rounded-pill px-2 btn-thanh-toan"
+                                    th:data-id="${dh.id}"
+                                    th:data-madon="${dh.maDonHang}"
+                                    title="Xác nhận đã thanh toán">
+                                <i class="fa fa-money-bill"></i>
+                            </button>
+                        </th:block>
+
+                        <!-- Nút Hủy cho các trạng thái chưa giao -->
+                        <th:block th:if="${dh.trangThai == 'cho_xac_nhan' or dh.trangThai == 'da_xac_nhan' or dh.trangThai == 'dang_giao'}">
+                            <button class="btn btn-outline-danger btn-sm rounded-pill px-2 btn-huy-don"
+                                    th:data-id="${dh.id}"
+                                    th:data-madon="${dh.maDonHang}"
+                                    title="Hủy đơn">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </th:block>
+                    </td>
+                </tr>
+
+                <!-- Empty state -->
+                <tr th:if="${#lists.isEmpty(danhSachDonHang)}">
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="fa fa-inbox fa-3x d-block mb-3 opacity-25"></i>
+                        Không có đơn hàng nào phù hợp với bộ lọc.
+                    </td>
+                </tr>
                 </tbody>
             </table>
         </div>
@@ -189,6 +266,390 @@
 
 </main>
 
+<!-- ════════════════════════════════════════════════════════════════
+     MODAL CHỌN IMEI KHI XÁC NHẬN ĐƠN
+═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="imeiModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold text-primary">
+                    <i class="fa fa-barcode me-2"></i>Xác nhận đơn <span id="imeiModalMaDon" class="text-dark">#DH001</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="imeiModalLoading" class="text-center py-4">
+                    <i class="fa fa-spinner fa-spin me-2"></i>Đang tải thông tin đơn hàng...
+                </div>
+                <div id="imeiModalContent" style="display:none;">
+                    <div class="alert alert-info small mb-3">
+                        <i class="fa fa-info-circle me-1"></i>
+                        Chọn <strong>mã IMEI</strong> tương ứng với từng sản phẩm trong đơn hàng.
+                        Số lượng IMEI phải khớp với số lượng sản phẩm.
+                        <br><small>Chỉ hiển thị IMEI <strong>đang có ở Kho Online</strong>.</small>
+                    </div>
+                    <div id="imeiProductList" class="row g-3">
+                        <!-- Render từ JS -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-success" id="imeiModalConfirm">
+                    <i class="fa fa-check me-1"></i>Xác nhận đơn hàng
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div th:replace="~{layout/admin-layout :: adminScripts}"></div>
+
+<!-- SweetAlert2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- ════════════════════════════════════════════════════════════════
+     JAVASCRIPT CHÍNH
+═══════════════════════════════════════════════════════════════ -->
+<script th:inline="javascript">
+    const KHO_ONLINE_ID = 2; // Mặc định Kho Online có id = 2
+
+    // ── HÀM GỌI API ──────────────────────────────────────────────
+    async function callApi(url, method = 'POST', body = null) {
+        const opts = {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        };
+        if (body) opts.body = JSON.stringify(body);
+        const res = await fetch(url, opts);
+        return res.json();
+    }
+
+    // ── HIỂN THỊ SWEETALERT ──────────────────────────────────────
+    function showSuccess(msg) {
+        Swal.fire({ icon: 'success', title: 'Thành công!', text: msg, timer: 2000, showConfirmButton: false });
+    }
+
+    function showError(msg) {
+        Swal.fire({ icon: 'error', title: 'Lỗi!', text: msg || 'Đã xảy ra lỗi.', confirmButtonColor: '#C0392B' });
+    }
+
+    function showLoading(title = 'Đang xử lý...') {
+        Swal.fire({ title, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    }
+
+    // ── RELOAD TRANG SAU HÀNH ĐỘNG ──────────────────────────────
+    function reloadPage() {
+        setTimeout(() => location.reload(), 1500);
+    }
+
+    // =========================================================================
+    // 1. XỬ LÝ NÚT "XÁC NHẬN" → MỞ MODAL IMEI
+    // =========================================================================
+    document.querySelectorAll('.btn-xac-nhan-imei').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const donHangId = this.dataset.id;
+            const maDon = this.dataset.madon;
+            document.getElementById('imeiModalMaDon').textContent = '#' + maDon;
+            document.getElementById('imeiModalConfirm').dataset.donHangId = donHangId;
+            openImeiModal(donHangId);
+        });
+    });
+
+    // ── MỞ MODAL VÀ TẢI DỮ LIỆU ──────────────────────────────────
+    async function openImeiModal(donHangId) {
+        const loading = document.getElementById('imeiModalLoading');
+        const content = document.getElementById('imeiModalContent');
+        const productList = document.getElementById('imeiProductList');
+
+        loading.style.display = 'block';
+        content.style.display = 'none';
+        productList.innerHTML = '';
+
+        const modal = new bootstrap.Modal(document.getElementById('imeiModal'));
+        modal.show();
+
+        try {
+            // Lấy chi tiết đơn hàng (API giờ trả thẳng DTO, không wrap trong "donHang")
+            const donHang = await callApi(`/api/admin/don-hang/${donHangId}`, 'GET');
+
+            // Kiểm tra dữ liệu
+            if (!donHang || !donHang.chiTietDonHangs || donHang.chiTietDonHangs.length === 0) {
+                throw new Error('Không tìm thấy sản phẩm trong đơn hàng.');
+            }
+
+            // Render từng sản phẩm (dùng DTO)
+            let html = '';
+            for (const ct of donHang.chiTietDonHangs) {
+                // DTO có các trường trực tiếp, không cần truy cập qua biến thể
+                const bienTheId = ct.bienTheSanPhamId;
+                const tenSp = ct.tenSanPham || 'Sản phẩm';
+                const maSku = ct.maSku || 'SKU';
+                const soLuong = ct.soLuong;
+                const chiTietId = ct.id;
+
+                // Gọi API lấy danh sách IMEI ở Kho Online
+                let imeiList = [];
+                try {
+                    const imeiData = await callApi(
+                        `/api/admin/imei/danh-sach?bienTheSanPhamId=${bienTheId}&tinhTrang=trong_kho&khoId=${KHO_ONLINE_ID}`,
+                        'GET'
+                    );
+                    imeiList = imeiData || [];
+                } catch (e) {
+                    imeiList = [];
+                }
+
+                // Tạo HTML cho sản phẩm
+                html += `
+                    <div class="col-md-6 col-xl-4">
+                        <div class="card h-100 border">
+                            <div class="card-header bg-light fw-semibold small">
+                                ${tenSp} <span class="text-muted">(${maSku})</span>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="small text-muted mb-2">Số lượng: <strong>${soLuong}</strong></div>
+                                <div class="imei-checkbox-group" data-chi-tiet-id="${chiTietId}" data-so-luong="${soLuong}">
+                                    ${imeiList.length === 0 ? `
+                                        <div class="text-danger small">Không có IMEI nào trong kho online cho sản phẩm này.</div>
+                                    ` : imeiList.map(imei => `
+                                        <label class="imei-checkbox-item d-flex align-items-center">
+                                            <input type="checkbox" class="imei-checkbox me-2" value="${imei.imei1}">
+                                            <span class="fw-semibold">${imei.imei1}</span>
+                                            ${imei.serial ? `<span class="text-muted small ms-2">(SN: ${imei.serial})</span>` : ''}
+                                        </label>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            productList.innerHTML = html;
+            loading.style.display = 'none';
+            content.style.display = 'block';
+
+            // Gắn sự kiện cho checkbox: giới hạn số lượng chọn theo soLuong
+            document.querySelectorAll('.imei-checkbox-group').forEach(group => {
+                const max = parseInt(group.dataset.soLuong);
+                const checkboxes = group.querySelectorAll('.imei-checkbox');
+                checkboxes.forEach(cb => {
+                    cb.addEventListener('change', function() {
+                        const checked = group.querySelectorAll('.imei-checkbox:checked');
+                        if (checked.length > max) {
+                            this.checked = false;
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Vượt quá số lượng',
+                                text: `Chỉ được chọn tối đa ${max} IMEI cho sản phẩm này.`,
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                        }
+                    });
+                });
+            });
+
+        } catch (error) {
+            loading.innerHTML = `<div class="text-danger">${error.message || 'Không thể tải dữ liệu.'}</div>`;
+        }
+    }
+
+    // ── XÁC NHẬN IMEI ─────────────────────────────────────────────
+    document.getElementById('imeiModalConfirm').addEventListener('click', async function() {
+        const donHangId = this.dataset.donHangId;
+        const selections = [];
+
+        document.querySelectorAll('.imei-checkbox-group').forEach(group => {
+            const chiTietId = parseInt(group.dataset.chiTietId);
+            const checked = group.querySelectorAll('.imei-checkbox:checked');
+            const imeiList = Array.from(checked).map(cb => cb.value);
+            selections.push({
+                chiTietDonHangId: chiTietId,
+                imeiList: imeiList
+            });
+        });
+
+        // Kiểm tra tất cả sản phẩm đã chọn đủ số lượng
+        let hasError = false;
+        document.querySelectorAll('.imei-checkbox-group').forEach(group => {
+            const soLuong = parseInt(group.dataset.soLuong);
+            const checked = group.querySelectorAll('.imei-checkbox:checked');
+            if (checked.length !== soLuong) {
+                hasError = true;
+                group.closest('.card').style.borderColor = '#dc3545';
+            } else {
+                group.closest('.card').style.borderColor = '#198754';
+            }
+        });
+
+        if (hasError) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Chưa chọn đủ IMEI',
+                text: 'Vui lòng chọn đúng số lượng IMEI cho từng sản phẩm (các sản phẩm thiếu sẽ có viền đỏ).'
+            });
+            return;
+        }
+
+        // Submit
+        showLoading('Đang xác nhận đơn hàng...');
+        try {
+            const result = await callApi(`/api/admin/don-hang/${donHangId}/xac-nhan-imei`, 'POST', { selections });
+            if (result.success) {
+                showSuccess(result.message || 'Xác nhận đơn hàng thành công!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('imeiModal'));
+                modal.hide();
+                reloadPage();
+            } else {
+                showError(result.message || 'Không thể xác nhận đơn hàng.');
+            }
+        } catch (e) {
+            showError(e.message || 'Lỗi kết nối.');
+        }
+    });
+
+    // =========================================================================
+    // 2. CHUYỂN GIAO (da_xac_nhan → dang_giao)
+    // =========================================================================
+    document.querySelectorAll('.btn-chuyen-giao').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            const maDon = this.dataset.madon;
+            const result = await Swal.fire({
+                icon: 'question',
+                title: 'Chuyển trạng thái giao hàng?',
+                text: `Đơn hàng ${maDon} sẽ chuyển sang trạng thái "Đang giao".`,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-truck me-1"></i>Chuyển',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#1565C0'
+            });
+            if (!result.isConfirmed) return;
+
+            showLoading('Đang cập nhật...');
+            try {
+                const data = await callApi(`/api/admin/don-hang/${id}/trang-thai?trangThaiMoi=dang_giao`, 'PUT');
+                if (data.success) {
+                    showSuccess(data.message || 'Đã chuyển sang trạng thái Đang giao.');
+                    reloadPage();
+                } else {
+                    showError(data.message);
+                }
+            } catch (e) {
+                showError('Lỗi kết nối.');
+            }
+        });
+    });
+
+    // =========================================================================
+    // 3. HOÀN THÀNH GIAO (dang_giao → da_giao)
+    // =========================================================================
+    document.querySelectorAll('.btn-hoan-thanh').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            const maDon = this.dataset.madon;
+            const result = await Swal.fire({
+                icon: 'success',
+                title: 'Hoàn thành giao hàng?',
+                text: `Đơn hàng ${maDon} sẽ được đánh dấu là "Đã giao".`,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-check-double me-1"></i>Hoàn thành',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#2E7D32'
+            });
+            if (!result.isConfirmed) return;
+
+            showLoading('Đang cập nhật...');
+            try {
+                const data = await callApi(`/api/admin/don-hang/${id}/trang-thai?trangThaiMoi=da_giao`, 'PUT');
+                if (data.success) {
+                    showSuccess(data.message || 'Giao hàng hoàn thành!');
+                    reloadPage();
+                } else {
+                    showError(data.message);
+                }
+            } catch (e) {
+                showError('Lỗi kết nối.');
+            }
+        });
+    });
+
+    // =========================================================================
+    // 4. XÁC NHẬN THANH TOÁN CHO ĐƠN COD ĐÃ GIAO
+    // =========================================================================
+    document.querySelectorAll('.btn-thanh-toan').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            const maDon = this.dataset.madon;
+            const result = await Swal.fire({
+                icon: 'question',
+                title: 'Xác nhận đã thanh toán?',
+                text: `Xác nhận khách hàng đã thanh toán cho đơn hàng ${maDon}?`,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-check me-1"></i>Xác nhận',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#F59E0B'
+            });
+            if (!result.isConfirmed) return;
+
+            showLoading('Đang cập nhật...');
+            try {
+                const data = await callApi(`/api/admin/don-hang/${id}/thanh-toan`, 'PATCH');
+                if (data.success) {
+                    showSuccess(data.message || 'Xác nhận thanh toán thành công.');
+                    reloadPage();
+                } else {
+                    showError(data.message);
+                }
+            } catch (e) {
+                showError('Lỗi kết nối.');
+            }
+        });
+    });
+
+    // =========================================================================
+    // 5. HỦY ĐƠN
+    // =========================================================================
+    document.querySelectorAll('.btn-huy-don').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            const maDon = this.dataset.madon;
+            const result = await Swal.fire({
+                icon: 'warning',
+                title: 'Hủy đơn hàng?',
+                html: `<p>Bạn có chắc muốn hủy đơn hàng <strong>${maDon}</strong>?</p>
+                       <textarea id="ly-do-huy" class="form-control" rows="2" placeholder="Lý do hủy..."></textarea>`,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-times me-1"></i>Xác nhận hủy',
+                cancelButtonText: 'Quay lại',
+                confirmButtonColor: '#C0392B',
+                preConfirm: () => {
+                    const lyDo = document.getElementById('ly-do-huy')?.value?.trim();
+                    return { lyDoHuy: lyDo || 'Nhân viên hủy đơn' };
+                }
+            });
+            if (!result.isConfirmed) return;
+
+            showLoading('Đang hủy đơn...');
+            try {
+                const data = await callApi(`/api/admin/don-hang/${id}/huy`, 'POST', result.value);
+                if (data.success) {
+                    showSuccess(data.message || 'Hủy đơn thành công.');
+                    reloadPage();
+                } else {
+                    showError(data.message);
+                }
+            } catch (e) {
+                showError('Lỗi kết nối.');
+            }
+        });
+    });
+
+</script>
+
 </body>
 </html>

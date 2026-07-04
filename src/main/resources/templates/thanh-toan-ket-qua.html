@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết quả thanh toán | PrimeMobile</title>
+    <link rel="icon" href="/images/PrimeMobile_logo.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pm-primary: #0d9488;
+            --pm-primary-dark: #115e59;
+            --pm-bg: #f8fafc;
+            --pm-text: #0f172a;
+            --pm-muted: #64748b;
+            --pm-line: #e2e8f0;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--pm-bg);
+            color: var(--pm-text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .pm-page {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+        .pm-card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.10);
+            padding: 40px 48px;
+            max-width: 560px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid var(--pm-line);
+        }
+        .pm-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+        .pm-icon.success {
+            color: #16a34a;
+        }
+        .pm-icon.fail {
+            color: #dc2626;
+        }
+        .pm-title {
+            font-size: 1.5rem;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+        .pm-title.success {
+            color: #16a34a;
+        }
+        .pm-title.fail {
+            color: #dc2626;
+        }
+        .pm-sub {
+            color: var(--pm-muted);
+            font-size: 0.95rem;
+            margin-bottom: 24px;
+        }
+        .pm-detail {
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 16px 20px;
+            text-align: left;
+            font-size: 0.9rem;
+            margin-bottom: 28px;
+        }
+        .pm-detail .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .pm-detail .row:last-child {
+            border-bottom: 0;
+        }
+        .pm-detail .label {
+            color: var(--pm-muted);
+            font-weight: 600;
+        }
+        .pm-detail .value {
+            font-weight: 700;
+            color: var(--pm-text);
+        }
+        .pm-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn-pm {
+            background: var(--pm-primary);
+            color: #fff;
+            border: 0;
+            border-radius: 10px;
+            font-weight: 700;
+            padding: 10px 28px;
+            text-decoration: none;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-pm:hover {
+            background: var(--pm-primary-dark);
+            color: #fff;
+        }
+        .btn-outline {
+            background: transparent;
+            color: var(--pm-text);
+            border: 1px solid var(--pm-line);
+            border-radius: 10px;
+            font-weight: 700;
+            padding: 10px 28px;
+            text-decoration: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-outline:hover {
+            background: #f1f5f9;
+        }
+        .pm-spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e2e8f0;
+            border-top-color: var(--pm-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 8px auto;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @media (max-width: 480px) {
+            .pm-card { padding: 28px 20px; }
+            .pm-icon { font-size: 3rem; }
+            .pm-title { font-size: 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div th:replace="~{fragments/header :: navbar}"></div>
+
+<main class="pm-page">
+    <div class="pm-card" id="result-card">
+
+        <!-- Trạng thái loading (ban đầu) -->
+        <div id="loading-state">
+            <div class="pm-spinner"></div>
+            <p class="mt-3 text-muted" style="font-weight:600;">Đang xác nhận kết quả thanh toán...</p>
+        </div>
+
+        <!-- Kết quả (sẽ hiển thị sau khi có dữ liệu) -->
+        <div id="result-state" style="display:none;">
+            <div class="pm-icon" id="result-icon"><i class="fa fa-check-circle"></i></div>
+            <h1 class="pm-title" id="result-title">Thanh toán thành công</h1>
+            <p class="pm-sub" id="result-sub">Cảm ơn bạn đã mua hàng tại PrimeMobile.</p>
+
+            <div class="pm-detail" id="order-detail">
+                <div class="row">
+                    <span class="label">Mã đơn hàng</span>
+                    <span class="value" id="order-code">—</span>
+                </div>
+                <div class="row">
+                    <span class="label">Số tiền</span>
+                    <span class="value" id="order-amount">—</span>
+                </div>
+                <div class="row">
+                    <span class="label">Trạng thái</span>
+                    <span class="value" id="order-status">—</span>
+                </div>
+            </div>
+
+            <div class="pm-actions">
+                <a href="/tra-cuu-don-hang" class="btn-pm">
+                    <i class="fa fa-receipt"></i> Xem đơn hàng
+                </a>
+                <a href="/san-pham" class="btn-outline">
+                    <i class="fa fa-mobile-screen"></i> Tiếp tục mua
+                </a>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    (function() {
+        // Lấy tham số từ URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const maDonHang = urlParams.get('maDonHang') || '';
+        const status = urlParams.get('status') || '';
+        const tongTien = urlParams.get('tongTien') || '';
+        const message = urlParams.get('message') || '';
+
+        const loadingEl = document.getElementById('loading-state');
+        const resultEl = document.getElementById('result-state');
+        const iconEl = document.getElementById('result-icon');
+        const titleEl = document.getElementById('result-title');
+        const subEl = document.getElementById('result-sub');
+        const orderCodeEl = document.getElementById('order-code');
+        const orderAmountEl = document.getElementById('order-amount');
+        const orderStatusEl = document.getElementById('order-status');
+
+        // Hàm format tiền
+        function formatMoney(value) {
+            if (!value) return '0đ';
+            const num = Number(value);
+            return num.toLocaleString('vi-VN') + 'đ';
+        }
+
+        // Hàm map trạng thái
+        function mapStatus(status) {
+            const map = {
+                'da_thanh_toan': '✅ Đã thanh toán',
+                'chua_thanh_toan': '⏳ Chưa thanh toán',
+                'dang_chuyen_huong': '🔄 Đang xử lý',
+                'that_bai': '❌ Thất bại'
+            };
+            return map[status] || status || '—';
+        }
+
+        // Xác định kết quả
+        let isSuccess = false;
+        let statusText = '';
+        let title = '';
+        let sub = '';
+        let iconClass = '';
+
+        if (status === 'da_thanh_toan') {
+            isSuccess = true;
+            statusText = 'Thành công';
+            title = '🎉 Thanh toán thành công!';
+            sub = 'Cảm ơn bạn đã mua hàng tại PrimeMobile. Đơn hàng sẽ được xử lý sớm nhất.';
+            iconClass = 'fa fa-check-circle';
+        } else if (status === 'that_bai') {
+            isSuccess = false;
+            statusText = 'Thất bại';
+            title = '😞 Thanh toán thất bại';
+            sub = message ? decodeURIComponent(message) : 'Giao dịch không thành công. Vui lòng thử lại hoặc chọn phương thức thanh toán khác.';
+            iconClass = 'fa fa-times-circle';
+        } else {
+            // Trường hợp không xác định (có thể do IPN chưa kịp cập nhật)
+            isSuccess = false;
+            statusText = 'Đang xử lý';
+            title = '⏳ Đang xác nhận';
+            sub = 'Giao dịch của bạn đang được xử lý. Vui lòng kiểm tra lại sau vài phút.';
+            iconClass = 'fa fa-clock';
+        }
+
+        // Hiển thị kết quả
+        loadingEl.style.display = 'none';
+        resultEl.style.display = 'block';
+
+        iconEl.className = 'pm-icon';
+        iconEl.innerHTML = `<i class="${iconClass}"></i>`;
+        if (isSuccess) {
+            iconEl.classList.add('success');
+            titleEl.className = 'pm-title success';
+        } else {
+            iconEl.classList.add('fail');
+            titleEl.className = 'pm-title fail';
+        }
+
+        titleEl.textContent = title;
+        subEl.textContent = sub;
+
+        // Điền thông tin đơn hàng
+        orderCodeEl.textContent = maDonHang || '—';
+        orderAmountEl.textContent = formatMoney(tongTien);
+        orderStatusEl.textContent = mapStatus(status) + (status ? '' : ' (chờ cập nhật)');
+
+        // Nếu không có maDonHang, ẩn bớt thông tin
+        if (!maDonHang) {
+            document.querySelector('.pm-detail .row:first-child').style.display = 'none';
+        }
+    })();
+</script>
+
+</body>
+</html>

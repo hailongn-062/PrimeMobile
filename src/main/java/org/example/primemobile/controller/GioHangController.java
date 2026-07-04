@@ -8,6 +8,7 @@ import org.example.primemobile.entity.GioHang;
 import org.example.primemobile.entity.HinhAnhSanPham;
 import org.example.primemobile.entity.SanPham;
 import org.example.primemobile.service.IGioHangService;
+import org.example.primemobile.service.IKhuyenMaiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +34,7 @@ import java.util.Map;
  * Phải truyền ít nhất một trong 2, nếu không sẽ nhận HTTP 400.
  * <p>
  * Endpoints:
- * 
+ *
  * <pre>
  *   GET    /api/public/gio-hang                   → Lấy giỏ hàng kèm tổng tiền tạm tính
  *   POST   /api/public/gio-hang/them              → Thêm sản phẩm vào giỏ
@@ -50,6 +51,7 @@ public class GioHangController {
     private static final Logger log = LoggerFactory.getLogger(GioHangController.class);
 
     private final IGioHangService gioHangService;
+    private final IKhuyenMaiService khuyenMaiService; // ✅ Service tính khuyến mãi
 
     // =========================================================================
     // GET — Lấy giỏ hàng
@@ -91,7 +93,7 @@ public class GioHangController {
      * Thêm sản phẩm vào giỏ hàng (upsert — cộng dồn nếu đã có).
      * <p>
      * Body JSON:
-     * 
+     *
      * <pre>
      * {
      *   "khachHangId": 1,         ← hoặc null
@@ -100,7 +102,7 @@ public class GioHangController {
      *   "soLuong": 2
      * }
      * </pre>
-     * 
+     *
      * Sau khi thêm thành công, trả về giỏ hàng kèm tổng tiền tạm tính.
      */
     @PostMapping("/them")
@@ -236,8 +238,14 @@ public class GioHangController {
     private GioHangItemResponse toItemResponse(ChiTietGioHang chiTiet) {
         BienTheSanPham bienThe = chiTiet.getBienTheSanPham();
         SanPham sanPham = bienThe.getSanPham();
-        BigDecimal donGia = bienThe.getGiaBan() == null ? BigDecimal.ZERO : bienThe.getGiaBan();
+        BigDecimal giaGoc = bienThe.getGiaBan() == null ? BigDecimal.ZERO : bienThe.getGiaBan();
         int soLuong = chiTiet.getSoLuong() == null ? 0 : chiTiet.getSoLuong();
+
+        // Tính giá sau khuyến mãi (Flash Sale và Giảm trực tiếp)
+        BigDecimal giaSauKM = khuyenMaiService.tinhGiaSauKhuyenMai(bienThe.getId(), null);
+        if (giaSauKM == null) {
+            giaSauKM = giaGoc;
+        }
 
         return new GioHangItemResponse(
                 chiTiet.getId(),
@@ -248,9 +256,10 @@ public class GioHangController {
                 bienThe.getMauSac(),
                 bienThe.getRamGb(),
                 bienThe.getLuuTruGb(),
-                donGia,
+                giaGoc,
+                giaSauKM,
                 soLuong,
-                donGia.multiply(BigDecimal.valueOf(soLuong)),
+                giaSauKM.multiply(BigDecimal.valueOf(soLuong)),
                 resolveImageUrl(bienThe));
     }
 
@@ -286,7 +295,8 @@ public class GioHangController {
             String mauSac,
             Integer ramGb,
             Integer luuTruGb,
-            BigDecimal donGia,
+            BigDecimal giaGoc,
+            BigDecimal giaSauKhuyenMai,
             int soLuong,
             BigDecimal thanhTien,
             String hinhAnh) {

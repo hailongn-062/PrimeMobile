@@ -1,7 +1,9 @@
 package org.example.primemobile.controller;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.example.primemobile.dto.VnPayPaymentResponse;
 import org.example.primemobile.dto.request.DatHangRequest;
 import org.example.primemobile.entity.DonHang;
 import org.example.primemobile.service.IDatHangOnlineService;
@@ -21,9 +23,10 @@ import java.util.Map;
  * AuthInterceptor.
  * <p>
  * Endpoints:
- * 
+ *
  * <pre>
- *   POST /api/public/dat-hang  → Tạo đơn hàng từ giỏ hàng hiện tại (checkout)
+ *   POST /api/public/dat-hang       → Tạo đơn hàng từ giỏ hàng hiện tại (COD, chuyển khoản...)
+ *   POST /api/public/dat-hang/vnpay → Tạo đơn hàng và trả về URL thanh toán VNPay
  * </pre>
  *
  * <h3>Phân luồng xử lý lỗi:</h3>
@@ -47,7 +50,7 @@ public class DatHangOnlineController {
     private final IDatHangOnlineService datHangOnlineService;
 
     // =========================================================================
-    // POST /api/public/dat-hang — Tạo đơn hàng (Checkout)
+    // POST /api/public/dat-hang — Tạo đơn hàng (Checkout) cho COD và các phương thức khác
     // =========================================================================
 
     /**
@@ -146,6 +149,76 @@ public class DatHangOnlineController {
     }
 
     // =========================================================================
+    // POST /api/public/dat-hang/vnpay — Tạo đơn hàng và trả về URL thanh toán VNPay
+    // =========================================================================
+
+    /**
+     * Thực hiện checkout cho phương thức thanh toán VNPay.
+     * <p>
+     * Khác với {@link #datHang(DatHangRequest)}, endpoint này sẽ:
+     * <ol>
+     *   <li>Tạo đơn hàng với trạng thái {@code trangThaiThanhToan = "dang_chuyen_huong"}.</li>
+     *   <li>Tạo bản ghi thanh toán với trạng thái {@code "cho"}.</li>
+     *   <li>Gọi VNPay để tạo URL thanh toán.</li>
+     *   <li>Trả về URL để frontend redirect.</li>
+     * </ol>
+     *
+     * <h3>Request Body mẫu:</h3>
+     * <pre>{@code
+     * {
+     *   "khachHangId": 1,
+     *   "diaChiGiaoId": 3,
+     *   "phuongThucThanhToanId": 3,  // ID của VNPay (phải khớp với DB)
+     *   "phiShip": 30000,
+     *   "ghiChu": "Gọi trước khi giao"
+     * }
+     * }</pre>
+     *
+     * @param request    DTO chứa thông tin checkout từ frontend.
+     * @param httpRequest HttpServletRequest để lấy địa chỉ IP client.
+     * @return HTTP 200 kèm {@link VnPayPaymentResponse} chứa URL thanh toán.
+     * HTTP 400 nếu giỏ trống, kho không đủ, hoặc phương thức thanh toán không phải VNPay.
+     * HTTP 404 nếu không tìm thấy entity liên quan.
+     * HTTP 500 nếu có lỗi hệ thống.
+     */
+    @PostMapping("/vnpay")
+    public ResponseEntity<?> datHangVnPay(
+            @RequestBody DatHangRequest request,
+            HttpServletRequest httpRequest) {
+
+        log.info("[DatHangController] ▶ Nhận request checkout VNPay — khachHangId={}, sessionId={}, ptttId={}",
+                request.khachHangId(), request.sessionId(), request.phuongThucThanhToanId());
+
+        try {
+            // Lấy địa chỉ IP client
+            String clientIp = getClientIp(httpRequest);
+            log.info("[DatHangController] Client IP: {}", clientIp);
+
+            // Gọi service tạo đơn và URL thanh toán
+            VnPayPaymentResponse response = datHangOnlineService.taoDonHangVnPay(request, clientIp);
+
+            log.info("[DatHangController] ✅ Checkout VNPay thành công — maDonHang={}, paymentUrl={}",
+                    response.getMaDonHang(), response.getPaymentUrl());
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            log.warn("[DatHangController] ❌ Lỗi nghiệp vụ VNPay (400): {}", e.getMessage());
+            return ResponseEntity.badRequest().body(buildErrorResponse(400, e.getMessage()));
+
+        } catch (EntityNotFoundException e) {
+            log.warn("[DatHangController] ❌ Không tìm thấy entity VNPay (404): {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(buildErrorResponse(404, e.getMessage()));
+
+        } catch (Exception e) {
+            log.error("[DatHangController] ❌ Lỗi không mong đợi VNPay (500): {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body(buildErrorResponse(500, "Đã xảy ra lỗi không mong đợi. Vui lòng thử lại."));
+        }
+    }
+
+    // =========================================================================
     // Exception Handler cục bộ — fallback cho annotation-based throw
     // =========================================================================
 
@@ -158,6 +231,38 @@ public class DatHangOnlineController {
     // =========================================================================
     // PRIVATE HELPERS
     // =========================================================================
+
+    /**
+     * Lấy địa chỉ IP thực tế của client từ HttpServletRequest.
+     * <p>
+     * Xử lý các trường hợp client đi qua proxy (X-Forwarded-For) để lấy IP chính xác.
+     *
+     * @param request HttpServletRequest hiện tại.
+     * @return Địa chỉ IP của client.
+     */
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        // Trong trường hợp X-Forwarded-For có nhiều IP (proxy chain), lấy IP đầu tiên
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+        return ip;
+    }
 
     /**
      * Tạo response body lỗi theo chuẩn thống nhất của hệ thống.

@@ -85,6 +85,9 @@ const API = {
 let customerMode = 'khach_le';
 let vlKhachHangId = null;  // ID khách vãng lai đã tạo (cache để không tạo lại)
 
+// Hằng số: ID của Kho Tổng (theo dữ liệu mẫu)
+const KHO_TONG_ID = 1;
+
 const LOAI_KHO_TONG = 'kho_tong';
 const PROMO_DEBOUNCE_MS = 450;
 const SEARCH_DEBOUNCE_MS = 220;
@@ -341,11 +344,12 @@ function initSearch() {
 ════════════════════════════════════════════════════════════ */
 
 /**
- * Lấy danh sách IMEI từ API (trạng thái 'trong_kho')
+ * Lấy danh sách IMEI từ API (trạng thái 'trong_kho') - CHỈ LẤY IMEI Ở KHO TỔNG
  * Trả về mảng các đối tượng IMEI, hoặc throw Error.
  */
 async function fetchImeiList(bienTheId) {
-    const url = `${API.IMEI_DANH_SACH}?bienTheSanPhamId=${bienTheId}&tinhTrang=trong_kho`;
+    // Chỉ lấy IMEI ở Kho Tổng (id=1) để phục vụ bán hàng offline tại quầy
+    const url = `${API.IMEI_DANH_SACH}?bienTheSanPhamId=${bienTheId}&tinhTrang=trong_kho&khoId=${KHO_TONG_ID}`;
     console.log('[POS] fetchImeiList url:', url);
     const res = await fetch(url, { credentials: 'include' });
     if (!res.ok) {
