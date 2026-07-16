@@ -7,135 +7,129 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Entity mapping bảng thanh_toan (Module 7: Đơn hàng).
+ * Entity mapping báº£ng thanh_toan (Module 7: ÄÆ¡n hÃ ng).
  * <p>
- * Lịch sử các giao dịch thanh toán của một đơn hàng.
- * 1 đơn hàng có thể có nhiều bản ghi ThanhToan (ví dụ: thanh toán thất bại → thử lại).
+ * Lá»‹ch sá»­ cÃ¡c giao dá»‹ch thanh toÃ¡n cá»§a má»™t Ä‘Æ¡n hÃ ng.
+ * 1 Ä‘Æ¡n hÃ ng cÃ³ thá»ƒ cÃ³ nhiá»u báº£n ghi ThanhToan (vÃ­ dá»¥: thanh toÃ¡n tháº¥t báº¡i â†’
+ * thá»­ láº¡i).
  * <p>
- * ⚠️ Filtered Unique Index trong SQL Server (không thể map qua JPA):
- *  {@code CREATE UNIQUE INDEX uq_tt_vnp_txn_ref ON thanh_toan (vnp_txn_ref) WHERE vnp_txn_ref IS NOT NULL}
- *  → Service Layer phải kiểm tra trùng vnpTxnRef trước khi xử lý IPN VNPay.
+ * âš ï¸ Filtered Unique Index trong SQL Server (khÃ´ng thá»ƒ map qua JPA):
+ * {@code CREATE UNIQUE INDEX uq_tt_vnp_txn_ref ON thanh_toan (vnp_txn_ref) WHERE vnp_txn_ref IS NOT NULL}
+ * â†’ Service Layer pháº£i kiá»ƒm tra trÃ¹ng vnpTxnRef trÆ°á»›c khi xá»­ lÃ½ IPN VNPay.
  * <p>
- * Trạng thái hợp lệ (CHECK chk_tt_trang_thai):
- *  "cho" | "thanh_cong" | "that_bai"
+ * Tráº¡ng thÃ¡i há»£p lá»‡ (CHECK chk_tt_trang_thai):
+ * "cho" | "thanh_cong" | "that_bai"
  * <p>
- * Quan hệ:
- *  - N:1 với {@link DonHang}              (FK don_hang_id)
- *  - N:1 với {@link PhuongThucThanhToan}  (FK phuong_thuc_thanh_toan_id)
+ * Quan há»‡:
+ * - N:1 vá»›i {@link DonHang} (FK don_hang_id)
+ * - N:1 vá»›i {@link PhuongThucThanhToan} (FK phuong_thuc_thanh_toan_id)
  */
 @Entity
-@Table(
-        name = "thanh_toan",
-        indexes = {
+@Table(name = "thanh_toan", indexes = {
                 @Index(name = "idx_tt_dh", columnList = "don_hang_id")
-        }
-)
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class ThanhToan {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Integer id;
 
-    /**
-     * Đơn hàng được thanh toán.
-     * NOT NULL.
-     */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "don_hang_id",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "fk_tt_dh")
-    )
-    private DonHang donHang;
+        /**
+         * ÄÆ¡n hÃ ng Ä‘Æ°á»£c thanh toÃ¡n.
+         * NOT NULL.
+         */
+        @ManyToOne(fetch = FetchType.LAZY, optional = false)
+        @JoinColumn(name = "don_hang_id", nullable = false, foreignKey = @ForeignKey(name = "fk_tt_dh"))
+        @com.fasterxml.jackson.annotation.JsonIgnore
+        private DonHang donHang;
 
-    /**
-     * Phương thức thanh toán được sử dụng.
-     * Ví dụ: COD, Chuyển khoản, VNPay.
-     */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "phuong_thuc_thanh_toan_id",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "fk_tt_pttt")
-    )
-    private PhuongThucThanhToan phuongThucThanhToan;
+        /**
+         * PhÆ°Æ¡ng thá»©c thanh toÃ¡n Ä‘Æ°á»£c sá»­ dá»¥ng.
+         * VÃ­ dá»¥: COD, Chuyá»ƒn khoáº£n, VNPay.
+         */
+        @ManyToOne(fetch = FetchType.LAZY, optional = false)
+        @JoinColumn(name = "phuong_thuc_thanh_toan_id", nullable = false, foreignKey = @ForeignKey(name = "fk_tt_pttt"))
+        private PhuongThucThanhToan phuongThucThanhToan;
 
-    /** Số tiền cần thanh toán (CHECK >= 0). */
-    @Column(name = "so_tien", nullable = false, precision = 15, scale = 2)
-    private BigDecimal soTien;
+        /** Sá»‘ tiá»n cáº§n thanh toÃ¡n (CHECK >= 0). */
+        @Column(name = "so_tien", nullable = false, precision = 15, scale = 2)
+        private BigDecimal soTien;
 
-    /**
-     * Số tiền khách THỰC TẾ đã thanh toán (nhận từ VNPay IPN).
-     * NULL với COD, có giá trị sau khi VNPay xác nhận giao dịch.
-     */
-    @Column(name = "so_tien_thuc_te", precision = 15, scale = 2)
-    private BigDecimal soTienThucTe;
+        /**
+         * Sá»‘ tiá»n khÃ¡ch THá»°C Táº¾ Ä‘Ã£ thanh toÃ¡n (nháº­n tá»« VNPay IPN).
+         * NULL vá»›i COD, cÃ³ giÃ¡ trá»‹ sau khi VNPay xÃ¡c nháº­n giao dá»‹ch.
+         */
+        @Column(name = "so_tien_thuc_te", precision = 15, scale = 2)
+        private BigDecimal soTienThucTe;
 
-    /** Mã giao dịch nội bộ hoặc từ cổng thanh toán. */
-    @Column(name = "ma_giao_dich", length = 100)
-    private String maGiaoDich;
+        /** MÃ£ giao dá»‹ch ná»™i bá»™ hoáº·c tá»« cá»•ng thanh toÃ¡n. */
+        @Column(name = "ma_giao_dich", length = 100)
+        private String maGiaoDich;
 
-    /**
-     * Trạng thái giao dịch (DEFAULT 'cho').
-     * Giá trị hợp lệ: "cho" | "thanh_cong" | "that_bai"
-     */
-    @Column(name = "trang_thai", nullable = false, length = 15)
-    @Builder.Default
-    private String trangThai = "cho";
+        /**
+         * Tráº¡ng thÃ¡i giao dá»‹ch (DEFAULT 'cho').
+         * GiÃ¡ trá»‹ há»£p lá»‡: "cho" | "thanh_cong" | "that_bai" | "da_hoan_tien"
+         */
+        @Column(name = "trang_thai", nullable = false, length = 15)
+        @Builder.Default
+        private String trangThai = "cho";
 
-    /** Thời điểm tạo bản ghi thanh toán. */
-    @Column(name = "thoi_gian_tao", nullable = false, updatable = false)
-    @Builder.Default
-    private LocalDateTime thoiGianTao = LocalDateTime.now();
+        /** Thá»i Ä‘iá»ƒm táº¡o báº£n ghi thanh toÃ¡n. */
+        @Column(name = "thoi_gian_tao", nullable = false, updatable = false)
+        @Builder.Default
+        private LocalDateTime thoiGianTao = LocalDateTime.now();
 
-    /** Thời điểm thanh toán thành công (NULL nếu chưa thành công). */
-    @Column(name = "thoi_gian_thanh_cong")
-    private LocalDateTime thoiGianThanhCong;
+        /** Thá»i Ä‘iá»ƒm thanh toÃ¡n thÃ nh cÃ´ng (NULL náº¿u chÆ°a thÃ nh cÃ´ng). */
+        @Column(name = "thoi_gian_thanh_cong")
+        private LocalDateTime thoiGianThanhCong;
 
-    // -------------------------------------------------------------------------
-    // THÔNG TIN VNPAY
-    // -------------------------------------------------------------------------
+        // -------------------------------------------------------------------------
+        // THÃ”NG TIN VNPAY
+        // -------------------------------------------------------------------------
 
-    /** Mã tham chiếu giao dịch do hệ thống tạo, gửi sang VNPay. UNIQUE khi NOT NULL. */
-    @Column(name = "vnp_txn_ref", length = 100)
-    private String vnpTxnRef;
+        /**
+         * MÃ£ tham chiáº¿u giao dá»‹ch do há»‡ thá»‘ng táº¡o, gá»­i sang VNPay. UNIQUE khi NOT NULL.
+         */
+        @Column(name = "vnp_txn_ref", length = 100)
+        private String vnpTxnRef;
 
-    /** Mã giao dịch do VNPay cấp sau khi thanh toán thành công. */
-    @Column(name = "vnp_transaction_no", length = 100)
-    private String vnpTransactionNo;
+        /** MÃ£ giao dá»‹ch do VNPay cáº¥p sau khi thanh toÃ¡n thÃ nh cÃ´ng. */
+        @Column(name = "vnp_transaction_no", length = 100)
+        private String vnpTransactionNo;
 
-    /** Mã phản hồi từ VNPay (00 = thành công). */
-    @Column(name = "vnp_response_code", length = 10)
-    private String vnpResponseCode;
+        /** MÃ£ pháº£n há»“i tá»« VNPay (00 = thÃ nh cÃ´ng). */
+        @Column(name = "vnp_response_code", length = 10)
+        private String vnpResponseCode;
 
-    /** Mã ngân hàng khách dùng để thanh toán qua VNPay. */
-    @Column(name = "vnp_bank_code", length = 20)
-    private String vnpBankCode;
+        /** MÃ£ ngÃ¢n hÃ ng khÃ¡ch dÃ¹ng Ä‘á»ƒ thanh toÃ¡n qua VNPay. */
+        @Column(name = "vnp_bank_code", length = 20)
+        private String vnpBankCode;
 
-    /** Mã giao dịch tại ngân hàng. */
-    @Column(name = "vnp_bank_tran_no", length = 100)
-    private String vnpBankTranNo;
+        /** MÃ£ giao dá»‹ch táº¡i ngÃ¢n hÃ ng. */
+        @Column(name = "vnp_bank_tran_no", length = 100)
+        private String vnpBankTranNo;
 
-    /** Loại thẻ/tài khoản khách dùng (ví dụ: ATM, QRCODE). */
-    @Column(name = "vnp_card_type", length = 20)
-    private String vnpCardType;
+        /** Loáº¡i tháº»/tÃ i khoáº£n khÃ¡ch dÃ¹ng (vÃ­ dá»¥: ATM, QRCODE). */
+        @Column(name = "vnp_card_type", length = 20)
+        private String vnpCardType;
 
-    /** Thời điểm thanh toán theo VNPay (định dạng yyyyMMddHHmmss). */
-    @Column(name = "vnp_pay_date", length = 20)
-    private String vnpPayDate;
+        /** Thá»i Ä‘iá»ƒm thanh toÃ¡n theo VNPay (Ä‘á»‹nh dáº¡ng yyyyMMddHHmmss). */
+        @Column(name = "vnp_pay_date", length = 20)
+        private String vnpPayDate;
 
-    /** Chữ ký bảo mật VNPay gửi về trong IPN để xác thực tính toàn vẹn. */
-    @Column(name = "vnp_secure_hash", length = 256)
-    private String vnpSecureHash;
+        /** Chá»¯ kÃ½ báº£o máº­t VNPay gá»­i vá» trong IPN Ä‘á»ƒ xÃ¡c thá»±c tÃ­nh toÃ n váº¹n. */
+        @Column(name = "vnp_secure_hash", length = 256)
+        private String vnpSecureHash;
 
-    /**
-     * JSON gốc VNPay gửi về qua IPN (dùng để debug khi cần).
-     * NULL với COD / Chuyển khoản.
-     */
-    @Column(name = "raw_ipn", columnDefinition = "NVARCHAR(MAX)")
-    private String rawIpn;
+        /**
+         * JSON gá»‘c VNPay gá»­i vá» qua IPN (dÃ¹ng Ä‘á»ƒ debug khi cáº§n).
+         * NULL vá»›i COD / Chuyá»ƒn khoáº£n.
+         */
+        @Column(name = "raw_ipn", columnDefinition = "NVARCHAR(MAX)")
+        private String rawIpn;
 }

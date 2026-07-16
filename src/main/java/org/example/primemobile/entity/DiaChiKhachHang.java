@@ -4,26 +4,26 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * Entity mapping bảng dia_chi_khach_hang (Module 5: Địa chỉ khách hàng).
+ * Entity mapping báº£ng dia_chi_khach_hang (Module 5: Äá»‹a chá»‰ khÃ¡ch hÃ ng).
  * <p>
- * Lưu danh sách địa chỉ giao hàng của một khách hàng.
- * Mỗi địa chỉ lưu 2 nhóm thông tin song song phục vụ 2 mục đích khác nhau:
+ * LÆ°u danh sÃ¡ch Ä‘á»‹a chá»‰ giao hÃ ng cá»§a má»™t khÃ¡ch hÃ ng.
+ * Má»—i Ä‘á»‹a chá»‰ lÆ°u 2 nhÃ³m thÃ´ng tin song song phá»¥c vá»¥ 2 má»¥c Ä‘Ã­ch khÃ¡c nhau:
  * <p>
- * <b>Nhóm 1 – ID địa chỉ (dùng để gọi API GHN tính phí ship):</b>
+ * <b>NhÃ³m 1 â€“ ID Ä‘á»‹a chá»‰ (dÃ¹ng Ä‘á»ƒ gá»i API GHN tÃ­nh phÃ­ ship):</b>
  * {@code tinh_thanh_id}, {@code quan_huyen_id}, {@code phuong_xa_code}
  * <p>
- * <b>Nhóm 2 – Tên địa chỉ (dùng để hiển thị UI ngay lập tức, không cần gọi API):</b>
+ * <b>NhÃ³m 2 â€“ TÃªn Ä‘á»‹a chá»‰ (dÃ¹ng Ä‘á»ƒ hiá»ƒn thá»‹ UI ngay láº­p tá»©c, khÃ´ng cáº§n gá»i API):</b>
  * {@code tinh_thanh_ten}, {@code quan_huyen_ten}, {@code phuong_xa_ten}
  * <p>
- * Ghi chú GHN (system_rules.md §6):
- *  - Chỉ dùng API đọc (tính phí, leadtime), KHÔNG gọi API tạo đơn vận chuyển.
- *  - Mọi lời gọi HTTP sang GHN bắt buộc bọc trong try-catch, fallback về phí = 0.
+ * Ghi chÃº GHN (system_rules.md Â§6):
+ *  - Chá»‰ dÃ¹ng API Ä‘á»c (tÃ­nh phÃ­, leadtime), KHÃ”NG gá»i API táº¡o Ä‘Æ¡n váº­n chuyá»ƒn.
+ *  - Má»i lá»i gá»i HTTP sang GHN báº¯t buá»™c bá»c trong try-catch, fallback vá» phÃ­ = 0.
  * <p>
- * Loại địa chỉ hợp lệ (CHECK chk_dc_loai):
+ * Loáº¡i Ä‘á»‹a chá»‰ há»£p lá»‡ (CHECK chk_dc_loai):
  *  "nha_rieng" | "co_quan" | "khac"
  * <p>
- * Quan hệ:
- *  - N:1 với {@link KhachHang} (FK khach_hang_id, ON DELETE CASCADE)
+ * Quan há»‡:
+ *  - N:1 vá»›i {@link KhachHang} (FK khach_hang_id, ON DELETE CASCADE)
  */
 @Entity
 @Table(name = "dia_chi_khach_hang")
@@ -31,6 +31,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class DiaChiKhachHang {
 
     @Id
@@ -38,8 +39,8 @@ public class DiaChiKhachHang {
     private Integer id;
 
     /**
-     * Khách hàng sở hữu địa chỉ này.
-     * ON DELETE CASCADE – xóa khách hàng thì địa chỉ tự xóa theo.
+     * KhÃ¡ch hÃ ng sá»Ÿ há»¯u Ä‘á»‹a chá»‰ nÃ y.
+     * ON DELETE CASCADE â€“ xÃ³a khÃ¡ch hÃ ng thÃ¬ Ä‘á»‹a chá»‰ tá»± xÃ³a theo.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -50,69 +51,69 @@ public class DiaChiKhachHang {
     private KhachHang khachHang;
 
     /**
-     * Loại địa chỉ (DEFAULT 'nha_rieng').
-     * Giá trị hợp lệ: "nha_rieng" | "co_quan" | "khac"
+     * Loáº¡i Ä‘á»‹a chá»‰ (DEFAULT 'nha_rieng').
+     * GiÃ¡ trá»‹ há»£p lá»‡: "nha_rieng" | "co_quan" | "khac"
      */
     @Column(name = "loai_dia_chi", nullable = false, length = 15)
     @Builder.Default
     private String loaiDiaChi = "nha_rieng";
 
-    /** Tên người nhận hàng tại địa chỉ này. */
+    /** TÃªn ngÆ°á»i nháº­n hÃ ng táº¡i Ä‘á»‹a chá»‰ nÃ y. */
     @Column(name = "ho_ten_nguoi_nhan", length = 100)
     private String hoTenNguoiNhan;
 
-    /** Số điện thoại người nhận hàng. */
+    /** Sá»‘ Ä‘iá»‡n thoáº¡i ngÆ°á»i nháº­n hÃ ng. */
     @Column(name = "so_dien_thoai_nguoi_nhan", length = 20)
     private String soDienThoaiNguoiNhan;
 
-    /** Số nhà, tên đường, tòa nhà... (phần địa chỉ chi tiết). */
+    /** Sá»‘ nhÃ , tÃªn Ä‘Æ°á»ng, tÃ²a nhÃ ... (pháº§n Ä‘á»‹a chá»‰ chi tiáº¿t). */
     @Column(name = "dia_chi_chi_tiet", nullable = false, length = 255)
     private String diaChiChiTiet;
 
     // -------------------------------------------------------------------------
-    // NHÓM 1: ID địa chỉ – gửi sang API GHN để tính phí ship & leadtime
+    // NHÃ“M 1: ID Ä‘á»‹a chá»‰ â€“ gá»­i sang API GHN Ä‘á»ƒ tÃ­nh phÃ­ ship & leadtime
     // -------------------------------------------------------------------------
 
     /**
-     * ID tỉnh/thành phố theo hệ thống GHN.
-     * Dùng cho API: /v2/shipping-order/fee và /v2/shipping-order/leadtime
+     * ID tá»‰nh/thÃ nh phá»‘ theo há»‡ thá»‘ng GHN.
+     * DÃ¹ng cho API: /v2/shipping-order/fee vÃ  /v2/shipping-order/leadtime
      */
     @Column(name = "tinh_thanh_id", nullable = false)
     private Integer tinhThanhId;
 
     /**
-     * ID quận/huyện theo hệ thống GHN.
+     * ID quáº­n/huyá»‡n theo há»‡ thá»‘ng GHN.
      */
     @Column(name = "quan_huyen_id", nullable = false)
     private Integer quanHuyenId;
 
     /**
-     * Mã phường/xã theo hệ thống GHN.
-     * Kiểu VARCHAR vì GHN dùng mã dạng chuỗi (ví dụ: "550113").
+     * MÃ£ phÆ°á»ng/xÃ£ theo há»‡ thá»‘ng GHN.
+     * Kiá»ƒu VARCHAR vÃ¬ GHN dÃ¹ng mÃ£ dáº¡ng chuá»—i (vÃ­ dá»¥: "550113").
      */
     @Column(name = "phuong_xa_code", nullable = false, length = 20)
     private String phuongXaCode;
 
     // -------------------------------------------------------------------------
-    // NHÓM 2: Tên địa chỉ – hiển thị ngay trên UI, không cần gọi thêm API
+    // NHÃ“M 2: TÃªn Ä‘á»‹a chá»‰ â€“ hiá»ƒn thá»‹ ngay trÃªn UI, khÃ´ng cáº§n gá»i thÃªm API
     // -------------------------------------------------------------------------
 
-    /** Tên tỉnh/thành phố để hiển thị (ví dụ: "TP. Hồ Chí Minh"). */
+    /** TÃªn tá»‰nh/thÃ nh phá»‘ Ä‘á»ƒ hiá»ƒn thá»‹ (vÃ­ dá»¥: "TP. Há»“ ChÃ­ Minh"). */
     @Column(name = "tinh_thanh_ten", nullable = false, length = 100)
     private String tinhThanhTen;
 
-    /** Tên quận/huyện để hiển thị (ví dụ: "Quận 1"). */
+    /** TÃªn quáº­n/huyá»‡n Ä‘á»ƒ hiá»ƒn thá»‹ (vÃ­ dá»¥: "Quáº­n 1"). */
     @Column(name = "quan_huyen_ten", nullable = false, length = 100)
     private String quanHuyenTen;
 
-    /** Tên phường/xã để hiển thị (ví dụ: "Phường Bến Nghé"). */
+    /** TÃªn phÆ°á»ng/xÃ£ Ä‘á»ƒ hiá»ƒn thá»‹ (vÃ­ dá»¥: "PhÆ°á»ng Báº¿n NghÃ©"). */
     @Column(name = "phuong_xa_ten", nullable = false, length = 100)
     private String phuongXaTen;
 
     /**
-     * Đánh dấu đây là địa chỉ mặc định của khách hàng (DEFAULT false).
-     * Mỗi khách hàng chỉ nên có 1 địa chỉ mặc định.
-     * Logic đảm bảo duy nhất 1 mac_dinh = true phải được xử lý tại Service Layer.
+     * ÄÃ¡nh dáº¥u Ä‘Ã¢y lÃ  Ä‘á»‹a chá»‰ máº·c Ä‘á»‹nh cá»§a khÃ¡ch hÃ ng (DEFAULT false).
+     * Má»—i khÃ¡ch hÃ ng chá»‰ nÃªn cÃ³ 1 Ä‘á»‹a chá»‰ máº·c Ä‘á»‹nh.
+     * Logic Ä‘áº£m báº£o duy nháº¥t 1 mac_dinh = true pháº£i Ä‘Æ°á»£c xá»­ lÃ½ táº¡i Service Layer.
      */
     @Column(name = "mac_dinh", nullable = false)
     @Builder.Default

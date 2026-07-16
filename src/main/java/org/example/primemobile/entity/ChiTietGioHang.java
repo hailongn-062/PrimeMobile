@@ -6,23 +6,23 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * Entity mapping bảng chi_tiet_gio_hang (Module 6: Giỏ hàng).
+ * Entity mapping báº£ng chi_tiet_gio_hang (Module 6: Giá» hÃ ng).
  * <p>
- * Mỗi dòng = 1 SKU được thêm vào giỏ với số lượng cụ thể.
- * Ràng buộc UNIQUE (gio_hang_id, bien_the_san_pham_id) đảm bảo
- * cùng 1 SKU chỉ xuất hiện 1 lần trong 1 giỏ hàng.
- * Khi khách thêm cùng SKU lần 2, Service Layer phải UPDATE số lượng,
- * không INSERT bản ghi mới.
+ * Má»—i dÃ²ng = 1 SKU Ä‘Æ°á»£c thÃªm vÃ o giá» vá»›i sá»‘ lÆ°á»£ng cá»¥ thá»ƒ.
+ * RÃ ng buá»™c UNIQUE (gio_hang_id, bien_the_san_pham_id) Ä‘áº£m báº£o
+ * cÃ¹ng 1 SKU chá»‰ xuáº¥t hiá»‡n 1 láº§n trong 1 giá» hÃ ng.
+ * Khi khÃ¡ch thÃªm cÃ¹ng SKU láº§n 2, Service Layer pháº£i UPDATE sá»‘ lÆ°á»£ng,
+ * khÃ´ng INSERT báº£n ghi má»›i.
  * <p>
- * Quan hệ:
- *  - N:1 với {@link GioHang}        (FK gio_hang_id, ON DELETE CASCADE)
- *  - N:1 với {@link BienTheSanPham} (FK bien_the_san_pham_id)
+ * Quan há»‡:
+ *  - N:1 vá»›i {@link GioHang}        (FK gio_hang_id, ON DELETE CASCADE)
+ *  - N:1 vá»›i {@link BienTheSanPham} (FK bien_the_san_pham_id)
  */
 @Entity
 @Table(
         name = "chi_tiet_gio_hang",
         uniqueConstraints = {
-                // Mỗi SKU chỉ xuất hiện 1 lần trong 1 giỏ hàng
+                // Má»—i SKU chá»‰ xuáº¥t hiá»‡n 1 láº§n trong 1 giá» hÃ ng
                 @UniqueConstraint(name = "uq_ctgh", columnNames = {"gio_hang_id", "bien_the_san_pham_id"})
         }
 )
@@ -30,6 +30,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class ChiTietGioHang {
 
     @Id
@@ -37,8 +38,8 @@ public class ChiTietGioHang {
     private Integer id;
 
     /**
-     * Giỏ hàng chứa dòng này.
-     * ON DELETE CASCADE – xóa giỏ hàng thì chi tiết tự xóa theo.
+     * Giá» hÃ ng chá»©a dÃ²ng nÃ y.
+     * ON DELETE CASCADE â€“ xÃ³a giá» hÃ ng thÃ¬ chi tiáº¿t tá»± xÃ³a theo.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -49,7 +50,7 @@ public class ChiTietGioHang {
     private GioHang gioHang;
 
     /**
-     * Biến thể sản phẩm (SKU) được thêm vào giỏ.
+     * Biáº¿n thá»ƒ sáº£n pháº©m (SKU) Ä‘Æ°á»£c thÃªm vÃ o giá».
      * NOT NULL.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -61,14 +62,14 @@ public class ChiTietGioHang {
     private BienTheSanPham bienTheSanPham;
 
     /**
-     * Số lượng sản phẩm trong giỏ (DEFAULT 1).
-     * CHECK constraint ở DB: so_luong > 0.
+     * Sá»‘ lÆ°á»£ng sáº£n pháº©m trong giá» (DEFAULT 1).
+     * CHECK constraint á»Ÿ DB: so_luong > 0.
      */
     @Column(name = "so_luong", nullable = false)
     @Builder.Default
     private Integer soLuong = 1;
 
-    /** Thời điểm thêm vào giỏ hàng. */
+    /** Thá»i Ä‘iá»ƒm thÃªm vÃ o giá» hÃ ng. */
     @Column(name = "ngay_them", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime ngayThem = LocalDateTime.now();

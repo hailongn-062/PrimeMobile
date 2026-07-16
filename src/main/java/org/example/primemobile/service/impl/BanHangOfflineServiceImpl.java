@@ -30,7 +30,7 @@ import java.util.Optional;
  * <li><b>Safety Stock Rule (§3.1):</b> Sau khi trừ bán, tồn kho Kho Tổng KHÔNG
  * được xuống dưới {@value #TON_KHO_TOI_THIEU} đơn vị / SKU.</li>
  * <li>Khi hoàn tất thanh toán tại quầy:
- * Trạng thái đơn → {@code "da_giao"}, thanh toán → {@code "da_thanh_toan"},
+ * Trạng thái đơn → {@code "da_hoan_thanh"}, thanh toán → {@code "da_thanh_toan"},
  * tồn kho bị trừ ngay lập tức.</li>
  * </ul>
  *
@@ -60,8 +60,6 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
         /** SĐT của tài khoản khách lẻ mặc định (system_rules.md §2.1). */
         private static final String SDT_KHACH_LE_MAC_DINH = "0000000000";
 
-        /** Loại kho phục vụ bán hàng offline. */
-        private static final String LOAI_KHO_TONG = "kho_tong";
 
         /**
          * Trạng thái đơn hàng đang nháp, chờ xác nhận (khớp với CHECK constraint DB).
@@ -83,6 +81,8 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
         private final KhoRepository khoRepository;
         private final TonKhoRepository tonKhoRepository;
         private final PhuongThucThanhToanRepository phuongThucThanhToanRepository;
+        private final MayDienThoaiRepository mayDienThoaiRepository;
+        private final ChuongTrinhKhuyenMaiRepository ctkmRepository;
 
         // Service được inject để lấy thông tin biến thể SKU
         private final IBienTheSanPhamService bienTheSanPhamService;
@@ -299,7 +299,7 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
          * <li>Validate đơn hàng đang ở {@code "cho_xac_nhan"} và có ít nhất 1 sản
          * phẩm.</li>
          * <li>Validate phương thức thanh toán tồn tại.</li>
-         * <li>Cập nhật trạng thái đơn hàng: {@code "da_giao"} + {@code "da_thanh_toan"}
+         * <li>Cập nhật trạng thái đơn hàng: {@code "da_hoan_thanh"} + {@code "da_thanh_toan"}
          * (Bán tại quầy = giao hàng tức thì theo system_rules.md §2.1).</li>
          * <li>Tạo bản ghi {@link ThanhToan} với {@code trang_thai = "thanh_cong"}.</li>
          * <li>Duyệt từng {@link ChiTietDonHang} → trừ tồn kho Kho Tổng thực tế.
@@ -320,7 +320,7 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
                                 .orElseThrow(() -> new EntityNotFoundException(
                                                 "Không tìm thấy đơn hàng có ID: " + donHangId));
 
-                if (!TRANG_THAI_CHO_THANH_TOAN.equals(donHang.getTrangThai())) {
+                if (!TRANG_THAI_CHO_THANH_TOAN.equals(donHang.getTrangThai()) && !"don_hang_cho".equals(donHang.getTrangThai())) {
                         throw new IllegalStateException(String.format(
                                         "Đơn hàng [%s] đang ở trạng thái '%s', không thể thanh toán.",
                                         donHang.getMaDonHang(), donHang.getTrangThai()));
@@ -389,11 +389,23 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
 
                 // ------------------------------------------------------------------
                 // Bước 5: Cập nhật trạng thái đơn hàng
-                // Bán tại quầy = giao hàng tức thì (system_rules.md §2.1)
+                // Bán tại quầy = giao hàng tức thì, đơn hàng hoàn thành (system_rules.md §2.1)
                 // ------------------------------------------------------------------
-                donHang.setTrangThai("da_giao");
+                // ------------------------------------------------------------------
+                donHang.setTrangThai("da_hoan_thanh");
                 donHang.setTrangThaiThanhToan("da_thanh_toan");
                 donHang.setNgayGiaoThucTe(now);
+                donHang.setUpdatedAt(now);
+                donHangRepository.save(donHang);
+                
+                // Chốt toàn bộ máy điện thoại của đơn này thành da_ban
+                List<MayDienThoai> imeiList = mayDienThoaiRepository.findByDonHangId(donHang.getId());
+                for (MayDienThoai may : imeiList) {
+                        may.setTinhTrang("da_ban");
+                        may.setNguoiGiu(null);
+                        may.setThoiGianGiu(null);
+                        mayDienThoaiRepository.save(may);
+                }
                 donHang.setUpdatedAt(now);
                 donHangRepository.save(donHang);
 
@@ -507,13 +519,13 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
         }
 
         /**
-         * Tìm Kho Tổng từ database theo loai = 'kho_tong'.
+         * Lấy kho duy nhất trong hệ thống (ID = 1).
          * Throw rõ ràng nếu chưa có dữ liệu khởi tạo kho trong DB.
          */
         private Kho timKhoTong() {
-                return khoRepository.findByLoai(LOAI_KHO_TONG)
+                return khoRepository.findById(1)
                                 .orElseThrow(() -> new EntityNotFoundException(
-                                                "Không tìm thấy Kho Tổng trong hệ thống. " +
+                                                "Không tìm thấy kho ID=1 trong hệ thống. " +
                                                                 "Vui lòng kiểm tra dữ liệu khởi tạo bảng kho."));
         }
 
@@ -544,5 +556,240 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
                 String datePart = LocalDateTime.now().format(MA_DON_DATE_FMT);
                 String randPart = String.format("%06d", System.currentTimeMillis() % 1_000_000L);
                 return "DH-" + datePart + "-" + randPart;
+        }
+
+        // =======================================================================
+        // ĐƠN HÀNG CHỜ (MODULE 7)
+        // =======================================================================
+
+        @Override
+        @Transactional
+        public DonHang luuDonHangCho(Integer donHangId, Integer nhanVienId, org.example.primemobile.dto.request.PosThanhToanRequest payload) {
+                log.info("[BanHangOffline] Lưu đơn hàng chờ — donHangId={}, nhanVienId={}", donHangId, nhanVienId);
+
+                DonHang donHang;
+                if (donHangId == null) {
+                        // Tạo đơn mới
+                        NguoiDung nhanVien = nguoiDungRepository.findById(nhanVienId)
+                                        .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy nhân viên"));
+
+                        KhachHang khachHang = Optional.ofNullable(payload.getKhachHangId())
+                                        .flatMap(khachHangRepository::findById)
+                                        .orElseGet(() -> khachHangRepository.findBySoDienThoai(SDT_KHACH_LE_MAC_DINH)
+                                                        .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Khách lẻ")));
+
+                        donHang = DonHang.builder()
+                                        .maDonHang(sinhMaDonHang())
+                                        .khachHang(khachHang)
+                                        .nguoiXuLy(nhanVien)
+                                        .kenhBan("tai_quay")
+                                        .ngayDat(LocalDateTime.now())
+                                        .tongTienHang(payload.getTongTien())
+                                        .tienGiamGia(payload.getTienGiam() != null ? payload.getTienGiam() : BigDecimal.ZERO)
+                                        .phiShip(BigDecimal.ZERO)
+                                        .trangThai("don_hang_cho")
+                                        .trangThaiThanhToan("chua_thanh_toan")
+                                        .updatedAt(LocalDateTime.now())
+                                        .build();
+                        
+                        if (payload.getCtkmId() != null) {
+                                ctkmRepository.findById(payload.getCtkmId()).ifPresent(donHang::setChuongTrinhKhuyenMai);
+                        }
+                        donHang = donHangRepository.save(donHang);
+                } else {
+                        // Cập nhật đơn hiện tại
+                        donHang = donHangRepository.findById(donHangId)
+                                        .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy đơn hàng id=" + donHangId));
+                        
+                        if (!"cho_xac_nhan".equals(donHang.getTrangThai()) && !"don_hang_cho".equals(donHang.getTrangThai())) {
+                                throw new IllegalStateException("Đơn hàng không ở trạng thái hợp lệ để lưu chờ");
+                        }
+
+                        KhachHang khachHang = Optional.ofNullable(payload.getKhachHangId())
+                                        .flatMap(khachHangRepository::findById)
+                                        .orElseGet(() -> khachHangRepository.findBySoDienThoai(SDT_KHACH_LE_MAC_DINH)
+                                                        .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Khách lẻ")));
+                        
+                        donHang.setKhachHang(khachHang);
+                        donHang.setTongTienHang(payload.getTongTien());
+                        donHang.setTienGiamGia(payload.getTienGiam() != null ? payload.getTienGiam() : BigDecimal.ZERO);
+                        donHang.setTrangThai("don_hang_cho");
+                        donHang.setTrangThaiThanhToan("chua_thanh_toan");
+                        donHang.setUpdatedAt(LocalDateTime.now());
+                        
+                        if (payload.getCtkmId() != null) {
+                                ctkmRepository.findById(payload.getCtkmId()).ifPresent(donHang::setChuongTrinhKhuyenMai);
+                        } else {
+                                donHang.setChuongTrinhKhuyenMai(null);
+                        }
+                        
+                        // Clear chi tiết cũ (upsert mới theo payload)
+                        chiTietDonHangRepository.deleteAll(donHang.getChiTietDonHangs());
+                        donHang.getChiTietDonHangs().clear();
+                        
+                        // Giải phóng IMEI cũ nếu có (hoàn trả về trong_kho)
+                        List<MayDienThoai> oldImeis = mayDienThoaiRepository.findByDonHangId(donHangId);
+                        for (MayDienThoai may : oldImeis) {
+                                may.setTinhTrang("trong_kho");
+                                may.setNguoiGiu(null);
+                                may.setThoiGianGiu(null);
+                                may.setDonHang(null);
+                                mayDienThoaiRepository.save(may);
+                        }
+                        
+                        donHang = donHangRepository.save(donHang);
+                }
+
+                // Lưu chi tiết và khóa IMEI
+                if (payload.getChiTiets() != null) {
+                        for (org.example.primemobile.dto.request.PosThanhToanRequest.ChiTietPosRequest ct : payload.getChiTiets()) {
+                                BienTheSanPham bienThe = bienTheSanPhamService.getBienTheSanPham(ct.getBienTheId());
+                                ChiTietDonHang chiTiet = ChiTietDonHang.builder()
+                                                .donHang(donHang)
+                                                .bienTheSanPham(bienThe)
+                                                .soLuong(ct.getSoLuong())
+                                                .donGiaBan(ct.getDonGia() != null ? ct.getDonGia() : bienThe.getGiaBan())
+                                                .build();
+                                chiTietDonHangRepository.save(chiTiet);
+                                donHang.getChiTietDonHangs().add(chiTiet);
+
+                                // Khóa IMEI (chuyển sang da_ban ngay lập tức)
+                                if (ct.getImeis() != null) {
+                                        for (String imei : ct.getImeis()) {
+                                                MayDienThoai may = mayDienThoaiRepository.findByImei1(imei.trim())
+                                                                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy IMEI: " + imei));
+                                                boolean hopLe = "trong_kho".equals(may.getTinhTrang()) || 
+                                                                ("dang_giu".equals(may.getTinhTrang()) && may.getNguoiGiu() != null && may.getNguoiGiu().getId().equals(nhanVienId));
+                                                if (!hopLe) {
+                                                        throw new IllegalArgumentException("IMEI [" + imei + "] không ở trạng thái hợp lệ để bán (có thể đang bị người khác giữ)");
+                                                }
+                                                may.setTinhTrang("dang_giu");
+                                                // (Vẫn giữ người giữ là nhân viên hiện tại nhưng có donHang != null)
+                                                may.setDonHang(donHang);
+                                                mayDienThoaiRepository.save(may);
+                                        }
+                                }
+                        }
+                }
+
+                return donHang;
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+        public List<DonHang> layDanhSachDonHangCho() {
+                // Lấy đơn của kênh bán tại quầy và có trạng thái don_hang_cho, sắp xếp mới nhất
+                return donHangRepository.findByKenhBanAndTrangThaiOrderByNgayDatDesc("tai_quay", "don_hang_cho");
+        }
+
+        @Override
+        @Transactional
+        public DonHang huyDonHangCho(Integer donHangId, String lyDoHuy) {
+                DonHang donHang = donHangRepository.findById(donHangId)
+                                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy đơn hàng id=" + donHangId));
+                
+                if (!"don_hang_cho".equals(donHang.getTrangThai())) {
+                        throw new IllegalStateException("Đơn hàng không ở trạng thái chờ");
+                }
+                
+                // Hoàn trả IMEI về trong_kho
+                List<MayDienThoai> imeiList = mayDienThoaiRepository.findByDonHangId(donHangId);
+                for (MayDienThoai may : imeiList) {
+                        may.setTinhTrang("trong_kho");
+                        may.setNguoiGiu(null);
+                        may.setThoiGianGiu(null);
+                        may.setDonHang(null); // Giải phóng khỏi đơn
+                        mayDienThoaiRepository.save(may);
+                }
+                
+                // Cập nhật trạng thái đơn
+                donHang.setTrangThai("da_huy");
+                donHang.setTrangThaiThanhToan("chua_thanh_toan");
+                donHang.setGhiChu(lyDoHuy);
+                donHang.setUpdatedAt(LocalDateTime.now());
+                
+                return donHangRepository.save(donHang);
+        }
+
+        @Override
+        @Transactional
+        public DonHang tiepTucDonHangCho(Integer donHangId) {
+                DonHang donHang = donHangRepository.findById(donHangId)
+                                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy đơn hàng id=" + donHangId));
+                
+                if (!"don_hang_cho".equals(donHang.getTrangThai())) {
+                        throw new IllegalStateException("Đơn hàng không ở trạng thái chờ");
+                }
+                
+                // Kiểm tra lại CTKM (còn hiệu lực không)
+                if (donHang.getChuongTrinhKhuyenMai() != null) {
+                        ChuongTrinhKhuyenMai ctkm = donHang.getChuongTrinhKhuyenMai();
+                        LocalDateTime now = LocalDateTime.now();
+                        if (!"dang_dien_ra".equals(ctkm.getTrangThai()) ||
+                                now.isBefore(ctkm.getNgayBatDau()) ||
+                                now.isAfter(ctkm.getNgayKetThuc())) {
+                                // CTKM không còn hiệu lực → bỏ khuyến mãi
+                                donHang.setChuongTrinhKhuyenMai(null);
+                                donHang.setTienGiamGia(BigDecimal.ZERO);
+                        }
+                }
+                
+                // Xoá việc đổi trạng thái sang cho_xac_nhan. Đơn hàng tiếp tục vẫn là đơn hàng chờ cho đến khi thanh toán xong.
+                return donHang;
+        }
+
+        // =======================================================================
+        // CART RESERVATION (MODULE POS)
+        // =======================================================================
+
+        @Override
+        @Transactional
+        public void giuImei(String imei, Integer nhanVienId) {
+                MayDienThoai may = mayDienThoaiRepository.findByImei1(imei.trim())
+                                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy IMEI: " + imei));
+                
+                if ("dang_giu".equals(may.getTinhTrang()) && may.getNguoiGiu() != null && may.getNguoiGiu().getId().equals(nhanVienId)) {
+                        // Đã giữ bởi chính nhân viên này rồi
+                        return;
+                }
+
+                if (!"trong_kho".equals(may.getTinhTrang())) {
+                        throw new IllegalStateException("IMEI đang không ở trạng thái trong_kho. Trạng thái hiện tại: " + may.getTinhTrang());
+                }
+
+                NguoiDung nhanVien = nguoiDungRepository.findById(nhanVienId)
+                                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy nhân viên"));
+
+                may.setTinhTrang("dang_giu");
+                may.setNguoiGiu(nhanVien);
+                may.setThoiGianGiu(LocalDateTime.now());
+                mayDienThoaiRepository.save(may);
+        }
+
+        @Override
+        @Transactional
+        public void nhaImei(String imei, Integer nhanVienId) {
+                MayDienThoai may = mayDienThoaiRepository.findByImei1(imei.trim())
+                                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy IMEI: " + imei));
+                
+                // Chỉ nhả nếu đang giữ và đúng nhân viên giữ (tránh nhả nhầm của người khác)
+                if ("dang_giu".equals(may.getTinhTrang()) && may.getNguoiGiu() != null && may.getNguoiGiu().getId().equals(nhanVienId)) {
+                        may.setTinhTrang("trong_kho");
+                        may.setNguoiGiu(null);
+                        may.setThoiGianGiu(null);
+                        mayDienThoaiRepository.save(may);
+                }
+        }
+
+        @Override
+        @Transactional
+        public void nhaTatCaImeiCuaNhanVien(Integer nhanVienId) {
+                List<MayDienThoai> dsMay = mayDienThoaiRepository.findByNguoiGiuIdAndDonHangIsNull(nhanVienId);
+                for (MayDienThoai may : dsMay) {
+                        may.setTinhTrang("trong_kho");
+                        may.setNguoiGiu(null);
+                        may.setThoiGianGiu(null);
+                        mayDienThoaiRepository.save(may);
+                }
         }
 }

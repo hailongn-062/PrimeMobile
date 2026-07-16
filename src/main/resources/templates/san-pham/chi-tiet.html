@@ -39,6 +39,17 @@
         .btn-buy:hover { background:#c2410c; color:#fff; }
         .pm-spec-table th { width:34%; color:#475569; font-weight:700; }
         .pm-empty { border:1px dashed #cbd5e1; border-radius:8px; padding:16px; color:#64748b; background:#fff; }
+        
+        .pm-option-btn { border: 1px solid var(--pm-line); border-radius: 8px; padding: 10px 16px; background: #fff; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        .pm-option-btn:hover:not(.disabled) { border-color: var(--pm-primary); }
+        .pm-option-btn.active { border-color: #ea580c; background: #fffaf0; color: #ea580c; }
+        .pm-option-btn.active::after { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; top: 0; right: 0; background: #ea580c; color: white; font-size: 10px; padding: 2px 4px; border-bottom-left-radius: 6px; }
+        .pm-option-btn.disabled { opacity: 0.5; background: #f8fafc; cursor: not-allowed; text-decoration: line-through; border-color: #e2e8f0; }
+        
+        .pm-color-info { display: flex; flex-direction: column; line-height: 1.3; }
+        .pm-color-name { font-size: 0.9rem; font-weight: 600; color: #0f172a; }
+        .pm-color-price { font-size: 0.8rem; font-weight: 500; color: #64748b; }
+        .pm-option-btn.active .pm-color-name, .pm-option-btn.active .pm-color-price { color: #ea580c; }
     </style>
 </head>
 <body>
@@ -79,79 +90,49 @@
                 <h1 class="h3 fw-bold mb-2" th:text="${sanPham.tenSanPham}">Tên sản phẩm</h1>
                 <p class="text-muted" th:if="${sanPham.moTaNgan != null and !#strings.isEmpty(sanPham.moTaNgan)}" th:text="${sanPham.moTaNgan}">Mô tả ngắn</p>
 
-                <!-- Hiển thị giá cho biến thể đầu tiên (mặc định) -->
-                <div th:if="${bienTheSanPhams != null and !#lists.isEmpty(bienTheSanPhams)}">
-                    <div th:with="firstBt=${bienTheSanPhams[0]}, giaSauKM=${giaSauKhuyenMaiTheoBienThe != null ? giaSauKhuyenMaiTheoBienThe[firstBt.id] : firstBt.giaBan}">
-                        <div class="mb-3">
-                            <span th:if="${giaSauKM != null and giaSauKM < firstBt.giaBan}" class="pm-price-old">
-                                <span th:text="${#numbers.formatDecimal(firstBt.giaBan, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
-                            </span>
-                            <span class="pm-price" th:text="${#numbers.formatDecimal(giaSauKM, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
-                        </div>
+                <!-- Container động cho biến thể -->
+                <div id="product-variants-container" class="d-none">
+                    <!-- Khu vực hiển thị giá chung -->
+                    <div class="mb-3">
+                        <span id="display-price-old" class="pm-price-old d-none"></span>
+                        <span id="display-price" class="pm-price"></span>
                     </div>
-                </div>
 
-                <h2 class="h6 fw-bold mb-2">Phiên bản</h2>
-                <div th:if="${bienTheSanPhams != null and !#lists.isEmpty(bienTheSanPhams)}">
-                    <div class="pm-variant"
-                         th:each="bt : ${bienTheSanPhams}"
-                         th:with="tonKho=${tonKhoTheoBienThe != null and tonKhoTheoBienThe[bt.id] != null ? tonKhoTheoBienThe[bt.id] : 0},
-                                  coTheBan=${soLuongCoTheBanTheoBienThe != null and soLuongCoTheBanTheoBienThe[bt.id] != null ? soLuongCoTheBanTheoBienThe[bt.id] : 0},
-                                  duocBan=${bt.trangThai == 'con_hang' and coTheBan > 0},
-                                  mau=${bt.maMauHex != null and !#strings.isEmpty(bt.maMauHex) ? bt.maMauHex : '#e5e7eb'},
-                                  giaSauKM=${giaSauKhuyenMaiTheoBienThe != null ? giaSauKhuyenMaiTheoBienThe[bt.id] : bt.giaBan}"
-                         th:classappend="${duocBan} ? '' : ' pm-variant-unavailable'">
+                    <!-- Khu vực Phiên bản (Dung lượng) -->
+                    <h2 class="h6 fw-bold mb-2">Phiên bản</h2>
+                    <div id="versions-container" class="d-flex flex-wrap gap-2 mb-3">
+                        <!-- Render by JS -->
+                    </div>
+
+                    <!-- Khu vực Màu sắc -->
+                    <h2 class="h6 fw-bold mb-2">Màu sắc</h2>
+                    <div id="colors-container" class="d-flex flex-wrap gap-2 mb-3">
+                        <!-- Render by JS -->
+                    </div>
+
+                    <!-- Khu vực Thông tin biến thể đã chọn (Stock, Buy Buttons) -->
+                    <div class="pm-variant mt-3" id="selected-variant-info">
                         <div class="d-flex flex-column flex-xl-row justify-content-between gap-3">
                             <div>
-                                <div class="fw-bold">
-                                    <span class="pm-color-dot me-1" th:style="'background-color:' + ${mau}"></span>
-                                    <span th:text="${bt.mauSac}">Màu</span>
-                                    <span class="text-muted" th:text="' · ' + ${bt.ramGb} + 'GB/' + ${bt.luuTruGb} + 'GB'"> · RAM/ROM</span>
+                                <div class="fw-bold" id="selected-variant-title">
+                                    <!-- Render by JS -->
                                 </div>
-                                <div class="small text-muted" th:text="${bt.maSku}">SKU</div>
-                                <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
-                                    <span class="pm-stock-badge pm-stock-in" th:if="${duocBan}">
-                                        <i class="fa fa-check-circle"></i> Còn hàng
-                                    </span>
-                                    <span class="pm-stock-badge pm-stock-out" th:unless="${duocBan}">
-                                        <i class="fa fa-times-circle"></i> Hết hàng
-                                    </span>
-                                    <span class="small text-muted" th:if="${duocBan}">
-                                        Có thể đặt: <strong th:text="${coTheBan}">0</strong>
-                                    </span>
-                                    <span class="small text-muted" th:unless="${duocBan}">
-                                        Chỉ bán khi tồn kho online lớn hơn <span th:text="${tonKhoToiThieuDeBan}">5</span>.
-                                    </span>
+                                <div class="small text-muted" id="selected-variant-sku">SKU</div>
+                                <div class="mt-2 d-flex flex-wrap gap-2 align-items-center" id="selected-variant-stock-status">
+                                    <!-- Render by JS -->
                                 </div>
                             </div>
-
-                            <div class="text-xl-end">
-                                <!-- Hiển thị giá sau khuyến mãi + giá gốc gạch ngang nếu có KM -->
-                                <div class="mb-2">
-                                    <span th:if="${giaSauKM != null and giaSauKM < bt.giaBan}" class="pm-price-old">
-                                        <span th:text="${#numbers.formatDecimal(bt.giaBan, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
-                                    </span>
-                                    <span class="fw-bold text-danger" style="font-size:1.2rem;"
-                                          th:text="${#numbers.formatDecimal(giaSauKM, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
-                                </div>
+                            <div class="text-xl-end d-flex flex-column justify-content-end align-items-xl-end">
                                 <div class="d-flex flex-wrap justify-content-xl-end align-items-center gap-2">
-                                    <div class="pm-qty" th:if="${duocBan}">
+                                    <div class="pm-qty" id="qty-container">
                                         <button type="button" title="Giảm số lượng" onclick="stepQty(this, -1)">-</button>
-                                        <input type="number" value="1" min="1" th:max="${coTheBan}" inputmode="numeric" aria-label="Số lượng">
+                                        <input type="number" value="1" min="1" id="qty-input" inputmode="numeric" aria-label="Số lượng">
                                         <button type="button" title="Tăng số lượng" onclick="stepQty(this, 1)">+</button>
                                     </div>
-                                    <button class="btn btn-pm btn-sm"
-                                            type="button"
-                                            th:attr="data-bien-the-id=${bt.id},data-max=${coTheBan}"
-                                            th:disabled="${!duocBan}"
-                                            onclick="addToCart(this, false)">
+                                    <button class="btn btn-pm btn-sm" id="btn-add-cart" type="button" onclick="addToCart(this, false)">
                                         <i class="fa fa-cart-plus me-1"></i> Thêm
                                     </button>
-                                    <button class="btn btn-buy btn-sm"
-                                            type="button"
-                                            th:attr="data-bien-the-id=${bt.id},data-max=${coTheBan}"
-                                            th:disabled="${!duocBan}"
-                                            onclick="addToCart(this, true)">
+                                    <button class="btn btn-buy btn-sm" id="btn-buy-now" type="button" onclick="addToCart(this, true)">
                                         <i class="fa fa-credit-card me-1"></i> Mua ngay
                                     </button>
                                 </div>
@@ -160,7 +141,7 @@
                     </div>
                 </div>
 
-                <div class="pm-empty" th:if="${bienTheSanPhams == null or #lists.isEmpty(bienTheSanPhams)}">
+                <div id="product-empty-message" class="pm-empty" th:if="${bienTheSanPhams == null or #lists.isEmpty(bienTheSanPhams)}">
                     Sản phẩm này chưa có phiên bản để bán.
                 </div>
             </div>
@@ -169,20 +150,22 @@
 
     <section class="pm-panel p-3 p-lg-4 mb-4">
         <h2 class="h5 fw-bold mb-3">Thông số kỹ thuật</h2>
-        <div class="table-responsive" th:if="${thongSoKyThuats != null and !#lists.isEmpty(thongSoKyThuats)}">
-            <table class="table table-striped align-middle pm-spec-table mb-0">
-                <tbody>
-                <tr th:each="ts : ${thongSoKyThuats}">
-                    <th>
-                        <span th:if="${ts.nhom != null and !#strings.isEmpty(ts.nhom)}" th:text="${ts.nhom} + ' · '">Nhóm · </span>
-                        <span th:text="${ts.tenThongSo}">Thông số</span>
-                    </th>
-                    <td th:text="${ts.giaTri}">Giá trị</td>
-                </tr>
-                </tbody>
-            </table>
+        <div th:if="${thongSoKyThuatGrouped != null and !#maps.isEmpty(thongSoKyThuatGrouped)}">
+            <div th:each="entry : ${thongSoKyThuatGrouped}" class="mb-4">
+                <h3 class="h6 fw-bold mb-3 text-dark" th:text="${entry.key}">Nhóm</h3>
+                <div class="border rounded bg-white overflow-hidden">
+                    <table class="table table-borderless mb-0 align-middle pm-spec-table">
+                        <tbody>
+                        <tr th:each="ts, iterStat : ${entry.value}" th:class="${!iterStat.last ? 'border-bottom' : ''}">
+                            <th class="fw-normal text-dark" style="width: 35%; padding: 12px 16px; background: #f8fafc;" th:text="${ts.tenThongSo}">Thông số</th>
+                            <td class="text-dark" style="padding: 12px 16px;" th:text="${ts.giaTri}">Giá trị</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-        <div class="pm-empty" th:if="${thongSoKyThuats == null or #lists.isEmpty(thongSoKyThuats)}">
+        <div class="pm-empty" th:if="${thongSoKyThuatGrouped == null or #maps.isEmpty(thongSoKyThuatGrouped)}">
             Chưa có thông số kỹ thuật cho sản phẩm này.
         </div>
     </section>
@@ -193,6 +176,9 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script th:inline="javascript">
     const currentCustomerId = /*[[${session.CURRENT_CUSTOMER != null ? session.CURRENT_CUSTOMER.khachHangId : null}]]*/ null;
+    const variantsDataRaw = /*[[${variantsJson}]]*/ null;
+    const variantsData = variantsDataRaw || [];
+    const minStock = /*[[${tonKhoToiThieuDeBan}]]*/ 5;
 
     function brandFallbackImage(img) {
         const text = `${img.dataset.brand || ''} ${img.alt || ''}`.toLowerCase();
@@ -244,6 +230,206 @@
         }
         return sessionId;
     }
+
+    // --- LOGIC XỬ LÝ BIẾN THỂ ĐỘNG ---
+    let selectedVersion = null;
+    let selectedColor = null;
+
+    function initVariants() {
+        if (!variantsData || variantsData.length === 0) return;
+        document.getElementById('product-variants-container').classList.remove('d-none');
+        const emptyMsg = document.getElementById('product-empty-message');
+        if (emptyMsg) emptyMsg.classList.add('d-none');
+
+        // Lấy danh sách Version (RAM/ROM) và Color độc nhất
+        const versions = [...new Set(variantsData.map(v => v.versionKey))];
+        
+        // Mặc định chọn version đầu tiên và màu đầu tiên khả dụng của version đó
+        if (versions.length > 0) {
+            selectedVersion = versions[0];
+            const availableColors = variantsData.filter(v => v.versionKey === selectedVersion).map(v => v.mauSac);
+            if (availableColors.length > 0) {
+                selectedColor = availableColors[0];
+            }
+        }
+        
+        renderVersionButtons();
+        renderColorButtons();
+        updateSelectedVariantUI();
+    }
+
+    function renderVersionButtons() {
+        const versions = [...new Set(variantsData.map(v => v.versionKey))];
+        const container = document.getElementById('versions-container');
+        container.innerHTML = '';
+        
+        versions.forEach(ver => {
+            // Kiểm tra xem version này có bất kỳ biến thể nào còn hàng không
+            const isAvailable = variantsData.some(v => v.versionKey === ver && v.trangThai === 'con_hang' && v.coTheBan > 0);
+            
+            const btn = document.createElement('div');
+            btn.className = `pm-option-btn ${selectedVersion === ver ? 'active' : ''} ${!isAvailable ? 'disabled' : ''}`;
+            btn.innerText = ver;
+            btn.onclick = () => {
+                selectedVersion = ver;
+                
+                // Khi đổi version, cần kiểm tra màu sắc đang chọn có khả dụng trong version mới không
+                const availableForNewVersion = variantsData.filter(v => v.versionKey === ver);
+                const colorStillExists = availableForNewVersion.some(v => v.mauSac === selectedColor);
+                if (!colorStillExists && availableForNewVersion.length > 0) {
+                    selectedColor = availableForNewVersion[0].mauSac; // Tự động nhảy sang màu khác
+                }
+                
+                renderVersionButtons();
+                renderColorButtons();
+                updateSelectedVariantUI();
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    function renderColorButtons() {
+        // Màu sắc hiển thị sẽ dựa trên version đang chọn
+        const allColors = [];
+        const colorMap = new Map();
+        
+        variantsData.forEach(v => {
+            if (!colorMap.has(v.mauSac)) {
+                colorMap.set(v.mauSac, v.maMauHex);
+                allColors.push({ name: v.mauSac, hex: v.maMauHex });
+            }
+        });
+
+        const container = document.getElementById('colors-container');
+        container.innerHTML = '';
+        
+        allColors.forEach(color => {
+            // Kiểm tra xem màu này CÓ trong version đang chọn không, và có CÒN HÀNG không
+            const variantForColor = variantsData.find(v => v.versionKey === selectedVersion && v.mauSac === color.name);
+            const isAvailable = variantForColor && variantForColor.trangThai === 'con_hang' && variantForColor.coTheBan > 0;
+            const doesNotExist = !variantForColor; // Màu này không sx cho version này
+
+            const btn = document.createElement('div');
+            btn.className = `pm-option-btn ${selectedColor === color.name ? 'active' : ''} ${(!isAvailable || doesNotExist) ? 'disabled' : ''}`;
+            
+            let priceHtml = '';
+            if (variantForColor) {
+                priceHtml = `<span class="pm-color-price">${formatCurrency(variantForColor.giaSauKM)}</span>`;
+            }
+
+            btn.innerHTML = `
+                <div class="pm-color-info">
+                    <span class="pm-color-name">${color.name}</span>
+                </div>
+            `;
+            
+            // Không cho click nếu không tồn tại, nhưng nếu hết hàng vẫn có thể click để xem (tùy nghiệp vụ, ở đây vẫn cho click)
+            if (!doesNotExist) {
+                btn.onclick = () => {
+                    selectedColor = color.name;
+                    renderColorButtons();
+                    updateSelectedVariantUI();
+                };
+            }
+            container.appendChild(btn);
+        });
+    }
+
+    function formatCurrency(num) {
+        if (!num) return '0₫';
+        return Number(num).toLocaleString('vi-VN') + '₫';
+    }
+
+    function updateSelectedVariantUI() {
+        const variant = variantsData.find(v => v.versionKey === selectedVersion && v.mauSac === selectedColor);
+        
+        const priceOldEl = document.getElementById('display-price-old');
+        const priceEl = document.getElementById('display-price');
+        const titleEl = document.getElementById('selected-variant-title');
+        const skuEl = document.getElementById('selected-variant-sku');
+        const stockEl = document.getElementById('selected-variant-stock-status');
+        
+        const btnAdd = document.getElementById('btn-add-cart');
+        const btnBuy = document.getElementById('btn-buy-now');
+        const qtyInput = document.getElementById('qty-input');
+        const qtyContainer = document.getElementById('qty-container');
+
+        if (!variant) {
+            priceEl.innerText = "Liên hệ";
+            priceOldEl.classList.add('d-none');
+            titleEl.innerHTML = "Phiên bản không tồn tại";
+            skuEl.innerText = "";
+            stockEl.innerHTML = "";
+            btnAdd.disabled = true;
+            btnBuy.disabled = true;
+            qtyContainer.style.display = 'none';
+            return;
+        }
+
+        // Đổi hình ảnh chính
+        if (variant.hinhAnh) {
+            const mainImg = document.querySelector('.pm-main-image img');
+            if (mainImg) mainImg.src = variant.hinhAnh;
+        }
+
+        // Cập nhật giá
+        priceEl.innerText = formatCurrency(variant.giaSauKM);
+        if (variant.giaSauKM < variant.giaBan) {
+            priceOldEl.innerText = formatCurrency(variant.giaBan);
+            priceOldEl.classList.remove('d-none');
+        } else {
+            priceOldEl.classList.add('d-none');
+        }
+
+        // Cập nhật thông tin text
+        titleEl.innerHTML = `<span class="pm-color-dot me-1" style="background-color:${variant.maMauHex}"></span> 
+                            <span>${variant.mauSac}</span> <span class="text-muted"> · ${variant.versionKey}</span>`;
+        skuEl.innerText = `SKU: ${variant.sku}`;
+
+        // Trạng thái tồn kho
+        const canBuy = variant.trangThai === 'con_hang' && variant.coTheBan > 0;
+        if (canBuy) {
+            stockEl.innerHTML = `
+                <span class="pm-stock-badge pm-stock-in"><i class="fa fa-check-circle"></i> Còn hàng</span>
+                <span class="small text-muted">Có thể đặt: <strong>${variant.coTheBan}</strong></span>
+            `;
+            qtyContainer.style.display = 'inline-grid';
+            qtyInput.max = variant.coTheBan;
+            if (Number(qtyInput.value) > variant.coTheBan) qtyInput.value = variant.coTheBan;
+            
+            btnAdd.disabled = false;
+            btnBuy.disabled = false;
+            btnAdd.dataset.bienTheId = variant.id;
+            btnAdd.dataset.max = variant.coTheBan;
+            btnBuy.dataset.bienTheId = variant.id;
+            btnBuy.dataset.max = variant.coTheBan;
+        } else {
+            stockEl.innerHTML = `
+                <span class="pm-stock-badge pm-stock-out"><i class="fa fa-times-circle"></i> Hết hàng</span>
+                <span class="small text-muted">Chỉ bán khi tồn kho lớn hơn ${minStock}.</span>
+            `;
+            qtyContainer.style.display = 'none';
+            btnAdd.disabled = true;
+            btnBuy.disabled = true;
+        }
+    }
+
+    // Khởi tạo giao diện
+    document.addEventListener("DOMContentLoaded", function() {
+        try {
+            initVariants();
+        } catch (e) {
+            console.error("Lỗi khởi tạo biến thể:", e);
+            const container = document.getElementById('product-variants-container');
+            if (container) {
+                container.classList.remove('d-none');
+                container.innerHTML = `<div class="alert alert-danger mt-3 fw-bold">
+                    <i class="fa fa-exclamation-triangle"></i> Lỗi xử lý JavaScript: ${e.message}<br>
+                    <small>Vui lòng chụp ảnh màn hình và báo lại cho Admin.</small>
+                </div>`;
+            }
+        }
+    });
 
     async function addToCart(button, buyNow) {
         let soLuong;

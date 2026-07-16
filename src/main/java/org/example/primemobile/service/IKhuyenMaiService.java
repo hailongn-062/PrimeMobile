@@ -1,7 +1,6 @@
 package org.example.primemobile.service;
 
 import org.example.primemobile.dto.KhuyenMaiResult;
-import org.example.primemobile.entity.ChiTietFlashSale;
 import org.example.primemobile.entity.ChuongTrinhKhuyenMai;
 import org.example.primemobile.entity.PhamViKhuyenMai;
 
@@ -11,11 +10,9 @@ import java.util.List;
 /**
  * Nghiệp vụ Khuyến Mãi cho PrimeMobile.
  *
- * 4 loại khuyến mãi (loai):
- * - "phan_tram" → Giảm % cơ bản theo thời gian
- * - "don_hang_toi_thieu" → Giảm % nếu tổng tiền >= donHangToiThieu
- * - "giam_gia_truc_tiep" → Giảm % cho sản phẩm cụ thể (PhamViKhuyenMai)
- * - "flash_sale" → Giảm % cho biến thể cụ thể theo khung giờ (ChiTietFlashSale)
+ * 2 loại khuyến mãi (loai):
+ * - "theo_don_hang" → Giảm % áp dụng cho toàn bộ đơn hàng (có thể kèm điều kiện donHangToiThieu)
+ * - "theo_san_pham"  → Giảm % cho sản phẩm cụ thể (PhamViKhuyenMai)
  */
 public interface IKhuyenMaiService {
 
@@ -38,25 +35,7 @@ public interface IKhuyenMaiService {
     /** Xóa mềm (đổi trạng thái) hoặc xóa hẳn 1 chương trình. */
     void xoa(Integer id);
 
-    // ── Sub-form: Flash Sale ───────────────────────────────────────────────
-
-    /** Lấy danh sách chi tiết Flash Sale theo ctkmId. */
-    List<ChiTietFlashSale> layChiTietFlashSale(Integer ctkmId);
-
-    /**
-     * Thêm biến thể vào Flash Sale.
-     *
-     * @param ctkmId         ID chương trình flash sale.
-     * @param bienTheId      ID biến thể sản phẩm.
-     * @param phanTramGiam   Phần trăm giảm (0-100).
-     * @param soLuongGioiHan Số lượng tối đa bán với giá flash.
-     */
-    void themChiTietFlashSale(Integer ctkmId, Integer bienTheId, BigDecimal phanTramGiam, Integer soLuongGioiHan);
-
-    /** Xóa 1 dòng chi tiết Flash Sale theo chiTietId. */
-    void xoaChiTietFlashSale(Integer chiTietId);
-
-    // ── Sub-form: Phạm vi áp dụng (giam_gia_truc_tiep) ────────────────────
+    // ── Sub-form: Phạm vi áp dụng (theo_san_pham) ────────────────────────
 
     /** Lấy danh sách phạm vi của 1 chương trình. */
     List<PhamViKhuyenMai> layPhamVi(Integer ctkmId);
@@ -79,8 +58,7 @@ public interface IKhuyenMaiService {
      *
      * <ul>
      * <li>Nếu đang {@code tam_dung}: tính lại trạng thái thực tế dựa vào thời gian
-     * hiện tại
-     * ({@code chua_bat_dau} / {@code dang_dien_ra} / {@code da_ket_thuc}).</li>
+     * hiện tại ({@code chua_bat_dau} / {@code dang_dien_ra} / {@code da_ket_thuc}).</li>
      * <li>Ngược lại: đặt thành {@code tam_dung}.</li>
      * </ul>
      *
@@ -96,22 +74,15 @@ public interface IKhuyenMaiService {
     // ── POS / Bán hàng tại quầy ────────────────────────────────────────────
 
     /**
-     * Tìm chương trình khuyến mãi mang lại số tiền giảm LỚN NHẤT cho đơn hàng.
+     * Tìm chương trình khuyến mãi loại {@code "theo_don_hang"} mang lại
+     * số tiền giảm LỚN NHẤT cho đơn hàng.
      *
      * <p>
      * Tiêu chí lọc:
      * <ul>
      * <li>Chỉ xét các CTKM có {@code trangThai = 'dang_dien_ra'}.</li>
-     * <li>Chỉ xét loại áp dụng toàn bộ đơn hàng:
-     * {@code "phan_tram"} hoặc {@code "don_hang_toi_thieu"}.</li>
+     * <li>Chỉ xét loại {@code "theo_don_hang"}.</li>
      * <li>Lọc bỏ nếu {@code donHangToiThieu} > {@code tongTienHang}.</li>
-     * </ul>
-     *
-     * <p>
-     * Công thức tính tiền giảm:
-     * <ul>
-     * <li>{@code "phan_tram"}: {@code tongTienHang × (giaTriUuDai / 100)}</li>
-     * <li>{@code "don_hang_toi_thieu"}: {@code tongTienHang × (giaTriUuDai / 100)}</li>
      * </ul>
      *
      * @param tongTienHang Tổng tiền hàng của đơn (chưa giảm, chưa cộng phí ship).
@@ -126,21 +97,14 @@ public interface IKhuyenMaiService {
      * các chương trình khuyến mãi đang diễn ra.
      *
      * <p>
-     * Thứ tự ưu tiên áp dụng khuyến mãi (theo system_rules.md §5):
+     * Thứ tự ưu tiên áp dụng khuyến mãi:
      * <ol>
-     * <li><b>Flash Sale</b> – áp dụng cho biến thể cụ thể trong khung giờ
-     * và còn số lượng.</li>
-     * <li><b>Giảm giá trực tiếp</b> – áp dụng cho sản phẩm thông qua
-     * {@code pham_vi_khuyen_mai}.</li>
-     * <li><b>Phần trăm</b> hoặc <b>Đơn hàng tối thiểu</b> – áp dụng cho
-     * toàn đơn, cần {@code tongTienHang} để kiểm tra điều kiện.</li>
+     * <li><b>Theo sản phẩm</b> – áp dụng cho sản phẩm thông qua
+     * {@code pham_vi_khuyen_mai} (loai = 'theo_san_pham').</li>
+     * <li><b>Theo đơn hàng</b> – áp dụng cho toàn đơn,
+     * cần {@code tongTienHang} để kiểm tra điều kiện.</li>
      * </ol>
      * Nếu không có khuyến mãi nào phù hợp, trả về giá gốc ({@code giaBan}).
-     *
-     * <p>
-     * Lưu ý: Đối với loại {@code "don_hang_toi_thieu"}, cần truyền
-     * {@code tongTienHang} để kiểm tra ngưỡng. Nếu truyền {@code null},
-     * loại này sẽ bị bỏ qua.
      *
      * @param bienTheId    ID của biến thể sản phẩm (SKU) cần tính giá.
      * @param tongTienHang Tổng tiền hàng của đơn (có thể {@code null}
@@ -152,8 +116,7 @@ public interface IKhuyenMaiService {
     // ── Tính khuyến mãi cho đơn hàng (dùng chung Online & POS) ────────────
 
     /**
-     * Tính khuyến mãi tốt nhất cho một đơn hàng dựa trên tổng tiền hàng gốc.
-     * Chỉ áp dụng các CTKM loại toàn đơn: 'phan_tram' và 'don_hang_toi_thieu'.
+     * Tính khuyến mãi tốt nhất loại {@code "theo_don_hang"} cho một đơn hàng.
      * Trả về kết quả gồm CTKM được chọn và số tiền giảm.
      *
      * <p>

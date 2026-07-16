@@ -59,7 +59,7 @@ public interface IBanHangOfflineService {
      * <p>
      * Thao tác theo thứ tự trong 1 transaction:
      * <ol>
-     *   <li>Cập nhật {@code trang_thai} đơn hàng → {@code "da_giao"} (giao ngay tại quầy).</li>
+     *   <li>Cập nhật {@code trang_thai} đơn hàng → {@code "da_hoan_thanh"} (giao ngay tại quầy).</li>
      *   <li>Cập nhật {@code trang_thai_thanh_toan} → {@code "da_thanh_toan"}.</li>
      *   <li>Tạo bản ghi {@link org.example.primemobile.entity.ThanhToan} với
      *       {@code trang_thai = "thanh_cong"}, {@code so_tien = tong_thanh_toan}.</li>
@@ -95,4 +95,61 @@ public interface IBanHangOfflineService {
      * @throws IllegalStateException Nếu đơn hàng không ở trạng thái có thể sửa.
      */
     DonHang capNhatKhachHangChoDon(Integer donHangId, Integer khachHangId);
+
+    /**
+     * Lưu đơn hàng hiện tại thành đơn chờ (trạng thái don_hang_cho).
+     * Nếu donHangId null → tạo mới đơn chờ (dùng dữ liệu giỏ hàng hiện tại).
+     * Nếu donHangId != null → cập nhật đơn chờ đã tồn tại.
+     * Khi lưu: IMEI được đổi sang da_ban ngay lập tức (khóa IMEI).
+     *
+     * @param donHangId  ID đơn hàng cần lưu (có thể null)
+     * @param nhanVienId ID nhân viên tạo đơn (nếu tạo mới)
+     * @param payload    Dữ liệu giỏ hàng, khách hàng, khuyến mãi
+     * @return DonHang đã được lưu với trạng thái don_hang_cho
+     */
+    DonHang luuDonHangCho(Integer donHangId, Integer nhanVienId, org.example.primemobile.dto.request.PosThanhToanRequest payload);
+
+    /**
+     * Lấy danh sách tất cả đơn hàng chờ (kênh tai_quay, trạng thái don_hang_cho).
+     * Sắp xếp mới nhất lên đầu.
+     */
+    java.util.List<DonHang> layDanhSachDonHangCho();
+
+    /**
+     * Hủy đơn hàng chờ.
+     * - Đổi trạng thái don_hang_cho → da_huy
+     * - Trạng thái thanh toán → chua_thanh_toan
+     * - Ghi lý do hủy vào ghiChu
+     * - Hoàn trả IMEI về trạng thái trong_kho (vì đã khóa trước đó)
+     *
+     * @param donHangId ID đơn chờ cần hủy
+     * @param lyDoHuy   Lý do hủy
+     * @return DonHang sau khi hủy
+     */
+    DonHang huyDonHangCho(Integer donHangId, String lyDoHuy);
+
+    /**
+     * Tiếp tục đơn hàng chờ.
+     * - Đổi trạng thái don_hang_cho → cho_xac_nhan
+     * - Load lại dữ liệu để nhân viên chỉnh sửa và thanh toán.
+     *
+     * @param donHangId ID đơn chờ cần tiếp tục
+     * @return DonHang đã chuyển về cho_xac_nhan
+     */
+    DonHang tiepTucDonHangCho(Integer donHangId);
+
+    /**
+     * Giữ (lock) 1 IMEI khi nhân viên chọn vào giỏ hàng.
+     */
+    void giuImei(String imei, Integer nhanVienId);
+
+    /**
+     * Nhả (unlock) 1 IMEI khỏi giỏ hàng.
+     */
+    void nhaImei(String imei, Integer nhanVienId);
+
+    /**
+     * Nhả toàn bộ IMEI mà nhân viên đang giữ (khi đóng trình duyệt/hủy toàn bộ).
+     */
+    void nhaTatCaImeiCuaNhanVien(Integer nhanVienId);
 }

@@ -170,8 +170,6 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
         if (bienTheMoi.getLoaiLuuTru() != null && !bienTheMoi.getLoaiLuuTru().isBlank()) {
             existing.setLoaiLuuTru(bienTheMoi.getLoaiLuuTru());
         }
-        if (bienTheMoi.getGiaNhap() != null)
-            existing.setGiaNhap(bienTheMoi.getGiaNhap());
         if (bienTheMoi.getGiaBan() != null)
             existing.setGiaBan(bienTheMoi.getGiaBan());
         existing.setTrongLuongGram(bienTheMoi.getTrongLuongGram());

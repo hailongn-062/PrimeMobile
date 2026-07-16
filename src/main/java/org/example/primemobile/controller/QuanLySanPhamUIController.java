@@ -125,6 +125,27 @@ public class QuanLySanPhamUIController {
         return "redirect:/admin/san-pham/" + sanPhamId + "/chi-tiet";
     }
 
+    public record BienTheDto(Integer sanPhamId, String maSku, String mauSac, Integer ramGb, Integer luuTruGb, java.math.BigDecimal giaBan) {}
+
+    @PostMapping("/bien-the/save-multiple")
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<?> saveMultipleBienThe(@RequestBody java.util.List<BienTheDto> dtoList) {
+        try {
+            for (BienTheDto dto : dtoList) {
+                BienTheSanPham bt = new BienTheSanPham();
+                bt.setMaSku(dto.maSku());
+                bt.setMauSac(dto.mauSac());
+                bt.setRamGb(dto.ramGb());
+                bt.setLuuTruGb(dto.luuTruGb());
+                bt.setGiaBan(dto.giaBan());
+                bienTheSanPhamService.them(dto.sanPhamId(), bt);
+            }
+            return org.springframework.http.ResponseEntity.ok().body(java.util.Map.of("success", true));
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
     @GetMapping("/bien-the/{id}/hinh-anh")
     public String hinhAnhBienThe(@PathVariable("id") Integer id, Model model) {
         BienTheSanPham bienThe = bienTheSanPhamService.getBienTheSanPham(id);

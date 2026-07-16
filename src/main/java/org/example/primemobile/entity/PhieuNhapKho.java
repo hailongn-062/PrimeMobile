@@ -9,22 +9,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entity mapping bảng phieu_nhap_kho (Module 3: Kho hàng).
+ * Entity mapping báº£ng phieu_nhap_kho (Module 3: Kho hÃ ng).
  * <p>
- * Ghi nhận nghiệp vụ nhập hàng từ Nhà cung cấp vào Kho Tổng.
- * Khi phiếu nhập có trạng thái 'hoan_thanh', Service Layer phải tự động
- * cộng số lượng vào bảng ton_kho của kho_tong tương ứng.
+ * Ghi nháº­n nghiá»‡p vá»¥ nháº­p hÃ ng tá»« NhÃ  cung cáº¥p vÃ o Kho Tá»•ng.
+ * Khi phiáº¿u nháº­p cÃ³ tráº¡ng thÃ¡i 'hoan_thanh', Service Layer pháº£i tá»± Ä‘á»™ng
+ * cá»™ng sá»‘ lÆ°á»£ng vÃ o báº£ng ton_kho cá»§a kho_tong tÆ°Æ¡ng á»©ng.
  * <p>
- * Luồng nghiệp vụ (system_rules.md §3.2):
- *  NCC → phieu_nhap_kho (hoan_thanh) → ton_kho (kho_tong) tăng lên.
+ * Luá»“ng nghiá»‡p vá»¥ (system_rules.md Â§3.2):
+ *  NCC â†’ phieu_nhap_kho (hoan_thanh) â†’ ton_kho (kho_tong) tÄƒng lÃªn.
  * <p>
- * Trạng thái hợp lệ (CHECK chk_pnk_trang_thai): "hoan_thanh" | "huy"
+ * Tráº¡ng thÃ¡i há»£p lá»‡ (CHECK chk_pnk_trang_thai): "hoan_thanh" | "huy"
  * <p>
- * Quan hệ:
- *  - N:1 với {@link Kho}               (FK kho_id — luôn là kho_tong)
- *  - N:1 với {@link NhaCungCap}        (FK nha_cung_cap_id, nullable — refactored từ Module 4)
- *  - N:1 với {@link NguoiDung}         (FK nguoi_tao_id)
- *  - 1-N với {@link ChiTietPhieuNhap} (mappedBy phieuNhapKho, CASCADE DELETE)
+ * Quan há»‡:
+ *  - N:1 vá»›i {@link Kho}               (FK kho_id â€” luÃ´n lÃ  kho_tong)
+ *  - N:1 vá»›i {@link NhaCungCap}        (FK nha_cung_cap_id, nullable â€” refactored tá»« Module 4)
+ *  - N:1 vá»›i {@link NguoiDung}         (FK nguoi_tao_id)
+ *  - 1-N vá»›i {@link ChiTietPhieuNhap} (mappedBy phieuNhapKho, CASCADE DELETE)
  */
 @Entity
 @Table(
@@ -40,18 +40,19 @@ import java.util.List;
 @Builder
 @ToString(exclude = "chiTietPhieuNhaps")
 @EqualsAndHashCode(exclude = "chiTietPhieuNhaps")
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class PhieuNhapKho {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    /** Mã phiếu nhập – duy nhất (ví dụ: "PNK-2024-001"). */
+    /** MÃ£ phiáº¿u nháº­p â€“ duy nháº¥t (vÃ­ dá»¥: "PNK-2024-001"). */
     @Column(name = "ma_phieu", nullable = false, length = 50, unique = true)
     private String maPhieu;
 
     /**
-     * Kho nhận hàng (luôn là Kho Tổng theo nghiệp vụ).
+     * Kho nháº­n hÃ ng (luÃ´n lÃ  Kho Tá»•ng theo nghiá»‡p vá»¥).
      * NOT NULL.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -63,9 +64,9 @@ public class PhieuNhapKho {
     private Kho kho;
 
     /**
-     * Nhà cung cấp cung ứng lô hàng này.
-     * Nullable — phiếu nhập vẫn hợp lệ khi không xác định được NCC.
-     * FK fk_pnk_ncc tương ứng với ALTER TABLE trong SQL (Module 4).
+     * NhÃ  cung cáº¥p cung á»©ng lÃ´ hÃ ng nÃ y.
+     * Nullable â€” phiáº¿u nháº­p váº«n há»£p lá»‡ khi khÃ´ng xÃ¡c Ä‘á»‹nh Ä‘Æ°á»£c NCC.
+     * FK fk_pnk_ncc tÆ°Æ¡ng á»©ng vá»›i ALTER TABLE trong SQL (Module 4).
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
@@ -75,7 +76,7 @@ public class PhieuNhapKho {
     private NhaCungCap nhaCungCap;
 
     /**
-     * Nhân viên / Admin tạo phiếu nhập.
+     * NhÃ¢n viÃªn / Admin táº¡o phiáº¿u nháº­p.
      * NOT NULL.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -86,31 +87,31 @@ public class PhieuNhapKho {
     )
     private NguoiDung nguoiTao;
 
-    /** Ngày giờ nhập hàng thực tế (DEFAULT GETDATE()). */
+    /** NgÃ y giá» nháº­p hÃ ng thá»±c táº¿ (DEFAULT GETDATE()). */
     @Column(name = "ngay_nhap", nullable = false)
     @Builder.Default
     private LocalDateTime ngayNhap = LocalDateTime.now();
 
-    /** Tổng tiền của phiếu nhập (tự cộng từ các dòng chi tiết). */
+    /** Tá»•ng tiá»n cá»§a phiáº¿u nháº­p (tá»± cá»™ng tá»« cÃ¡c dÃ²ng chi tiáº¿t). */
     @Column(name = "tong_tien", nullable = false, precision = 15, scale = 2)
     @Builder.Default
     private BigDecimal tongTien = BigDecimal.ZERO;
 
     /**
-     * Trạng thái phiếu nhập (DEFAULT 'hoan_thanh').
-     * Hệ thống chốt luôn khi tạo phiếu — không qua bước chờ duyệt (system_rules.md §3.2).
-     * Giá trị hợp lệ: "hoan_thanh" | "huy"
+     * Tráº¡ng thÃ¡i phiáº¿u nháº­p (DEFAULT 'hoan_thanh').
+     * Há»‡ thá»‘ng chá»‘t luÃ´n khi táº¡o phiáº¿u â€” khÃ´ng qua bÆ°á»›c chá» duyá»‡t (system_rules.md Â§3.2).
+     * GiÃ¡ trá»‹ há»£p lá»‡: "hoan_thanh" | "huy"
      */
     @Column(name = "trang_thai", nullable = false, length = 15)
     @Builder.Default
     private String trangThai = "hoan_thanh";
 
-    /** Ghi chú nội bộ về lô hàng nhập. */
+    /** Ghi chÃº ná»™i bá»™ vá» lÃ´ hÃ ng nháº­p. */
     @Column(name = "ghi_chu", columnDefinition = "NVARCHAR(MAX)")
     private String ghiChu;
 
     // -------------------------------------------------------------------------
-    // Quan hệ 1-N: 1 PhieuNhapKho → nhiều ChiTietPhieuNhap (ON DELETE CASCADE)
+    // Quan há»‡ 1-N: 1 PhieuNhapKho â†’ nhiá»u ChiTietPhieuNhap (ON DELETE CASCADE)
     // -------------------------------------------------------------------------
     @OneToMany(mappedBy = "phieuNhapKho", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

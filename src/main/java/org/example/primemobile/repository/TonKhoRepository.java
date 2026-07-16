@@ -41,13 +41,13 @@ public interface TonKhoRepository extends JpaRepository<TonKho, Integer> {
     List<TonKho> findByBienTheSanPham(BienTheSanPham bienTheSanPham);
 
     /**
-     * Lấy tất cả SKU có tồn kho > 0 tại Kho Tổng, kèm đầy đủ thông tin
+     * Lấy tất cả SKU có tồn kho > 0 tại một kho cụ thể, kèm đầy đủ thông tin
      * biến thể và sản phẩm cha — dùng cho màn hình POS.
      *
      * <p>JOIN FETCH tất cả liên kết trong 1 query để tránh N+1.
      * Chỉ trả về biến thể còn hàng ({@code soLuong > 0}).
      *
-     * @param loaiKho Loại kho (truyền {@code "kho_tong"}).
+     * @param khoId ID kho cần lấy danh sách (ví dụ: kho chính của cửa hàng).
      * @return Danh sách {@link TonKho} kèm biến thể và sản phẩm cha.
      */
     @Query("""
@@ -55,19 +55,26 @@ public interface TonKhoRepository extends JpaRepository<TonKho, Integer> {
             JOIN FETCH t.bienTheSanPham bt
             JOIN FETCH bt.sanPham sp
             LEFT JOIN FETCH bt.hinhAnhSanPhams ha
-            WHERE t.kho.loai = :loaiKho
+            WHERE t.kho.id = :khoId
               AND t.soLuong  > 0
             ORDER BY sp.tenSanPham ASC
             """)
-    List<TonKho> layDanhSachChoPos(@Param("loaiKho") String loaiKho);
+    List<TonKho> layDanhSachChoPos(@Param("khoId") Integer khoId);
 
+    /**
+     * Tổng tồn kho theo danh sách biến thể tại một kho cụ thể.
+     *
+     * @param khoId      ID kho cần tổng hợp.
+     * @param bienTheIds Danh sách ID biến thể cần tổng hợp.
+     * @return Mảng [bienTheSanPhamId, tongSoLuong].
+     */
     @Query("""
             SELECT t.bienTheSanPham.id, COALESCE(SUM(t.soLuong), 0)
             FROM TonKho t
-            WHERE t.kho.loai = :loaiKho
+            WHERE t.kho.id = :khoId
               AND t.bienTheSanPham.id IN :bienTheIds
             GROUP BY t.bienTheSanPham.id
             """)
-    List<Object[]> tongTonKhoTheoBienTheIds(@Param("loaiKho") String loaiKho,
+    List<Object[]> tongTonKhoTheoBienTheIds(@Param("khoId") Integer khoId,
                                             @Param("bienTheIds") List<Integer> bienTheIds);
 }

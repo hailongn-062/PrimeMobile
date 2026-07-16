@@ -74,6 +74,10 @@ const API = {
     IMEI_DANH_SACH: '/api/admin/imei/danh-sach',
     KHACH_HANG: '/api/admin/khach-hang',
     KHACH_HANG_VANG_LAI: '/api/admin/khach-hang/vang-lai',  // Tạo khách vãng lai
+    LUU_DON_CHO: '/api/admin/ban-hang/luu-don-cho',
+    DS_DON_CHO: '/api/admin/ban-hang/danh-sach-cho',
+    HUY_DON_CHO: '/api/admin/ban-hang/huy-don-cho',
+    TIEP_TUC_DON_CHO: '/api/admin/ban-hang/tiep-tuc-don',
 };
 
 /**
@@ -138,6 +142,11 @@ function resolveDOM() {
         cartCount: el('cart-count'),
         btnClearCart: el('btnClearCart'),
         btnCheckout: el('btnCheckout'),
+        btnSavePending: el('btnSavePending'),
+        btnOpenPendingOrders: el('btnOpenPendingOrders'),
+        pendingOrdersCount: el('pendingOrdersCount'),
+        pendingOrdersContent: el('pending-orders-content'),
+        modalPendingOrders: el('modalPendingOrders'),
         selectKhachHang: el('selectKhachHang'),
         searchCustomer: el('searchCustomer'),
         posClock: el('pos-clock'),
@@ -189,10 +198,7 @@ function startClock() {
    4. SIDEBAR TOGGLE
 ════════════════════════════════════════════════════════════ */
 function initSidebar() {
-    document.body.classList.add('pos-sidebar-mini');
-    DOM.btnToggleSidebar?.addEventListener('click', () => {
-        document.body.classList.toggle('pos-sidebar-mini');
-    });
+    document.body.classList.add('sidebar-collapsed');
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -424,7 +430,7 @@ async function openImeiSelector(item) {
             confirmButtonText: 'Xác nhận',
             cancelButtonText: 'Hủy',
             showCancelButton: true,
-            preConfirm: () => {
+            preConfirm: async () => {
                 const selects = document.querySelectorAll(`.imei-select-${item.bienTheId}`);
                 const imeisSelected = [];
                 let valid = true;
@@ -443,6 +449,27 @@ async function openImeiSelector(item) {
                     Swal.showValidationMessage('Không được chọn trùng IMEI.');
                     return false;
                 }
+                
+                // Call API to reserve
+                for (let imei of imeisSelected) {
+                    try {
+                        const res = await fetch(`/api/admin/pos/giu-imei?imei=${imei}`, { method: 'POST' });
+                        if (!res.ok) {
+                            // Undo previous reservations in this batch
+                            for (let undoImei of imeisSelected) {
+                                if (undoImei === imei) break;
+                                await fetch(`/api/admin/pos/nha-imei?imei=${undoImei}`, { method: 'POST' });
+                            }
+                            const err = await res.text();
+                            Swal.showValidationMessage(`Lỗi giữ IMEI ${imei}: ${err}`);
+                            return false;
+                        }
+                    } catch (e) {
+                        Swal.showValidationMessage(`Lỗi mạng khi giữ IMEI: ${e.message}`);
+                        return false;
+                    }
+                }
+                
                 return imeisSelected;
             }
         });
@@ -501,7 +528,7 @@ async function selectAdditionalImeis(item, count) {
             confirmButtonText: 'Xác nhận',
             cancelButtonText: 'Hủy',
             showCancelButton: true,
-            preConfirm: () => {
+            preConfirm: async () => {
                 const selects = document.querySelectorAll(`.imei-select-${item.bienTheId}`);
                 const selected = [];
                 let valid = true;
@@ -520,6 +547,27 @@ async function selectAdditionalImeis(item, count) {
                     Swal.showValidationMessage('Không được chọn trùng IMEI.');
                     return false;
                 }
+                
+                // Call API to reserve
+                for (let imei of selected) {
+                    try {
+                        const res = await fetch(`/api/admin/pos/giu-imei?imei=${imei}`, { method: 'POST' });
+                        if (!res.ok) {
+                            // Undo previous reservations in this batch
+                            for (let undoImei of selected) {
+                                if (undoImei === imei) break;
+                                await fetch(`/api/admin/pos/nha-imei?imei=${undoImei}`, { method: 'POST' });
+                            }
+                            const err = await res.text();
+                            Swal.showValidationMessage(`Lỗi giữ IMEI ${imei}: ${err}`);
+                            return false;
+                        }
+                    } catch (e) {
+                        Swal.showValidationMessage(`Lỗi mạng khi giữ IMEI: ${e.message}`);
+                        return false;
+                    }
+                }
+                
                 return selected;
             }
         });
@@ -589,7 +637,16 @@ async function addToCart(bienTheId) {
 }
 
 /** Xoá 1 sản phẩm khỏi giỏ */
-function removeFromCart(bienTheId) {
+async function removeFromCart(bienTheId) {
+    const item = cart.find(x => x.bienTheId === bienTheId);
+    if (item && item.imeis) {
+        const imeiList = parseImeis(item.imeis);
+        for (const imei of imeiList) {
+            try {
+                await fetch(`/api/admin/pos/nha-imei?imei=${imei}`, { method: 'POST' });
+            } catch (e) { console.error('Lỗi nhả IMEI', e); }
+        }
+    }
     cart = cart.filter(x => x.bienTheId !== bienTheId);
     onCartChanged();
 }
@@ -630,7 +687,11 @@ async function changeQty(bienTheId, delta) {
     if (delta < 0) {
         const imeiList = parseImeis(item.imeis);
         if (imeiList.length > newQty) {
-            item.imeis = imeiList.slice(0, newQty).join(', ');
+            const removedImei = imeiList.pop(); // Lấy phần tử cuối
+            item.imeis = imeiList.join(', ');
+            try {
+                fetch(`/api/admin/pos/nha-imei?imei=${removedImei}`, { method: 'POST' });
+            } catch (e) { console.error('Lỗi nhả IMEI', e); }
         }
     }
     if (delta > 0) {
@@ -646,9 +707,14 @@ async function changeQty(bienTheId, delta) {
 
 /** Xoá toàn bộ giỏ hàng (dùng sau khi confirm) */
 function clearCart() {
+    // Nhả tất cả IMEI đang giữ
+    if (cart.length > 0) {
+        navigator.sendBeacon('/api/admin/pos/nha-tat-ca-imei');
+    }
     cart = [];
     promoState = { ctkmId: null, tenCtkm: null, giaTriUuDai: 0, tienGiam: 0 };
     resetVangLaiForm(); // Reset form khách vãng lai khi xoá giỏ
+    currentPendingOrderId = null; // Reset pending order id
     onCartChanged();
 }
 
@@ -669,6 +735,7 @@ function renderCart() {
     if (DOM.cartCount) DOM.cartCount.textContent = totalQty;
 
     if (DOM.btnCheckout) DOM.btnCheckout.disabled = (cart.length === 0);
+    if (DOM.btnSavePending) DOM.btnSavePending.disabled = (cart.length === 0);
 
     if (cart.length === 0) {
         DOM.cartItemsWrap.innerHTML = '';
@@ -859,6 +926,7 @@ function updateSummaryUI() {
 ════════════════════════════════════════════════════════════ */
 function initCheckout() {
     DOM.btnCheckout?.addEventListener('click', handleCheckout);
+    DOM.btnSavePending?.addEventListener('click', handleSavePending);
     DOM.btnClearCart?.addEventListener('click', handleClearCart);
 }
 
@@ -950,6 +1018,7 @@ async function handleCheckout() {
     // customerMode === 'khach_le' → khachHangId = null (server fallback)
 
     const payload = {
+        donHangId: currentPendingOrderId,
         khachHangId: khachHangId,
         tongTien: tongTien,
         tienGiam: tienGiam,
@@ -978,6 +1047,9 @@ async function handleCheckout() {
         }
 
         const result = await res.json();
+        
+        // Cập nhật lại danh sách đơn chờ phòng khi đây là đơn tiếp tục
+        updatePendingOrdersCount();
 
         showBillModal(result, payload);
 
@@ -1373,7 +1445,316 @@ function toastWarn(msg) {
 }
 
 /* ════════════════════════════════════════════════════════════
-   14. INIT — DOMContentLoaded
+   15. ĐƠN HÀNG CHỜ
+════════════════════════════════════════════════════════════ */
+
+// Lưu orderId đang được mở (nếu là tiếp tục đơn chờ)
+let currentPendingOrderId = null;
+
+async function handleSavePending() {
+    if (!cart.length) return;
+
+    const imeisOk = validateAllImeis();
+    if (!imeisOk) {
+        await Swal.fire({
+            icon: 'warning',
+            title: 'Thiếu hoặc trùng mã IMEI',
+            html: `Vui lòng chọn đủ IMEI cho tất cả sản phẩm và đảm bảo không trùng lặp để lưu đơn chờ.`,
+            confirmButtonText: 'Kiểm tra lại',
+            confirmButtonColor: '#F57F17',
+        });
+        return;
+    }
+
+    const tongTien = calcTongTien();
+    const tienGiam = promoState.tienGiam ?? 0;
+
+    let khachHangId = null;
+    if (customerMode === 'vang_lai') {
+        if (!validateVangLaiForm()) return;
+        const vlResult = await createOrGetVangLai();
+        if (!vlResult) return;
+        khachHangId = vlResult;
+    } else if (customerMode === 'chon_cu') {
+        khachHangId = DOM.selectKhachHang?.value ? parseInt(DOM.selectKhachHang.value, 10) : null;
+    }
+
+    const payload = {
+        donHangId: currentPendingOrderId, // Null nếu là đơn chờ mới
+        khachHangId: khachHangId,
+        tongTien: tongTien,
+        tienGiam: tienGiam,
+        ctkmId: promoState.ctkmId,
+        chiTiets: cart.map(item => ({
+            bienTheId: item.bienTheId,
+            soLuong: item.soLuong,
+            donGia: item.donGia,
+            imeis: parseImeis(item.imeis)
+        }))
+    };
+
+    setSavePendingLoading(true);
+
+    try {
+        const res = await fetch(API.LUU_DON_CHO, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const errText = await res.text().catch(() => `Lỗi server (HTTP ${res.status})`);
+            throw new Error(errText || `HTTP ${res.status}`);
+        }
+
+        toastSuccess('Đã lưu đơn hàng chờ thành công!');
+        clearCart();
+        loadProducts(); // Reload kho
+        currentPendingOrderId = null;
+        updatePendingOrdersCount();
+    } catch (err) {
+        console.error('[POS] save pending error:', err);
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi lưu đơn chờ',
+            html: `<div style="font-size:.88rem;text-align:left;">${escHtml(err.message)}</div>`,
+            confirmButtonColor: '#F57F17',
+        });
+    } finally {
+        setSavePendingLoading(false);
+    }
+}
+
+function setSavePendingLoading(isLoading) {
+    if (!DOM.btnSavePending) return;
+    DOM.btnSavePending.disabled = isLoading;
+    DOM.btnSavePending.innerHTML = isLoading
+        ? `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Lưu...`
+        : `<i class="fa fa-pause"></i> Lưu đơn chờ`;
+}
+
+async function updatePendingOrdersCount() {
+    try {
+        const res = await fetch(API.DS_DON_CHO, { credentials: 'include' });
+        if (!res.ok) throw new Error('Không thể tải DS đơn chờ');
+        const orders = await res.json();
+        if (DOM.pendingOrdersCount) {
+            DOM.pendingOrdersCount.textContent = orders.length;
+        }
+    } catch (e) {
+        console.warn(e);
+    }
+}
+
+async function loadPendingOrders() {
+    if (!DOM.pendingOrdersContent) return;
+    DOM.pendingOrdersContent.innerHTML = `
+        <div class="text-center py-4 text-muted">
+            <div class="spinner-border text-warning" role="status"></div>
+            <p class="mt-2 mb-0">Đang tải...</p>
+        </div>`;
+        
+    try {
+        const res = await fetch(API.DS_DON_CHO, { credentials: 'include' });
+        if (!res.ok) throw new Error('Không thể tải DS đơn chờ');
+        const orders = await res.json();
+        
+        if (DOM.pendingOrdersCount) {
+            DOM.pendingOrdersCount.textContent = orders.length;
+        }
+
+        if (orders.length === 0) {
+            DOM.pendingOrdersContent.innerHTML = `
+                <div class="text-center py-5 text-muted">
+                    <i class="fa fa-clipboard-list" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p class="mt-3">Không có hóa đơn chờ nào.</p>
+                </div>`;
+            return;
+        }
+
+        DOM.pendingOrdersContent.innerHTML = orders.map(o => {
+            const timeStr = new Date(o.ngayDat).toLocaleString('vi-VN');
+            const total = fmt(o.tongTien - (o.tienGiam || 0));
+            return `
+            <div class="card mb-3 shadow-sm border-0" style="border-radius: 12px; overflow: hidden;">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-2" style="border-bottom: 1px dashed #E8EDF5;">
+                    <div>
+                        <strong class="text-primary">#${o.maDonHang}</strong>
+                        <span class="text-muted ms-2" style="font-size: .8rem;"><i class="fa fa-clock me-1"></i>${timeStr}</span>
+                    </div>
+                    <div class="fw-bold text-success">${total}</div>
+                </div>
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-end">
+                        <div>
+                            <div style="font-size:.9rem;"><i class="fa fa-user me-2 text-muted"></i><strong>${escHtml(o.tenKhachHang || 'Khách lẻ')}</strong></div>
+                            <div style="font-size:.85rem; color:#6B7280;"><i class="fa fa-phone-alt me-2"></i>${escHtml(o.soDienThoaiKhachHang || '---')}</div>
+                        </div>
+                        <div class="mt-2 text-muted" style="font-size: .85rem;">
+                            ${(o.chiTiets && o.chiTiets.length > 0) ? o.chiTiets.map(ct => {
+                                const bt = ct.bienTheSanPham;
+                                return `<div>- ${escHtml(bt?.sanPham?.tenSanPham || '')} ${escHtml(bt?.ramGb || '')}GB/${escHtml(bt?.luuTruGb || '')}GB ${escHtml(bt?.mauSac || '')} (x${ct.soLuong})</div>`;
+                            }).join('') : '<em>Không có sản phẩm</em>'}
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end align-items-end mt-2">
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-danger btn-sm" onclick="cancelPendingOrder(${o.id})" style="border-radius: 8px;">
+                                <i class="fa fa-times me-1"></i> Hủy đơn
+                            </button>
+                            <button class="btn btn-warning btn-sm text-white fw-bold" onclick="continuePendingOrder(${o.id})" style="border-radius: 8px;">
+                                Tiếp tục <i class="fa fa-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    } catch (err) {
+        DOM.pendingOrdersContent.innerHTML = `
+            <div class="text-center py-4 text-danger">
+                <i class="fa fa-exclamation-triangle fa-2x"></i>
+                <p class="mt-2 mb-0">${err.message}</p>
+            </div>`;
+    }
+}
+
+async function cancelPendingOrder(id) {
+    // Tạm thời đóng Bootstrap Modal để tránh Focus Trap khóa input của SweetAlert2
+    const modalEl = document.getElementById('modalPendingOrders');
+    const bsModal = bootstrap.Modal.getInstance(modalEl);
+    if (bsModal) bsModal.hide();
+
+    const { value: reason, isDismissed } = await Swal.fire({
+        title: 'Hủy đơn hàng chờ?',
+        input: 'text',
+        inputLabel: 'Lý do hủy',
+        inputPlaceholder: 'Khách đổi ý, v.v...',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Xác nhận hủy',
+        cancelButtonText: 'Đóng',
+        inputValidator: (value) => {
+            if (!value) return 'Vui lòng nhập lý do hủy';
+        }
+    });
+
+    // Nếu người dùng bấm "Đóng" (hủy thao tác), thì mở lại modal chờ
+    if (isDismissed) {
+        if (bsModal) bsModal.show();
+        return;
+    }
+
+    if (reason) {
+        try {
+            const res = await fetch(`${API.HUY_DON_CHO}?donHangId=${id}&lyDoHuy=${encodeURIComponent(reason)}`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            if (!res.ok) {
+                const errText = await res.text().catch(() => `HTTP ${res.status}`);
+                throw new Error(errText);
+            }
+            toastSuccess('Đã hủy đơn hàng chờ và giải phóng IMEI.');
+            loadPendingOrders(); // Reload the list
+            loadProducts(); // Reload stock
+        } catch (err) {
+            Swal.fire('Lỗi', err.message, 'error');
+        }
+    }
+}
+
+async function continuePendingOrder(id) {
+    if (cart.length > 0) {
+        const confirm = await Swal.fire({
+            title: 'Ghi đè giỏ hàng?',
+            text: 'Bạn đang có sản phẩm trong giỏ. Tiếp tục đơn chờ sẽ xóa giỏ hàng hiện tại. Bạn có chắc chắn?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Đồng ý',
+            cancelButtonText: 'Hủy'
+        });
+        if (!confirm.isConfirmed) return;
+    }
+
+    try {
+        const res = await fetch(`${API.TIEP_TUC_DON_CHO}?donHangId=${id}`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+        if (!res.ok) {
+            const errText = await res.text().catch(() => `HTTP ${res.status}`);
+            throw new Error(errText);
+        }
+        
+        const data = await res.json();
+        
+        // Đóng modal
+        bootstrap.Modal.getInstance(DOM.modalPendingOrders)?.hide();
+        
+        // Khôi phục giỏ hàng
+        clearCart(); // Reset trước
+        currentPendingOrderId = id;
+        
+        // Khôi phục giỏ
+        data.chiTiets.forEach(ct => {
+            const item = {
+                bienTheId: ct.bienTheSanPham.id,
+                tenSanPham: ct.bienTheSanPham.sanPham.tenSanPham,
+                maSku: ct.bienTheSanPham.sku,
+                mauSac: ct.bienTheSanPham.mauSac,
+                ramGb: ct.bienTheSanPham.ramGb,
+                luuTruGb: ct.bienTheSanPham.luuTruGb,
+                soLuong: ct.soLuong,
+                donGia: ct.donGia,
+                imeis: ct.danhSachImeiDaBan ? ct.danhSachImeiDaBan.map(i => i.imei1).join(', ') : ''
+            };
+            cart.push(item);
+        });
+
+        // Khôi phục thông tin khách hàng
+        if (data.khachHang) {
+            if (data.khachHang.tenKhachHang === 'Khách vãng lai' || !data.khachHang.id) {
+                // Khách vãng lai
+                DOM.tabVangLai.click();
+                if (DOM.vlHoTen) DOM.vlHoTen.value = data.tenNguoiNhan || '';
+                if (DOM.vlSoDienThoai) DOM.vlSoDienThoai.value = data.soDienThoaiNguoiNhan || '';
+                // Simulate focus out or validation to trigger state
+            } else {
+                // Khách cũ
+                DOM.tabChonCu.click();
+                if (DOM.selectKhachHang) {
+                    DOM.selectKhachHang.value = data.khachHang.id;
+                }
+            }
+        } else {
+            DOM.tabKhachLe.click();
+        }
+
+        // Kích hoạt auto-promo lại
+        onCartChanged();
+        toastSuccess('Đã khôi phục đơn hàng chờ!');
+
+    } catch (err) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi',
+            html: `<div style="text-align:left;">${escHtml(err.message)}</div>`
+        });
+    }
+}
+
+function initPendingOrders() {
+    DOM.btnOpenPendingOrders?.addEventListener('click', () => {
+        loadPendingOrders();
+        const modal = bootstrap.Modal.getOrCreateInstance(DOM.modalPendingOrders);
+        modal.show();
+    });
+}
+
+/* ════════════════════════════════════════════════════════════
+   16. INIT — DOMContentLoaded
 ════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
     resolveDOM();
@@ -1384,6 +1765,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initBillModal();
     initCustomerTabs();       // Khởi tạo 3-tab khách hàng
     initCustomerSearch();     // Tìm kiếm khách hàng + validate vãng lai
+    initPendingOrders();      // Khởi tạo các event cho Đơn chờ
+    updatePendingOrdersCount(); // Cập nhật số lượng đơn chờ trên topbar
     loadProducts();
     loadCustomers();          // Load danh sách khách hàng mặc định
 });
@@ -1393,3 +1776,4 @@ window.addToCart = addToCart;
 window.removeFromCart = removeFromCart;
 window.changeQty = changeQty;
 window.loadProducts = loadProducts;
+window.addEventListener('beforeunload', () => { if (cart.length > 0) navigator.sendBeacon('/api/admin/pos/nha-tat-ca-imei'); });

@@ -49,11 +49,11 @@ public class KhoUIController {
     @GetMapping("/phieu-nhap")
     public String phieuNhapKho(Model model) {
         try {
-            // Chỉ lấy kho_tong
-            Optional<Kho> khoTongOpt = khoRepository.findByLoai("kho_tong");
-            List<Kho> danhSachKhoTong = khoTongOpt.map(List::of).orElseGet(List::of);
+            // Lấy kho duy nhất trong hệ thống (ID = 1)
+            List<Kho> danhSachKho = khoRepository.findById(1)
+                    .map(List::of).orElseGet(List::of);
 
-            model.addAttribute("danhSachKho", danhSachKhoTong);
+            model.addAttribute("danhSachKho", danhSachKho);
             model.addAttribute("danhSachNhaCungCap", nhaCungCapRepository.findAll());
             model.addAttribute("danhSachBienThe", bienTheSanPhamRepository.findAll());
 
@@ -123,23 +123,9 @@ public class KhoUIController {
             var bienThe = bienTheSanPhamRepository.findById(bienTheId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy biến thể sản phẩm"));
 
-            // Lấy danh sách IMEI theo biến thể, trạng thái và kho (nếu có)
-            List<org.example.primemobile.entity.MayDienThoai> danhSachImei;
-
-            if (khoId != null) {
-                // Lọc theo kho và trạng thái
-                danhSachImei = mayDienThoaiService.layDanhSachTheoBienTheVaTrangThaiVaKho(
-                        bienTheId,
-                        tinhTrang != null ? tinhTrang : "trong_kho",
-                        khoId
-                );
-            } else {
-                // Không lọc theo kho, chỉ lọc theo trạng thái (hoặc tất cả nếu tinhTrang null)
-                danhSachImei = mayDienThoaiService.layDanhSachTheoBienTheVaTrangThai(
-                        bienTheId,
-                        tinhTrang
-                );
-            }
+            // Lấy danh sách IMEI (không lọc theo kho vì hệ thống chỉ có 1 kho duy nhất)
+            List<org.example.primemobile.entity.MayDienThoai> danhSachImei =
+                    mayDienThoaiService.layDanhSachTheoBienTheVaTrangThai(bienTheId, tinhTrang);
 
             // Lấy danh sách kho để hiển thị dropdown lọc
             List<Kho> danhSachKho = khoRepository.findAll();

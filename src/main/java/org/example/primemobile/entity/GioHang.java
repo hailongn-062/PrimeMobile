@@ -8,18 +8,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entity mapping bảng gio_hang (Module 6: Giỏ hàng).
+ * Entity mapping báº£ng gio_hang (Module 6: Giá» hÃ ng).
  * <p>
- * Hỗ trợ 2 loại giỏ hàng:
- *  - Khách vãng lai: khachHang = NULL, sessionId có giá trị (lưu trong cookie/session).
- *  - Khách đã đăng nhập: khachHang != NULL, sessionId có thể NULL.
+ * Há»— trá»£ 2 loáº¡i giá» hÃ ng:
+ *  - KhÃ¡ch vÃ£ng lai: khachHang = NULL, sessionId cÃ³ giÃ¡ trá»‹ (lÆ°u trong cookie/session).
+ *  - KhÃ¡ch Ä‘Ã£ Ä‘Äƒng nháº­p: khachHang != NULL, sessionId cÃ³ thá»ƒ NULL.
  * <p>
- * ⚠️ Ràng buộc DB: CHECK (khach_hang_id IS NOT NULL OR session_id IS NOT NULL)
- * → Không được để cả 2 cùng NULL. Logic này phải được kiểm tra tại Service Layer.
+ * âš ï¸ RÃ ng buá»™c DB: CHECK (khach_hang_id IS NOT NULL OR session_id IS NOT NULL)
+ * â†’ KhÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ cáº£ 2 cÃ¹ng NULL. Logic nÃ y pháº£i Ä‘Æ°á»£c kiá»ƒm tra táº¡i Service Layer.
  * <p>
- * Quan hệ:
- *  - N:1 với {@link KhachHang}          (FK khach_hang_id, ON DELETE CASCADE, nullable)
- *  - 1-N với {@link ChiTietGioHang}     (mappedBy gioHang, CASCADE ALL)
+ * Quan há»‡:
+ *  - N:1 vá»›i {@link KhachHang}          (FK khach_hang_id, ON DELETE CASCADE, nullable)
+ *  - 1-N vá»›i {@link ChiTietGioHang}     (mappedBy gioHang, CASCADE ALL)
  */
 @Entity
 @Table(
@@ -36,6 +36,7 @@ import java.util.List;
 @Builder
 @ToString(exclude = "chiTietGioHangs")
 @EqualsAndHashCode(exclude = "chiTietGioHangs")
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class GioHang {
 
     @Id
@@ -43,9 +44,9 @@ public class GioHang {
     private Integer id;
 
     /**
-     * Khách hàng sở hữu giỏ hàng này.
-     * NULL nếu là khách vãng lai (giỏ hàng theo session).
-     * ON DELETE CASCADE – xóa khách hàng thì giỏ hàng tự xóa theo.
+     * KhÃ¡ch hÃ ng sá»Ÿ há»¯u giá» hÃ ng nÃ y.
+     * NULL náº¿u lÃ  khÃ¡ch vÃ£ng lai (giá» hÃ ng theo session).
+     * ON DELETE CASCADE â€“ xÃ³a khÃ¡ch hÃ ng thÃ¬ giá» hÃ ng tá»± xÃ³a theo.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
@@ -55,25 +56,25 @@ public class GioHang {
     private KhachHang khachHang;
 
     /**
-     * ID phiên làm việc của khách vãng lai (cookie/session token).
-     * NULL nếu là khách đã đăng nhập.
-     * ⚠️ Ít nhất 1 trong 2 (khachHang, sessionId) phải khác NULL.
+     * ID phiÃªn lÃ m viá»‡c cá»§a khÃ¡ch vÃ£ng lai (cookie/session token).
+     * NULL náº¿u lÃ  khÃ¡ch Ä‘Ã£ Ä‘Äƒng nháº­p.
+     * âš ï¸ Ãt nháº¥t 1 trong 2 (khachHang, sessionId) pháº£i khÃ¡c NULL.
      */
     @Column(name = "session_id", length = 100)
     private String sessionId;
 
-    /** Thời điểm tạo giỏ hàng. */
+    /** Thá»i Ä‘iá»ƒm táº¡o giá» hÃ ng. */
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime ngayTao = LocalDateTime.now();
 
-    /** Thời điểm cập nhật giỏ hàng gần nhất (thêm/xóa sản phẩm). */
+    /** Thá»i Ä‘iá»ƒm cáº­p nháº­t giá» hÃ ng gáº§n nháº¥t (thÃªm/xÃ³a sáº£n pháº©m). */
     @Column(name = "updated_at", nullable = false)
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     // -------------------------------------------------------------------------
-    // Quan hệ 1-N: 1 GioHang → nhiều ChiTietGioHang (ON DELETE CASCADE)
+    // Quan há»‡ 1-N: 1 GioHang â†’ nhiá»u ChiTietGioHang (ON DELETE CASCADE)
     // -------------------------------------------------------------------------
     @OneToMany(mappedBy = "gioHang", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

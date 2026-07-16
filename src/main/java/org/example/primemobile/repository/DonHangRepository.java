@@ -23,13 +23,13 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
   @Query(value = """
       SELECT d FROM DonHang d
       JOIN FETCH d.khachHang kh
-      WHERE (:trangThai IS NULL OR d.trangThai = :trangThai)
+      WHERE (:trangThai IS NULL AND d.trangThai != 'don_hang_cho' OR d.trangThai = :trangThai)
         AND (:maDonHang  IS NULL OR d.maDonHang  LIKE CONCAT('%', :maDonHang,  '%'))
         AND (:soDienThoai IS NULL OR kh.soDienThoai LIKE CONCAT('%', :soDienThoai, '%'))
       """, countQuery = """
       SELECT COUNT(d) FROM DonHang d
       JOIN d.khachHang kh
-      WHERE (:trangThai IS NULL OR d.trangThai = :trangThai)
+      WHERE (:trangThai IS NULL AND d.trangThai != 'don_hang_cho' OR d.trangThai = :trangThai)
         AND (:maDonHang  IS NULL OR d.maDonHang  LIKE CONCAT('%', :maDonHang,  '%'))
         AND (:soDienThoai IS NULL OR kh.soDienThoai LIKE CONCAT('%', :soDienThoai, '%'))
       """)
@@ -59,4 +59,6 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
   Optional<DonHang> findByMaDonHang(String maDonHang);
 
   java.util.List<org.example.primemobile.entity.DonHang> findByKhachHangIdOrderByNgayDatDesc(Integer khachHangId);
+  
+  java.util.List<DonHang> findByKenhBanAndTrangThaiOrderByNgayDatDesc(String kenhBan, String trangThai);
 }

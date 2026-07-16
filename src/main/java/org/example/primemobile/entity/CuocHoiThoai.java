@@ -8,17 +8,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entity mapping bảng cuoc_hoi_thoai (Module 11: Chatbot AI).
+ * Entity mapping báº£ng cuoc_hoi_thoai (Module 11: Chatbot AI).
  * <p>
- * Mỗi phiên hội thoại giữa khách hàng và Chatbot AI (Gemini).
- * Hỗ trợ cả khách vãng lai (sessionId) và khách đã đăng nhập (khachHang).
+ * Má»—i phiÃªn há»™i thoáº¡i giá»¯a khÃ¡ch hÃ ng vÃ  Chatbot AI (Gemini).
+ * Há»— trá»£ cáº£ khÃ¡ch vÃ£ng lai (sessionId) vÃ  khÃ¡ch Ä‘Ã£ Ä‘Äƒng nháº­p (khachHang).
  * <p>
- * Ghi chú (system_rules.md §7 – Tạm hoãn):
- *  Tích hợp Gemini API tạm thời BỊ HOÃN.
- *  Entity được tạo đầy đủ để mapping DB và phục vụ refactor {@link DonHang}.
+ * Ghi chÃº (system_rules.md Â§7 â€“ Táº¡m hoÃ£n):
+ *  TÃ­ch há»£p Gemini API táº¡m thá»i Bá»Š HOÃƒN.
+ *  Entity Ä‘Æ°á»£c táº¡o Ä‘áº§y Ä‘á»§ Ä‘á»ƒ mapping DB vÃ  phá»¥c vá»¥ refactor {@link DonHang}.
  * <p>
- *  - 1-N với {@link TinNhanChat}  (mappedBy cuocHoiThoai, CASCADE ALL)
- *  - ID tham chiếu lỏng tới KhachHang (khach_hang_id) và DonHang (thông qua cột trong bảng don_hang)
+ *  - 1-N vá»›i {@link TinNhanChat}  (mappedBy cuocHoiThoai, CASCADE ALL)
+ *  - ID tham chiáº¿u lá»ng tá»›i KhachHang (khach_hang_id) vÃ  DonHang (thÃ´ng qua cá»™t trong báº£ng don_hang)
  */
 @Entity
 @Table(
@@ -35,6 +35,7 @@ import java.util.List;
 @Builder
 @ToString(exclude = {"tinNhanChats"})
 @EqualsAndHashCode(exclude = {"tinNhanChats"})
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class CuocHoiThoai {
 
     @Id
@@ -42,38 +43,38 @@ public class CuocHoiThoai {
     private Integer id;
 
     /**
-     * ID Khách hàng đã đăng nhập thực hiện hội thoại.
-     * Tham chiếu lỏng, NULL nếu là khách vãng lai.
+     * ID KhÃ¡ch hÃ ng Ä‘Ã£ Ä‘Äƒng nháº­p thá»±c hiá»‡n há»™i thoáº¡i.
+     * Tham chiáº¿u lá»ng, NULL náº¿u lÃ  khÃ¡ch vÃ£ng lai.
      */
     @Column(name = "khach_hang_id")
     private Integer khachHangId;
 
     /**
-     * Session token định danh khách vãng lai.
-     * NULL nếu là khách đã đăng nhập.
+     * Session token Ä‘á»‹nh danh khÃ¡ch vÃ£ng lai.
+     * NULL náº¿u lÃ  khÃ¡ch Ä‘Ã£ Ä‘Äƒng nháº­p.
      */
     @Column(name = "session_id", length = 100)
     private String sessionId;
 
     /**
-     * Tiêu đề ngắn của hội thoại (tự động sinh bởi AI hoặc dùng tin nhắn đầu tiên).
-     * NULL khi mới tạo.
+     * TiÃªu Ä‘á» ngáº¯n cá»§a há»™i thoáº¡i (tá»± Ä‘á»™ng sinh bá»Ÿi AI hoáº·c dÃ¹ng tin nháº¯n Ä‘áº§u tiÃªn).
+     * NULL khi má»›i táº¡o.
      */
     @Column(name = "tieu_de", length = 255)
     private String tieuDe;
 
-    /** Thời điểm tạo cuộc hội thoại. */
+    /** Thá»i Ä‘iá»ƒm táº¡o cuá»™c há»™i thoáº¡i. */
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime ngayTao = LocalDateTime.now();
 
-    /** Thời điểm cập nhật gần nhất (dùng để sắp xếp hội thoại gần đây). */
+    /** Thá»i Ä‘iá»ƒm cáº­p nháº­t gáº§n nháº¥t (dÃ¹ng Ä‘á»ƒ sáº¯p xáº¿p há»™i thoáº¡i gáº§n Ä‘Ã¢y). */
     @Column(name = "updated_at", nullable = false)
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     // -------------------------------------------------------------------------
-    // Quan hệ 1-N: 1 CuocHoiThoai → nhiều TinNhanChat (ON DELETE CASCADE)
+    // Quan há»‡ 1-N: 1 CuocHoiThoai â†’ nhiá»u TinNhanChat (ON DELETE CASCADE)
     // -------------------------------------------------------------------------
     @OneToMany(mappedBy = "cuocHoiThoai", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

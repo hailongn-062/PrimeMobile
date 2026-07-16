@@ -10,6 +10,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.example.primemobile.repository.MayDienThoaiRepository;
+import org.example.primemobile.entity.MayDienThoai;
+
 /**
  * REST Controller cho phân hệ Bán hàng Offline (tại quầy).
  * <p>
@@ -35,6 +43,7 @@ public class BanHangOfflineController {
     private static final Logger log = LoggerFactory.getLogger(BanHangOfflineController.class);
 
     private final IBanHangOfflineService banHangOfflineService;
+    private final MayDienThoaiRepository mayDienThoaiRepository;
 
     // =========================================================================
     // POST /api/admin/ban-hang/tao-don
@@ -124,7 +133,7 @@ public class BanHangOfflineController {
      * <p>
      * Thực thi trong một transaction (do Service layer đảm bảo):
      * <ol>
-     *   <li>Cập nhật trạng thái đơn → {@code "da_giao"}.</li>
+     *   <li>Cập nhật trạng thái đơn → {@code "da_hoan_thanh"}.</li>
      *   <li>Cập nhật trạng thái thanh toán → {@code "da_thanh_toan"}.</li>
      *   <li>Tạo bản ghi {@code ThanhToan} với {@code trang_thai = "thanh_cong"}.</li>
      *   <li>Trừ trực tiếp {@code ton_kho} tại Kho Tổng cho từng {@code ChiTietDonHang}.</li>
@@ -164,6 +173,130 @@ public class BanHangOfflineController {
             log.error("[BanHangOfflineController] Không tìm thấy tài nguyên: {}", e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    // =========================================================================
+    // ĐƠN HÀNG CHỜ (MODULE 7)
+    // =========================================================================
+
+    @PostMapping("/luu-don-cho")
+    public ResponseEntity<?> luuDonHangCho(
+            @RequestBody org.example.primemobile.dto.request.PosThanhToanRequest payload,
+            @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
+        Integer donHangId = payload.getDonHangId();
+        log.info("[BanHangOfflineController] Lưu đơn chờ — donHangId={}, nhanVienId={}", donHangId, sessionUser.getId());
+        try {
+            DonHang donHang = banHangOfflineService.luuDonHangCho(donHangId, sessionUser.getId(), payload);
+            return ResponseEntity.ok(donHang);
+        } catch (Exception e) {
+            log.error("[BanHangOfflineController] Lỗi khi lưu đơn chờ: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/danh-sach-cho")
+    public ResponseEntity<?> layDanhSachDonHangCho() {
+        log.info("[BanHangOfflineController] Lấy danh sách đơn hàng chờ");
+        try {
+            List<DonHang> danhSach = banHangOfflineService.layDanhSachDonHangCho();
+            List<Map<String, Object>> result = danhSach.stream()
+                    .map(this::mapDonHangToMap)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("[BanHangOfflineController] Lỗi khi lấy danh sách đơn chờ: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/huy-don-cho")
+    public ResponseEntity<?> huyDonHangCho(
+            @RequestParam Integer donHangId,
+            @RequestParam String lyDoHuy) {
+        log.info("[BanHangOfflineController] Hủy đơn chờ — donHangId={}", donHangId);
+        try {
+            DonHang donHang = banHangOfflineService.huyDonHangCho(donHangId, lyDoHuy);
+            return ResponseEntity.ok(mapDonHangToMap(donHang));
+        } catch (Exception e) {
+            log.error("[BanHangOfflineController] Lỗi khi hủy đơn chờ: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/tiep-tuc-don")
+    public ResponseEntity<?> tiepTucDonHangCho(
+            @RequestParam Integer donHangId) {
+        log.info("[BanHangOfflineController] Tiếp tục đơn chờ — donHangId={}", donHangId);
+        try {
+            DonHang donHang = banHangOfflineService.tiepTucDonHangCho(donHangId);
+            return ResponseEntity.ok(mapDonHangToMap(donHang));
+        } catch (Exception e) {
+            log.error("[BanHangOfflineController] Lỗi khi tiếp tục đơn chờ: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    private Map<String, Object> mapDonHangToMap(DonHang o) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", o.getId());
+        map.put("maDonHang", o.getMaDonHang());
+        map.put("ngayDat", o.getNgayDat() != null ? o.getNgayDat().toString() : null);
+        map.put("tongTien", o.getTongTienHang());
+        map.put("tienGiam", o.getTienGiamGia());
+        map.put("tongTienHang", o.getTongTienHang());
+        map.put("tienGiamGia", o.getTienGiamGia());
+
+        if (o.getKhachHang() != null) {
+            Map<String, Object> kh = new HashMap<>();
+            kh.put("id", o.getKhachHang().getId());
+            kh.put("hoTen", o.getKhachHang().getHoTen());
+            kh.put("soDienThoai", o.getKhachHang().getSoDienThoai());
+            map.put("khachHang", kh);
+        }
+        
+        map.put("tenKhachHang", o.getHoTenNguoiNhan() != null ? o.getHoTenNguoiNhan() : (o.getKhachHang() != null ? o.getKhachHang().getHoTen() : "Khách lẻ"));
+        map.put("soDienThoaiKhachHang", o.getSdtNguoiNhan() != null ? o.getSdtNguoiNhan() : (o.getKhachHang() != null ? o.getKhachHang().getSoDienThoai() : "---"));
+
+        if (o.getChiTietDonHangs() != null) {
+            List<Map<String, Object>> chiTiets = o.getChiTietDonHangs().stream().map(ct -> {
+                Map<String, Object> ctMap = new HashMap<>();
+                ctMap.put("soLuong", ct.getSoLuong());
+                ctMap.put("donGia", ct.getDonGiaBan());
+
+                if (ct.getBienTheSanPham() != null) {
+                    Map<String, Object> btMap = new HashMap<>();
+                    btMap.put("id", ct.getBienTheSanPham().getId());
+                    btMap.put("sku", ct.getBienTheSanPham().getMaSku());
+                    btMap.put("maSku", ct.getBienTheSanPham().getMaSku());
+                    btMap.put("mauSac", ct.getBienTheSanPham().getMauSac());
+                    btMap.put("ramGb", ct.getBienTheSanPham().getRamGb());
+                    btMap.put("luuTruGb", ct.getBienTheSanPham().getLuuTruGb());
+
+                    if (ct.getBienTheSanPham().getSanPham() != null) {
+                        Map<String, Object> spMap = new HashMap<>();
+                        spMap.put("tenSanPham", ct.getBienTheSanPham().getSanPham().getTenSanPham());
+                        btMap.put("sanPham", spMap);
+                    }
+                    ctMap.put("bienTheSanPham", btMap);
+                }
+
+                List<MayDienThoai> imeisForDonHang = mayDienThoaiRepository.findByDonHangId(o.getId());
+                List<Map<String, Object>> imeis = imeisForDonHang.stream()
+                        .filter(m -> m.getBienTheSanPham().getId().equals(ct.getBienTheSanPham().getId()))
+                        .map(i -> {
+                            Map<String, Object> imeiMap = new HashMap<>();
+                            imeiMap.put("imei1", i.getImei1());
+                            imeiMap.put("imei2", i.getImei2());
+                            return imeiMap;
+                        }).collect(Collectors.toList());
+                ctMap.put("danhSachImeiDaBan", imeis);
+
+                return ctMap;
+            }).collect(Collectors.toList());
+            map.put("chiTiets", chiTiets);
+        }
+
+        return map;
     }
 
     // =========================================================================

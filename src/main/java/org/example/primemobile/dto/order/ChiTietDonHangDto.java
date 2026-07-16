@@ -40,6 +40,11 @@ public class ChiTietDonHangDto {
      */
     private BigDecimal donGiaBan;
 
+    /**
+     * Giá gốc (giá niêm yết của biến thể) tại thời điểm đặt hàng hoặc hiện tại.
+     */
+    private BigDecimal giaGoc;
+
     /** Thành tiền = soLuong × donGiaBan (computed column trong DB) */
     private BigDecimal thanhTien;
 
@@ -68,4 +73,7 @@ public class ChiTietDonHangDto {
 
     /** Tên sản phẩm (ví dụ: "iPhone 15 Pro Max") – lấy từ SanPham.tenSanPham */
     private String tenSanPham;
+
+    /** Danh sách IMEI đã gán cho chi tiết đơn hàng này */
+    private java.util.List<org.example.primemobile.dto.kho.ImeiDto> imeiList;
 }

@@ -7,12 +7,12 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * Entity mapping bảng danh_muc (Module 2: Sản phẩm & Biến thể).
+ * Entity mapping báº£ng danh_muc (Module 2: Sáº£n pháº©m & Biáº¿n thá»ƒ).
  * <p>
- * PrimeMobile chỉ bán điện thoại, nên danh mục được dùng để phân loại
- * dòng máy (ví dụ: Android cao cấp, iPhone, Flagship, Mid-range...).
+ * PrimeMobile chá»‰ bÃ¡n Ä‘iá»‡n thoáº¡i, nÃªn danh má»¥c Ä‘Æ°á»£c dÃ¹ng Ä‘á»ƒ phÃ¢n loáº¡i
+ * dÃ²ng mÃ¡y (vÃ­ dá»¥: Android cao cáº¥p, iPhone, Flagship, Mid-range...).
  * <p>
- * Quan hệ: 1 DanhMuc → N SanPham.
+ * Quan há»‡: 1 DanhMuc â†’ N SanPham.
  */
 @Entity
 @Table(
@@ -29,43 +29,44 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @Builder
 @ToString(exclude = "sanPhams")
 @EqualsAndHashCode(exclude = "sanPhams")
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class DanhMuc {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    /** Tên danh mục – duy nhất trong hệ thống. */
+    /** TÃªn danh má»¥c â€“ duy nháº¥t trong há»‡ thá»‘ng. */
     @Column(name = "ten_danh_muc", nullable = false, length = 100)
     private String tenDanhMuc;
 
     /**
-     * Slug URL-friendly cho SEO (ví dụ: "dien-thoai-android").
-     * Duy nhất trong hệ thống.
+     * Slug URL-friendly cho SEO (vÃ­ dá»¥: "dien-thoai-android").
+     * Duy nháº¥t trong há»‡ thá»‘ng.
      */
     @Column(name = "slug", nullable = false, length = 100, unique = true)
     private String slug;
 
-    /** Mô tả danh mục, có thể NULL. */
+    /** MÃ´ táº£ danh má»¥c, cÃ³ thá»ƒ NULL. */
     @Column(name = "mo_ta", columnDefinition = "NVARCHAR(MAX)")
     private String moTa;
 
-    /** Thứ tự hiển thị trên giao diện (DEFAULT 0). */
+    /** Thá»© tá»± hiá»ƒn thá»‹ trÃªn giao diá»‡n (DEFAULT 0). */
     @Column(name = "thu_tu", nullable = false)
     @Builder.Default
     private Integer thuTu = 0;
 
     /**
-     * Trạng thái kích hoạt (DEFAULT 1 = đang hoạt động).
-     * true = đang hiển thị | false = đã ẩn.
+     * Tráº¡ng thÃ¡i kÃ­ch hoáº¡t (DEFAULT 1 = Ä‘ang hoáº¡t Ä‘á»™ng).
+     * true = Ä‘ang hiá»ƒn thá»‹ | false = Ä‘Ã£ áº©n.
      */
     @Column(name = "kich_hoat", nullable = false)
     @Builder.Default
     private Boolean kichHoat = true;
 
     // -------------------------------------------------------------------------
-    // Quan hệ 1-N: 1 DanhMuc → nhiều SanPham
-    // @ToString.Exclude & @EqualsAndHashCode.Exclude trên class để tránh đệ quy
+    // Quan há»‡ 1-N: 1 DanhMuc â†’ nhiá»u SanPham
+    // @ToString.Exclude & @EqualsAndHashCode.Exclude trÃªn class Ä‘á»ƒ trÃ¡nh Ä‘á»‡ quy
     // -------------------------------------------------------------------------
     @OneToMany(mappedBy = "danhMuc", fetch = FetchType.LAZY)
     @Builder.Default

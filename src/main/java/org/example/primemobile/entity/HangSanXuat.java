@@ -8,11 +8,11 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * Entity mapping bảng hang_san_xuat (Module 2: Sản phẩm & Biến thể).
+ * Entity mapping báº£ng hang_san_xuat (Module 2: Sáº£n pháº©m & Biáº¿n thá»ƒ).
  * <p>
- * Quản lý thương hiệu điện thoại (Apple, Samsung, Xiaomi...).
+ * Quáº£n lÃ½ thÆ°Æ¡ng hiá»‡u Ä‘iá»‡n thoáº¡i (Apple, Samsung, Xiaomi...).
  * <p>
- * Quan hệ: 1 HangSanXuat → N SanPham.
+ * Quan há»‡: 1 HangSanXuat â†’ N SanPham.
  */
 @Entity
 @Table(
@@ -28,26 +28,27 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @Builder
 @ToString(exclude = "sanPhams")
 @EqualsAndHashCode(exclude = "sanPhams")
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class HangSanXuat {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    /** Tên thương hiệu – duy nhất (ví dụ: "Apple", "Samsung"). */
+    /** TÃªn thÆ°Æ¡ng hiá»‡u â€“ duy nháº¥t (vÃ­ dá»¥: "Apple", "Samsung"). */
     @Column(name = "ten_hang", nullable = false, length = 100)
     private String tenHang;
 
-    /** Đường dẫn logo thương hiệu (lưu URL hoặc đường dẫn tương đối). */
+    /** ÄÆ°á»ng dáº«n logo thÆ°Æ¡ng hiá»‡u (lÆ°u URL hoáº·c Ä‘Æ°á»ng dáº«n tÆ°Æ¡ng Ä‘á»‘i). */
     @Column(name = "logo", length = 255)
     private String logo;
 
-    /** Quốc gia sản xuất (ví dụ: "Mỹ", "Hàn Quốc"). */
+    /** Quá»‘c gia sáº£n xuáº¥t (vÃ­ dá»¥: "Má»¹", "HÃ n Quá»‘c"). */
     @Column(name = "quoc_gia", length = 50)
     private String quocGia;
 
     // -------------------------------------------------------------------------
-    // Quan hệ 1-N: 1 HangSanXuat → nhiều SanPham
+    // Quan há»‡ 1-N: 1 HangSanXuat â†’ nhiá»u SanPham
     // -------------------------------------------------------------------------
     @OneToMany(mappedBy = "hangSanXuat", fetch = FetchType.LAZY)
     @Builder.Default

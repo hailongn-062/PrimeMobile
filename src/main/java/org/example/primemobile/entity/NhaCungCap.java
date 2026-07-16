@@ -7,20 +7,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entity mapping bảng nha_cung_cap (Module 4: Nhà cung cấp).
+ * Entity mapping báº£ng nha_cung_cap (Module 4: NhÃ  cung cáº¥p).
  * <p>
- * Quản lý danh sách nhà cung cấp điện thoại cho cửa hàng PrimeMobile.
+ * Quáº£n lÃ½ danh sÃ¡ch nhÃ  cung cáº¥p Ä‘iá»‡n thoáº¡i cho cá»­a hÃ ng PrimeMobile.
  * <p>
- * Ghi chú (system_rules.md §3.2):
- *  Workflow đặt hàng NCC (purchase order) đã bị loại bỏ.
- *  Entity này chỉ dùng để tham chiếu trong {@link PhieuNhapKho}
- *  và {@link YeuCauBaoHanh} (khi gửi máy lỗi cho NCC xử lý).
+ * Ghi chÃº (system_rules.md Â§3.2):
+ *  Workflow Ä‘áº·t hÃ ng NCC (purchase order) Ä‘Ã£ bá»‹ loáº¡i bá».
+ *  Entity nÃ y chá»‰ dÃ¹ng Ä‘á»ƒ tham chiáº¿u trong {@link PhieuNhapKho}
+ *  vÃ  {@link YeuCauBaoHanh} (khi gá»­i mÃ¡y lá»—i cho NCC xá»­ lÃ½).
  * <p>
- * Trạng thái hợp lệ (CHECK chk_ncc_trang_thai):
+ * Tráº¡ng thÃ¡i há»£p lá»‡ (CHECK chk_ncc_trang_thai):
  *  "dang_hop_tac" | "ngung_hop_tac"
  * <p>
- * Quan hệ:
- *  - 1-N với {@link PhieuNhapKho} (mappedBy nhaCungCap)
+ * Quan há»‡:
+ *  - 1-N vá»›i {@link PhieuNhapKho} (mappedBy nhaCungCap)
  */
 @Entity
 @Table(
@@ -36,6 +36,7 @@ import java.util.List;
 @Builder
 @ToString(exclude = "phieuNhapKhos")
 @EqualsAndHashCode(exclude = "phieuNhapKhos")
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class NhaCungCap {
 
     @Id
@@ -43,42 +44,42 @@ public class NhaCungCap {
     private Integer id;
 
     /**
-     * Mã nhà cung cấp nội bộ – duy nhất (ví dụ: "NCC-001").
+     * MÃ£ nhÃ  cung cáº¥p ná»™i bá»™ â€“ duy nháº¥t (vÃ­ dá»¥: "NCC-001").
      * NOT NULL, UNIQUE.
      */
     @Column(name = "ma_ncc", nullable = false, length = 20, unique = true)
     private String maNcc;
 
-    /** Tên đầy đủ của nhà cung cấp. */
+    /** TÃªn Ä‘áº§y Ä‘á»§ cá»§a nhÃ  cung cáº¥p. */
     @Column(name = "ten_ncc", nullable = false, length = 200)
     private String tenNcc;
 
-    /** Số điện thoại liên hệ của nhà cung cấp. */
+    /** Sá»‘ Ä‘iá»‡n thoáº¡i liÃªn há»‡ cá»§a nhÃ  cung cáº¥p. */
     @Column(name = "so_dien_thoai", length = 20)
     private String soDienThoai;
 
-    /** Email liên hệ của nhà cung cấp. */
+    /** Email liÃªn há»‡ cá»§a nhÃ  cung cáº¥p. */
     @Column(name = "email", length = 100)
     private String email;
 
-    /** Địa chỉ trụ sở / kho của nhà cung cấp. */
+    /** Äá»‹a chá»‰ trá»¥ sá»Ÿ / kho cá»§a nhÃ  cung cáº¥p. */
     @Column(name = "dia_chi", length = 255)
     private String diaChi;
 
-    /** Tên người liên hệ đầu mối tại nhà cung cấp. */
+    /** TÃªn ngÆ°á»i liÃªn há»‡ Ä‘áº§u má»‘i táº¡i nhÃ  cung cáº¥p. */
     @Column(name = "nguoi_lien_he", length = 100)
     private String nguoiLienHe;
 
     /**
-     * Trạng thái hợp tác (DEFAULT 'dang_hop_tac').
-     * Giá trị hợp lệ: "dang_hop_tac" | "ngung_hop_tac"
+     * Tráº¡ng thÃ¡i há»£p tÃ¡c (DEFAULT 'dang_hop_tac').
+     * GiÃ¡ trá»‹ há»£p lá»‡: "dang_hop_tac" | "ngung_hop_tac"
      */
     @Column(name = "trang_thai", nullable = false, length = 20)
     @Builder.Default
     private String trangThai = "dang_hop_tac";
 
     // -------------------------------------------------------------------------
-    // Quan hệ 1-N: 1 NhaCungCap → nhiều PhieuNhapKho
+    // Quan há»‡ 1-N: 1 NhaCungCap â†’ nhiá»u PhieuNhapKho
     // -------------------------------------------------------------------------
     @com.fasterxml.jackson.annotation.JsonIgnore
     @OneToMany(mappedBy = "nhaCungCap", fetch = FetchType.LAZY)

@@ -6,14 +6,14 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * Entity mapping bảng nguoi_dung (Module 1: Người dùng & Phân quyền).
+ * Entity mapping báº£ng nguoi_dung (Module 1: NgÆ°á»i dÃ¹ng & PhÃ¢n quyá»n).
  * <p>
- * Vai trò hợp lệ (CHECK constraint chk_nd_vai_tro): Admin | NhanVien | KhachHang
- * Trạng thái hợp lệ (CHECK constraint chk_nd_trang_thai): hoat_dong | khoa
+ * Vai trÃ² há»£p lá»‡ (CHECK constraint chk_nd_vai_tro): Admin | NhanVien | KhachHang
+ * Tráº¡ng thÃ¡i há»£p lá»‡ (CHECK constraint chk_nd_trang_thai): hoat_dong | khoa
  * <p>
- * Ghi chú system_rules.md:
- *  - Không dùng Spring Security / JWT. Phiên làm việc quản lý bằng HttpSession + HandlerInterceptor.
- *  - Đăng nhập bằng email HOẶC so_dien_thoai kết hợp mat_khau (đã băm).
+ * Ghi chÃº system_rules.md:
+ *  - KhÃ´ng dÃ¹ng Spring Security / JWT. PhiÃªn lÃ m viá»‡c quáº£n lÃ½ báº±ng HttpSession + HandlerInterceptor.
+ *  - ÄÄƒng nháº­p báº±ng email HOáº¶C so_dien_thoai káº¿t há»£p mat_khau (Ä‘Ã£ bÄƒm).
  */
 @Entity
 @Table(
@@ -29,6 +29,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class NguoiDung {
 
     @Id
@@ -36,57 +37,57 @@ public class NguoiDung {
     private Integer id;
 
     /**
-     * Email đăng nhập – duy nhất trong hệ thống.
-     * Có thể dùng thay thế so_dien_thoai khi xác thực.
+     * Email Ä‘Äƒng nháº­p â€“ duy nháº¥t trong há»‡ thá»‘ng.
+     * CÃ³ thá»ƒ dÃ¹ng thay tháº¿ so_dien_thoai khi xÃ¡c thá»±c.
      */
     @Column(name = "email", nullable = false, length = 100, unique = true)
     private String email;
 
     /**
-     * Mật khẩu đã được băm (BCrypt hoặc tương đương).
-     * Không bao giờ lưu plain-text.
+     * Máº­t kháº©u Ä‘Ã£ Ä‘Æ°á»£c bÄƒm (BCrypt hoáº·c tÆ°Æ¡ng Ä‘Æ°Æ¡ng).
+     * KhÃ´ng bao giá» lÆ°u plain-text.
      */
     @Column(name = "mat_khau", nullable = false, length = 255)
     private String matKhau;
 
-    /** Họ và tên đầy đủ của người dùng. */
+    /** Há» vÃ  tÃªn Ä‘áº§y Ä‘á»§ cá»§a ngÆ°á»i dÃ¹ng. */
     @Column(name = "ho_ten", nullable = false, length = 100)
     private String hoTen;
 
     /**
-     * Số điện thoại – có thể dùng thay email khi đăng nhập.
-     * Nullable theo thiết kế DB.
+     * Sá»‘ Ä‘iá»‡n thoáº¡i â€“ cÃ³ thá»ƒ dÃ¹ng thay email khi Ä‘Äƒng nháº­p.
+     * Nullable theo thiáº¿t káº¿ DB.
      */
     @Column(name = "so_dien_thoai", length = 20)
     private String soDienThoai;
 
     /**
-     * Vai trò phân quyền.
-     * Giá trị hợp lệ: "Admin" | "NhanVien" | "KhachHang" (DEFAULT 'KhachHang').
-     * Hardcode theo system_rules.md — không dùng bảng phân quyền riêng.
+     * Vai trÃ² phÃ¢n quyá»n.
+     * GiÃ¡ trá»‹ há»£p lá»‡: "Admin" | "NhanVien" | "KhachHang" (DEFAULT 'KhachHang').
+     * Hardcode theo system_rules.md â€” khÃ´ng dÃ¹ng báº£ng phÃ¢n quyá»n riÃªng.
      */
     @Column(name = "vai_tro", nullable = false, length = 15)
     @Builder.Default
     private String vaiTro = "KhachHang";
 
     /**
-     * Trạng thái tài khoản.
-     * Giá trị hợp lệ: "hoat_dong" | "khoa" (DEFAULT 'hoat_dong').
+     * Tráº¡ng thÃ¡i tÃ i khoáº£n.
+     * GiÃ¡ trá»‹ há»£p lá»‡: "hoat_dong" | "khoa" (DEFAULT 'hoat_dong').
      */
     @Column(name = "trang_thai", nullable = false, length = 10)
     @Builder.Default
     private String trangThai = "hoat_dong";
 
-    /** Thời điểm đăng nhập lần cuối — NULL nếu chưa đăng nhập lần nào. */
+    /** Thá»i Ä‘iá»ƒm Ä‘Äƒng nháº­p láº§n cuá»‘i â€” NULL náº¿u chÆ°a Ä‘Äƒng nháº­p láº§n nÃ o. */
     @Column(name = "lan_dang_nhap_cuoi")
     private LocalDateTime lanDangNhapCuoi;
 
-    /** Thời điểm tạo bản ghi. Mặc định = GETDATE() ở DB. */
+    /** Thá»i Ä‘iá»ƒm táº¡o báº£n ghi. Máº·c Ä‘á»‹nh = GETDATE() á»Ÿ DB. */
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime ngayTao = LocalDateTime.now();
 
-    /** Thời điểm cập nhật bản ghi gần nhất. */
+    /** Thá»i Ä‘iá»ƒm cáº­p nháº­t báº£n ghi gáº§n nháº¥t. */
     @Column(name = "updated_at", nullable = false)
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();

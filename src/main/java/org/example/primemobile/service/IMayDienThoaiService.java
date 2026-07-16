@@ -11,9 +11,8 @@ import java.util.List;
  * Toàn bộ nghiệp vụ bám sát system_rules.md §3.3:
  * <ul>
  * <li>Mã IMEI là hệ quả phụ thuộc số lượng tồn kho – không được vượt quá.</li>
- * <li>Mỗi bộ (imei1, imei2, serial) phải duy nhất toàn hệ thống.</li>
+ * <li>Mỗi bộ (imei1, imei2) phải duy nhất toàn hệ thống.</li>
  * <li>Trạng thái mặc định khi nhập mới là {@code "trong_kho"}.</li>
- * <li>IMEI được gắn với một kho vật lý cụ thể (kho_id).</li>
  * </ul>
  */
 public interface IMayDienThoaiService {
@@ -43,16 +42,15 @@ public interface IMayDienThoaiService {
      * <li><b>Ràng buộc đối khớp (Chặn thêm thừa):</b> Nếu
      * {@code danhSachImei.size()} lớn hơn
      * số lượng IMEI còn thiếu, ném {@link IllegalArgumentException}.</li>
-     * <li><b>Ràng buộc duy nhất:</b> Kiểm tra từng imei1, imei2, serial xem đã tồn
-     * tại trong
-     * database chưa. Nếu trùng, ném {@link IllegalArgumentException}.</li>
+     * <li><b>Ràng buộc duy nhất:</b> Kiểm tra từng imei1, imei2 xem đã tồn
+     * tại trong database chưa. Nếu trùng, ném {@link IllegalArgumentException}.</li>
      * <li><b>Lưu:</b> Tạo các bản ghi {@code MayDienThoai} mới với trạng thái
-     * {@code "trong_kho"} và gán vào kho cụ thể, lưu tất cả trong 1 transaction.</li>
+     * {@code "trong_kho"}, lưu tất cả trong 1 transaction.</li>
      * </ol>
      *
-     * @param khoId            ID kho nhập hàng (dùng để tính chênh lệch tồn kho và gán kho_id cho IMEI).
+     * @param khoId            ID kho nhập hàng (dùng để tính chênh lệch tồn kho).
      * @param bienTheSanPhamId ID biến thể SKU cần gắn IMEI.
-     * @param danhSachImei     Danh sách bộ (imei1, imei2, serial) cần nhập, mỗi request có thể chứa khoId riêng.
+     * @param danhSachImei     Danh sách bộ (imei1, imei2) cần nhập.
      * @throws IllegalArgumentException                    Nếu số lượng IMEI vượt
      *                                                     quá mức cần thiết, hoặc
      *                                                     bị trùng lặp.
@@ -75,19 +73,4 @@ public interface IMayDienThoaiService {
      *         Trả về danh sách rỗng nếu không có IMEI nào.
      */
     List<MayDienThoai> layDanhSachTheoBienTheVaTrangThai(Integer bienTheSanPhamId, String tinhTrang);
-
-    /**
-     * Lấy danh sách IMEI của một biến thể sản phẩm theo trạng thái và kho cụ thể.
-     * <p>
-     * Phương thức này được sử dụng khi xác nhận đơn online để chỉ hiển thị
-     * những IMEI đang ở Kho Online (hoặc một kho cụ thể).
-     *
-     * @param bienTheSanPhamId ID biến thể sản phẩm (SKU) cần lấy danh sách IMEI.
-     * @param tinhTrang        Trạng thái IMEI cần lọc (ví dụ: 'trong_kho').
-     *                         Nếu truyền {@code null}, sẽ trả về tất cả trạng thái.
-     * @param khoId            ID kho cần lọc IMEI.
-     * @return Danh sách {@link MayDienThoai} có trạng thái và kho tương ứng.
-     *         Trả về danh sách rỗng nếu không có IMEI nào.
-     */
-    List<MayDienThoai> layDanhSachTheoBienTheVaTrangThaiVaKho(Integer bienTheSanPhamId, String tinhTrang, Integer khoId);
 }

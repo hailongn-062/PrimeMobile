@@ -4,17 +4,17 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * Entity mapping bảng thong_so_ky_thuat (Module 2: Sản phẩm & Biến thể).
+ * Entity mapping báº£ng thong_so_ky_thuat (Module 2: Sáº£n pháº©m & Biáº¿n thá»ƒ).
  * <p>
- * Lưu trữ thông số kỹ thuật dạng key-value theo từng nhóm của một sản phẩm.
- * Ví dụ: Nhóm "Màn hình" → "Kích thước" → "6.7 inch".
+ * LÆ°u trá»¯ thÃ´ng sá»‘ ká»¹ thuáº­t dáº¡ng key-value theo tá»«ng nhÃ³m cá»§a má»™t sáº£n pháº©m.
+ * VÃ­ dá»¥: NhÃ³m "MÃ n hÃ¬nh" â†’ "KÃ­ch thÆ°á»›c" â†’ "6.7 inch".
  * <p>
- * Quan hệ:
- *  - N:1 với {@link SanPham} (FK san_pham_id, ON DELETE CASCADE)
+ * Quan há»‡:
+ *  - N:1 vá»›i {@link SanPham} (FK san_pham_id, ON DELETE CASCADE)
  * <p>
- * Thông số kỹ thuật gắn với SanPham (model), không phải BienTheSanPham,
- * vì các thông số như CPU, màn hình, camera thường giống nhau giữa các biến thể.
- * Thông số riêng của từng biến thể (RAM, ROM, pin) đã có cột riêng trong bien_the_san_pham.
+ * ThÃ´ng sá»‘ ká»¹ thuáº­t gáº¯n vá»›i SanPham (model), khÃ´ng pháº£i BienTheSanPham,
+ * vÃ¬ cÃ¡c thÃ´ng sá»‘ nhÆ° CPU, mÃ n hÃ¬nh, camera thÆ°á»ng giá»‘ng nhau giá»¯a cÃ¡c biáº¿n thá»ƒ.
+ * ThÃ´ng sá»‘ riÃªng cá»§a tá»«ng biáº¿n thá»ƒ (RAM, ROM, pin) Ä‘Ã£ cÃ³ cá»™t riÃªng trong bien_the_san_pham.
  */
 @Entity
 @Table(
@@ -27,6 +27,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class ThongSoKyThuat {
 
     @Id
@@ -34,8 +35,8 @@ public class ThongSoKyThuat {
     private Integer id;
 
     /**
-     * Sản phẩm mà thông số này thuộc về.
-     * ON DELETE CASCADE – xóa sản phẩm thì thông số tự xóa theo.
+     * Sáº£n pháº©m mÃ  thÃ´ng sá»‘ nÃ y thuá»™c vá».
+     * ON DELETE CASCADE â€“ xÃ³a sáº£n pháº©m thÃ¬ thÃ´ng sá»‘ tá»± xÃ³a theo.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -46,28 +47,28 @@ public class ThongSoKyThuat {
     private SanPham sanPham;
 
     /**
-     * Nhóm thông số kỹ thuật (DEFAULT 'Thông tin chung').
-     * Ví dụ: "Màn hình", "Camera", "Hiệu năng", "Kết nối", "Pin & Sạc".
+     * NhÃ³m thÃ´ng sá»‘ ká»¹ thuáº­t (DEFAULT 'ThÃ´ng tin chung').
+     * VÃ­ dá»¥: "MÃ n hÃ¬nh", "Camera", "Hiá»‡u nÄƒng", "Káº¿t ná»‘i", "Pin & Sáº¡c".
      */
     @Column(name = "nhom", nullable = false, length = 100)
     @Builder.Default
-    private String nhom = "Thông tin chung";
+    private String nhom = "ThÃ´ng tin chung";
 
     /**
-     * Tên thông số kỹ thuật.
-     * Ví dụ: "Kích thước màn hình", "Độ phân giải", "CPU".
+     * TÃªn thÃ´ng sá»‘ ká»¹ thuáº­t.
+     * VÃ­ dá»¥: "KÃ­ch thÆ°á»›c mÃ n hÃ¬nh", "Äá»™ phÃ¢n giáº£i", "CPU".
      */
     @Column(name = "ten_thong_so", nullable = false, length = 100)
     private String tenThongSo;
 
     /**
-     * Giá trị của thông số.
-     * Ví dụ: "6.7 inch", "2796 x 1290 pixels", "Apple A17 Pro".
+     * GiÃ¡ trá»‹ cá»§a thÃ´ng sá»‘.
+     * VÃ­ dá»¥: "6.7 inch", "2796 x 1290 pixels", "Apple A17 Pro".
      */
     @Column(name = "gia_tri", nullable = false, length = 255)
     private String giaTri;
 
-    /** Thứ tự hiển thị trong nhóm (DEFAULT 0). */
+    /** Thá»© tá»± hiá»ƒn thá»‹ trong nhÃ³m (DEFAULT 0). */
     @Column(name = "thu_tu", nullable = false)
     @Builder.Default
     private Integer thuTu = 0;

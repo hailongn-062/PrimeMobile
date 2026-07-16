@@ -6,26 +6,26 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * Entity mapping bảng yeu_thich (Module 13: Wishlist).
+ * Entity mapping báº£ng yeu_thich (Module 13: Wishlist).
  * <p>
- * Danh sách sản phẩm yêu thích của khách hàng.
- * Mỗi cặp (khachHang, sanPham) là DUY NHẤT — khách không thể thêm
- * cùng 1 sản phẩm vào wishlist 2 lần.
+ * Danh sÃ¡ch sáº£n pháº©m yÃªu thÃ­ch cá»§a khÃ¡ch hÃ ng.
+ * Má»—i cáº·p (khachHang, sanPham) lÃ  DUY NHáº¤T â€” khÃ¡ch khÃ´ng thá»ƒ thÃªm
+ * cÃ¹ng 1 sáº£n pháº©m vÃ o wishlist 2 láº§n.
  * <p>
- * Ghi chú (system_rules.md §7 – Tạm hoãn):
- *  Tính năng Wishlist và thuật toán ưu tiên sản phẩm yêu thích trong
- *  kết quả tìm kiếm tạm thời BỊ HOÃN.
- *  Entity vẫn được tạo đủ để mapping DB.
+ * Ghi chÃº (system_rules.md Â§7 â€“ Táº¡m hoÃ£n):
+ *  TÃ­nh nÄƒng Wishlist vÃ  thuáº­t toÃ¡n Æ°u tiÃªn sáº£n pháº©m yÃªu thÃ­ch trong
+ *  káº¿t quáº£ tÃ¬m kiáº¿m táº¡m thá»i Bá»Š HOÃƒN.
+ *  Entity váº«n Ä‘Æ°á»£c táº¡o Ä‘á»§ Ä‘á»ƒ mapping DB.
  * <p>
- * Quan hệ:
- *  - N:1 với {@link KhachHang} (FK khach_hang_id, ON DELETE CASCADE)
- *  - N:1 với {@link SanPham}   (FK san_pham_id)
+ * Quan há»‡:
+ *  - N:1 vá»›i {@link KhachHang} (FK khach_hang_id, ON DELETE CASCADE)
+ *  - N:1 vá»›i {@link SanPham}   (FK san_pham_id)
  */
 @Entity
 @Table(
         name = "yeu_thich",
         uniqueConstraints = {
-                // Mỗi khách hàng chỉ có thể thêm 1 sản phẩm vào wishlist 1 lần
+                // Má»—i khÃ¡ch hÃ ng chá»‰ cÃ³ thá»ƒ thÃªm 1 sáº£n pháº©m vÃ o wishlist 1 láº§n
                 @UniqueConstraint(name = "uq_yt", columnNames = {"khach_hang_id", "san_pham_id"})
         }
 )
@@ -33,6 +33,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class YeuThich {
 
     @Id
@@ -40,8 +41,8 @@ public class YeuThich {
     private Integer id;
 
     /**
-     * Khách hàng sở hữu mục yêu thích này.
-     * ON DELETE CASCADE – xóa khách hàng thì wishlist tự xóa.
+     * KhÃ¡ch hÃ ng sá»Ÿ há»¯u má»¥c yÃªu thÃ­ch nÃ y.
+     * ON DELETE CASCADE â€“ xÃ³a khÃ¡ch hÃ ng thÃ¬ wishlist tá»± xÃ³a.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -52,7 +53,7 @@ public class YeuThich {
     private KhachHang khachHang;
 
     /**
-     * Sản phẩm được yêu thích.
+     * Sáº£n pháº©m Ä‘Æ°á»£c yÃªu thÃ­ch.
      * NOT NULL.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -63,7 +64,7 @@ public class YeuThich {
     )
     private SanPham sanPham;
 
-    /** Thời điểm thêm sản phẩm vào danh sách yêu thích. */
+    /** Thá»i Ä‘iá»ƒm thÃªm sáº£n pháº©m vÃ o danh sÃ¡ch yÃªu thÃ­ch. */
     @Column(name = "ngay_them", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime ngayThem = LocalDateTime.now();

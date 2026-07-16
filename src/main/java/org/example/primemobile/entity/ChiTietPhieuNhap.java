@@ -6,21 +6,21 @@ import lombok.*;
 import java.math.BigDecimal;
 
 /**
- * Entity mapping bảng chi_tiet_phieu_nhap (Module 3: Kho hàng).
+ * Entity mapping báº£ng chi_tiet_phieu_nhap (Module 3: Kho hÃ ng).
  * <p>
- * Mỗi dòng chi tiết = 1 SKU được nhập với số lượng và đơn giá nhập cụ thể.
+ * Má»—i dÃ²ng chi tiáº¿t = 1 SKU Ä‘Æ°á»£c nháº­p vá»›i sá»‘ lÆ°á»£ng vÃ  Ä‘Æ¡n giÃ¡ nháº­p cá»¥ thá»ƒ.
  * <p>
- * ⚠️ QUAN TRỌNG – Cột tính toán (Computed Column):
- * Cột {@code thanh_tien} trong SQL Server được định nghĩa là:
+ * âš ï¸ QUAN TRá»ŒNG â€“ Cá»™t tÃ­nh toÃ¡n (Computed Column):
+ * Cá»™t {@code thanh_tien} trong SQL Server Ä‘Æ°á»£c Ä‘á»‹nh nghÄ©a lÃ :
  * {@code AS (so_luong * don_gia_nhap) PERSISTED}
- * Do đó, trường {@code thanhTien} PHẢI được khai báo với:
+ * Do Ä‘Ã³, trÆ°á»ng {@code thanhTien} PHáº¢I Ä‘Æ°á»£c khai bÃ¡o vá»›i:
  * {@code @Column(insertable = false, updatable = false)}
- * để Hibernate KHÔNG cố gắng INSERT/UPDATE vào cột này,
- * tránh lỗi "Cannot update a computed column" làm sập ứng dụng.
+ * Ä‘á»ƒ Hibernate KHÃ”NG cá»‘ gáº¯ng INSERT/UPDATE vÃ o cá»™t nÃ y,
+ * trÃ¡nh lá»—i "Cannot update a computed column" lÃ m sáº­p á»©ng dá»¥ng.
  * <p>
- * Quan hệ:
- *  - N:1 với {@link PhieuNhapKho}   (FK phieu_nhap_id, ON DELETE CASCADE)
- *  - N:1 với {@link BienTheSanPham} (FK bien_the_san_pham_id)
+ * Quan há»‡:
+ *  - N:1 vá»›i {@link PhieuNhapKho}   (FK phieu_nhap_id, ON DELETE CASCADE)
+ *  - N:1 vá»›i {@link BienTheSanPham} (FK bien_the_san_pham_id)
  */
 @Entity
 @Table(name = "chi_tiet_phieu_nhap")
@@ -28,6 +28,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class ChiTietPhieuNhap {
 
     @Id
@@ -35,8 +36,8 @@ public class ChiTietPhieuNhap {
     private Integer id;
 
     /**
-     * Phiếu nhập kho chứa dòng chi tiết này.
-     * ON DELETE CASCADE ở DB – xóa phiếu nhập thì chi tiết tự xóa theo.
+     * Phiáº¿u nháº­p kho chá»©a dÃ²ng chi tiáº¿t nÃ y.
+     * ON DELETE CASCADE á»Ÿ DB â€“ xÃ³a phiáº¿u nháº­p thÃ¬ chi tiáº¿t tá»± xÃ³a theo.
      */
     @com.fasterxml.jackson.annotation.JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -48,7 +49,7 @@ public class ChiTietPhieuNhap {
     private PhieuNhapKho phieuNhapKho;
 
     /**
-     * Biến thể sản phẩm (SKU) được nhập trong dòng này.
+     * Biáº¿n thá»ƒ sáº£n pháº©m (SKU) Ä‘Æ°á»£c nháº­p trong dÃ²ng nÃ y.
      * NOT NULL.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -59,21 +60,21 @@ public class ChiTietPhieuNhap {
     )
     private BienTheSanPham bienTheSanPham;
 
-    /** Số lượng nhập trong dòng này. Phải > 0. */
+    /** Sá»‘ lÆ°á»£ng nháº­p trong dÃ²ng nÃ y. Pháº£i > 0. */
     @Column(name = "so_luong", nullable = false)
     private Integer soLuong;
 
-    /** Đơn giá nhập (giá mua từ NCC) cho 1 đơn vị SKU. */
+    /** ÄÆ¡n giÃ¡ nháº­p (giÃ¡ mua tá»« NCC) cho 1 Ä‘Æ¡n vá»‹ SKU. */
     @Column(name = "don_gia_nhap", nullable = false, precision = 15, scale = 2)
     private BigDecimal donGiaNhap;
 
     /**
-     * ⚠️ CỘT TÍNH TOÁN TỰ ĐỘNG (Computed Column - PERSISTED):
-     * Được SQL Server tự tính theo công thức: so_luong * don_gia_nhap
+     * âš ï¸ Cá»˜T TÃNH TOÃN Tá»° Äá»˜NG (Computed Column - PERSISTED):
+     * ÄÆ°á»£c SQL Server tá»± tÃ­nh theo cÃ´ng thá»©c: so_luong * don_gia_nhap
      * <p>
-     * BẮT BUỘC dùng insertable = false, updatable = false:
-     *  - Hibernate sẽ ĐỌC giá trị này từ DB sau khi INSERT/UPDATE.
-     *  - Hibernate sẽ KHÔNG CỐ GẮNG ghi vào cột này, tránh lỗi runtime.
+     * Báº®T BUá»˜C dÃ¹ng insertable = false, updatable = false:
+     *  - Hibernate sáº½ Äá»ŒC giÃ¡ trá»‹ nÃ y tá»« DB sau khi INSERT/UPDATE.
+     *  - Hibernate sáº½ KHÃ”NG Cá» Gáº®NG ghi vÃ o cá»™t nÃ y, trÃ¡nh lá»—i runtime.
      */
     @Column(name = "thanh_tien", insertable = false, updatable = false, precision = 15, scale = 2)
     private BigDecimal thanhTien;

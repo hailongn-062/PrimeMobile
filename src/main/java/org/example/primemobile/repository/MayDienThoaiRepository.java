@@ -12,13 +12,14 @@ import java.util.Optional;
 @Repository
 public interface MayDienThoaiRepository extends JpaRepository<MayDienThoai, Integer> {
 
+    List<MayDienThoai> findByNguoiGiuIdAndDonHangIsNull(Integer nguoiGiuId);
+    
+    List<MayDienThoai> findByTinhTrangAndThoiGianGiuBeforeAndDonHangIsNull(String tinhTrang, java.time.LocalDateTime time);
+
     /**
      * Đếm số bản ghi máy điện thoại có trạng thái 'trong_kho'
-     * của một SKU cụ thể.
-     * <p>
-     * Lưu ý: Hàm này đếm TOÀN BỘ IMEI 'trong_kho' của SKU đó trong hệ thống
-     * (không phân biệt kho). Service layer sẽ so sánh với ton_kho của kho cụ thể.
-     * Dùng cho hàm tinhSoLuongImeiCanThem (system_rules.md §3.3).
+     * của một SKU cụ thể (toàn hệ thống, không phân biệt kho).
+     * Dùng cho hàm kiểm tra số lượng IMEI còn trong kho (system_rules.md §3.3).
      */
     @Query("""
             SELECT COUNT(m) FROM MayDienThoai m
@@ -28,46 +29,15 @@ public interface MayDienThoaiRepository extends JpaRepository<MayDienThoai, Inte
     long countTrongKhoByBienThe(@Param("bienTheSanPhamId") Integer bienTheSanPhamId);
 
     /**
-     * Đếm số bản ghi máy điện thoại có trạng thái 'trong_kho'
-     * của một SKU cụ thể tại một kho cụ thể.
-     * <p>
-     * Khác với {@link #countTrongKhoByBienThe(Integer)}, hàm này đếm IMEI
-     * theo từng kho riêng biệt, phục vụ cho việc quản lý IMEI độc lập
-     * giữa các kho (VD: Kho Tổng và Kho Online có thể có IMEI riêng
-     * cho cùng một SKU mà không ảnh hưởng lẫn nhau).
-     * <p>
-     * Dùng trong {@link org.example.primemobile.service.impl.MayDienThoaiServiceImpl#tinhSoLuongImeiCanThem(Integer, Integer)}
-     * để tính số IMEI còn thiếu tại một kho cụ thể.
-     *
-     * @param bienTheSanPhamId ID biến thể sản phẩm (SKU)
-     * @param khoId ID kho cần đếm
-     * @return Số lượng IMEI đang trong kho của SKU đó
-     */
-    @Query("""
-            SELECT COUNT(m) FROM MayDienThoai m
-            WHERE m.bienTheSanPham.id = :bienTheSanPhamId
-              AND m.tinhTrang = 'trong_kho'
-              AND m.kho.id = :khoId
-            """)
-    long countTrongKhoByBienTheAndKho(
-            @Param("bienTheSanPhamId") Integer bienTheSanPhamId,
-            @Param("khoId") Integer khoId
-    );
-
-    /**
      * Kiểm tra imei1 đã tồn tại trong database chưa.
      */
     boolean existsByImei1(String imei1);
 
     /**
      * Kiểm tra imei2 đã tồn tại trong database chưa.
+     * Dùng tại Service Layer vì DB dùng Filtered Unique Index (không enforce qua JPA).
      */
     boolean existsByImei2(String imei2);
-
-    /**
-     * Kiểm tra serial đã tồn tại trong database chưa.
-     */
-    boolean existsBySerial(String serial);
 
     /**
      * Tìm MayDienThoai theo imei1 (chính xác).
@@ -76,7 +46,7 @@ public interface MayDienThoaiRepository extends JpaRepository<MayDienThoai, Inte
     Optional<MayDienThoai> findByImei1(String imei1);
 
     /**
-     * Lấy danh sách máy còn trong kho của 1 biến thể SKU.
+     * Lấy danh sách máy còn trong kho của 1 biến thể SKU (toàn hệ thống).
      * Dùng để kiểm tra IMEI nhân viên nhập có thực sự 'trong_kho' không.
      */
     @Query("""
@@ -87,23 +57,6 @@ public interface MayDienThoaiRepository extends JpaRepository<MayDienThoai, Inte
     List<MayDienThoai> findTrongKhoByBienTheId(@Param("bienTheId") Integer bienTheId);
 
     /**
-     * Lấy danh sách máy còn trong kho của 1 biến thể SKU theo kho cụ thể.
-     * Dùng để lọc IMEI theo kho (ví dụ chỉ lấy IMEI ở Kho Online).
-     *
-     * @param bienTheId ID biến thể sản phẩm.
-     * @param khoId     ID kho cần lọc.
-     * @return Danh sách IMEI đang 'trong_kho' tại kho đó.
-     */
-    @Query("""
-            SELECT m FROM MayDienThoai m
-            WHERE m.bienTheSanPham.id = :bienTheId
-              AND m.tinhTrang = 'trong_kho'
-              AND m.kho.id = :khoId
-            """)
-    List<MayDienThoai> findTrongKhoByBienTheIdAndKhoId(@Param("bienTheId") Integer bienTheId,
-                                                       @Param("khoId") Integer khoId);
-
-    /**
      * Lấy danh sách IMEI của một biến thể SKU theo trạng thái cụ thể.
      * Dùng cho màn hình POS để hiển thị danh sách IMEI có sẵn cho nhân viên chọn.
      * <p>
@@ -112,32 +65,11 @@ public interface MayDienThoaiRepository extends JpaRepository<MayDienThoai, Inte
      * {@link #findByBienTheSanPhamId(Integer)}.
      *
      * @param bienTheSanPhamId ID biến thể sản phẩm (SKU) cần lấy.
-     * @param tinhTrang        Trạng thái IMEI cần lọc (ví dụ: 'trong_kho',
-     *                         'da_ban', ...).
+     * @param tinhTrang        Trạng thái IMEI cần lọc (ví dụ: 'trong_kho', 'da_ban').
      *                         <b>Không được null.</b>
      * @return Danh sách {@link MayDienThoai} có trạng thái tương ứng.
      */
     List<MayDienThoai> findByBienTheSanPhamIdAndTinhTrang(Integer bienTheSanPhamId, String tinhTrang);
-
-    /**
-     * Lấy danh sách IMEI của một biến thể SKU theo trạng thái và kho cụ thể.
-     * Dùng khi xác nhận đơn online để chỉ chọn IMEI ở Kho Online.
-     *
-     * @param bienTheSanPhamId ID biến thể sản phẩm (SKU) cần lấy.
-     * @param tinhTrang        Trạng thái IMEI cần lọc (ví dụ: 'trong_kho').
-     * @param khoId            ID kho cần lọc.
-     * @return Danh sách {@link MayDienThoai} có trạng thái và kho tương ứng.
-     */
-    @Query("""
-            SELECT m FROM MayDienThoai m
-            WHERE m.bienTheSanPham.id = :bienTheSanPhamId
-              AND m.tinhTrang = :tinhTrang
-              AND m.kho.id = :khoId
-            """)
-    List<MayDienThoai> findByBienTheSanPhamIdAndTinhTrangAndKhoId(
-            @Param("bienTheSanPhamId") Integer bienTheSanPhamId,
-            @Param("tinhTrang") String tinhTrang,
-            @Param("khoId") Integer khoId);
 
     /**
      * Lấy tất cả IMEI của một biến thể (không lọc theo trạng thái).
@@ -147,23 +79,6 @@ public interface MayDienThoaiRepository extends JpaRepository<MayDienThoai, Inte
      * @return Danh sách tất cả {@link MayDienThoai} thuộc biến thể đó.
      */
     List<MayDienThoai> findByBienTheSanPhamId(Integer bienTheSanPhamId);
-
-    /**
-     * Lấy danh sách IMEI của một biến thể theo kho (không lọc trạng thái).
-     * Dùng khi không cần lọc theo tinhTrang.
-     *
-     * @param bienTheSanPhamId ID biến thể sản phẩm.
-     * @param khoId            ID kho cần lọc.
-     * @return Danh sách {@link MayDienThoai} thuộc biến thể và kho đó.
-     */
-    @Query("""
-            SELECT m FROM MayDienThoai m
-            WHERE m.bienTheSanPham.id = :bienTheSanPhamId
-              AND m.kho.id = :khoId
-            """)
-    List<MayDienThoai> findByBienTheSanPhamIdAndKhoId(
-            @Param("bienTheSanPhamId") Integer bienTheSanPhamId,
-            @Param("khoId") Integer khoId);
 
     /**
      * Lấy danh sách IMEI đã được gán cho một đơn hàng cụ thể với trạng thái xác định.
@@ -187,4 +102,10 @@ public interface MayDienThoaiRepository extends JpaRepository<MayDienThoai, Inte
             @Param("donHangId") Integer donHangId,
             @Param("tinhTrang") String tinhTrang
     );
+
+    @Query("""
+            SELECT m FROM MayDienThoai m 
+            WHERE m.donHang.id = :donHangId
+            """)
+    List<MayDienThoai> findByDonHangId(@Param("donHangId") Integer donHangId);
 }

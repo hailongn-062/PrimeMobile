@@ -33,8 +33,8 @@ public class SanPhamPublicUIController {
 
     private static final int PAGE_SIZE = 12;
     private static final int SEARCH_LIMIT = 200;
-    private static final String LOAI_KHO_ONLINE = "kho_online";
-    private static final int TON_KHO_TOI_THIEU_DE_BAN = 5;
+    private static final int    KHO_ID                  = 1; // Kho duy nhất trong hệ thống
+    private static final int    TON_KHO_TOI_THIEU_DE_BAN = 5;
 
     private final ISanPhamService sanPhamService;
     private final IDanhMucService danhMucService;
@@ -172,13 +172,47 @@ public class SanPhamPublicUIController {
             giaSauKhuyenMaiTheoBienThe.put(bt.getId(), giaSauKM != null ? giaSauKM : bt.getGiaBan());
         }
 
+        // ── Tạo danh sách JSON để frontend xử lý động ──
+        List<Map<String, Object>> variantsJson = new java.util.ArrayList<>();
+        for (BienTheSanPham bt : bienTheSanPhams) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", bt.getId());
+            map.put("sku", bt.getMaSku());
+            map.put("ramGb", bt.getRamGb());
+            map.put("luuTruGb", bt.getLuuTruGb());
+            map.put("versionKey", formatDungLuong(bt.getLuuTruGb()));
+            map.put("mauSac", bt.getMauSac());
+            map.put("maMauHex", bt.getMaMauHex() != null ? bt.getMaMauHex() : "#e5e7eb");
+            map.put("giaBan", bt.getGiaBan());
+            map.put("giaSauKM", giaSauKhuyenMaiTheoBienThe.getOrDefault(bt.getId(), bt.getGiaBan()));
+            map.put("coTheBan", soLuongCoTheBanTheoBienThe.getOrDefault(bt.getId(), 0));
+            map.put("trangThai", bt.getTrangThai());
+            
+            String hinhAnh = null;
+            if (bt.getHinhAnhSanPhams() != null && !bt.getHinhAnhSanPhams().isEmpty()) {
+                hinhAnh = bt.getHinhAnhSanPhams().get(0).getDuongDan();
+            }
+            map.put("hinhAnh", hinhAnh);
+            variantsJson.add(map);
+        }
+        
         model.addAttribute("sanPham", sanPham);
         model.addAttribute("bienTheSanPhams", bienTheSanPhams);
         model.addAttribute("tonKhoTheoBienThe", tonKhoTheoBienThe);
         model.addAttribute("soLuongCoTheBanTheoBienThe", soLuongCoTheBanTheoBienThe);
         model.addAttribute("tonKhoToiThieuDeBan", TON_KHO_TOI_THIEU_DE_BAN);
-        model.addAttribute("thongSoKyThuats", thongSoKyThuatService.layTheoSanPham(id));
-        model.addAttribute("giaSauKhuyenMaiTheoBienThe", giaSauKhuyenMaiTheoBienThe); // ✅ Truyền vào view
+        
+        List<org.example.primemobile.entity.ThongSoKyThuat> thongSoKyThuats = thongSoKyThuatService.layTheoSanPham(id);
+        java.util.Map<String, java.util.List<org.example.primemobile.entity.ThongSoKyThuat>> thongSoKyThuatGrouped = new java.util.LinkedHashMap<>();
+        for (org.example.primemobile.entity.ThongSoKyThuat ts : thongSoKyThuats) {
+            String nhom = (ts.getNhom() != null && !ts.getNhom().trim().isEmpty()) ? ts.getNhom() : "Thông tin chung";
+            thongSoKyThuatGrouped.computeIfAbsent(nhom, k -> new java.util.ArrayList<>()).add(ts);
+        }
+        
+        model.addAttribute("thongSoKyThuats", thongSoKyThuats);
+        model.addAttribute("thongSoKyThuatGrouped", thongSoKyThuatGrouped);
+        model.addAttribute("giaSauKhuyenMaiTheoBienThe", giaSauKhuyenMaiTheoBienThe); 
+        model.addAttribute("variantsJson", variantsJson); 
         model.addAttribute("pageTitle", sanPham.getTenSanPham());
         return "san-pham/chi-tiet";
     }
@@ -191,7 +225,7 @@ public class SanPhamPublicUIController {
             return Map.of();
         }
 
-        return tonKhoRepository.tongTonKhoTheoBienTheIds(LOAI_KHO_ONLINE, ids)
+        return tonKhoRepository.tongTonKhoTheoBienTheIds(KHO_ID, ids)
                 .stream()
                 .collect(Collectors.toMap(
                         row -> ((Number) row[0]).intValue(),
@@ -234,5 +268,13 @@ public class SanPhamPublicUIController {
 
     private String normalize(String value) {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String formatDungLuong(Integer gb) {
+        if (gb == null) return "";
+        if (gb >= 1024 && gb % 1024 == 0) {
+            return (gb / 1024) + "TB";
+        }
+        return gb + "GB";
     }
 }

@@ -6,20 +6,20 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * Entity mapping bảng ton_kho (Module 3: Kho hàng).
+ * Entity mapping báº£ng ton_kho (Module 3: Kho hÃ ng).
  * <p>
- * Lưu số lượng tồn kho của từng biến thể SKU tại từng kho.
- * Mỗi cặp (kho, bienTheSanPham) là DUY NHẤT trong bảng.
+ * LÆ°u sá»‘ lÆ°á»£ng tá»“n kho cá»§a tá»«ng biáº¿n thá»ƒ SKU táº¡i tá»«ng kho.
+ * Má»—i cáº·p (kho, bienTheSanPham) lÃ  DUY NHáº¤T trong báº£ng.
  * <p>
- * ⚠️ Ràng buộc quan trọng (system_rules.md §3.1 – Safety Stock Rule):
- *  Mức tồn kho tối thiểu bắt buộc = 5 sản phẩm/SKU/kho.
- *  Logic chặn xuất hàng phải được kiểm tra ở Service Layer trước khi UPDATE.
+ * âš ï¸ RÃ ng buá»™c quan trá»ng (system_rules.md Â§3.1 â€“ Safety Stock Rule):
+ *  Má»©c tá»“n kho tá»‘i thiá»ƒu báº¯t buá»™c = 5 sáº£n pháº©m/SKU/kho.
+ *  Logic cháº·n xuáº¥t hÃ ng pháº£i Ä‘Æ°á»£c kiá»ƒm tra á»Ÿ Service Layer trÆ°á»›c khi UPDATE.
  * <p>
- * Ràng buộc DB: CHECK (so_luong >= 0) – không cho phép âm kho.
+ * RÃ ng buá»™c DB: CHECK (so_luong >= 0) â€“ khÃ´ng cho phÃ©p Ã¢m kho.
  * <p>
- * Quan hệ:
- *  - N:1 với {@link Kho}             (FK kho_id)
- *  - N:1 với {@link BienTheSanPham}  (FK bien_the_san_pham_id)
+ * Quan há»‡:
+ *  - N:1 vá»›i {@link Kho}             (FK kho_id)
+ *  - N:1 vá»›i {@link BienTheSanPham}  (FK bien_the_san_pham_id)
  */
 @Entity
 @Table(
@@ -28,7 +28,7 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_tk_bt", columnList = "bien_the_san_pham_id")
         },
         uniqueConstraints = {
-                // Đảm bảo mỗi cặp (kho, SKU) chỉ có đúng 1 bản ghi tồn kho
+                // Äáº£m báº£o má»—i cáº·p (kho, SKU) chá»‰ cÃ³ Ä‘Ãºng 1 báº£n ghi tá»“n kho
                 @UniqueConstraint(name = "uq_ton_kho", columnNames = {"kho_id", "bien_the_san_pham_id"})
         }
 )
@@ -36,6 +36,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class TonKho {
 
     @Id
@@ -43,8 +44,8 @@ public class TonKho {
     private Integer id;
 
     /**
-     * Kho chứa hàng.
-     * NOT NULL – mỗi bản ghi tồn kho phải thuộc về một kho cụ thể.
+     * Kho chá»©a hÃ ng.
+     * NOT NULL â€“ má»—i báº£n ghi tá»“n kho pháº£i thuá»™c vá» má»™t kho cá»¥ thá»ƒ.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -55,7 +56,7 @@ public class TonKho {
     private Kho kho;
 
     /**
-     * Biến thể sản phẩm (SKU) đang được theo dõi tồn kho.
+     * Biáº¿n thá»ƒ sáº£n pháº©m (SKU) Ä‘ang Ä‘Æ°á»£c theo dÃµi tá»“n kho.
      * NOT NULL.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -67,15 +68,15 @@ public class TonKho {
     private BienTheSanPham bienTheSanPham;
 
     /**
-     * Số lượng tồn kho hiện tại (DEFAULT 0).
-     * CHECK constraint ở DB đảm bảo >= 0.
-     * Service Layer phải chặn không cho giảm xuống dưới 5 (Safety Stock).
+     * Sá»‘ lÆ°á»£ng tá»“n kho hiá»‡n táº¡i (DEFAULT 0).
+     * CHECK constraint á»Ÿ DB Ä‘áº£m báº£o >= 0.
+     * Service Layer pháº£i cháº·n khÃ´ng cho giáº£m xuá»‘ng dÆ°á»›i 5 (Safety Stock).
      */
     @Column(name = "so_luong", nullable = false)
     @Builder.Default
     private Integer soLuong = 0;
 
-    /** Thời điểm cập nhật tồn kho gần nhất. */
+    /** Thá»i Ä‘iá»ƒm cáº­p nháº­t tá»“n kho gáº§n nháº¥t. */
     @Column(name = "updated_at", nullable = false)
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();

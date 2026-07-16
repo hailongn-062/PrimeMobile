@@ -27,20 +27,18 @@ import java.util.stream.Collectors;
  *
  * <h3>Quy tắc nghiệp vụ (system_rules.md §3.3):</h3>
  * <ul>
- * <li>Mỗi chiếc điện thoại vật lý được định danh qua cụm (imei1, imei2,
- * serial).</li>
+ * <li>Mỗi chiếc điện thoại vật lý được định danh qua cặp (imei1, imei2).</li>
  * <li><b>Chặn thêm thừa:</b> Số IMEI {@code trong_kho} của 1 SKU KHÔNG ĐƯỢC
- * vượt quá tổng tồn kho (kho_tong + kho_online) của SKU đó.</li>
- * <li>imei1, imei2, serial phải duy nhất toàn hệ thống.</li>
- * <li>IMEI được gắn với một kho vật lý cụ thể (kho_id).</li>
+ * vượt quá tổng tồn kho của SKU đó.</li>
+ * <li>imei1, imei2 phải duy nhất toàn hệ thống.</li>
  * </ul>
  *
  * <h3>Endpoints:</h3>
  *
  * <pre>
- *   POST /api/admin/imei/nhap                               → Nhập danh sách IMEI mới cho 1 SKU
- *   GET  /api/admin/imei/can-them/{khoId}/{bienTheId}       → Xem số IMEI còn cần nhập thêm
- *   GET  /api/admin/imei/danh-sach                          → Lấy danh sách IMEI theo biến thể và trạng thái (có thể lọc theo kho)
+ *   POST /api/admin/imei/nhap                       → Nhập danh sách IMEI mới cho 1 SKU
+ *   GET  /api/admin/imei/can-them/{khoId}/{bienTheId} → Xem số IMEI còn cần nhập thêm
+ *   GET  /api/admin/imei/danh-sach                   → Lấy danh sách IMEI theo biến thể và trạng thái
  * </pre>
  */
 @RestController
@@ -63,17 +61,17 @@ public class MayDienThoaiController {
      *
      * <pre>{@code
      * [
-     *   { "imei1": "123456789012345", "imei2": "123456789012346", "serial": "SN-A001" },
-     *   { "imei1": "987654321098765", "imei2": null,              "serial": "SN-A002" }
+     *   { "imei1": "123456789012345", "imei2": "123456789012346" },
+     *   { "imei1": "987654321098765", "imei2": null }
      * ]
      * }</pre>
      *
      * <h3>Luồng nghiệp vụ (system_rules.md §3.3):</h3>
      * <ol>
      * <li>Kiểm tra số IMEI còn thiếu của SKU tại kho.</li>
-     * <li><b>Chặn thêm thừa:</b> Nếu số lượng gửi lên > số còn thiếu → HTTP
+     * <li><b>Chặn thêm thừa:</b> Nếu số lượng gửi lên &gt; số còn thiếu → HTTP
      * 400.</li>
-     * <li>Kiểm tra trùng lặp imei1/imei2/serial trong DB.</li>
+     * <li>Kiểm tra trùng lặp imei1/imei2 trong DB.</li>
      * <li>Lưu tất cả với tinhTrang = {@code "trong_kho"} và gán kho_id.</li>
      * </ol>
      *
@@ -200,27 +198,14 @@ public class MayDienThoaiController {
     public ResponseEntity<?> layDanhSachImei(
             @RequestParam Integer bienTheSanPhamId,
             @RequestParam(required = false) String tinhTrang,
-            @RequestParam(required = false) Integer khoId,
             @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
 
-        log.info("[IMEI] Lấy danh sách IMEI — bienTheId={}, tinhTrang={}, khoId={}, nhanVienId={}",
-                bienTheSanPhamId, tinhTrang, khoId, sessionUser.getId());
+        log.info("[IMEI] Lấy danh sách IMEI — bienTheId={}, tinhTrang={}, nhanVienId={}",
+                bienTheSanPhamId, tinhTrang, sessionUser.getId());
 
         try {
-            List<MayDienThoai> danhSachEntity;
-
-            if (khoId != null) {
-                // Lọc theo kho
-                danhSachEntity = mayDienThoaiService.layDanhSachTheoBienTheVaTrangThaiVaKho(
-                        bienTheSanPhamId,
-                        tinhTrang != null ? tinhTrang : "trong_kho",
-                        khoId);
-            } else {
-                // Không lọc theo kho
-                danhSachEntity = mayDienThoaiService.layDanhSachTheoBienTheVaTrangThai(
-                        bienTheSanPhamId,
-                        tinhTrang);
-            }
+            List<MayDienThoai> danhSachEntity = mayDienThoaiService
+                    .layDanhSachTheoBienTheVaTrangThai(bienTheSanPhamId, tinhTrang);
 
             // Đảm bảo danh sách không null
             if (danhSachEntity == null) {
@@ -233,7 +218,6 @@ public class MayDienThoaiController {
                             m.getId(),
                             m.getImei1(),
                             m.getImei2(),
-                            m.getSerial(),
                             m.getTinhTrang()))
                     .collect(Collectors.toList());
 

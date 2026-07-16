@@ -32,8 +32,8 @@
     <section class="pm-panel p-3 p-lg-4 mb-4">
         <div class="d-flex flex-wrap gap-2 mb-3">
             <span class="pm-badge">
-                <i th:class="${khuyenMai.loai == 'flash_sale'} ? 'fa fa-bolt' : 'fa fa-gift'"></i>
-                <span th:text="${khuyenMai.loai == 'flash_sale' ? 'Flash Sale' : (khuyenMai.loai == 'don_hang_toi_thieu' ? 'Đơn hàng tối thiểu' : (khuyenMai.loai == 'phan_tram' ? 'Giảm phần trăm' : 'Giảm trực tiếp'))}">Loại</span>
+                <i class="fa fa-gift"></i>
+                <span th:text="${khuyenMai.loai == 'don_hang_toi_thieu' ? 'Đơn hàng tối thiểu' : (khuyenMai.loai == 'phan_tram' ? 'Giảm phần trăm' : 'Giảm trực tiếp')}">Loại</span>
             </span>
             <span class="pm-badge" th:text="${khuyenMai.trangThai == 'chua_bat_dau' ? 'Sắp diễn ra' : (khuyenMai.trangThai == 'dang_dien_ra' ? 'Đang diễn ra' : 'Tạm dừng')}">Trạng thái</span>
         </div>
@@ -68,35 +68,7 @@
         </div>
     </section>
 
-    <section class="pm-panel p-3 p-lg-4 mb-4" th:if="${khuyenMai.loai == 'flash_sale'}">
-        <h2 class="h5 fw-bold mb-3">Biến thể áp dụng Flash Sale</h2>
-        <div class="table-responsive" th:if="${flashSales != null and !#lists.isEmpty(flashSales)}">
-            <table class="table align-middle mb-0">
-                <thead>
-                <tr>
-                    <th>Sản phẩm</th>
-                    <th>Phiên bản</th>
-                    <th>Ưu đãi</th>
-                    <th>Giới hạn</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="fs : ${flashSales}">
-                    <td th:text="${fs.bienTheSanPham.sanPham.tenSanPham}">Sản phẩm</td>
-                    <td>
-                        <span th:text="${fs.bienTheSanPham.mauSac}">Màu</span>
-                        <span th:text="' · ' + ${fs.bienTheSanPham.ramGb} + 'GB/' + ${fs.bienTheSanPham.luuTruGb} + 'GB'"> · RAM/ROM</span>
-                    </td>
-                    <td class="fw-bold text-danger" th:text="${#numbers.formatDecimal(fs.phanTramGiam, 0, 'COMMA', 0, 'POINT')}">0</td>
-                    <td><span th:text="${fs.daBan}">0</span>/<span th:text="${fs.soLuongGioiHan}">0</span></td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="pm-empty" th:if="${flashSales == null or #lists.isEmpty(flashSales)}">Chưa có biến thể trong chương trình này.</div>
-    </section>
-
-    <section class="pm-panel p-3 p-lg-4 mb-4" th:unless="${khuyenMai.loai == 'flash_sale'}">
+    <section class="pm-panel p-3 p-lg-4 mb-4">
         <h2 class="h5 fw-bold mb-3">Sản phẩm áp dụng</h2>
         <div class="row g-2" th:if="${phamVis != null and !#lists.isEmpty(phamVis)}">
             <div class="col-md-6" th:each="pv : ${phamVis}">

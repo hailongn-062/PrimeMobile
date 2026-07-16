@@ -12,7 +12,7 @@ import java.util.List;
  * DTO đầu vào cho chức năng Tạo Phiếu Nhập Kho.
  * <p>
  * Nhân viên / Admin điền thông tin lô hàng nhận từ Nhà Cung Cấp.
- * Kho đích BẮT BUỘC phải là Kho Tổng (loai = 'kho_tong').
+ * Kho đích BẮT BUỘC phải là kho duy nhất trong hệ thống (ID = 1).
  */
 @Data
 @NoArgsConstructor
@@ -20,7 +20,7 @@ import java.util.List;
 @Builder
 public class TaoPhieuNhapKhoRequest {
 
-    /** ID kho nhận hàng — PHẢI là Kho Tổng. */
+    /** ID kho nhận hàng — PHẢI là kho mặc định (ID = 1). */
     private Integer khoId;
 
     /** ID nhà cung cấp (nullable — cho phép nhập không rõ NCC). */
@@ -50,5 +50,8 @@ public class TaoPhieuNhapKhoRequest {
 
         /** Đơn giá nhập từ NCC. Phải >= 0. */
         private BigDecimal donGiaNhap;
+
+        /** Danh sách IMEI đính kèm (nếu import từ Excel). */
+        private List<ImeiImportRecord> imeiRecords;
     }
 }

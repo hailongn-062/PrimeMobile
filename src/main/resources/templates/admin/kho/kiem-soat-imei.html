@@ -177,14 +177,11 @@
                             <div class="col-md-1 text-center">
                                 <span class="badge bg-secondary rounded-circle p-2">${i + 1}</span>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-5">
                                 <input type="text" class="form-control form-control-sm imei1-input shadow-sm" placeholder="Mã IMEI 1 (Bắt buộc)" required>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <input type="text" class="form-control form-control-sm imei2-input shadow-sm" placeholder="Mã IMEI 2 (Tùy chọn)">
-                            </div>
-                            <div class="col-md-3">
-                                <input type="text" class="form-control form-control-sm serial-input shadow-sm" placeholder="Số Serial (Tùy chọn)">
                             </div>
                         </div>
                     `;
@@ -204,7 +201,6 @@
                 const row = rows[i];
                 const imei1 = row.querySelector(".imei1-input").value.trim();
                 const imei2 = row.querySelector(".imei2-input").value.trim();
-                const serial = row.querySelector(".serial-input").value.trim();
 
                 // Bắt buộc IMEI 1
                 if (!imei1) {
@@ -223,8 +219,7 @@
 
                 payload.push({
                     imei1: imei1,
-                    imei2: imei2 || null,
-                    serial: serial || null
+                    imei2: imei2 || null
                 });
             }
 

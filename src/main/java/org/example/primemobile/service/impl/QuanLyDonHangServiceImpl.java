@@ -20,14 +20,17 @@ import java.util.Set;
  *
  * <h2>Quy tắc nghiệp vụ cốt lõi (system_rules.md):</h2>
  * <ul>
- *   <li><b>§2.2.5 – Trừ kho khi xác nhận:</b> Kho_online bị trừ đúng tại bước {@code xacNhanDonHang},
- *       không phải lúc khách đặt hàng.</li>
- *   <li><b>§3.1 – Safety Stock Rule:</b> Sau khi trừ, tồn kho {@code kho_online}
- *       KHÔNG ĐƯỢC xuống dưới {@value #TON_KHO_TOI_THIEU} đơn vị / SKU.</li>
- *   <li><b>§2.2.7 – Hoàn kho khi hủy:</b> Nếu đơn đang ở {@code da_xac_nhan} hoặc {@code dang_giao}
- *       (kho đã bị trừ), BẮT BUỘC cộng hoàn lại vào kho_online khi hủy.</li>
- *   <li><b>§7.4 – Tạm hoãn tích điểm:</b> Không viết code cộng điểm / cộng tong_chi_tieu
- *       khi đơn chuyển sang {@code da_giao}.</li>
+ * <li><b>§2.2.5 – Trừ kho khi xác nhận:</b> Kho_online bị trừ đúng tại bước
+ * {@code xacNhanDonHang},
+ * không phải lúc khách đặt hàng.</li>
+ * <li><b>§3.1 – Safety Stock Rule:</b> Sau khi trừ, tồn kho {@code kho_online}
+ * KHÔNG ĐƯỢC xuống dưới {@value #TON_KHO_TOI_THIEU} đơn vị / SKU.</li>
+ * <li><b>§2.2.7 – Hoàn kho khi hủy:</b> Nếu đơn đang ở {@code da_xac_nhan} hoặc
+ * {@code dang_giao}
+ * (kho đã bị trừ), BẮT BUỘC cộng hoàn lại vào kho_online khi hủy.</li>
+ * <li><b>§7.4 – Tạm hoãn tích điểm:</b> Không viết code cộng điểm / cộng
+ * tong_chi_tieu
+ * khi đơn chuyển sang {@code da_hoan_thanh}.</li>
  * </ul>
  *
  * <h2>Chiến lược Transaction:</h2>
@@ -39,637 +42,717 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
 
-    // ───────────────────────────────────────────────────────────────────────
-    // HẰNG SỐ NGHIỆP VỤ
-    // ───────────────────────────────────────────────────────────────────────
+        // ───────────────────────────────────────────────────────────────────────
+        // HẰNG SỐ NGHIỆP VỤ
+        // ───────────────────────────────────────────────────────────────────────
 
-    /** Mức tồn kho tối thiểu bắt buộc (system_rules.md §3.1). */
-    private static final int TON_KHO_TOI_THIEU = 5;
+        /** Mức tồn kho tối thiểu bắt buộc (system_rules.md §3.1). */
+        private static final int TON_KHO_TOI_THIEU = 5;
 
-    /** Loại kho phục vụ đơn hàng online. */
-    private static final String LOAI_KHO_ONLINE = "kho_online";
+        /** Các trạng thái đơn hàng mà kho đã bị trừ — cần hoàn kho khi hủy. */
+        private static final Set<String> TRANG_THAI_DA_TRU_KHO = Set.of("da_xac_nhan", "dang_giao");
 
-    /** Các trạng thái đơn hàng mà kho đã bị trừ — cần hoàn kho khi hủy. */
-    private static final Set<String> TRANG_THAI_DA_TRU_KHO = Set.of("da_xac_nhan", "dang_giao");
+        // ───────────────────────────────────────────────────────────────────────
+        // DEPENDENCIES
+        // ───────────────────────────────────────────────────────────────────────
 
-    // ───────────────────────────────────────────────────────────────────────
-    // DEPENDENCIES
-    // ───────────────────────────────────────────────────────────────────────
+        private final DonHangRepository donHangRepository;
+        private final ChiTietDonHangRepository chiTietDonHangRepository;
+        private final KhoRepository khoRepository;
+        private final TonKhoRepository tonKhoRepository;
+        private final NguoiDungRepository nguoiDungRepository;
+        private final MayDienThoaiRepository mayDienThoaiRepository; // ✅ Thêm để kiểm tra IMEI
 
-    private final DonHangRepository             donHangRepository;
-    private final ChiTietDonHangRepository      chiTietDonHangRepository;
-    private final KhoRepository                 khoRepository;
-    private final TonKhoRepository              tonKhoRepository;
-    private final NguoiDungRepository           nguoiDungRepository;
-    private final MayDienThoaiRepository        mayDienThoaiRepository; // ✅ Thêm để kiểm tra IMEI
+        // =========================================================================
+        // 1. XEM DANH SÁCH & CHI TIẾT
+        // =========================================================================
 
-    // =========================================================================
-    // 1. XEM DANH SÁCH & CHI TIẾT
-    // =========================================================================
+        /**
+         * {@inheritDoc}
+         * <p>
+         * Read-only transaction để tối ưu hiệu năng.
+         */
+        @Override
+        @Transactional(readOnly = true)
+        public Page<DonHang> layDanhSachDonHang(String trangThai, String maDonHang,
+                        String soDienThoai, Pageable pageable) {
+                // Chuẩn hoá: chuỗi rỗng → null để query JPQL xử lý đúng điều kiện IS NULL
+                String tt = (trangThai != null && !trangThai.isBlank()) ? trangThai.trim() : null;
+                String ma = (maDonHang != null && !maDonHang.isBlank()) ? maDonHang.trim() : null;
+                String sdt = (soDienThoai != null && !soDienThoai.isBlank()) ? soDienThoai.trim() : null;
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Read-only transaction để tối ưu hiệu năng.
-     */
-    @Override
-    @Transactional(readOnly = true)
-    public Page<DonHang> layDanhSachDonHang(String trangThai, String maDonHang,
-                                            String soDienThoai, Pageable pageable) {
-        // Chuẩn hoá: chuỗi rỗng → null để query JPQL xử lý đúng điều kiện IS NULL
-        String tt  = (trangThai   != null && !trangThai.isBlank())   ? trangThai.trim()   : null;
-        String ma  = (maDonHang   != null && !maDonHang.isBlank())   ? maDonHang.trim()   : null;
-        String sdt = (soDienThoai != null && !soDienThoai.isBlank()) ? soDienThoai.trim() : null;
+                log.debug("[QuanLyDonHang] Tìm kiếm — trangThai={}, maDonHang={}, soDienThoai={}, page={}",
+                                tt, ma, sdt, pageable.getPageNumber());
 
-        log.debug("[QuanLyDonHang] Tìm kiếm — trangThai={}, maDonHang={}, soDienThoai={}, page={}",
-                tt, ma, sdt, pageable.getPageNumber());
-
-        return donHangRepository.timKiemDonHang(tt, ma, sdt, pageable);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @Transactional(readOnly = true)
-    public DonHang layChiTietDonHang(Integer donHangId) {
-        return donHangRepository.findByIdWithDetails(donHangId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Không tìm thấy đơn hàng có ID: " + donHangId));
-    }
-
-    // =========================================================================
-    // 2. XÁC NHẬN ĐƠN HÀNG (BƯỚC QUAN TRỌNG NHẤT — TRỪ KHO)
-    // =========================================================================
-
-    /**
-     * {@inheritDoc}
-     *
-     * <h3>Luồng chi tiết:</h3>
-     * <ol>
-     *   <li>Validate đơn hàng ở trạng thái {@code "cho_xac_nhan"}.</li>
-     *   <li>Load ChiTietDonHang với FETCH JOIN (tránh N+1).</li>
-     *   <li><b>Fail-Fast — PRE-VALIDATE toàn bộ:</b>
-     *       Với mỗi SKU: kiểm tra tồn kho kho_online &ge; (soLuong + Safety Stock).
-     *       Ném lỗi ngay nếu bất kỳ SKU nào vi phạm — chưa trừ dòng nào.</li>
-     *   <li><b>EXECUTE:</b> Tất cả pass → trừ kho từng dòng.</li>
-     *   <li>Cập nhật trạng thái đơn → {@code "da_xac_nhan"}, ghi nhân viên xử lý.</li>
-     * </ol>
-     */
-    @Override
-    @Transactional
-    public DonHang xacNhanDonHang(Integer donHangId, Integer nhanVienId) {
-
-        log.info("[QuanLyDonHang] ▶ Xác nhận đơn — donHangId={}, nhanVienId={}",
-                donHangId, nhanVienId);
-
-        // --- Validate đơn hàng ---
-        DonHang donHang = donHangRepository.findById(donHangId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Không tìm thấy đơn hàng có ID: " + donHangId));
-
-        if (!"cho_xac_nhan".equals(donHang.getTrangThai())) {
-            throw new IllegalArgumentException(String.format(
-                    "Đơn hàng [%s] đang ở trạng thái '%s', không thể xác nhận. " +
-                            "Chỉ được xác nhận khi trạng thái là 'cho_xac_nhan'.",
-                    donHang.getMaDonHang(), donHang.getTrangThai()));
+                return donHangRepository.timKiemDonHang(tt, ma, sdt, pageable);
         }
 
-        // --- Lấy danh sách chi tiết đơn (eager-load) ---
-        List<ChiTietDonHang> danhSachChiTiet =
-                chiTietDonHangRepository.findByDonHangIdWithDetails(donHangId);
-
-        if (danhSachChiTiet.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Đơn hàng [" + donHang.getMaDonHang() + "] không có sản phẩm nào. " +
-                            "Không thể xác nhận đơn rỗng.");
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        @Transactional(readOnly = true)
+        public DonHang layChiTietDonHang(Integer donHangId) {
+                return donHangRepository.findByIdWithDetails(donHangId)
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Không tìm thấy đơn hàng có ID: " + donHangId));
         }
 
-        // --- Lấy kho online ---
-        Kho khoOnline = layKhoOnlineHoacNemLoi();
+        // =========================================================================
+        // 2. XÁC NHẬN ĐƠN HÀNG (BƯỚC QUAN TRỌNG NHẤT — TRỪ KHO)
+        // =========================================================================
 
-        // ═══════════════════════════════════════════════════════════════════
-        // BƯỚC FAIL-FAST: PRE-VALIDATE TOÀN BỘ trước khi trừ bất kỳ dòng nào
-        // ═══════════════════════════════════════════════════════════════════
-        for (ChiTietDonHang chiTiet : danhSachChiTiet) {
-            BienTheSanPham bienThe = chiTiet.getBienTheSanPham();
+        /**
+         * {@inheritDoc}
+         *
+         * <h3>Luồng chi tiết:</h3>
+         * <ol>
+         * <li>Validate đơn hàng ở trạng thái {@code "cho_xac_nhan"}.</li>
+         * <li>Load ChiTietDonHang với FETCH JOIN (tránh N+1).</li>
+         * <li><b>Fail-Fast — PRE-VALIDATE toàn bộ:</b>
+         * Với mỗi SKU: kiểm tra tồn kho kho_online &ge; (soLuong + Safety Stock).
+         * Ném lỗi ngay nếu bất kỳ SKU nào vi phạm — chưa trừ dòng nào.</li>
+         * <li><b>EXECUTE:</b> Tất cả pass → trừ kho từng dòng.</li>
+         * <li>Cập nhật trạng thái đơn → {@code "da_xac_nhan"}, ghi nhân viên xử
+         * lý.</li>
+         * </ol>
+         */
+        @Override
+        @Transactional
+        public DonHang xacNhanDonHang(Integer donHangId, Integer nhanVienId) {
 
-            TonKho tonKho = tonKhoRepository
-                    .findByKhoAndBienTheSanPham(khoOnline, bienThe)
-                    .orElseThrow(() -> new EntityNotFoundException(String.format(
-                            "Không tìm thấy tồn kho cho sản phẩm [%s] tại kho online. " +
-                                    "Vui lòng kiểm tra dữ liệu kho.",
-                            bienThe.getMaSku())));
+                log.info("[QuanLyDonHang] ▶ Xác nhận đơn — donHangId={}, nhanVienId={}",
+                                donHangId, nhanVienId);
 
-            int tonKhoSauKhiTru = tonKho.getSoLuong() - chiTiet.getSoLuong();
+                // --- Validate đơn hàng ---
+                DonHang donHang = donHangRepository.findById(donHangId)
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Không tìm thấy đơn hàng có ID: " + donHangId));
 
-            // ⚠️ SAFETY STOCK RULE §3.1: Sau khi trừ KHÔNG được < 5
-            if (tonKhoSauKhiTru < TON_KHO_TOI_THIEU) {
-                throw new IllegalArgumentException(String.format(
-                        "Vi phạm quy tắc tồn kho tối thiểu khi xác nhận đơn [%s]. " +
-                                "Sản phẩm [%s] tại kho online: Tồn kho = %d, Bán = %d, " +
-                                "Còn lại = %d (< mức tối thiểu %d).",
-                        donHang.getMaDonHang(), bienThe.getMaSku(),
-                        tonKho.getSoLuong(), chiTiet.getSoLuong(),
-                        tonKhoSauKhiTru, TON_KHO_TOI_THIEU));
-            }
-        }
-
-        // ═══════════════════════════════════════════════════════════════════
-        // EXECUTE: Tất cả SKU đã pass → Trừ kho thực tế
-        // ═══════════════════════════════════════════════════════════════════
-        LocalDateTime now = LocalDateTime.now();
-        for (ChiTietDonHang chiTiet : danhSachChiTiet) {
-            TonKho tonKho = tonKhoRepository
-                    .findByKhoAndBienTheSanPham(khoOnline, chiTiet.getBienTheSanPham())
-                    .orElseThrow(); // Đã validate ở trên, không thể null
-
-            int soLuongTruoc = tonKho.getSoLuong();
-            tonKho.setSoLuong(tonKho.getSoLuong() - chiTiet.getSoLuong());
-            tonKho.setUpdatedAt(now);
-            tonKhoRepository.save(tonKho);
-
-            log.debug("[QuanLyDonHang] Trừ kho — sku=[{}]: {} - {} = {}",
-                    chiTiet.getBienTheSanPham().getMaSku(),
-                    soLuongTruoc, chiTiet.getSoLuong(), tonKho.getSoLuong());
-        }
-
-        // --- Cập nhật trạng thái đơn hàng ---
-        donHang.setTrangThai("da_xac_nhan");
-        donHang.setUpdatedAt(now);
-
-        // Ghi nhân viên xử lý (nếu có)
-        if (nhanVienId != null) {
-            nguoiDungRepository.findById(nhanVienId).ifPresent(donHang::setNguoiXuLy);
-        }
-
-        donHangRepository.save(donHang);
-
-        log.info("[QuanLyDonHang] ✅ Xác nhận thành công — maDonHang={}, trangThai=da_xac_nhan, đã trừ {} SKU",
-                donHang.getMaDonHang(), danhSachChiTiet.size());
-        return donHang;
-    }
-
-    // =========================================================================
-    // 2b. XÁC NHẬN ĐƠN HÀNG VỚI IMEI
-    // =========================================================================
-
-    /**
-     * {@inheritDoc}
-     *
-     * <h3>Luồng chi tiết:</h3>
-     * <ol>
-     *   <li>Validate đơn hàng ở trạng thái {@code "cho_xac_nhan"}.</li>
-     *   <li>Load ChiTietDonHang với FETCH JOIN (tránh N+1).</li>
-     *   <li>Lấy kho online.</li>
-     *   <li><b>Fail-Fast — PRE-VALIDATE toàn bộ:</b>
-     *       <ul>
-     *         <li>Với mỗi {@link ImeiSelection}: kiểm tra chi tiết đơn tồn tại, số lượng IMEI khớp.</li>
-     *         <li>Với mỗi IMEI: kiểm tra tồn tại, tinhTrang='trong_kho', kho_id = kho online, thuộc đúng biến thể.</li>
-     *         <li>Kiểm tra tồn kho kho_online đủ (Safety Stock).</li>
-     *       </ul>
-     *       Ném lỗi ngay nếu bất kỳ vi phạm nào — chưa thay đổi dữ liệu.
-     *   </li>
-     *   <li><b>EXECUTE:</b>
-     *       <ul>
-     *         <li>Cập nhật IMEI: tinhTrang='da_ban', gán donHang.</li>
-     *         <li>Trừ tồn kho từng dòng.</li>
-     *         <li>Cập nhật trạng thái đơn → {@code "da_xac_nhan"}, ghi nhân viên xử lý.</li>
-     *       </ul>
-     *   </li>
-     * </ol>
-     */
-    @Override
-    @Transactional
-    public DonHang xacNhanDonHangVoiImei(Integer donHangId, Integer nhanVienId,
-                                         List<ImeiSelection> imeiSelections) {
-
-        log.info("[QuanLyDonHang] ▶ Xác nhận đơn với IMEI — donHangId={}, nhanVienId={}, {} selection",
-                donHangId, nhanVienId, imeiSelections == null ? 0 : imeiSelections.size());
-
-        // --- Validate đơn hàng ---
-        DonHang donHang = donHangRepository.findById(donHangId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Không tìm thấy đơn hàng có ID: " + donHangId));
-
-        if (!"cho_xac_nhan".equals(donHang.getTrangThai())) {
-            throw new IllegalArgumentException(String.format(
-                    "Đơn hàng [%s] đang ở trạng thái '%s', không thể xác nhận. " +
-                            "Chỉ được xác nhận khi trạng thái là 'cho_xac_nhan'.",
-                    donHang.getMaDonHang(), donHang.getTrangThai()));
-        }
-
-        // --- Lấy danh sách chi tiết đơn (eager-load) ---
-        List<ChiTietDonHang> danhSachChiTiet =
-                chiTietDonHangRepository.findByDonHangIdWithDetails(donHangId);
-
-        if (danhSachChiTiet.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Đơn hàng [" + donHang.getMaDonHang() + "] không có sản phẩm nào. " +
-                            "Không thể xác nhận đơn rỗng.");
-        }
-
-        // --- Lấy kho online ---
-        Kho khoOnline = layKhoOnlineHoacNemLoi();
-
-        // ═══════════════════════════════════════════════════════════════════
-        // BƯỚC FAIL-FAST: PRE-VALIDATE TOÀN BỘ trước khi thay đổi dữ liệu
-        // ═══════════════════════════════════════════════════════════════════
-
-        // Map chiTietId -> ChiTietDonHang để kiểm tra nhanh
-        java.util.Map<Integer, ChiTietDonHang> chiTietMap = new java.util.HashMap<>();
-        for (ChiTietDonHang ct : danhSachChiTiet) {
-            chiTietMap.put(ct.getId(), ct);
-        }
-
-        // Danh sách các IMEI cần cập nhật (sau khi validate) — lưu để execute
-        java.util.List<MayDienThoai> imeiToUpdate = new java.util.ArrayList<>();
-
-        for (ImeiSelection sel : imeiSelections) {
-            ChiTietDonHang chiTiet = chiTietMap.get(sel.getChiTietDonHangId());
-            if (chiTiet == null) {
-                throw new IllegalArgumentException(
-                        "Chi tiết đơn hàng ID " + sel.getChiTietDonHangId() + " không thuộc đơn hàng này.");
-            }
-
-            List<String> imeiList = sel.getImeiList();
-            if (imeiList == null || imeiList.isEmpty()) {
-                throw new IllegalArgumentException(
-                        "Chưa có IMEI cho sản phẩm: " + chiTiet.getBienTheSanPham().getMaSku());
-            }
-
-            if (imeiList.size() != chiTiet.getSoLuong()) {
-                throw new IllegalArgumentException(String.format(
-                        "Số lượng IMEI (%d) không khớp với số lượng sản phẩm (%d) cho SKU [%s].",
-                        imeiList.size(), chiTiet.getSoLuong(), chiTiet.getBienTheSanPham().getMaSku()));
-            }
-
-            // Kiểm tra từng IMEI
-            for (String imei : imeiList) {
-                String imeiClean = imei.trim();
-                MayDienThoai may = mayDienThoaiRepository.findByImei1(imeiClean)
-                        .orElseThrow(() -> new EntityNotFoundException(
-                                "Không tìm thấy IMEI: " + imeiClean));
-
-                // Kiểm tra IMEI thuộc đúng biến thể
-                if (!may.getBienTheSanPham().getId().equals(chiTiet.getBienTheSanPham().getId())) {
-                    throw new IllegalArgumentException(String.format(
-                            "IMEI [%s] không thuộc biến thể [%s].",
-                            imeiClean, chiTiet.getBienTheSanPham().getMaSku()));
+                if (!"cho_xac_nhan".equals(donHang.getTrangThai())) {
+                        throw new IllegalArgumentException(String.format(
+                                        "Đơn hàng [%s] đang ở trạng thái '%s', không thể xác nhận. " +
+                                                        "Chỉ được xác nhận khi trạng thái là 'cho_xac_nhan'.",
+                                        donHang.getMaDonHang(), donHang.getTrangThai()));
                 }
 
-                // Kiểm tra IMEI đang trong kho
-                if (!"trong_kho".equals(may.getTinhTrang())) {
-                    throw new IllegalArgumentException(String.format(
-                            "IMEI [%s] không ở trạng thái 'trong_kho' (hiện tại: '%s').",
-                            imeiClean, may.getTinhTrang()));
+                // --- Lấy danh sách chi tiết đơn (eager-load) ---
+                List<ChiTietDonHang> danhSachChiTiet = chiTietDonHangRepository.findByDonHangIdWithDetails(donHangId);
+
+                if (danhSachChiTiet.isEmpty()) {
+                        throw new IllegalArgumentException(
+                                        "Đơn hàng [" + donHang.getMaDonHang() + "] không có sản phẩm nào. " +
+                                                        "Không thể xác nhận đơn rỗng.");
                 }
 
-                // Kiểm tra IMEI ở kho online
-                if (may.getKho() == null || !may.getKho().getId().equals(khoOnline.getId())) {
-                    throw new IllegalArgumentException(String.format(
-                            "IMEI [%s] không ở kho online. Vui lòng chỉ chọn IMEI từ kho online.",
-                            imeiClean));
+                // --- Lấy kho online ---
+                Kho khoOnline = layKhoOnlineHoacNemLoi();
+
+                // ═══════════════════════════════════════════════════════════════════
+                // BƯỚC FAIL-FAST: PRE-VALIDATE TOÀN BỘ trước khi trừ bất kỳ dòng nào
+                // ═══════════════════════════════════════════════════════════════════
+                for (ChiTietDonHang chiTiet : danhSachChiTiet) {
+                        BienTheSanPham bienThe = chiTiet.getBienTheSanPham();
+
+                        TonKho tonKho = tonKhoRepository
+                                        .findByKhoAndBienTheSanPham(khoOnline, bienThe)
+                                        .orElseThrow(() -> new EntityNotFoundException(String.format(
+                                                        "Không tìm thấy tồn kho cho sản phẩm [%s] tại kho online. " +
+                                                                        "Vui lòng kiểm tra dữ liệu kho.",
+                                                        bienThe.getMaSku())));
+
+                        int tonKhoSauKhiTru = tonKho.getSoLuong() - chiTiet.getSoLuong();
+
+                        // ⚠️ SAFETY STOCK RULE §3.1: Sau khi trừ KHÔNG được < 5
+                        if (tonKhoSauKhiTru < TON_KHO_TOI_THIEU) {
+                                throw new IllegalArgumentException(String.format(
+                                                "Vi phạm quy tắc tồn kho tối thiểu khi xác nhận đơn [%s]. " +
+                                                                "Sản phẩm [%s] tại kho online: Tồn kho = %d, Bán = %d, "
+                                                                +
+                                                                "Còn lại = %d (< mức tối thiểu %d).",
+                                                donHang.getMaDonHang(), bienThe.getMaSku(),
+                                                tonKho.getSoLuong(), chiTiet.getSoLuong(),
+                                                tonKhoSauKhiTru, TON_KHO_TOI_THIEU));
+                        }
                 }
 
-                // Lưu tạm để execute sau
-                imeiToUpdate.add(may);
-            }
+                // ═══════════════════════════════════════════════════════════════════
+                // EXECUTE: Tất cả SKU đã pass → Trừ kho thực tế
+                // ═══════════════════════════════════════════════════════════════════
+                LocalDateTime now = LocalDateTime.now();
+                for (ChiTietDonHang chiTiet : danhSachChiTiet) {
+                        TonKho tonKho = tonKhoRepository
+                                        .findByKhoAndBienTheSanPham(khoOnline, chiTiet.getBienTheSanPham())
+                                        .orElseThrow(); // Đã validate ở trên, không thể null
 
-            // Kiểm tra tồn kho online (Safety Stock)
-            TonKho tonKho = tonKhoRepository
-                    .findByKhoAndBienTheSanPham(khoOnline, chiTiet.getBienTheSanPham())
-                    .orElseThrow(() -> new EntityNotFoundException(String.format(
-                            "Không tìm thấy tồn kho cho sản phẩm [%s] tại kho online.",
-                            chiTiet.getBienTheSanPham().getMaSku())));
+                        int soLuongTruoc = tonKho.getSoLuong();
+                        tonKho.setSoLuong(tonKho.getSoLuong() - chiTiet.getSoLuong());
+                        tonKho.setUpdatedAt(now);
+                        tonKhoRepository.save(tonKho);
 
-            int tonKhoSauKhiTru = tonKho.getSoLuong() - chiTiet.getSoLuong();
-            if (tonKhoSauKhiTru < TON_KHO_TOI_THIEU) {
-                throw new IllegalArgumentException(String.format(
-                        "Vi phạm quy tắc tồn kho tối thiểu khi xác nhận đơn [%s]. " +
-                                "Sản phẩm [%s] tại kho online: Tồn kho = %d, Bán = %d, " +
-                                "Còn lại = %d (< mức tối thiểu %d).",
-                        donHang.getMaDonHang(), chiTiet.getBienTheSanPham().getMaSku(),
-                        tonKho.getSoLuong(), chiTiet.getSoLuong(),
-                        tonKhoSauKhiTru, TON_KHO_TOI_THIEU));
-            }
+                        log.debug("[QuanLyDonHang] Trừ kho — sku=[{}]: {} - {} = {}",
+                                        chiTiet.getBienTheSanPham().getMaSku(),
+                                        soLuongTruoc, chiTiet.getSoLuong(), tonKho.getSoLuong());
+                }
+
+                // --- Cập nhật trạng thái đơn hàng ---
+                donHang.setTrangThai("da_xac_nhan");
+                donHang.setUpdatedAt(now);
+
+                // Ghi nhân viên xử lý (nếu có)
+                if (nhanVienId != null) {
+                        nguoiDungRepository.findById(nhanVienId).ifPresent(donHang::setNguoiXuLy);
+                }
+
+                donHangRepository.save(donHang);
+
+                log.info("[QuanLyDonHang] ✅ Xác nhận thành công — maDonHang={}, trangThai=da_xac_nhan, đã trừ {} SKU",
+                                donHang.getMaDonHang(), danhSachChiTiet.size());
+                return donHang;
         }
 
-        // ═══════════════════════════════════════════════════════════════════
-        // EXECUTE: Tất cả đã pass → Cập nhật IMEI và trừ kho
-        // ═══════════════════════════════════════════════════════════════════
+        // =========================================================================
+        // 2b. XÁC NHẬN ĐƠN HÀNG VỚI IMEI
+        // =========================================================================
 
-        LocalDateTime now = LocalDateTime.now();
+        /**
+         * {@inheritDoc}
+         *
+         * <h3>Luồng chi tiết:</h3>
+         * <ol>
+         * <li>Validate đơn hàng ở trạng thái {@code "cho_xac_nhan"}.</li>
+         * <li>Load ChiTietDonHang với FETCH JOIN (tránh N+1).</li>
+         * <li>Lấy kho online.</li>
+         * <li><b>Fail-Fast — PRE-VALIDATE toàn bộ:</b>
+         * <ul>
+         * <li>Với mỗi {@link ImeiSelection}: kiểm tra chi tiết đơn tồn tại, số lượng
+         * IMEI khớp.</li>
+         * <li>Với mỗi IMEI: kiểm tra tồn tại, tinhTrang='trong_kho', thuộc đúng biến
+         * thể.</li>
+         * <li>Kiểm tra tồn kho kho_online đủ (Safety Stock).</li>
+         * </ul>
+         * Ném lỗi ngay nếu bất kỳ vi phạm nào — chưa thay đổi dữ liệu.
+         * </li>
+         * <li><b>EXECUTE:</b>
+         * <ul>
+         * <li>Cập nhật IMEI: tinhTrang='da_ban', gán donHang.</li>
+         * <li>Trừ tồn kho từng dòng.</li>
+         * <li>Cập nhật trạng thái đơn → {@code "da_xac_nhan"}, ghi nhân viên xử
+         * lý.</li>
+         * </ul>
+         * </li>
+         * </ol>
+         */
+        @Override
+        @Transactional
+        public DonHang xacNhanDonHangVoiImei(Integer donHangId, Integer nhanVienId,
+                        List<ImeiSelection> imeiSelections) {
 
-        // 1. Cập nhật IMEI
-        for (MayDienThoai may : imeiToUpdate) {
-            may.setTinhTrang("da_ban");
-            may.setDonHang(donHang);
-            mayDienThoaiRepository.save(may);
-        }
-        log.info("[QuanLyDonHang] Đã cập nhật {} IMEI thành da_ban.", imeiToUpdate.size());
+                log.info("[QuanLyDonHang] ▶ Xác nhận đơn với IMEI — donHangId={}, nhanVienId={}, {} selection",
+                                donHangId, nhanVienId, imeiSelections == null ? 0 : imeiSelections.size());
 
-        // 2. Trừ kho online
-        for (ChiTietDonHang chiTiet : danhSachChiTiet) {
-            TonKho tonKho = tonKhoRepository
-                    .findByKhoAndBienTheSanPham(khoOnline, chiTiet.getBienTheSanPham())
-                    .orElseThrow(); // Đã validate ở trên
+                // --- Validate đơn hàng ---
+                DonHang donHang = donHangRepository.findById(donHangId)
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Không tìm thấy đơn hàng có ID: " + donHangId));
 
-            tonKho.setSoLuong(tonKho.getSoLuong() - chiTiet.getSoLuong());
-            tonKho.setUpdatedAt(now);
-            tonKhoRepository.save(tonKho);
+                if (!"cho_xac_nhan".equals(donHang.getTrangThai())) {
+                        throw new IllegalArgumentException(String.format(
+                                        "Đơn hàng [%s] đang ở trạng thái '%s', không thể xác nhận. " +
+                                                        "Chỉ được xác nhận khi trạng thái là 'cho_xac_nhan'.",
+                                        donHang.getMaDonHang(), donHang.getTrangThai()));
+                }
 
-            log.debug("[QuanLyDonHang] Trừ kho — sku=[{}]: còn lại {}",
-                    chiTiet.getBienTheSanPham().getMaSku(), tonKho.getSoLuong());
-        }
+                // --- Lấy danh sách chi tiết đơn (eager-load) ---
+                List<ChiTietDonHang> danhSachChiTiet = chiTietDonHangRepository.findByDonHangIdWithDetails(donHangId);
 
-        // 3. Cập nhật trạng thái đơn hàng
-        donHang.setTrangThai("da_xac_nhan");
-        donHang.setUpdatedAt(now);
+                if (danhSachChiTiet.isEmpty()) {
+                        throw new IllegalArgumentException(
+                                        "Đơn hàng [" + donHang.getMaDonHang() + "] không có sản phẩm nào. " +
+                                                        "Không thể xác nhận đơn rỗng.");
+                }
 
-        if (nhanVienId != null) {
-            nguoiDungRepository.findById(nhanVienId).ifPresent(donHang::setNguoiXuLy);
-        }
+                // --- Lấy kho online ---
+                Kho khoOnline = layKhoOnlineHoacNemLoi();
 
-        donHangRepository.save(donHang);
+                // ═══════════════════════════════════════════════════════════════════
+                // BƯỚC FAIL-FAST: PRE-VALIDATE TOÀN BỘ trước khi thay đổi dữ liệu
+                // ═══════════════════════════════════════════════════════════════════
 
-        log.info("[QuanLyDonHang] ✅ Xác nhận với IMEI thành công — maDonHang={}, trangThai=da_xac_nhan",
-                donHang.getMaDonHang());
-        return donHang;
-    }
+                // Map chiTietId -> ChiTietDonHang để kiểm tra nhanh
+                java.util.Map<Integer, ChiTietDonHang> chiTietMap = new java.util.HashMap<>();
+                for (ChiTietDonHang ct : danhSachChiTiet) {
+                        chiTietMap.put(ct.getId(), ct);
+                }
 
-    // =========================================================================
-    // 3. CẬP NHẬT LỘ TRÌNH GIAO HÀNG
-    // =========================================================================
+                // Danh sách các IMEI cần cập nhật (sau khi validate) — lưu để execute
+                java.util.List<MayDienThoai> imeiToUpdate = new java.util.ArrayList<>();
 
-    /**
-     * {@inheritDoc}
-     *
-     * <h3>Luồng trạng thái hợp lệ:</h3>
-     * <pre>
-     *   da_xac_nhan → dang_giao   (nhân viên đã giao cho đơn vị vận chuyển)
-     *   dang_giao   → da_giao     (đơn vị vận chuyển xác nhận giao thành công)
-     * </pre>
-     *
-     * ⚠️ Tạm hoãn (§7.4): Không cộng điểm thưởng / cập nhật tong_chi_tieu khi da_giao.
-     */
-    @Override
-    @Transactional
-    public DonHang capNhatTrangThai(Integer donHangId, String trangThaiMoi) {
+                for (ImeiSelection sel : imeiSelections) {
+                        ChiTietDonHang chiTiet = chiTietMap.get(sel.getChiTietDonHangId());
+                        if (chiTiet == null) {
+                                throw new IllegalArgumentException(
+                                                "Chi tiết đơn hàng ID " + sel.getChiTietDonHangId()
+                                                                + " không thuộc đơn hàng này.");
+                        }
 
-        log.info("[QuanLyDonHang] ▶ Cập nhật trạng thái — donHangId={}, trangThaiMoi={}",
-                donHangId, trangThaiMoi);
+                        List<String> imeiList = sel.getImeiList();
+                        if (imeiList == null || imeiList.isEmpty()) {
+                                throw new IllegalArgumentException(
+                                                "Chưa có IMEI cho sản phẩm: " + chiTiet.getBienTheSanPham().getMaSku());
+                        }
 
-        DonHang donHang = donHangRepository.findById(donHangId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Không tìm thấy đơn hàng có ID: " + donHangId));
+                        if (imeiList.size() != chiTiet.getSoLuong()) {
+                                throw new IllegalArgumentException(String.format(
+                                                "Số lượng IMEI (%d) không khớp với số lượng sản phẩm (%d) cho SKU [%s].",
+                                                imeiList.size(), chiTiet.getSoLuong(),
+                                                chiTiet.getBienTheSanPham().getMaSku()));
+                        }
 
-        String trangThaiHienTai = donHang.getTrangThai();
+                        // Kiểm tra từng IMEI
+                        for (String imei : imeiList) {
+                                String imeiClean = imei.trim();
+                                MayDienThoai may = mayDienThoaiRepository.findByImei1(imeiClean)
+                                                .orElseThrow(() -> new EntityNotFoundException(
+                                                                "Không tìm thấy IMEI: " + imeiClean));
 
-        // Validate luồng chuyển trạng thái
-        validLuongTrangThai(donHang.getMaDonHang(), trangThaiHienTai, trangThaiMoi);
+                                // Kiểm tra IMEI thuộc đúng biến thể
+                                if (!may.getBienTheSanPham().getId().equals(chiTiet.getBienTheSanPham().getId())) {
+                                        throw new IllegalArgumentException(String.format(
+                                                        "IMEI [%s] không thuộc biến thể [%s].",
+                                                        imeiClean, chiTiet.getBienTheSanPham().getMaSku()));
+                                }
 
-        LocalDateTime now = LocalDateTime.now();
-        donHang.setTrangThai(trangThaiMoi);
-        donHang.setUpdatedAt(now);
+                                // Kiểm tra IMEI đang trong kho
+                                if (!"trong_kho".equals(may.getTinhTrang())) {
+                                        throw new IllegalArgumentException(String.format(
+                                                        "IMEI [%s] không ở trạng thái 'trong_kho' (hiện tại: '%s').",
+                                                        imeiClean, may.getTinhTrang()));
+                                }
 
-        // Ghi ngày giao thực tế khi hoàn tất giao hàng
-        if ("da_giao".equals(trangThaiMoi)) {
-            donHang.setNgayGiaoThucTe(now);
-            // ⚠️ TODO (§7.4): Cộng điểm thưởng & cập nhật tong_chi_tieu cho khách hàng
-            // sẽ được triển khai ở sprint sau khi có lệnh mới.
-            log.info("[QuanLyDonHang] ℹ️ §7.4 Tạm hoãn: Chưa cộng điểm/tong_chi_tieu cho đơn [{}].",
-                    donHang.getMaDonHang());
-        }
+                                // ⚠️ Lưu ý: Đã xóa kiểm tra may.getKho() vì field kho đã bị xóa khỏi entity
+                                // MayDienThoai.
+                                // Hệ thống hiện chỉ có một kho duy nhất, nên không cần kiểm tra kho của IMEI.
 
-        donHangRepository.save(donHang);
+                                // Lưu tạm để execute sau
+                                imeiToUpdate.add(may);
+                        }
 
-        log.info("[QuanLyDonHang] ✅ Cập nhật trạng thái — maDonHang={}: {} → {}",
-                donHang.getMaDonHang(), trangThaiHienTai, trangThaiMoi);
-        return donHang;
-    }
+                        // Kiểm tra tồn kho online (Safety Stock)
+                        TonKho tonKho = tonKhoRepository
+                                        .findByKhoAndBienTheSanPham(khoOnline, chiTiet.getBienTheSanPham())
+                                        .orElseThrow(() -> new EntityNotFoundException(String.format(
+                                                        "Không tìm thấy tồn kho cho sản phẩm [%s] tại kho online.",
+                                                        chiTiet.getBienTheSanPham().getMaSku())));
 
-    // =========================================================================
-    // 4. HỦY ĐƠN HÀNG (KÈM HOÀN KHO NẾU CẦN)
-    // =========================================================================
+                        int tonKhoSauKhiTru = tonKho.getSoLuong() - chiTiet.getSoLuong();
+                        if (tonKhoSauKhiTru < TON_KHO_TOI_THIEU) {
+                                throw new IllegalArgumentException(String.format(
+                                                "Vi phạm quy tắc tồn kho tối thiểu khi xác nhận đơn [%s]. " +
+                                                                "Sản phẩm [%s] tại kho online: Tồn kho = %d, Bán = %d, "
+                                                                +
+                                                                "Còn lại = %d (< mức tối thiểu %d).",
+                                                donHang.getMaDonHang(), chiTiet.getBienTheSanPham().getMaSku(),
+                                                tonKho.getSoLuong(), chiTiet.getSoLuong(),
+                                                tonKhoSauKhiTru, TON_KHO_TOI_THIEU));
+                        }
+                }
 
-    /**
-     * {@inheritDoc}
-     *
-     * <h3>Logic hoàn kho (system_rules.md §2.2.7):</h3>
-     * <ul>
-     *   <li>{@code cho_xac_nhan}: Kho chưa bị trừ → chỉ đổi trạng thái, KHÔNG thao tác kho.</li>
-     *   <li>{@code da_xac_nhan} | {@code dang_giao}: Kho ĐÃ bị trừ trước đó
-     *       → BẮT BUỘC cộng hoàn lại số lượng vào {@code kho_online}.</li>
-     *   <li>{@code da_giao} | {@code da_huy}: Không được hủy → ném lỗi.</li>
-     * </ul>
-     */
-    @Override
-    @Transactional
-    public DonHang huyDonHang(Integer donHangId, String lyDoHuy) {
+                // ═══════════════════════════════════════════════════════════════════
+                // EXECUTE: Tất cả đã pass → Cập nhật IMEI và trừ kho
+                // ═══════════════════════════════════════════════════════════════════
 
-        log.info("[QuanLyDonHang] ▶ Hủy đơn — donHangId={}", donHangId);
+                LocalDateTime now = LocalDateTime.now();
 
-        DonHang donHang = donHangRepository.findById(donHangId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Không tìm thấy đơn hàng có ID: " + donHangId));
+                // 1. Cập nhật IMEI
+                for (MayDienThoai may : imeiToUpdate) {
+                        may.setTinhTrang("da_ban");
+                        may.setDonHang(donHang);
+                        mayDienThoaiRepository.save(may);
+                }
+                log.info("[QuanLyDonHang] Đã cập nhật {} IMEI thành da_ban.", imeiToUpdate.size());
 
-        String trangThaiHienTai = donHang.getTrangThai();
+                // 2. Trừ kho online
+                for (ChiTietDonHang chiTiet : danhSachChiTiet) {
+                        TonKho tonKho = tonKhoRepository
+                                        .findByKhoAndBienTheSanPham(khoOnline, chiTiet.getBienTheSanPham())
+                                        .orElseThrow(); // Đã validate ở trên
 
-        // Chỉ cho phép hủy khi đang ở các trạng thái hủy được
-        if ("da_giao".equals(trangThaiHienTai)) {
-            throw new IllegalArgumentException(String.format(
-                    "Đơn hàng [%s] đã giao thành công, không thể hủy.", donHang.getMaDonHang()));
-        }
-        if ("da_huy".equals(trangThaiHienTai)) {
-            throw new IllegalArgumentException(String.format(
-                    "Đơn hàng [%s] đã bị hủy trước đó.", donHang.getMaDonHang()));
-        }
+                        tonKho.setSoLuong(tonKho.getSoLuong() - chiTiet.getSoLuong());
+                        tonKho.setUpdatedAt(now);
+                        tonKhoRepository.save(tonKho);
 
-        LocalDateTime now = LocalDateTime.now();
+                        log.debug("[QuanLyDonHang] Trừ kho — sku=[{}]: còn lại {}",
+                                        chiTiet.getBienTheSanPham().getMaSku(), tonKho.getSoLuong());
+                }
 
-        // ═══════════════════════════════════════════════════════════════════
-        // HOÀN KHO — chỉ thực hiện khi kho đã bị trừ trước đó (§2.2.7)
-        // ═══════════════════════════════════════════════════════════════════
-        if (TRANG_THAI_DA_TRU_KHO.contains(trangThaiHienTai)) {
-            log.info("[QuanLyDonHang] 🔄 Hoàn kho — đơn [{}] đang ở '{}', cần cộng hoàn kho_online.",
-                    donHang.getMaDonHang(), trangThaiHienTai);
+                // 3. Cập nhật trạng thái đơn hàng
+                donHang.setTrangThai("da_xac_nhan");
+                donHang.setUpdatedAt(now);
 
-            List<ChiTietDonHang> danhSachChiTiet =
-                    chiTietDonHangRepository.findByDonHangIdWithDetails(donHangId);
+                if (nhanVienId != null) {
+                        nguoiDungRepository.findById(nhanVienId).ifPresent(donHang::setNguoiXuLy);
+                }
 
-            Kho khoOnline = layKhoOnlineHoacNemLoi();
+                donHangRepository.save(donHang);
 
-            for (ChiTietDonHang chiTiet : danhSachChiTiet) {
-                BienTheSanPham bienThe = chiTiet.getBienTheSanPham();
-
-                TonKho tonKho = tonKhoRepository
-                        .findByKhoAndBienTheSanPham(khoOnline, bienThe)
-                        .orElseThrow(() -> new EntityNotFoundException(String.format(
-                                "Không tìm thấy tồn kho cho [%s] tại kho online khi hoàn hàng.",
-                                bienThe.getMaSku())));
-
-                int soLuongTruoc = tonKho.getSoLuong();
-                tonKho.setSoLuong(tonKho.getSoLuong() + chiTiet.getSoLuong());
-                tonKho.setUpdatedAt(now);
-                tonKhoRepository.save(tonKho);
-
-                log.debug("[QuanLyDonHang] Hoàn kho — sku=[{}]: {} + {} = {}",
-                        bienThe.getMaSku(), soLuongTruoc,
-                        chiTiet.getSoLuong(), tonKho.getSoLuong());
-            }
-
-            log.info("[QuanLyDonHang] ✅ Hoàn kho xong — {} dòng CTDH được cộng lại vào kho_online.",
-                    danhSachChiTiet.size());
-        } else {
-            // cho_xac_nhan: kho chưa bị trừ → không cần hoàn kho
-            log.info("[QuanLyDonHang] ℹ️ Đơn [{}] ở '{}' — kho chưa bị trừ, bỏ qua bước hoàn kho.",
-                    donHang.getMaDonHang(), trangThaiHienTai);
-        }
-
-        // --- Cập nhật trạng thái đơn hàng ---
-        donHang.setTrangThai("da_huy");
-        donHang.setUpdatedAt(now);
-
-        // Ghi lý do hủy vào ghiChu (nối thêm, không ghi đè)
-        String ghiChuCu = (donHang.getGhiChu() != null) ? donHang.getGhiChu() + " | " : "";
-        donHang.setGhiChu(ghiChuCu + "[HỦY ĐƠN " + now.toLocalDate() + "]: " + lyDoHuy);
-
-        donHangRepository.save(donHang);
-
-        log.info("[QuanLyDonHang] ✅ Hủy đơn thành công — maDonHang={}", donHang.getMaDonHang());
-        return donHang;
-    }
-
-    // =========================================================================
-    // 5. XÁC NHẬN THANH TOÁN CHO ĐƠN HÀNG COD
-    // =========================================================================
-
-    /**
-     * {@inheritDoc}
-     *
-     * <h3>Luồng chi tiết:</h3>
-     * <ol>
-     *   <li>Kiểm tra đơn hàng tồn tại.</li>
-     *   <li>Kiểm tra trạng thái đơn hàng phải là {@code "da_giao"}.</li>
-     *   <li>Kiểm tra trạng thái thanh toán phải là {@code "chua_thanh_toan"}.</li>
-     *   <li>Cập nhật trạng thái thanh toán → {@code "da_thanh_toan"}.</li>
-     * </ol>
-     */
-    @Override
-    @Transactional
-    public DonHang xacNhanThanhToan(Integer donHangId) {
-
-        log.info("[QuanLyDonHang] ▶ Xác nhận thanh toán — donHangId={}", donHangId);
-
-        // Lấy đơn hàng
-        DonHang donHang = donHangRepository.findById(donHangId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Không tìm thấy đơn hàng có ID: " + donHangId));
-
-        // Kiểm tra trạng thái đơn hàng
-        if (!"da_giao".equals(donHang.getTrangThai())) {
-            throw new IllegalArgumentException(String.format(
-                    "Đơn hàng [%s] đang ở trạng thái '%s', không thể xác nhận thanh toán. " +
-                            "Chỉ được xác nhận khi đơn hàng đã giao ('da_giao').",
-                    donHang.getMaDonHang(), donHang.getTrangThai()));
+                log.info("[QuanLyDonHang] ✅ Xác nhận với IMEI thành công — maDonHang={}, trangThai=da_xac_nhan",
+                                donHang.getMaDonHang());
+                return donHang;
         }
 
-        // Kiểm tra trạng thái thanh toán
-        if (!"chua_thanh_toan".equals(donHang.getTrangThaiThanhToan())) {
-            throw new IllegalArgumentException(String.format(
-                    "Đơn hàng [%s] đang ở trạng thái thanh toán '%s', không thể xác nhận thanh toán. " +
-                            "Chỉ áp dụng cho đơn chưa thanh toán ('chua_thanh_toan').",
-                    donHang.getMaDonHang(), donHang.getTrangThaiThanhToan()));
+        // =========================================================================
+        // 3. CẬP NHẬT LỘ TRÌNH GIAO HÀNG
+        // =========================================================================
+
+        /**
+         * {@inheritDoc}
+         *
+         * <h3>Luồng trạng thái hợp lệ:</h3>
+         * 
+         * <pre>
+         *   da_xac_nhan → dang_giao   (nhân viên đã giao cho đơn vị vận chuyển)
+         *   dang_giao   → da_hoan_thanh     (đơn vị vận chuyển xác nhận giao thành công)
+         * </pre>
+         *
+         * ⚠️ Tạm hoãn (§7.4): Không cộng điểm thưởng / cập nhật tong_chi_tieu khi
+         * da_hoan_thanh.
+         */
+        @Override
+        @Transactional
+        public DonHang capNhatTrangThai(Integer donHangId, String trangThaiMoi) {
+
+                log.info("[QuanLyDonHang] ▶ Cập nhật trạng thái — donHangId={}, trangThaiMoi={}",
+                                donHangId, trangThaiMoi);
+
+                DonHang donHang = donHangRepository.findById(donHangId)
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Không tìm thấy đơn hàng có ID: " + donHangId));
+
+                String trangThaiHienTai = donHang.getTrangThai();
+
+                // Validate luồng chuyển trạng thái
+                validLuongTrangThai(donHang.getMaDonHang(), trangThaiHienTai, trangThaiMoi);
+
+                LocalDateTime now = LocalDateTime.now();
+                donHang.setTrangThai(trangThaiMoi);
+                donHang.setUpdatedAt(now);
+
+                // Ghi ngày giao thực tế khi hoàn tất giao hàng
+                if ("da_hoan_thanh".equals(trangThaiMoi)) {
+                        donHang.setNgayGiaoThucTe(now);
+                        // ⚠️ TODO (§7.4): Cộng điểm thưởng & cập nhật tong_chi_tieu cho khách hàng
+                        // sẽ được triển khai ở sprint sau khi có lệnh mới.
+                        log.info("[QuanLyDonHang] ℹ️ §7.4 Tạm hoãn: Chưa cộng điểm/tong_chi_tieu cho đơn [{}].",
+                                        donHang.getMaDonHang());
+                }
+
+                donHangRepository.save(donHang);
+
+                log.info("[QuanLyDonHang] ✅ Cập nhật trạng thái — maDonHang={}: {} → {}",
+                                donHang.getMaDonHang(), trangThaiHienTai, trangThaiMoi);
+                return donHang;
         }
 
-        // Cập nhật trạng thái thanh toán
-        donHang.setTrangThaiThanhToan("da_thanh_toan");
-        donHang.setUpdatedAt(LocalDateTime.now());
+        // =========================================================================
+        // 4. HỦY ĐƠN HÀNG (KÈM HOÀN KHO NẾU CẦN)
+        // =========================================================================
 
-        DonHang saved = donHangRepository.save(donHang);
+        /**
+         * {@inheritDoc}
+         *
+         * <h3>Logic hoàn kho (system_rules.md §2.2.7):</h3>
+         * <ul>
+         * <li>{@code cho_xac_nhan}: Kho chưa bị trừ → chỉ đổi trạng thái, KHÔNG thao
+         * tác kho.</li>
+         * <li>{@code da_xac_nhan} | {@code dang_giao}: Kho ĐÃ bị trừ trước đó
+         * → BẮT BUỘC cộng hoàn lại số lượng vào {@code kho_online}.</li>
+         * <li>{@code da_hoan_thanh} | {@code da_huy}: Không được hủy → ném lỗi.</li>
+         * </ul>
+         */
+        @Override
+        @Transactional
+        public DonHang huyDonHang(Integer donHangId, String lyDoHuy) {
 
-        log.info("[QuanLyDonHang] ✅ Xác nhận thanh toán thành công — maDonHang={}, trangThaiThanhToan=da_thanh_toan",
-                saved.getMaDonHang());
+                log.info("[QuanLyDonHang] ▶ Hủy đơn — donHangId={}", donHangId);
 
-        return saved;
-    }
+                DonHang donHang = donHangRepository.findById(donHangId)
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Không tìm thấy đơn hàng có ID: " + donHangId));
 
-    // =========================================================================
-    // 6. LẤY DANH SÁCH IMEI THEO ĐƠN HÀNG (OPTIMIZED VERSION)
-    // =========================================================================
+                String trangThaiHienTai = donHang.getTrangThai();
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Phương thức này lấy tất cả IMEI đã được gán cho đơn hàng (trạng thái 'da_ban').
-     * Dùng để hiển thị danh sách IMEI trên trang chi tiết đơn hàng.
-     * <p>
-     * <b>Optimized:</b> Sử dụng repository method {@link MayDienThoaiRepository#findByDonHangIdAndTinhTrang}
-     * để query trực tiếp, tránh load toàn bộ bảng may_dien_thoai.
-     *
-     * @param donHangId ID đơn hàng cần lấy danh sách IMEI.
-     * @return Danh sách {@link MayDienThoai} thuộc đơn hàng đó.
-     * @throws EntityNotFoundException nếu đơn hàng không tồn tại.
-     */
-    @Override
-    @Transactional(readOnly = true)
-    public List<MayDienThoai> layDanhSachImeiTheoDonHang(Integer donHangId) {
-        log.debug("[QuanLyDonHang] Lấy danh sách IMEI theo đơn hàng — donHangId={}", donHangId);
+                // Chỉ cho phép hủy khi đang ở các trạng thái hủy được
+                if ("da_hoan_thanh".equals(trangThaiHienTai)) {
+                        throw new IllegalArgumentException(String.format(
+                                        "Đơn hàng [%s] đã giao thành công, không thể hủy.", donHang.getMaDonHang()));
+                }
+                if ("da_huy".equals(trangThaiHienTai)) {
+                        throw new IllegalArgumentException(String.format(
+                                        "Đơn hàng [%s] đã bị hủy trước đó.", donHang.getMaDonHang()));
+                }
 
-        // Kiểm tra đơn hàng tồn tại
-        if (!donHangRepository.existsById(donHangId)) {
-            throw new EntityNotFoundException("Không tìm thấy đơn hàng có ID: " + donHangId);
+                LocalDateTime now = LocalDateTime.now();
+
+                // ═══════════════════════════════════════════════════════════════════
+                // HOÀN KHO TỒN KHO — chỉ thực hiện khi kho đã bị trừ trước đó (§2.2.7)
+                // ═══════════════════════════════════════════════════════════════════
+                if (TRANG_THAI_DA_TRU_KHO.contains(trangThaiHienTai)) {
+                        log.info("[QuanLyDonHang] 🔄 Hoàn kho — đơn [{}] đang ở '{}', cần cộng hoàn kho_online.",
+                                        donHang.getMaDonHang(), trangThaiHienTai);
+
+                        List<ChiTietDonHang> danhSachChiTiet = chiTietDonHangRepository
+                                        .findByDonHangIdWithDetails(donHangId);
+
+                        Kho khoOnline = layKhoOnlineHoacNemLoi();
+
+                        for (ChiTietDonHang chiTiet : danhSachChiTiet) {
+                                BienTheSanPham bienThe = chiTiet.getBienTheSanPham();
+
+                                TonKho tonKho = tonKhoRepository
+                                                .findByKhoAndBienTheSanPham(khoOnline, bienThe)
+                                                .orElseThrow(() -> new EntityNotFoundException(String.format(
+                                                                "Không tìm thấy tồn kho cho [%s] tại kho online khi hoàn hàng.",
+                                                                bienThe.getMaSku())));
+
+                                int soLuongTruoc = tonKho.getSoLuong();
+                                tonKho.setSoLuong(tonKho.getSoLuong() + chiTiet.getSoLuong());
+                                tonKho.setUpdatedAt(now);
+                                tonKhoRepository.save(tonKho);
+
+                                log.debug("[QuanLyDonHang] Hoàn kho — sku=[{}]: {} + {} = {}",
+                                                bienThe.getMaSku(), soLuongTruoc,
+                                                chiTiet.getSoLuong(), tonKho.getSoLuong());
+                        }
+
+                        log.info("[QuanLyDonHang] ✅ Hoàn kho xong — {} dòng CTDH được cộng lại vào kho_online.",
+                                        danhSachChiTiet.size());
+                } else {
+                        // cho_xac_nhan: kho chưa bị trừ → không cần hoàn kho
+                        log.info("[QuanLyDonHang] ℹ️ Đơn [{}] ở '{}' — kho chưa bị trừ, bỏ qua bước hoàn kho.",
+                                        donHang.getMaDonHang(), trangThaiHienTai);
+                }
+
+                boolean canHoanTien = "da_thanh_toan".equals(donHang.getTrangThaiThanhToan());
+
+                if (canHoanTien) {
+                        // --- TRƯỜNG HỢP 1: Đã thanh toán -> chờ hoàn tiền ---
+                        donHang.setTrangThai("cho_hoan_tien");
+                        donHang.setUpdatedAt(now);
+                        String ghiChuCu = (donHang.getGhiChu() != null) ? donHang.getGhiChu() + " | " : "";
+                        donHang.setGhiChu(ghiChuCu + "[YÊU CẦU HOÀN TIỀN " + now.toLocalDate() + "]: " + lyDoHuy);
+                        log.info("[QuanLyDonHang] ℹ️ Đơn [{}] đã thanh toán -> chuyển sang chờ hoàn tiền.", donHang.getMaDonHang());
+                } else {
+                        // --- TRƯỜNG HỢP 2: Chưa thanh toán -> hủy luôn ---
+                        donHang.setTrangThai("da_huy");
+                        donHang.setTrangThaiThanhToan("chua_thanh_toan");
+                        donHang.setUpdatedAt(now);
+
+                        String ghiChuCu = (donHang.getGhiChu() != null) ? donHang.getGhiChu() + " | " : "";
+                        donHang.setGhiChu(ghiChuCu + "[HỦY ĐƠN " + now.toLocalDate() + "]: " + lyDoHuy);
+
+                        // Nhả IMEI ngay lập tức (nếu có)
+                        List<MayDienThoai> imeis = mayDienThoaiRepository.findByDonHangIdAndTinhTrang(donHangId, "da_ban");
+                        if (!imeis.isEmpty()) {
+                                for (MayDienThoai may : imeis) {
+                                        may.setTinhTrang("trong_kho");
+                                        may.setDonHang(null);
+                                        mayDienThoaiRepository.save(may);
+                                }
+                                log.info("[QuanLyDonHang] ✅ Đã nhả {} IMEI về kho cho đơn {}.", imeis.size(), donHang.getMaDonHang());
+                        }
+
+                        log.info("[QuanLyDonHang] ✅ Hủy đơn thành công — maDonHang={}", donHang.getMaDonHang());
+                }
+
+                return donHangRepository.save(donHang);
         }
 
-        // Sử dụng repository method mới để query trực tiếp, tối ưu hiệu năng
-        List<MayDienThoai> danhSach = mayDienThoaiRepository
-                .findByDonHangIdAndTinhTrang(donHangId, "da_ban");
+        // =========================================================================
+        // 4b. XÁC NHẬN HOÀN TIỀN
+        // =========================================================================
 
-        log.debug("[QuanLyDonHang] Tìm thấy {} IMEI cho đơn hàng {}", danhSach.size(), donHangId);
-        return danhSach;
-    }
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        @Transactional
+        public DonHang xacNhanHoanTien(Integer donHangId, Integer idNhanVien) {
+                log.info("[QuanLyDonHang] ▶ Xác nhận hoàn tiền — donHangId={}, nhanVienId={}", donHangId, idNhanVien);
 
-    // =========================================================================
-    // PRIVATE HELPER METHODS
-    // =========================================================================
+                DonHang donHang = donHangRepository.findById(donHangId)
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Không tìm thấy đơn hàng có ID: " + donHangId));
 
-    /**
-     * Tìm kho online trong hệ thống. Ném lỗi rõ ràng nếu chưa cấu hình.
-     */
-    private Kho layKhoOnlineHoacNemLoi() {
-        return khoRepository.findByLoai(LOAI_KHO_ONLINE)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Không tìm thấy kho online trong hệ thống. " +
-                                "Vui lòng kiểm tra dữ liệu bảng kho."));
-    }
+                if (!"cho_hoan_tien".equals(donHang.getTrangThai())) {
+                        throw new IllegalArgumentException(String.format(
+                                        "Đơn hàng [%s] đang ở trạng thái '%s'. Chỉ có thể xác nhận hoàn tiền khi ở trạng thái 'cho_hoan_tien'.",
+                                        donHang.getMaDonHang(), donHang.getTrangThai()));
+                }
 
-    /**
-     * Validate luồng chuyển trạng thái giao hàng hợp lệ.
-     * <p>
-     * Luồng cho phép:
-     * <pre>
-     *   da_xac_nhan → dang_giao
-     *   dang_giao   → da_giao
-     * </pre>
-     *
-     * @param maDonHang        Mã đơn hàng (dùng để hiển thị trong thông báo lỗi).
-     * @param trangThaiHienTai Trạng thái hiện tại của đơn.
-     * @param trangThaiMoi     Trạng thái muốn chuyển sang.
-     * @throws IllegalArgumentException nếu chuyển trạng thái không theo đúng luồng.
-     */
-    private void validLuongTrangThai(String maDonHang, String trangThaiHienTai, String trangThaiMoi) {
-        boolean hopLe = switch (trangThaiHienTai) {
-            case "da_xac_nhan" -> "dang_giao".equals(trangThaiMoi);
-            case "dang_giao"   -> "da_giao".equals(trangThaiMoi);
-            default            -> false;
-        };
+                LocalDateTime now = LocalDateTime.now();
 
-        if (!hopLe) {
-            throw new IllegalArgumentException(String.format(
-                    "Không thể chuyển trạng thái đơn hàng [%s] từ '%s' sang '%s'. " +
-                            "Luồng hợp lệ: da_xac_nhan → dang_giao → da_giao.",
-                    maDonHang, trangThaiHienTai, trangThaiMoi));
+                // 1. Cập nhật trạng thái
+                donHang.setTrangThai("da_huy");
+                donHang.setTrangThaiThanhToan("da_hoan_tien");
+                donHang.setUpdatedAt(now);
+
+                String ghiChuCu = (donHang.getGhiChu() != null) ? donHang.getGhiChu() + " | " : "";
+                donHang.setGhiChu(ghiChuCu + "[XÁC NHẬN HOÀN TIỀN " + now.toLocalDate() + "]: Kế toán/Admin đã hoàn tiền.");
+
+                if (idNhanVien != null) {
+                        nguoiDungRepository.findById(idNhanVien).ifPresent(donHang::setNguoiXuLy);
+                }
+
+                // 2. Nhả IMEI về kho (nếu có)
+                List<MayDienThoai> imeis = mayDienThoaiRepository.findByDonHangIdAndTinhTrang(donHangId, "da_ban");
+                if (!imeis.isEmpty()) {
+                        for (MayDienThoai may : imeis) {
+                                may.setTinhTrang("trong_kho");
+                                may.setDonHang(null);
+                                mayDienThoaiRepository.save(may);
+                        }
+                        log.info("[QuanLyDonHang] ✅ Đã nhả {} IMEI về kho sau khi hoàn tiền cho đơn {}.", imeis.size(), donHang.getMaDonHang());
+                }
+
+                log.info("[QuanLyDonHang] ✅ Xác nhận hoàn tiền thành công — maDonHang={}", donHang.getMaDonHang());
+                return donHangRepository.save(donHang);
         }
-    }
+
+        // =========================================================================
+        // 5. XÁC NHẬN THANH TOÁN CHO ĐƠN HÀNG COD
+        // =========================================================================
+
+        /**
+         * {@inheritDoc}
+         *
+         * <h3>Luồng chi tiết:</h3>
+         * <ol>
+         * <li>Kiểm tra đơn hàng tồn tại.</li>
+         * <li>Kiểm tra trạng thái đơn hàng phải là {@code "da_hoan_thanh"}.</li>
+         * <li>Kiểm tra trạng thái thanh toán phải là {@code "chua_thanh_toan"}.</li>
+         * <li>Cập nhật trạng thái thanh toán → {@code "da_thanh_toan"}.</li>
+         * </ol>
+         */
+        @Override
+        @Transactional
+        public DonHang xacNhanThanhToan(Integer donHangId) {
+
+                log.info("[QuanLyDonHang] ▶ Xác nhận thanh toán — donHangId={}", donHangId);
+
+                // Lấy đơn hàng
+                DonHang donHang = donHangRepository.findById(donHangId)
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Không tìm thấy đơn hàng có ID: " + donHangId));
+
+                // Kiểm tra trạng thái đơn hàng
+                if (!"da_hoan_thanh".equals(donHang.getTrangThai())) {
+                        throw new IllegalArgumentException(String.format(
+                                        "Đơn hàng [%s] đang ở trạng thái '%s', không thể xác nhận thanh toán. " +
+                                                        "Chỉ được xác nhận khi đơn hàng đã giao ('da_hoan_thanh').",
+                                        donHang.getMaDonHang(), donHang.getTrangThai()));
+                }
+
+                // Kiểm tra trạng thái thanh toán
+                if (!"chua_thanh_toan".equals(donHang.getTrangThaiThanhToan())) {
+                        throw new IllegalArgumentException(String.format(
+                                        "Đơn hàng [%s] đang ở trạng thái thanh toán '%s', không thể xác nhận thanh toán. "
+                                                        +
+                                                        "Chỉ áp dụng cho đơn chưa thanh toán ('chua_thanh_toan').",
+                                        donHang.getMaDonHang(), donHang.getTrangThaiThanhToan()));
+                }
+
+                // Cập nhật trạng thái thanh toán
+                donHang.setTrangThaiThanhToan("da_thanh_toan");
+                donHang.setUpdatedAt(LocalDateTime.now());
+
+                DonHang saved = donHangRepository.save(donHang);
+
+                log.info("[QuanLyDonHang] ✅ Xác nhận thanh toán thành công — maDonHang={}, trangThaiThanhToan=da_thanh_toan",
+                                saved.getMaDonHang());
+
+                return saved;
+        }
+
+        // =========================================================================
+        // 6. LẤY DANH SÁCH IMEI THEO ĐƠN HÀNG (OPTIMIZED VERSION)
+        // =========================================================================
+
+        /**
+         * {@inheritDoc}
+         * <p>
+         * Phương thức này lấy tất cả IMEI đã được gán cho đơn hàng (trạng thái
+         * 'da_ban').
+         * Dùng để hiển thị danh sách IMEI trên trang chi tiết đơn hàng.
+         * <p>
+         * <b>Optimized:</b> Sử dụng repository method
+         * {@link MayDienThoaiRepository#findByDonHangIdAndTinhTrang}
+         * để query trực tiếp, tránh load toàn bộ bảng may_dien_thoai.
+         *
+         * @param donHangId ID đơn hàng cần lấy danh sách IMEI.
+         * @return Danh sách {@link MayDienThoai} thuộc đơn hàng đó.
+         * @throws EntityNotFoundException nếu đơn hàng không tồn tại.
+         */
+        @Override
+        @Transactional(readOnly = true)
+        public List<MayDienThoai> layDanhSachImeiTheoDonHang(Integer donHangId) {
+                log.debug("[QuanLyDonHang] Lấy danh sách IMEI theo đơn hàng — donHangId={}", donHangId);
+
+                // Kiểm tra đơn hàng tồn tại
+                if (!donHangRepository.existsById(donHangId)) {
+                        throw new EntityNotFoundException("Không tìm thấy đơn hàng có ID: " + donHangId);
+                }
+
+                // Sử dụng repository method mới để query trực tiếp, tối ưu hiệu năng
+                List<MayDienThoai> danhSach = mayDienThoaiRepository
+                                .findByDonHangIdAndTinhTrang(donHangId, "da_ban");
+
+                log.debug("[QuanLyDonHang] Tìm thấy {} IMEI cho đơn hàng {}", danhSach.size(), donHangId);
+                return danhSach;
+        }
+
+        // =========================================================================
+        // PRIVATE HELPER METHODS
+        // =========================================================================
+
+        /**
+         * Lấy kho duy nhất trong hệ thống (ID = 1).
+         * Ném lỗi rõ ràng nếu chưa cấu hình.
+         */
+        private Kho layKhoOnlineHoacNemLoi() {
+                return khoRepository.findById(1)
+                                .orElseThrow(() -> new IllegalStateException(
+                                                "Không tìm thấy kho ID=1 trong hệ thống. " +
+                                                                "Vui lòng kiểm tra dữ liệu bảng kho."));
+        }
+
+        /**
+         * Validate luồng chuyển trạng thái giao hàng hợp lệ.
+         * <p>
+         * Luồng cho phép:
+         * 
+         * <pre>
+         *   da_xac_nhan → dang_giao
+         *   dang_giao   → da_hoan_thanh
+         * </pre>
+         *
+         * @param maDonHang        Mã đơn hàng (dùng để hiển thị trong thông báo lỗi).
+         * @param trangThaiHienTai Trạng thái hiện tại của đơn.
+         * @param trangThaiMoi     Trạng thái muốn chuyển sang.
+         * @throws IllegalArgumentException nếu chuyển trạng thái không theo đúng luồng.
+         */
+        private void validLuongTrangThai(String maDonHang, String trangThaiHienTai, String trangThaiMoi) {
+                boolean hopLe = switch (trangThaiHienTai) {
+                        case "da_xac_nhan" -> "dang_giao".equals(trangThaiMoi);
+                        case "dang_giao" -> "da_hoan_thanh".equals(trangThaiMoi);
+                        default -> false;
+                };
+
+                if (!hopLe) {
+                        throw new IllegalArgumentException(String.format(
+                                        "Không thể chuyển trạng thái đơn hàng [%s] từ '%s' sang '%s'. " +
+                                                        "Luồng hợp lệ: da_xac_nhan → dang_giao → da_hoan_thanh.",
+                                        maDonHang, trangThaiHienTai, trangThaiMoi));
+                }
+        }
 }

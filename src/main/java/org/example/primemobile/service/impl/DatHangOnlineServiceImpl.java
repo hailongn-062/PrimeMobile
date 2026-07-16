@@ -51,7 +51,6 @@ public class DatHangOnlineServiceImpl implements IDatHangOnlineService {
     // HẰNG SỐ NGHIỆP VỤ
     // ───────────────────────────────────────────────────────────────────────
 
-    private static final String LOAI_KHO_ONLINE = "kho_online";
     private static final String TEN_PTTT_VNPAY = "VNPay";
     private static final int VNPAY_HET_HAN_PHUT = 15;
     private static final String KENH_BAN_ONLINE = "online";
@@ -170,10 +169,10 @@ public class DatHangOnlineServiceImpl implements IDatHangOnlineService {
                 gioHang.getId(), danhSachGio.size());
 
         // ─────────────────────────────────────────────────────────────────────
-        // BƯỚC 2 — KIỂM TRA KHO ONLINE & TÍNH TỔNG TIỀN SAU FLASH SALE/GIẢM TRỰC TIẾP
+        // BƯỚC 2 — KIỂM TRA KHO ONLINE & TÍNH TỔNG TIỀN SAU KHUYẾN MÃI SẢN PHẨM
         // ─────────────────────────────────────────────────────────────────────
         Kho khoOnline = layKhoOnlineHoacNemLoi();
-        BigDecimal tongTienHang = BigDecimal.ZERO; // Tổng tiền sau Flash Sale/Giảm trực tiếp
+        BigDecimal tongTienHang = BigDecimal.ZERO; // Tổng tiền sau khuyến mãi sản phẩm
 
         for (ChiTietGioHang item : danhSachGio) {
             BienTheSanPham bienThe = item.getBienTheSanPham();
@@ -192,17 +191,17 @@ public class DatHangOnlineServiceImpl implements IDatHangOnlineService {
                         bienThe.getMaSku(), soLuongYeuCau, tonKhoHienTai));
             }
 
-            // Tính giá sau Flash Sale/Giảm trực tiếp (không áp dụng toàn đơn)
-            BigDecimal donGiaSauFlash = khuyenMaiService.tinhGiaSauKhuyenMai(bienThe.getId(), null);
-            tongTienHang = tongTienHang.add(donGiaSauFlash.multiply(BigDecimal.valueOf(soLuongYeuCau)));
+            // Tính giá sau khuyến mãi sản phẩm (không áp dụng toàn đơn)
+            BigDecimal donGiaSauKhuyenMai = khuyenMaiService.tinhGiaSauKhuyenMai(bienThe.getId(), null);
+            tongTienHang = tongTienHang.add(donGiaSauKhuyenMai.multiply(BigDecimal.valueOf(soLuongYeuCau)));
 
-            log.debug("[DatHangOnline] SKU [{}] — soLuong={}, donGiaSauFlash={}, tonKho={}",
-                    bienThe.getMaSku(), soLuongYeuCau, donGiaSauFlash, tonKhoHienTai);
+            log.debug("[DatHangOnline] SKU [{}] — soLuong={}, donGiaSauKhuyenMai={}, tonKho={}",
+                    bienThe.getMaSku(), soLuongYeuCau, donGiaSauKhuyenMai, tonKhoHienTai);
         }
         log.info("[DatHangOnline] Kiểm tra kho OK — tongTienHang={}", tongTienHang);
 
         // ─────────────────────────────────────────────────────────────────────
-        // BƯỚC 3 — XỬ LÝ KHUYẾN MÃI TOÀN ĐƠN (PHẦN TRĂM, ĐƠN HÀNG TỐI THIỂU)
+        // BƯỚC 3 — XỬ LÝ KHUYẾN MÃI TOÀN ĐƠN
         // ─────────────────────────────────────────────────────────────────────
         KhuyenMaiResult kmResult = khuyenMaiService.tinhKhuyenMaiChoDonHang(tongTienHang);
         BigDecimal tienGiamGia = kmResult.getTienGiam();
@@ -293,18 +292,18 @@ public class DatHangOnlineServiceImpl implements IDatHangOnlineService {
         // ─────────────────────────────────────────────────────────────────────
         for (ChiTietGioHang item : danhSachGio) {
             BienTheSanPham bienThe = item.getBienTheSanPham();
-            BigDecimal donGiaSauFlash = khuyenMaiService.tinhGiaSauKhuyenMai(bienThe.getId(), null);
+            BigDecimal donGiaSauKhuyenMai = khuyenMaiService.tinhGiaSauKhuyenMai(bienThe.getId(), null);
 
             ChiTietDonHang chiTiet = ChiTietDonHang.builder()
                     .donHang(donHang)
                     .bienTheSanPham(bienThe)
                     .soLuong(item.getSoLuong())
-                    .donGiaBan(donGiaSauFlash)
+                    .donGiaBan(donGiaSauKhuyenMai)
                     .build();
 
             chiTietDonHangRepository.save(chiTiet);
-            log.debug("[DatHangOnline] Lưu CTDH — sku={}, soLuong={}, donGiaSauFlash={}",
-                    bienThe.getMaSku(), item.getSoLuong(), donGiaSauFlash);
+            log.debug("[DatHangOnline] Lưu CTDH — sku={}, soLuong={}, donGiaSauKhuyenMai={}",
+                    bienThe.getMaSku(), item.getSoLuong(), donGiaSauKhuyenMai);
         }
         log.info("[DatHangOnline] Đã lưu {} dòng CTDH — KHO KHÔNG BỊ TRỪ.", danhSachGio.size());
 
@@ -387,13 +386,13 @@ public class DatHangOnlineServiceImpl implements IDatHangOnlineService {
     }
 
     /**
-     * Tìm kho online trong hệ thống.
+     * Lấy kho duy nhất trong hệ thống (ID = 1).
      * Ném {@link IllegalStateException} nếu chưa cấu hình kho.
      */
     private Kho layKhoOnlineHoacNemLoi() {
-        return khoRepository.findByLoai(LOAI_KHO_ONLINE)
+        return khoRepository.findById(1)
                 .orElseThrow(() -> new IllegalStateException(
-                        "Không tìm thấy kho online trong hệ thống. " +
+                        "Không tìm thấy kho ID=1 trong hệ thống. " +
                                 "Vui lòng kiểm tra dữ liệu bảng kho."));
     }
 

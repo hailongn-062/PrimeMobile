@@ -51,6 +51,7 @@ public class DonHangKhachHangController {
     private static final Logger log = LoggerFactory.getLogger(DonHangKhachHangController.class);
 
     private final DonHangRepository donHangRepository;
+    private final org.example.primemobile.repository.MayDienThoaiRepository mayDienThoaiRepository;
 
     // =========================================================================
     // GET /api/public/don-hang-cua-toi — Lịch sử đơn hàng
@@ -204,15 +205,24 @@ public class DonHangKhachHangController {
         }
 
         // Cập nhật trạng thái
-        donHang.setTrangThai("da_huy");
         donHang.setUpdatedAt(java.time.LocalDateTime.now());
         
         String ghiChuCu = (donHang.getGhiChu() != null) ? donHang.getGhiChu() + " | " : "";
         donHang.setGhiChu(ghiChuCu + "[KHÁCH HÀNG TỰ HỦY " + donHang.getUpdatedAt().toLocalDate() + "]");
 
-        // Nếu thanh toán VNPay đang treo thì chuyển thành thất bại
-        if ("dang_chuyen_huong".equals(donHang.getTrangThaiThanhToan())) {
-            donHang.setTrangThaiThanhToan("that_bai");
+        if ("da_thanh_toan".equals(donHang.getTrangThaiThanhToan())) {
+            // Đã thanh toán -> chuyển sang chờ hoàn tiền
+            donHang.setTrangThai("cho_hoan_tien");
+        } else {
+            // Chưa thanh toán -> Hủy luôn
+            donHang.setTrangThai("da_huy");
+            
+            // Nếu thanh toán VNPay đang treo thì chuyển thành thất bại
+            if ("dang_chuyen_huong".equals(donHang.getTrangThaiThanhToan())) {
+                donHang.setTrangThaiThanhToan("that_bai");
+            } else {
+                donHang.setTrangThaiThanhToan("chua_thanh_toan");
+            }
         }
 
         donHangRepository.save(donHang);
@@ -273,14 +283,23 @@ public class DonHangKhachHangController {
 
     private Map<String, Object> buildOrderDetail(DonHang donHang) {
         Map<String, Object> r = buildOrderSummary(donHang);
+        
+        List<org.example.primemobile.entity.MayDienThoai> allImeis = mayDienThoaiRepository.findByDonHangId(donHang.getId());
+        
         List<Map<String, Object>> items = donHang.getChiTietDonHangs().stream()
-                .map(this::buildOrderItem)
+                .map(ct -> buildOrderItem(ct, allImeis))
                 .toList();
         r.put("chiTiet", items);
+        
+        if (donHang.getNguoiXuLy() != null) {
+            r.put("nhanVienXuLy", donHang.getNguoiXuLy().getHoTen());
+        }
+        r.put("emailNhan", donHang.getEmailNguoiNhan());
+        
         return r;
     }
 
-    private Map<String, Object> buildOrderItem(ChiTietDonHang chiTiet) {
+    private Map<String, Object> buildOrderItem(ChiTietDonHang chiTiet, List<org.example.primemobile.entity.MayDienThoai> allImeis) {
         BienTheSanPham bienThe = chiTiet.getBienTheSanPham();
         SanPham sanPham = bienThe != null ? bienThe.getSanPham() : null;
 
@@ -294,9 +313,17 @@ public class DonHangKhachHangController {
         r.put("luuTruGb", bienThe != null ? bienThe.getLuuTruGb() : null);
         r.put("soLuong", chiTiet.getSoLuong());
         r.put("donGiaBan", valueOrZero(chiTiet.getDonGiaBan()));
+        r.put("giaGoc", bienThe != null ? valueOrZero(bienThe.getGiaBan()) : valueOrZero(chiTiet.getDonGiaBan()));
         r.put("thanhTien", chiTiet.getThanhTien() != null
                 ? chiTiet.getThanhTien()
                 : valueOrZero(chiTiet.getDonGiaBan()).multiply(BigDecimal.valueOf(chiTiet.getSoLuong())));
+                
+        List<String> imeiList = allImeis.stream()
+                .filter(m -> m.getBienTheSanPham() != null && bienThe != null && m.getBienTheSanPham().getId().equals(bienThe.getId()))
+                .map(org.example.primemobile.entity.MayDienThoai::getImei1)
+                .toList();
+        r.put("imeiList", imeiList);
+        
         return r;
     }
 
@@ -333,7 +360,7 @@ public class DonHangKhachHangController {
             case "cho_xac_nhan" -> "Chờ xác nhận";
             case "da_xac_nhan" -> "Đã xác nhận";
             case "dang_giao" -> "Đang giao";
-            case "da_giao" -> "Đã giao";
+            case "da_hoan_thanh" -> "Đã giao";
             case "da_huy" -> "Đã hủy";
             default -> status;
         };

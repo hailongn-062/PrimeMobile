@@ -27,7 +27,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
  *         <li>{@code /admin/nhan-vien/**} và {@code /api/admin/nhan-vien/**}</li>
  *         <li>{@code /api/admin/khuyen-mai/**} (tạo/sửa KM)</li>
  *         <li>{@code /api/admin/nha-cung-cap/**} (quản lý NCC)</li>
- *         <li>{@code /api/admin/flash-sale/**} (quản lý Flash Sale)</li>
  *       </ul>
  *   </li>
  *   <li>Hợp lệ → Cho phép request đi qua ({@code return true}).</li>
@@ -124,7 +123,6 @@ public class AuthInterceptor implements HandlerInterceptor {
         //   /api/admin/nhan-vien/**           — API Nhân viên
         //   /api/admin/khuyen-mai/**          — Tạo/sửa Chương trình KM
         //   /api/admin/nha-cung-cap/**        — Quản lý NCC
-        //   /api/admin/flash-sale/**          — Quản lý Flash Sale
         // ------------------------------------------------------------------
         if (ROLE_NHAN_VIEN.equals(role) && isAdminOnlyRoute(requestUri)) {
             log.warn("[AuthInterceptor] 403 Forbidden — NhanVien cố truy cập module độc quyền Admin. " +
@@ -175,7 +173,6 @@ public class AuthInterceptor implements HandlerInterceptor {
         return uri.startsWith("/admin/nhan-vien")           // UI module nhân viên
             || uri.startsWith("/api/admin/nhan-vien")       // API module nhân viên
             || uri.startsWith("/api/admin/khuyen-mai")      // Quản lý khuyến mãi
-            || uri.startsWith("/api/admin/nha-cung-cap")    // Quản lý nhà cung cấp
-            || uri.startsWith("/api/admin/flash-sale");      // Quản lý flash sale
+            || uri.startsWith("/api/admin/nha-cung-cap");    // Quản lý nhà cung cấp
     }
 }

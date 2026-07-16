@@ -42,7 +42,7 @@
             overflow: hidden;
         }
 
-        body.pos-sidebar-mini #pmSidebar {
+        body.sidebar-collapsed #pmSidebar {
             width: 0;
             min-width: 0;
         }
@@ -76,6 +76,7 @@
         #pos-body {
             flex: 1;
             display: flex;
+            min-height: 0;
             overflow: hidden;
             gap: 0;
         }
@@ -86,6 +87,7 @@
             max-width: 60%;
             display: flex;
             flex-direction: column;
+            min-height: 0;
             padding: 1rem 1rem 1rem 1.25rem;
             overflow: hidden;
             background: var(--pos-left-bg);
@@ -135,6 +137,7 @@
         /* Product grid */
         #product-grid {
             flex: 1;
+            min-height: 0; /* Quan trọng để flex không bị giãn ra quá cha */
             overflow-y: auto;
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
@@ -159,6 +162,7 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, .07);
             display: flex;
             flex-direction: column;
+            min-height: 290px; /* Đảm bảo thẻ luôn đủ cao để hiển thị mọi thứ */
             overflow: hidden;
             transition: transform .18s, box-shadow .18s;
             cursor: pointer;
@@ -173,6 +177,7 @@
 
         .prod-card .prod-img {
             height: 100px;
+            flex-shrink: 0;
             background: #F8FAFC;
             display: flex;
             align-items: center;
@@ -247,6 +252,7 @@
             font-size: .78rem;
             font-weight: 700;
             padding: .38rem .5rem;
+            flex-shrink: 0;
             cursor: pointer;
             transition: background .2s, transform .1s;
             text-align: center;
@@ -1191,7 +1197,7 @@
     </style>
 </head>
 
-<body>
+<body class="sidebar-collapsed">
 
     <!-- ═══════════════════════════════════════════════════════════
      POS WRAPPER — ghi đè layout admin thông thường
@@ -1227,6 +1233,15 @@
                     <i class="fa fa-clock" style="color:#1565C0;"></i>
                     <span id="pos-clock">--:--:--</span>
                 </div>
+
+                <!-- Nút Hóa đơn chờ -->
+                <button id="btnOpenPendingOrders" style="margin-left:1.5rem;display:flex;align-items:center;
+                    gap:.4rem;padding:.35rem .85rem;border-radius:8px;background:#FFF3E0;
+                    color:#E65100;border:1px solid #FFE0B2;font-size:.85rem;font-weight:700;
+                    cursor:pointer;transition:all .2s;">
+                    <i class="fa fa-pause-circle"></i>
+                    <span>Hóa đơn chờ (<span id="pendingOrdersCount">0</span>)</span>
+                </button>
 
                 <!-- Logout -->
                 <a href="/dang-xuat" style="margin-left:1rem;display:flex;align-items:center;
@@ -1461,11 +1476,17 @@
                         </div>
                     </div>
 
-                    <!-- Nút thanh toán -->
-                    <button class="btn-checkout" id="btnCheckout" disabled>
-                        <i class="fa fa-cash-register"></i>
-                        Thanh toán &amp; In Bill
-                    </button>
+                    <!-- Nút thanh toán và lưu chờ -->
+                    <div style="display:flex; gap: .6rem; margin: .65rem 1.1rem .85rem; width: calc(100% - 2.2rem);">
+                        <button class="btn-checkout" id="btnSavePending" style="flex: 1; margin: 0; background: linear-gradient(135deg, #F57F17, #FBC02D); width: auto; font-size: .95rem; box-shadow: 0 4px 18px rgba(245, 127, 23, .45);" disabled>
+                            <i class="fa fa-pause"></i>
+                            Lưu đơn chờ
+                        </button>
+                        <button class="btn-checkout" id="btnCheckout" style="flex: 2; margin: 0; width: auto;" disabled>
+                            <i class="fa fa-cash-register"></i>
+                            Thanh toán &amp; In Bill
+                        </button>
+                    </div>
 
                 </section>
 
@@ -1506,16 +1527,50 @@
     </div>
 
     <!-- ═══════════════════════════════════
+     MODAL — Danh sách hóa đơn chờ
+═══════════════════════════════════ -->
+    <div class="modal fade" id="modalPendingOrders" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+                <div class="modal-header"
+                    style="background:linear-gradient(135deg,#F57F17,#FBC02D);color:#fff;border:none;">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa fa-pause-circle me-2"></i>Danh sách hóa đơn chờ
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding:1rem; background:#F8FAFC; max-height: 60vh; overflow-y: auto;">
+                    <div id="pending-orders-content">
+                        <!-- Rendered by JS -->
+                        <div class="text-center py-4 text-muted">
+                            <div class="spinner-border text-warning" role="status"></div>
+                            <p class="mt-2 mb-0">Đang tải...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid #E8EDF5;gap:.5rem;">
+                    <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+                        <i class="fa fa-times me-1"></i>Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════
      DEPENDENCIES
 ═══════════════════════════════════ -->
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 
+    <!-- Bootstrap JS + Admin Scripts (quan trọng để có bootstrap.Modal) -->
+    <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+
     <!--
     POS JavaScript — toàn bộ logic nằm ở /static/js/pos.js
     Modules: state management, auto-promo, IMEI validate, checkout, bill printing
 -->
-    <script src="/js/pos.js"></script>
+    <script src="/js/pos.js?v=2.2"></script>
 
 </body>
 

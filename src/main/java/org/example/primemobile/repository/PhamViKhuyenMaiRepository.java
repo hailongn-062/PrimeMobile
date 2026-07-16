@@ -13,7 +13,6 @@ public interface PhamViKhuyenMaiRepository extends JpaRepository<PhamViKhuyenMai
 
     /**
      * Lấy danh sách phạm vi khuyến mãi theo ID chương trình khuyến mãi.
-     * Phương thức này vẫn được giữ lại để đảm bảo tương thích với các module khác.
      *
      * @param ctkmId ID chương trình khuyến mãi.
      * @return Danh sách phạm vi khuyến mãi.
@@ -21,24 +20,24 @@ public interface PhamViKhuyenMaiRepository extends JpaRepository<PhamViKhuyenMai
     List<PhamViKhuyenMai> findByChuongTrinhKhuyenMaiId(Integer ctkmId);
 
     /**
-     * Tìm các phạm vi áp dụng cho giảm giá trực tiếp đang hoạt động của một sản phẩm.
+     * Tìm các phạm vi áp dụng cho chương trình khuyến mãi theo sản phẩm đang hoạt động.
      * <p>
      * Điều kiện lọc:
      * <ul>
      *   <li>Sản phẩm phải khớp với {@code sanPhamId}.</li>
-     *   <li>Chương trình khuyến mãi phải có loại {@code 'giam_gia_truc_tiep'}.</li>
+     *   <li>Chương trình khuyến mãi phải có loại {@code 'theo_san_pham'}.</li>
      *   <li>Chương trình khuyến mãi phải có trạng thái {@code 'dang_dien_ra'}.</li>
      * </ul>
      * <p>
      * Phương thức này được sử dụng trong {@code KhuyenMaiServiceImpl.tinhGiaSauKhuyenMai}
-     * để áp dụng giảm giá trực tiếp cho từng sản phẩm trong giỏ hàng/POS.
+     * để áp dụng giảm giá theo sản phẩm trong giỏ hàng/POS.
      *
      * @param sanPhamId ID của sản phẩm cần kiểm tra.
-     * @return Danh sách phạm vi khuyến mãi trực tiếp đang áp dụng (thường chỉ 0 hoặc 1 phần tử).
+     * @return Danh sách phạm vi khuyến mãi theo sản phẩm đang áp dụng.
      */
     @Query("SELECT p FROM PhamViKhuyenMai p " +
             "WHERE p.sanPham.id = :sanPhamId " +
             "AND p.chuongTrinhKhuyenMai.trangThai = 'dang_dien_ra' " +
-            "AND p.chuongTrinhKhuyenMai.loai = 'giam_gia_truc_tiep'")
+            "AND p.chuongTrinhKhuyenMai.loai = 'theo_san_pham'")
     List<PhamViKhuyenMai> findActiveGiamGiaTrucTiepBySanPhamId(@Param("sanPhamId") Integer sanPhamId);
 }

@@ -40,7 +40,6 @@ public class GioHangServiceImpl implements IGioHangService {
     // -----------------------------------------------------------------------
     // CONSTANTS
     // -----------------------------------------------------------------------
-    private static final String LOAI_KHO_ONLINE = "kho_online";
     private static final int TON_KHO_TOI_THIEU_DE_BAN = 5;
 
     // -----------------------------------------------------------------------
@@ -219,9 +218,9 @@ public class GioHangServiceImpl implements IGioHangService {
      * @throws IllegalArgumentException nếu kho online không đủ hàng.
      */
     private void kiemTraTonKhoOnline(BienTheSanPham bienThe, int soLuong) {
-        Kho khoOnline = khoRepository.findByLoai(LOAI_KHO_ONLINE)
+        Kho khoOnline = khoRepository.findById(1)
                 .orElseThrow(() -> new IllegalStateException(
-                        "Không tìm thấy kho online trong hệ thống. Liên hệ Admin."));
+                        "Không tìm thấy kho ID=1 trong hệ thống. Liên hệ Admin."));
 
         int tonKhoHienTai = tonKhoRepository
                 .findByKhoAndBienTheSanPham(khoOnline, bienThe)
@@ -321,19 +320,18 @@ public class GioHangServiceImpl implements IGioHangService {
      * <p>
      * Cách tính:
      * <ol>
-     *   <li>Tính tổng tiền sau khi áp dụng Flash Sale và Giảm giá trực tiếp
+     *   <li>Tính tổng tiền sau khi áp dụng khuyến mãi theo sản phẩm
      *       cho từng sản phẩm (gọi {@link IKhuyenMaiService#tinhGiaSauKhuyenMai}
      *       với {@code tongTienHang = null}).</li>
      *   <li>Gọi {@link IKhuyenMaiService#tinhKhuyenMaiChoDonHang(BigDecimal)} để
-     *       tính khuyến mãi toàn đơn (phần trăm và đơn hàng tối thiểu) trên
-     *       tổng tiền đã có Flash Sale/Giảm trực tiếp.</li>
+     *       tính khuyến mãi toàn đơn trên tổng tiền đã có khuyến mãi theo sản phẩm.</li>
      *   <li>Trả về tổng tiền cuối cùng sau tất cả khuyến mãi.</li>
      * </ol>
      *
      * <p>
      * <b>Lưu ý:</b> Phương thức này đảm bảo áp dụng đúng thứ tự ưu tiên:
-     * Flash Sale/Giảm trực tiếp (trên từng sản phẩm) trước,
-     * sau đó mới giảm toàn đơn (phần trăm, đơn hàng tối thiểu).
+     * Khuyến mãi theo sản phẩm (trên từng sản phẩm) trước,
+     * sau đó mới giảm toàn đơn (khuyến mãi theo đơn hàng).
      *
      * @param gioHang Giỏ hàng cần tính tổng.
      * @return Tổng tiền sau tất cả khuyến mãi.
@@ -345,18 +343,18 @@ public class GioHangServiceImpl implements IGioHangService {
             return BigDecimal.ZERO;
         }
 
-        // 1. Tính tổng tiền sau Flash Sale và Giảm trực tiếp
-        BigDecimal tongSauFlashVaTrucTiep = gioHang.getChiTietGioHangs().stream()
+        // 1. Tính tổng tiền sau khuyến mãi theo sản phẩm
+        BigDecimal tongSauKhuyenMaiSanPham = gioHang.getChiTietGioHangs().stream()
                 .map(ct -> {
                     BienTheSanPham bt = ct.getBienTheSanPham();
-                    // Tính giá sau flash / giảm trực tiếp (không áp dụng toàn đơn)
+                    // Tính giá sau khuyến mãi theo sản phẩm (không áp dụng toàn đơn)
                     BigDecimal donGia = khuyenMaiService.tinhGiaSauKhuyenMai(bt.getId(), null);
                     return donGia.multiply(BigDecimal.valueOf(ct.getSoLuong()));
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // 2. Áp dụng khuyến mãi toàn đơn (phần trăm, đơn hàng tối thiểu)
-        KhuyenMaiResult result = khuyenMaiService.tinhKhuyenMaiChoDonHang(tongSauFlashVaTrucTiep);
+        // 2. Áp dụng khuyến mãi toàn đơn
+        KhuyenMaiResult result = khuyenMaiService.tinhKhuyenMaiChoDonHang(tongSauKhuyenMaiSanPham);
 
         // 3. Trả về tổng cuối cùng
         return result.getTongSauGiam();

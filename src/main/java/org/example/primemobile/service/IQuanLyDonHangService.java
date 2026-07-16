@@ -15,7 +15,7 @@ import java.util.List;
  *   <li>Xem danh sách đơn hàng có phân trang và bộ lọc.</li>
  *   <li>Xem chi tiết 1 đơn hàng kèm danh sách sản phẩm.</li>
  *   <li>Xác nhận đơn hàng: kiểm tra Safety Stock §3.1 → trừ kho_online → chuyển trạng thái.</li>
- *   <li>Cập nhật lộ trình giao hàng: da_xac_nhan → dang_giao → da_giao.</li>
+ *   <li>Cập nhật lộ trình giao hàng: da_xac_nhan → dang_giao → da_hoan_thanh.</li>
  *   <li>Hủy đơn hàng kèm hoàn kho nếu kho đã bị trừ trước đó (§2.2.7).</li>
  *   <li><b>Xác nhận đơn hàng có chọn IMEI</b> – chỉ cho phép chọn IMEI ở Kho Online.</li>
  *   <li><b>Xác nhận thanh toán cho đơn hàng COD</b> – khi đơn đã giao và chưa thanh toán.</li>
@@ -30,7 +30,7 @@ public interface IQuanLyDonHangService {
      * Lấy danh sách đơn hàng có phân trang, hỗ trợ lọc nhiều tiêu chí.
      *
      * @param trangThai   Lọc theo trạng thái đơn (NULL = tất cả).
-     *                    Giá trị hợp lệ: "cho_xac_nhan" | "da_xac_nhan" | "dang_giao" | "da_giao" | "da_huy"
+     *                    Giá trị hợp lệ: "cho_xac_nhan" | "da_xac_nhan" | "dang_giao" | "da_hoan_thanh" | "da_huy"
      * @param maDonHang   Tìm LIKE theo mã đơn hàng (NULL = bỏ qua).
      * @param soDienThoai Tìm LIKE theo SĐT khách hàng (NULL = bỏ qua).
      * @param pageable    Thông tin phân trang và sắp xếp.
@@ -99,14 +99,14 @@ public interface IQuanLyDonHangService {
     DonHang xacNhanDonHangVoiImei(Integer donHangId, Integer nhanVienId, List<ImeiSelection> imeiSelections);
 
     /**
-     * Cập nhật lộ trình giao hàng theo luồng: da_xac_nhan → dang_giao → da_giao.
+     * Cập nhật lộ trình giao hàng theo luồng: da_xac_nhan → dang_giao → da_hoan_thanh.
      *
      * <h3>Lưu ý (system_rules.md §7.4):</h3>
      * Tạm hoãn logic cộng điểm thưởng và cộng tong_chi_tieu.
      * Không viết code xử lý điểm ở đây cho đến khi có lệnh mới.
      *
      * @param donHangId ID đơn hàng cần cập nhật trạng thái.
-     * @param trangThaiMoi Trạng thái mới muốn chuyển sang ("dang_giao" hoặc "da_giao").
+     * @param trangThaiMoi Trạng thái mới muốn chuyển sang ("dang_giao" hoặc "da_hoan_thanh").
      * @return {@link DonHang} sau khi cập nhật.
      * @throws IllegalArgumentException nếu chuyển trạng thái không hợp lệ theo luồng.
      * @throws jakarta.persistence.EntityNotFoundException nếu đơn hàng không tồn tại.
@@ -126,23 +126,31 @@ public interface IQuanLyDonHangService {
      * @param donHangId  ID đơn hàng cần hủy.
      * @param lyDoHuy    Lý do hủy đơn (ghi vào ghiChu).
      * @return {@link DonHang} sau khi hủy.
-     * @throws IllegalArgumentException nếu đơn đã ở trạng thái {@code "da_giao"} hoặc
+     * @throws IllegalArgumentException nếu đơn đã ở trạng thái {@code "da_hoan_thanh"} hoặc
      *                                   {@code "da_huy"} (không thể hủy).
      * @throws jakarta.persistence.EntityNotFoundException nếu đơn hàng không tồn tại.
      */
     DonHang huyDonHang(Integer donHangId, String lyDoHuy);
 
     /**
+     * Xác nhận đã hoàn tiền cho đơn hàng bị hủy (chuyển trạng thái từ cho_hoan_tien -> da_huy, da_hoan_tien).
+     * @param donHangId ID của đơn hàng
+     * @param idNhanVien ID nhân viên thao tác
+     * @return Đối tượng DonHang đã cập nhật
+     */
+    DonHang xacNhanHoanTien(Integer donHangId, Integer idNhanVien);
+
+    /**
      * Xác nhận đã thanh toán cho đơn hàng COD (Cash on Delivery).
      * <p>
-     * Chỉ áp dụng khi đơn hàng đã ở trạng thái {@code "da_giao"}
+     * Chỉ áp dụng khi đơn hàng đã ở trạng thái {@code "da_hoan_thanh"}
      * và trạng thái thanh toán {@code "chua_thanh_toan"}.
      * <p>
      * Sau khi xác nhận, trạng thái thanh toán sẽ được cập nhật thành {@code "da_thanh_toan"}.
      *
      * @param donHangId ID đơn hàng cần xác nhận thanh toán.
      * @return {@link DonHang} sau khi cập nhật.
-     * @throws IllegalArgumentException nếu đơn không ở trạng thái {@code "da_giao"}
+     * @throws IllegalArgumentException nếu đơn không ở trạng thái {@code "da_hoan_thanh"}
      *                                  hoặc đã thanh toán.
      * @throws jakarta.persistence.EntityNotFoundException nếu đơn hàng không tồn tại.
      */

@@ -3,6 +3,7 @@ package org.example.primemobile.controller;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.example.primemobile.dto.auth.SessionUser;
+import org.example.primemobile.dto.kho.ImeiDto;
 import org.example.primemobile.dto.order.ChiTietDonHangDto;
 import org.example.primemobile.dto.order.DonHangChiTietDto;
 import org.example.primemobile.dto.request.XacNhanDonHangImeiRequest;
@@ -245,7 +246,7 @@ public class QuanLyDonHangController {
     /**
      * Xác nhận đã thanh toán cho đơn hàng COD (Cash on Delivery).
      * <p>
-     * Chỉ áp dụng khi đơn hàng đã ở trạng thái {@code da_giao}
+     * Chỉ áp dụng khi đơn hàng đã ở trạng thái {@code da_hoan_thanh}
      * và trạng thái thanh toán {@code chua_thanh_toan}.
      * <p>
      * Ví dụ: {@code PATCH /api/admin/don-hang/5/thanh-toan}
@@ -253,7 +254,7 @@ public class QuanLyDonHangController {
      * @param id          ID đơn hàng cần xác nhận thanh toán.
      * @param sessionUser Nhân viên đang đăng nhập.
      * @return HTTP 200 kèm đơn hàng đã cập nhật.
-     *         HTTP 400 nếu đơn không ở trạng thái {@code da_giao} hoặc đã thanh toán.
+     *         HTTP 400 nếu đơn không ở trạng thái {@code da_hoan_thanh} hoặc đã thanh toán.
      *         HTTP 404 nếu đơn hàng không tồn tại.
      */
     @PatchMapping("/{id}/thanh-toan")
@@ -287,12 +288,12 @@ public class QuanLyDonHangController {
     // =========================================================================
 
     /**
-     * Cập nhật lộ trình giao hàng theo chiều tiến: da_xac_nhan → dang_giao → da_giao.
+     * Cập nhật lộ trình giao hàng theo chiều tiến: da_xac_nhan → dang_giao → da_hoan_thanh.
      * <p>
      * Ví dụ: {@code PUT /api/admin/don-hang/5/trang-thai?trangThaiMoi=dang_giao}
      *
      * @param id           ID đơn hàng cần cập nhật.
-     * @param trangThaiMoi Trạng thái mới muốn chuyển sang ("dang_giao" hoặc "da_giao").
+     * @param trangThaiMoi Trạng thái mới muốn chuyển sang ("dang_giao" hoặc "da_hoan_thanh").
      * @param sessionUser  Nhân viên đang đăng nhập.
      * @return HTTP 200 kèm đơn hàng đã cập nhật.
      *         HTTP 400 nếu luồng chuyển trạng thái không hợp lệ.
@@ -374,6 +375,42 @@ public class QuanLyDonHangController {
     }
 
     // =========================================================================
+    // POST /api/admin/don-hang/{id}/xac-nhan-hoan-tien — Xác nhận hoàn tiền
+    // =========================================================================
+
+    /**
+     * Xác nhận hoàn tiền cho đơn hàng (đã hủy và chờ hoàn tiền).
+     *
+     * @param id          ID đơn hàng cần xác nhận hoàn tiền.
+     * @param sessionUser Nhân viên đang đăng nhập.
+     * @return HTTP 200 kèm đơn hàng đã cập nhật.
+     *         HTTP 400 nếu sai trạng thái.
+     *         HTTP 404 nếu đơn hàng không tồn tại.
+     */
+    @PostMapping("/{id}/xac-nhan-hoan-tien")
+    public ResponseEntity<?> xacNhanHoanTien(
+            @PathVariable Integer id,
+            @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
+
+        log.info("[QuanLyDonHang] ▶ Xác nhận hoàn tiền — donHangId={}, nhanVienId={}",
+                id, sessionUser.getId());
+        try {
+            DonHang donHang = quanLyDonHangService.xacNhanHoanTien(id, sessionUser.getId());
+            log.info("[QuanLyDonHang] ✅ Xác nhận hoàn tiền thành công — maDonHang={}", donHang.getMaDonHang());
+            return ResponseEntity.ok(buildSuccessResponse(
+                    "Xác nhận hoàn tiền thành công. Trạng thái đã chuyển thành Đã hủy và Đã hoàn tiền.", donHang));
+
+        } catch (IllegalArgumentException e) {
+            log.warn("[QuanLyDonHang] ❌ Xác nhận hoàn tiền thất bại donHangId={}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(buildErrorResponse(e.getMessage()));
+
+        } catch (EntityNotFoundException e) {
+            log.warn("[QuanLyDonHang] ❌ Không tìm thấy đơn hàng khi xác nhận hoàn tiền id={}: {}", id, e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // =========================================================================
     // Exception Handler cục bộ (fallback)
     // =========================================================================
 
@@ -408,9 +445,18 @@ public class QuanLyDonHangController {
             return null;
         }
 
+        // Lấy danh sách IMEI đã gán cho đơn hàng (trạng thái 'da_ban') trước
+        List<org.example.primemobile.entity.MayDienThoai> tempMayDienThoaiList = new java.util.ArrayList<>();
+        try {
+            tempMayDienThoaiList = quanLyDonHangService.layDanhSachImeiTheoDonHang(donHang.getId());
+        } catch (Exception e) {
+            log.warn("[QuanLyDonHang] Không thể lấy danh sách IMEI cho đơn hàng {}: {}", donHang.getId(), e.getMessage());
+        }
+        final List<org.example.primemobile.entity.MayDienThoai> mayDienThoaiList = tempMayDienThoaiList;
+
         // Map danh sách chi tiết đơn hàng
         List<ChiTietDonHangDto> chiTietDtos = donHang.getChiTietDonHangs().stream()
-                .map(this::mapChiTietToDto)
+                .map(ct -> mapChiTietToDto(ct, mayDienThoaiList))
                 .collect(Collectors.toList());
 
         // Lấy thông tin khách hàng
@@ -431,13 +477,9 @@ public class QuanLyDonHangController {
                 ? donHang.getNguoiXuLy().getHoTen()
                 : null;
 
-        // Lấy danh sách IMEI đã gán cho đơn hàng (trạng thái 'da_ban')
-        List<org.example.primemobile.entity.MayDienThoai> imeiList = null;
-        try {
-            imeiList = quanLyDonHangService.layDanhSachImeiTheoDonHang(donHang.getId());
-        } catch (Exception e) {
-            log.warn("[QuanLyDonHang] Không thể lấy danh sách IMEI cho đơn hàng {}: {}", donHang.getId(), e.getMessage());
-        }
+        List<ImeiDto> imeiList = mayDienThoaiList.stream()
+                .map(m -> new ImeiDto(m.getId(), m.getImei1(), m.getImei2(), m.getTinhTrang()))
+                .collect(Collectors.toList());
 
         return DonHangChiTietDto.builder()
                 .id(donHang.getId())
@@ -470,18 +512,24 @@ public class QuanLyDonHangController {
 
     /**
      * Chuyển đổi entity {@link ChiTietDonHang} sang DTO {@link ChiTietDonHangDto}.
-     *
-     * @param chiTiet Entity chi tiết đơn hàng.
-     * @return DTO chi tiết đơn hàng.
      */
-    private ChiTietDonHangDto mapChiTietToDto(ChiTietDonHang chiTiet) {
+    private ChiTietDonHangDto mapChiTietToDto(ChiTietDonHang chiTiet, List<org.example.primemobile.entity.MayDienThoai> mayDienThoaiList) {
         BienTheSanPham bt = chiTiet.getBienTheSanPham();
         SanPham sp = (bt != null) ? bt.getSanPham() : null;
+
+        List<ImeiDto> ctImeis = new java.util.ArrayList<>();
+        if (mayDienThoaiList != null && bt != null) {
+            ctImeis = mayDienThoaiList.stream()
+                    .filter(m -> m.getBienTheSanPham() != null && m.getBienTheSanPham().getId().equals(bt.getId()))
+                    .map(m -> new ImeiDto(m.getId(), m.getImei1(), m.getImei2(), m.getTinhTrang()))
+                    .collect(Collectors.toList());
+        }
 
         return ChiTietDonHangDto.builder()
                 .id(chiTiet.getId())
                 .soLuong(chiTiet.getSoLuong())
                 .donGiaBan(chiTiet.getDonGiaBan())
+                .giaGoc(bt != null && bt.getGiaBan() != null ? bt.getGiaBan() : chiTiet.getDonGiaBan())
                 .thanhTien(chiTiet.getThanhTien())
                 .bienTheSanPhamId(bt != null ? bt.getId() : null)
                 .maSku(bt != null ? bt.getMaSku() : null)
@@ -489,17 +537,17 @@ public class QuanLyDonHangController {
                 .ramGb(bt != null ? bt.getRamGb() : null)
                 .luuTruGb(bt != null ? bt.getLuuTruGb() : null)
                 .tenSanPham(sp != null ? sp.getTenSanPham() : null)
+                .imeiList(ctImeis)
                 .build();
     }
 
-    /**
-     * Tạo response body thành công theo chuẩn thống nhất.
-     */
     private Map<String, Object> buildSuccessResponse(String message, DonHang donHang) {
         Map<String, Object> res = new LinkedHashMap<>();
         res.put("success", true);
         res.put("message", message);
-        res.put("donHang", donHang);
+        if (donHang != null) {
+            res.put("donHangId", donHang.getId());
+        }
         return res;
     }
 

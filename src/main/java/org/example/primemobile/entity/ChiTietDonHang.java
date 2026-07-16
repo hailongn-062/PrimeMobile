@@ -6,18 +6,18 @@ import lombok.*;
 import java.math.BigDecimal;
 
 /**
- * Entity mapping bảng chi_tiet_don_hang (Module 7: Đơn hàng).
+ * Entity mapping báº£ng chi_tiet_don_hang (Module 7: ÄÆ¡n hÃ ng).
  * <p>
- * Mỗi dòng = 1 SKU trong đơn hàng với giá bán tại thời điểm đặt (price snapshot).
- * Giá được snapshot ngay khi đặt hàng để tránh sai lệch khi giá sau đó thay đổi.
+ * Má»—i dÃ²ng = 1 SKU trong Ä‘Æ¡n hÃ ng vá»›i giÃ¡ bÃ¡n táº¡i thá»i Ä‘iá»ƒm Ä‘áº·t (price snapshot).
+ * GiÃ¡ Ä‘Æ°á»£c snapshot ngay khi Ä‘áº·t hÃ ng Ä‘á»ƒ trÃ¡nh sai lá»‡ch khi giÃ¡ sau Ä‘Ã³ thay Ä‘á»•i.
  * <p>
- * ⚠️ COMPUTED COLUMN (AS PERSISTED):
- * Cột {@code thanh_tien} = so_luong * don_gia_ban
- * BẮT BUỘC dùng {@code @Column(insertable = false, updatable = false)}.
+ * âš ï¸ COMPUTED COLUMN (AS PERSISTED):
+ * Cá»™t {@code thanh_tien} = so_luong * don_gia_ban
+ * Báº®T BUá»˜C dÃ¹ng {@code @Column(insertable = false, updatable = false)}.
  * <p>
- * Quan hệ:
- *  - N:1 với {@link DonHang}        (FK don_hang_id, ON DELETE CASCADE)
- *  - N:1 với {@link BienTheSanPham} (FK bien_the_san_pham_id)
+ * Quan há»‡:
+ *  - N:1 vá»›i {@link DonHang}        (FK don_hang_id, ON DELETE CASCADE)
+ *  - N:1 vá»›i {@link BienTheSanPham} (FK bien_the_san_pham_id)
  */
 @Entity
 @Table(
@@ -30,6 +30,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class ChiTietDonHang {
 
     @Id
@@ -37,8 +38,8 @@ public class ChiTietDonHang {
     private Integer id;
 
     /**
-     * Đơn hàng chứa dòng này.
-     * ON DELETE CASCADE – xóa đơn hàng thì chi tiết tự xóa theo.
+     * ÄÆ¡n hÃ ng chá»©a dÃ²ng nÃ y.
+     * ON DELETE CASCADE â€“ xÃ³a Ä‘Æ¡n hÃ ng thÃ¬ chi tiáº¿t tá»± xÃ³a theo.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -46,10 +47,11 @@ public class ChiTietDonHang {
             nullable = false,
             foreignKey = @ForeignKey(name = "fk_ctdh_dh")
     )
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private DonHang donHang;
 
     /**
-     * Biến thể sản phẩm (SKU) trong dòng đơn hàng.
+     * Biáº¿n thá»ƒ sáº£n pháº©m (SKU) trong dÃ²ng Ä‘Æ¡n hÃ ng.
      * NOT NULL.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -61,25 +63,25 @@ public class ChiTietDonHang {
     private BienTheSanPham bienTheSanPham;
 
     /**
-     * Số lượng sản phẩm trong dòng này.
+     * Sá»‘ lÆ°á»£ng sáº£n pháº©m trong dÃ²ng nÃ y.
      * CHECK: so_luong > 0.
      */
     @Column(name = "so_luong", nullable = false)
     private Integer soLuong;
 
     /**
-     * Đơn giá bán tại thời điểm đặt hàng (price snapshot).
+     * ÄÆ¡n giÃ¡ bÃ¡n táº¡i thá»i Ä‘iá»ƒm Ä‘áº·t hÃ ng (price snapshot).
      * CHECK: don_gia_ban >= 0.
-     * Không thay đổi dù giá sản phẩm sau này bị điều chỉnh.
+     * KhÃ´ng thay Ä‘á»•i dÃ¹ giÃ¡ sáº£n pháº©m sau nÃ y bá»‹ Ä‘iá»u chá»‰nh.
      */
     @Column(name = "don_gia_ban", nullable = false, precision = 15, scale = 2)
     private BigDecimal donGiaBan;
 
     /**
-     * ⚠️ CỘT TÍNH TOÁN TỰ ĐỘNG (Computed Column - PERSISTED):
-     * SQL Server tự tính: so_luong * don_gia_ban
-     * BẮT BUỘC insertable = false, updatable = false
-     * để Hibernate không cố ghi vào cột này gây lỗi "Cannot update a computed column".
+     * âš ï¸ Cá»˜T TÃNH TOÃN Tá»° Äá»˜NG (Computed Column - PERSISTED):
+     * SQL Server tá»± tÃ­nh: so_luong * don_gia_ban
+     * Báº®T BUá»˜C insertable = false, updatable = false
+     * Ä‘á»ƒ Hibernate khÃ´ng cá»‘ ghi vÃ o cá»™t nÃ y gÃ¢y lá»—i "Cannot update a computed column".
      */
     @Column(name = "thanh_tien", insertable = false, updatable = false, precision = 15, scale = 2)
     private BigDecimal thanhTien;

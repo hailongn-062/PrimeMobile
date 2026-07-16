@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.example.primemobile.entity.MayDienThoai;
+import org.example.primemobile.dto.kho.ImeiDto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -12,15 +12,18 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * DTO chi tiết đơn hàng – dùng để trả về thông tin đơn hàng cùng danh sách sản phẩm
+ * DTO chi tiết đơn hàng – dùng để trả về thông tin đơn hàng cùng danh sách sản
+ * phẩm
  * cho màn hình quản lý đơn hàng (Admin) và modal xác nhận IMEI.
  * <p>
  * Mục đích:
  * <ul>
- *   <li>Tránh vòng lặp vô hạn khi serialize entity {@link org.example.primemobile.entity.DonHang}
- *       (do quan hệ 1-N với {@link org.example.primemobile.entity.ChiTietDonHang}).</li>
- *   <li>Kiểm soát dữ liệu trả về API, chỉ expose các trường cần thiết.</li>
- *   <li>Giảm tải dữ liệu không cần thiết (các quan hệ lazy không được load).</li>
+ * <li>Tránh vòng lặp vô hạn khi serialize entity
+ * {@link org.example.primemobile.entity.DonHang}
+ * (do quan hệ 1-N với
+ * {@link org.example.primemobile.entity.ChiTietDonHang}).</li>
+ * <li>Kiểm soát dữ liệu trả về API, chỉ expose các trường cần thiết.</li>
+ * <li>Giảm tải dữ liệu không cần thiết (các quan hệ lazy không được load).</li>
  * </ul>
  *
  * @see org.example.primemobile.entity.DonHang
@@ -45,10 +48,16 @@ public class DonHangChiTietDto {
     /** Thời điểm khách đặt hàng */
     private LocalDateTime ngayDat;
 
-    /** Trạng thái xử lý đơn hàng: "cho_xac_nhan", "da_xac_nhan", "dang_giao", "da_giao", "da_huy" */
+    /**
+     * Trạng thái xử lý đơn hàng: "cho_xac_nhan", "da_xac_nhan", "dang_giao",
+     * "da_hoan_thanh", "da_huy"
+     */
     private String trangThai;
 
-    /** Trạng thái thanh toán: "chua_thanh_toan", "dang_chuyen_huong", "da_thanh_toan", "that_bai" */
+    /**
+     * Trạng thái thanh toán: "chua_thanh_toan", "dang_chuyen_huong",
+     * "da_thanh_toan", "that_bai"
+     */
     private String trangThaiThanhToan;
 
     /** Kênh bán: "online" hoặc "tai_quay" */
@@ -61,7 +70,10 @@ public class DonHangChiTietDto {
     /** Tên khách hàng (lấy từ khach_hang.hoTen hoặc snapshot ho_ten_nguoi_nhan) */
     private String tenKhachHang;
 
-    /** Số điện thoại khách hàng (lấy từ khach_hang.soDienThoai hoặc snapshot sdt_nguoi_nhan) */
+    /**
+     * Số điện thoại khách hàng (lấy từ khach_hang.soDienThoai hoặc snapshot
+     * sdt_nguoi_nhan)
+     */
     private String soDienThoaiKhach;
 
     /** Email khách hàng (lấy từ khach_hang.email) */
@@ -96,7 +108,9 @@ public class DonHangChiTietDto {
     /** Ngày giao hàng dự kiến (lấy từ GHN API) */
     private LocalDate ngayGiaoDuKien;
 
-    /** Ngày giao hàng thực tế (được cập nhật khi đơn chuyển sang trạng thái da_giao) */
+    /**
+     * Ngày giao hàng thực tế (được cập nhật khi đơn chuyển sang trạng thái da_hoan_thanh)
+     */
     private LocalDateTime ngayGiaoThucTe;
 
     // ────────────────────────────────────────────────────────────────────────
@@ -141,12 +155,12 @@ public class DonHangChiTietDto {
 
     /**
      * Danh sách IMEI đã được gán cho đơn hàng (chỉ có khi đơn hàng đã xác nhận).
-     * Mỗi phần tử là một {@link MayDienThoai} chứa thông tin IMEI và serial.
+     * Mỗi phần tử là một {@link ImeiDto} chứa thông tin IMEI của máy.
      * <p>
      * Lưu ý: Chỉ những IMEI có {@code tinhTrang = 'da_ban'} và
      * {@code donHang.id = id} mới được đưa vào danh sách này.
      */
-    private List<MayDienThoai> imeiList;
+    private List<ImeiDto> imeiList;
 
     // ────────────────────────────────────────────────────────────────────────
     // DANH SÁCH SẢN PHẨM TRONG ĐƠN HÀNG (chi tiết)

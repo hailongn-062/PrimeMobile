@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title th:text="${pageTitle} + ' - PrimeMobile'">KM Giảm giá trực tiếp</title>
+    <title th:text="${pageTitle} + ' - PrimeMobile'">KM Theo Sản Phẩm</title>
     <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
 </head>
 <body>
@@ -11,21 +11,21 @@
     <main id="pmContent">
         <div class="pm-card" style="max-width: 700px; margin: 0 auto;">
             <div class="pm-card-header">
-                <i class="fa fa-tag me-2 text-warning"></i>
-                <span th:text="${pageTitle}">KM Giảm giá trực tiếp</span>
+                <i class="fa fa-cube me-2 text-primary"></i>
+                <span th:text="${pageTitle}">KM Theo Sản Phẩm</span>
             </div>
             <div class="card-body p-4">
 
                 <div th:if="${errorMessage}" class="alert alert-danger p-2 mb-3 small" th:text="${errorMessage}"></div>
 
-                <div class="alert alert-warning py-2 mb-4 small">
+                <div class="alert alert-primary py-2 mb-4 small">
                     <i class="fa fa-info-circle me-1"></i>
                     Sau khi lưu, bạn sẽ được chuyển đến trang Chi tiết để chọn sản phẩm cụ thể được áp dụng giảm giá này.
                 </div>
 
                 <form th:action="@{/admin/khuyen-mai/save}" th:object="${ctkm}" method="post">
                     <input type="hidden" th:field="*{id}" />
-                    <input type="hidden" name="loai" value="giam_gia_truc_tiep" />
+                    <input type="hidden" name="loai" value="theo_san_pham" />
 
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Tên chương trình <span class="text-danger">*</span></label>
@@ -42,7 +42,6 @@
                                 <span class="input-group-text">%</span>
                             </div>
                         </div>
-
                     </div>
 
                     <div class="row g-3 mb-3">
@@ -69,14 +68,14 @@
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Mô tả</label>
                         <textarea class="form-control" th:field="*{moTa}" rows="2"
-                                  placeholder="Mô tả ngắn về chương trình..."></textarea>
+                                  placeholder="Mô tả chi tiết chương trình..."></textarea>
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 pt-2 border-top">
                         <a href="/admin/khuyen-mai" class="btn btn-light">
                             <i class="fa fa-arrow-left me-1"></i> Hủy
                         </a>
-                        <button type="submit" class="btn btn-warning">
+                        <button type="submit" class="btn btn-primary">
                             <i class="fa fa-save me-1"></i> Lưu &amp; Chọn sản phẩm
                         </button>
                     </div>

@@ -4,13 +4,13 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * Entity mapping bảng hinh_anh_san_pham (Module 2: Sản phẩm & Biến thể).
+ * Entity mapping báº£ng hinh_anh_san_pham (Module 2: Sáº£n pháº©m & Biáº¿n thá»ƒ).
  * <p>
- * Lưu trữ các ảnh của từng biến thể sản phẩm.
- * Mỗi biến thể có thể có nhiều ảnh, trong đó có duy nhất 1 ảnh chính.
+ * LÆ°u trá»¯ cÃ¡c áº£nh cá»§a tá»«ng biáº¿n thá»ƒ sáº£n pháº©m.
+ * Má»—i biáº¿n thá»ƒ cÃ³ thá»ƒ cÃ³ nhiá»u áº£nh, trong Ä‘Ã³ cÃ³ duy nháº¥t 1 áº£nh chÃ­nh.
  * <p>
- * Quan hệ:
- *  - N:1 với {@link BienTheSanPham} (FK bien_the_san_pham_id, ON DELETE CASCADE)
+ * Quan há»‡:
+ *  - N:1 vá»›i {@link BienTheSanPham} (FK bien_the_san_pham_id, ON DELETE CASCADE)
  */
 @Entity
 @Table(name = "hinh_anh_san_pham")
@@ -18,6 +18,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class HinhAnhSanPham {
 
     @Id
@@ -25,8 +26,8 @@ public class HinhAnhSanPham {
     private Integer id;
 
     /**
-     * Biến thể sản phẩm mà ảnh này thuộc về.
-     * ON DELETE CASCADE – xóa biến thể thì ảnh tự xóa theo.
+     * Biáº¿n thá»ƒ sáº£n pháº©m mÃ  áº£nh nÃ y thuá»™c vá».
+     * ON DELETE CASCADE â€“ xÃ³a biáº¿n thá»ƒ thÃ¬ áº£nh tá»± xÃ³a theo.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -37,21 +38,21 @@ public class HinhAnhSanPham {
     private BienTheSanPham bienTheSanPham;
 
     /**
-     * Đường dẫn ảnh (URL tuyệt đối hoặc đường dẫn tương đối từ static/).
-     * Ví dụ: "/images/products/ip15pm-titan-black-1.jpg"
+     * ÄÆ°á»ng dáº«n áº£nh (URL tuyá»‡t Ä‘á»‘i hoáº·c Ä‘Æ°á»ng dáº«n tÆ°Æ¡ng Ä‘á»‘i tá»« static/).
+     * VÃ­ dá»¥: "/images/products/ip15pm-titan-black-1.jpg"
      */
     @Column(name = "duong_dan", nullable = false, length = 255)
     private String duongDan;
 
     /**
-     * Đánh dấu đây có phải ảnh đại diện chính của biến thể không.
-     * DEFAULT false. Mỗi biến thể chỉ nên có 1 ảnh chính.
+     * ÄÃ¡nh dáº¥u Ä‘Ã¢y cÃ³ pháº£i áº£nh Ä‘áº¡i diá»‡n chÃ­nh cá»§a biáº¿n thá»ƒ khÃ´ng.
+     * DEFAULT false. Má»—i biáº¿n thá»ƒ chá»‰ nÃªn cÃ³ 1 áº£nh chÃ­nh.
      */
     @Column(name = "la_anh_chinh", nullable = false)
     @Builder.Default
     private Boolean laAnhChinh = false;
 
-    /** Thứ tự hiển thị trong gallery (DEFAULT 0 = hiển thị đầu tiên). */
+    /** Thá»© tá»± hiá»ƒn thá»‹ trong gallery (DEFAULT 0 = hiá»ƒn thá»‹ Ä‘áº§u tiÃªn). */
     @Column(name = "thu_tu", nullable = false)
     @Builder.Default
     private Integer thuTu = 0;

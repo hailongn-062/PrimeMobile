@@ -6,22 +6,22 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * Entity mapping bảng tin_nhan_chat (Module 11: Chatbot AI).
+ * Entity mapping báº£ng tin_nhan_chat (Module 11: Chatbot AI).
  * <p>
- * Mỗi bản ghi = 1 tin nhắn trong cuộc hội thoại.
+ * Má»—i báº£n ghi = 1 tin nháº¯n trong cuá»™c há»™i thoáº¡i.
  * <p>
- * Vai trò người gửi (CHECK chk_tnc_vai — chuẩn Gemini API):
- *  "user"   : Tin nhắn từ khách hàng.
- *  "model"  : Phản hồi từ Gemini AI (đã đổi từ 'assistant' theo chuẩn Gemini).
- *  "system" : Tin nhắn hệ thống nội bộ (ngữ cảnh, thông báo...).
+ * Vai trÃ² ngÆ°á»i gá»­i (CHECK chk_tnc_vai â€” chuáº©n Gemini API):
+ *  "user"   : Tin nháº¯n tá»« khÃ¡ch hÃ ng.
+ *  "model"  : Pháº£n há»“i tá»« Gemini AI (Ä‘Ã£ Ä‘á»•i tá»« 'assistant' theo chuáº©n Gemini).
+ *  "system" : Tin nháº¯n há»‡ thá»‘ng ná»™i bá»™ (ngá»¯ cáº£nh, thÃ´ng bÃ¡o...).
  * <p>
- * Intent phân loại (CHECK chk_tnc_intent, nullable):
+ * Intent phÃ¢n loáº¡i (CHECK chk_tnc_intent, nullable):
  *  "tu_van_sp" | "tra_cuu_dh" | "bao_hanh" | "khuyen_mai" | "chinh_sach" | "khac"
  * <p>
- * Quan hệ:
- *  - N:1 với {@link CuocHoiThoai} (FK cuoc_hoi_thoai_id, ON DELETE CASCADE)
- *  - donHangIdRef (Integer)        — FK ON DELETE SET NULL tới don_hang (tham chiếu ngữ cảnh)
- *  - sanPhamIdRef (Integer)        — FK ON DELETE SET NULL tới san_pham (tham chiếu ngữ cảnh)
+ * Quan há»‡:
+ *  - N:1 vá»›i {@link CuocHoiThoai} (FK cuoc_hoi_thoai_id, ON DELETE CASCADE)
+ *  - donHangIdRef (Integer)        â€” FK ON DELETE SET NULL tá»›i don_hang (tham chiáº¿u ngá»¯ cáº£nh)
+ *  - sanPhamIdRef (Integer)        â€” FK ON DELETE SET NULL tá»›i san_pham (tham chiáº¿u ngá»¯ cáº£nh)
  */
 @Entity
 @Table(
@@ -34,6 +34,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class TinNhanChat {
 
     @Id
@@ -41,8 +42,8 @@ public class TinNhanChat {
     private Integer id;
 
     /**
-     * Cuộc hội thoại chứa tin nhắn này.
-     * ON DELETE CASCADE – xóa hội thoại thì tin nhắn tự xóa theo.
+     * Cuá»™c há»™i thoáº¡i chá»©a tin nháº¯n nÃ y.
+     * ON DELETE CASCADE â€“ xÃ³a há»™i thoáº¡i thÃ¬ tin nháº¯n tá»± xÃ³a theo.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -53,55 +54,55 @@ public class TinNhanChat {
     private CuocHoiThoai cuocHoiThoai;
 
     /**
-     * Vai trò người gửi (chuẩn Gemini API).
-     * Giá trị hợp lệ: "user" | "model" | "system"
+     * Vai trÃ² ngÆ°á»i gá»­i (chuáº©n Gemini API).
+     * GiÃ¡ trá»‹ há»£p lá»‡: "user" | "model" | "system"
      */
     @Column(name = "vai", nullable = false, length = 10)
     private String vai;
 
-    /** Nội dung tin nhắn (có thể là text, hoặc mô tả ảnh nếu có hinhAnhUrl). */
+    /** Ná»™i dung tin nháº¯n (cÃ³ thá»ƒ lÃ  text, hoáº·c mÃ´ táº£ áº£nh náº¿u cÃ³ hinhAnhUrl). */
     @Column(name = "noi_dung", nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String noiDung;
 
     /**
-     * URL ảnh đính kèm (hỗ trợ Gemini Vision API).
-     * NULL nếu tin nhắn chỉ có text.
+     * URL áº£nh Ä‘Ã­nh kÃ¨m (há»— trá»£ Gemini Vision API).
+     * NULL náº¿u tin nháº¯n chá»‰ cÃ³ text.
      */
     @Column(name = "hinh_anh_url", length = 255)
     private String hinhAnhUrl;
 
     /**
-     * Số token tiêu thụ của tin nhắn này (dùng để quản lý quota API Free).
-     * NULL nếu là tin nhắn của "user".
+     * Sá»‘ token tiÃªu thá»¥ cá»§a tin nháº¯n nÃ y (dÃ¹ng Ä‘á»ƒ quáº£n lÃ½ quota API Free).
+     * NULL náº¿u lÃ  tin nháº¯n cá»§a "user".
      */
     @Column(name = "so_token")
     private Integer soToken;
 
     /**
-     * Phân loại ý định của tin nhắn (nullable).
-     * Giá trị hợp lệ: "tu_van_sp" | "tra_cuu_dh" | "bao_hanh"
+     * PhÃ¢n loáº¡i Ã½ Ä‘á»‹nh cá»§a tin nháº¯n (nullable).
+     * GiÃ¡ trá»‹ há»£p lá»‡: "tu_van_sp" | "tra_cuu_dh" | "bao_hanh"
      *               | "khuyen_mai" | "chinh_sach" | "khac" | NULL
      */
     @Column(name = "intent", length = 30)
     private String intent;
 
     /**
-     * ID đơn hàng được nhắc đến trong tin nhắn (ngữ cảnh hội thoại).
-     * FK fk_tnc_dh với ON DELETE SET NULL — giữ nguyên khi đơn bị xóa.
-     * Tạm giữ Integer — FK tham chiếu ngữ cảnh không cần load full DonHang.
+     * ID Ä‘Æ¡n hÃ ng Ä‘Æ°á»£c nháº¯c Ä‘áº¿n trong tin nháº¯n (ngá»¯ cáº£nh há»™i thoáº¡i).
+     * FK fk_tnc_dh vá»›i ON DELETE SET NULL â€” giá»¯ nguyÃªn khi Ä‘Æ¡n bá»‹ xÃ³a.
+     * Táº¡m giá»¯ Integer â€” FK tham chiáº¿u ngá»¯ cáº£nh khÃ´ng cáº§n load full DonHang.
      */
     @Column(name = "don_hang_id_ref")
     private Integer donHangIdRef;
 
     /**
-     * ID sản phẩm được nhắc đến trong tin nhắn (ngữ cảnh hội thoại).
-     * FK fk_tnc_sp với ON DELETE SET NULL.
-     * Tạm giữ Integer — FK tham chiếu ngữ cảnh không cần load full SanPham.
+     * ID sáº£n pháº©m Ä‘Æ°á»£c nháº¯c Ä‘áº¿n trong tin nháº¯n (ngá»¯ cáº£nh há»™i thoáº¡i).
+     * FK fk_tnc_sp vá»›i ON DELETE SET NULL.
+     * Táº¡m giá»¯ Integer â€” FK tham chiáº¿u ngá»¯ cáº£nh khÃ´ng cáº§n load full SanPham.
      */
     @Column(name = "san_pham_id_ref")
     private Integer sanPhamIdRef;
 
-    /** Thời điểm gửi tin nhắn. */
+    /** Thá»i Ä‘iá»ƒm gá»­i tin nháº¯n. */
     @Column(name = "thoi_gian", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime thoiGian = LocalDateTime.now();

@@ -99,20 +99,6 @@
                 </a>
             </div>
 
-            <!-- Card Phiếu Chuyển -->
-            <div class="col-md-4">
-                <a href="/admin/kho/phieu-chuyen" class="card quick-action-card h-100 border-0 shadow-sm bg-white">
-                    <div class="card-body d-flex align-items-center p-4">
-                        <div class="icon-box bg-warning bg-opacity-10 text-warning me-4 shadow-sm">
-                            <i class="fa fa-exchange-alt"></i>
-                        </div>
-                        <div>
-                            <h5 class="fw-bold mb-1">Luân Chuyển Kho</h5>
-                            <p class="text-muted mb-0 small">Phân bổ hàng hóa giữa các kho</p>
-                        </div>
-                    </div>
-                </a>
-            </div>
 
             <!-- Card Kiểm soát IMEI -->
             <div class="col-md-4">
@@ -195,7 +181,7 @@
                                 <th style="width:50px;">#</th>
                                 <th>IMEI 1</th>
                                 <th>IMEI 2</th>
-                                <th>Serial</th>
+
                                 <th>Trạng thái</th>
                             </tr>
                             </thead>
@@ -342,7 +328,7 @@
                                 <td class="text-muted text-center">${index + 1}</td>
                                 <td class="fw-semibold imei-badge">${imei.imei1}</td>
                                 <td>${imei.imei2 || '—'}</td>
-                                <td>${imei.serial || '—'}</td>
+
                                 <td><span class="imei-status-badge ${statusClass}">${statusLabel}</span></td>
                             </tr>
                         `;

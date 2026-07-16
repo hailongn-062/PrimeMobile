@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title th:text="${pageTitle} + ' - PrimeMobile'">Chi tiết KM Phần Trăm</title>
+    <title th:text="${pageTitle} + ' - PrimeMobile'">Chi tiết KM Theo Đơn Hàng</title>
     <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
 </head>
 <body>
@@ -29,11 +29,10 @@
             </a>
         </div>
 
-        <!-- NỬA TRÊN: Tóm tắt thông tin -->
         <div class="pm-card mb-4">
             <div class="pm-card-header d-flex justify-content-between align-items-center">
                 <span>
-                    <i class="fa fa-percent me-2 text-primary"></i>
+                    <i class="fa fa-shopping-cart me-2 text-success"></i>
                     <span th:text="${ctkm.tenCtkm}">Tên CTKM</span>
                 </span>
                 <th:block th:switch="${ctkm.trangThai}">
@@ -47,12 +46,11 @@
                 <div class="row g-3">
                     <div class="col-md-3">
                         <p class="mb-1 text-muted small">Loại KM</p>
-                        <strong class="text-primary"><i class="fa fa-percent me-1"></i> Phần trăm</strong>
+                        <strong class="text-success"><i class="fa fa-shopping-cart me-1"></i> Theo đơn hàng</strong>
                     </div>
                     <div class="col-md-3">
-                        <p class="mb-1 text-muted small">Giá trị giảm</p>
+                        <p class="mb-1 text-muted small">Giảm (%)</p>
                         <strong class="text-danger fs-5" th:text="${ctkm.giaTriUuDai + '%'}"></strong>
-
                     </div>
                     <div class="col-md-3">
                         <p class="mb-1 text-muted small">Bắt đầu</p>
@@ -63,23 +61,16 @@
                         <strong th:text="${#temporals.format(ctkm.ngayKetThuc, 'dd/MM/yyyy HH:mm')}"></strong>
                     </div>
                 </div>
-                <p class="mt-3 mb-0 text-muted small" th:if="${ctkm.moTa != null}"
-                   th:text="${ctkm.moTa}"></p>
-            </div>
-        </div>
-
-        <!-- NỬA DƯỚI: Thông báo tự động -->
-        <div class="pm-card">
-            <div class="pm-card-header"><i class="fa fa-info-circle me-2"></i> Cấu hình áp dụng</div>
-            <div class="card-body text-center py-5">
-                <i class="fa fa-magic fa-3x text-primary mb-3 d-block opacity-50"></i>
-                <h5 class="text-muted">Khuyến mãi này tự động áp dụng khi đủ điều kiện</h5>
-                <p class="text-muted mb-0">
-                    Chương trình <strong class="text-primary" th:text="${ctkm.tenCtkm}"></strong>
-                    sẽ được hệ thống tự động áp dụng <strong>giảm <span th:text="${ctkm.giaTriUuDai}"></span>%</strong>
-                    cho toàn bộ đơn hàng trong khung thời gian đã cấu hình.
-                    <br>Không cần cấu hình sản phẩm cụ thể.
-                </p>
+                <div class="row g-3 mt-1">
+                    <div class="col-md-12">
+                        <p class="mb-1 text-muted small">Điều kiện áp dụng</p>
+                        <strong th:if="${ctkm.donHangToiThieu != null}">
+                            Đơn hàng từ <span class="text-primary" th:text="${#numbers.formatDecimal(ctkm.donHangToiThieu, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                        </strong>
+                        <strong th:if="${ctkm.donHangToiThieu == null}" class="text-success">Không yêu cầu tối thiểu</strong>
+                    </div>
+                </div>
+                <p class="mt-3 mb-0 text-muted small" th:if="${ctkm.moTa != null}" th:text="${ctkm.moTa}"></p>
             </div>
         </div>
     </main>

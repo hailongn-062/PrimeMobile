@@ -7,18 +7,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entity mapping bảng phuong_thuc_thanh_toan (Module 7: Đơn hàng).
+ * Entity mapping báº£ng phuong_thuc_thanh_toan (Module 7: ÄÆ¡n hÃ ng).
  * <p>
- * Danh mục các phương thức thanh toán được hỗ trợ.
+ * Danh má»¥c cÃ¡c phÆ°Æ¡ng thá»©c thanh toÃ¡n Ä‘Æ°á»£c há»— trá»£.
  * <p>
- * Phương thức hiện tại:
- * - "Tien mat" : Thanh toán tiền mặt tại quầy.
- * - "Chuyen khoan" : Chuyển khoản qua QR tĩnh tại quầy, nhân viên xác nhận.
- * - "Diem thuong" : Thanh toán bằng điểm tích lũy.
- * - "VNPay" : Thanh toán trực tuyến qua cổng VNPay (redirect).
+ * PhÆ°Æ¡ng thá»©c hiá»‡n táº¡i:
+ * - "Tien mat" : Thanh toÃ¡n tiá»n máº·t táº¡i quáº§y.
+ * - "Chuyen khoan" : Chuyá»ƒn khoáº£n qua QR tÄ©nh táº¡i quáº§y, nhÃ¢n viÃªn xÃ¡c nháº­n.
+ * - "Diem thuong" : Thanh toÃ¡n báº±ng Ä‘iá»ƒm tÃ­ch lÅ©y.
+ * - "VNPay" : Thanh toÃ¡n trá»±c tuyáº¿n qua cá»•ng VNPay (redirect).
  * <p>
- * Quan hệ:
- * - 1-N với {@link ThanhToan} (mappedBy phuongThucThanhToan)
+ * Quan há»‡:
+ * - 1-N vá»›i {@link ThanhToan} (mappedBy phuongThucThanhToan)
  */
 @Entity
 @Table(name = "phuong_thuc_thanh_toan", uniqueConstraints = {
@@ -31,6 +31,7 @@ import java.util.List;
 @Builder
 @ToString(exclude = "thanhToans")
 @EqualsAndHashCode(exclude = "thanhToans")
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class PhuongThucThanhToan {
 
         @Id
@@ -38,26 +39,26 @@ public class PhuongThucThanhToan {
         private Integer id;
 
         /**
-         * Tên phương thức thanh toán – duy nhất.
-         * Ví dụ: "Tien mat", "Chuyen khoan", "Diem thuong", "VNPay".
+         * TÃªn phÆ°Æ¡ng thá»©c thanh toÃ¡n â€“ duy nháº¥t.
+         * VÃ­ dá»¥: "Tien mat", "Chuyen khoan", "Diem thuong", "VNPay".
          */
         @Column(name = "ten_pttt", nullable = false, length = 50, unique = true)
         private String tenPttt;
 
-        /** Mô tả chi tiết về phương thức thanh toán. */
+        /** MÃ´ táº£ chi tiáº¿t vá» phÆ°Æ¡ng thá»©c thanh toÃ¡n. */
         @Column(name = "mo_ta", length = 255)
         private String moTa;
 
         /**
-         * Trạng thái kích hoạt (DEFAULT true).
-         * false = tạm ngừng hỗ trợ phương thức này.
+         * Tráº¡ng thÃ¡i kÃ­ch hoáº¡t (DEFAULT true).
+         * false = táº¡m ngá»«ng há»— trá»£ phÆ°Æ¡ng thá»©c nÃ y.
          */
         @Column(name = "kich_hoat", nullable = false)
         @Builder.Default
         private Boolean kichHoat = true;
 
         // -------------------------------------------------------------------------
-        // Quan hệ 1-N: 1 PhuongThucThanhToan → nhiều ThanhToan
+        // Quan há»‡ 1-N: 1 PhuongThucThanhToan â†’ nhiá»u ThanhToan
         // -------------------------------------------------------------------------
         @OneToMany(mappedBy = "phuongThucThanhToan", fetch = FetchType.LAZY)
         @Builder.Default

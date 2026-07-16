@@ -49,7 +49,7 @@ public class PosController {
     // Constants
     // ──────────────────────────────────────────────────────────────────────────
 
-    private static final String LOAI_KHO_TONG = "kho_tong";
+    private static final int    KHO_ID          = 1; // Kho duy nhất trong hệ thống
     private static final String SDT_KHACH_LE = "0000000000";
     private static final String TRANG_THAI_DA_BAN = "da_ban";
     private static final DateTimeFormatter MA_DON_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
@@ -90,7 +90,7 @@ public class PosController {
     public ResponseEntity<List<BienThePosDto>> layDanhSachSanPham() {
         log.debug("[POS] GET /san-pham — Lấy danh sách sản phẩm cho POS");
 
-        List<TonKho> tonKhos = tonKhoRepository.layDanhSachChoPos(LOAI_KHO_TONG);
+        List<TonKho> tonKhos = tonKhoRepository.layDanhSachChoPos(KHO_ID);
 
         List<BienThePosDto> result = tonKhos.stream()
                 .map(this::mapToBienThePosDto)
@@ -154,7 +154,7 @@ public class PosController {
      * {@code 'trong_kho'}.</li>
      * </ul>
      * </li>
-     * <li><b>Tạo DonHang</b>: Trạng thái {@code "da_giao"}, thanh toán
+     * <li><b>Tạo DonHang</b>: Trạng thái {@code "da_hoan_thanh"}, thanh toán
      * {@code "da_thanh_toan"},
      * kênh bán {@code "tai_quay"}.</li>
      * <li><b>Tạo ChiTietDonHang</b>: Từng dòng trong {@code chiTiets}.</li>
@@ -175,8 +175,7 @@ public class PosController {
             @RequestBody PosThanhToanRequest req,
             @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
 
-        log.info("[POS] POST /thanh-toan — nhanVienId={}, khachHangId={}, tongTien={}, " +
-                        "tienGiam={}, soLuongDong={}",
+        log.info("[POS] POST /thanh-toan — nhanVienId={}, khachHangId={}, tongTien={}, tienGiam={}, soLuongDong={}",
                 sessionUser.getId(), req.getKhachHangId(), req.getTongTien(),
                 req.getTienGiam(), req.getChiTiets() == null ? 0 : req.getChiTiets().size());
 
@@ -188,154 +187,72 @@ public class PosController {
             return ResponseEntity.badRequest().body("Tổng tiền không hợp lệ.");
         }
 
-        // ── Bước 1: Lấy Kho Tổng ──────────────────────────────────────────
-        Kho khoTong = khoRepository.findByLoai(LOAI_KHO_TONG)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Không tìm thấy Kho Tổng trong hệ thống."));
+        try {
+            // ── Bước 1: Lưu đơn hàng bằng logic luuDonHangCho ────────────
+            // luuDonHangCho xử lý tạo mới hoặc cập nhật đơn cũ, gán khách hàng, 
+            // lock IMEI (da_ban), tính giá, gán CTKM.
+            // Kết thúc luuDonHangCho, đơn ở trạng thái 'don_hang_cho'
+            DonHang donHang = banHangOfflineService.luuDonHangCho(req.getDonHangId(), sessionUser.getId(), req);
 
-        // ── Bước 2: Chốt khách hàng (Optional-based) ──────────────────────
-        KhachHang khachHang = java.util.Optional.ofNullable(req.getKhachHangId())
-                .flatMap(khachHangRepository::findById)
-                .orElseGet(() -> {
-                    if (req.getKhachHangId() != null) {
-                        log.warn("[POS] Không tìm thấy khách hàng id={}, fallback Khách lẻ.",
-                                req.getKhachHangId());
-                    }
-                    return khachHangRepository.findBySoDienThoai(SDT_KHACH_LE)
-                            .orElseThrow(() -> new EntityNotFoundException(
-                                    "Không tìm thấy tài khoản Khách lẻ mặc định (sdt='0000000000')."));
-                });
+            // (Đã loại bỏ việc gọi tiepTucDonHangCho vì thanhToanDonHang nay đã chấp nhận trực tiếp don_hang_cho)
 
-        // ── Bước 3: Lấy nhân viên từ session ──────────────────────────────
-        NguoiDung nhanVien = nguoiDungRepository.findById(sessionUser.getId())
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Không tìm thấy nhân viên id=" + sessionUser.getId()));
+            // ── Bước 3: Hoàn tất thanh toán, trừ tồn kho, lưu lịch sử ─────
+            // Mặc định phương thức thanh toán ID = 1 (Tiền mặt) vì POS cũ chưa truyền lên.
+            // Nếu có PTTT từ request, cần mở rộng PosThanhToanRequest.
+            Integer phuongThucThanhToanId = 1; 
+            donHang = banHangOfflineService.thanhToanDonHang(donHang.getId(), phuongThucThanhToanId);
 
-        // ── Bước 4: Validate IMEI (fail-fast toàn bộ trước khi ghi bất kỳ thứ gì) ──
-        for (PosThanhToanRequest.ChiTietPosRequest ct : req.getChiTiets()) {
-            if (ct.getImeis() == null || ct.getImeis().isEmpty()) {
-                return ResponseEntity.badRequest().body(
-                        "Dòng hàng bienTheId=" + ct.getBienTheId() +
-                                " chưa có mã IMEI. Vui lòng nhập IMEI.");
-            }
-            if (ct.getImeis().size() != ct.getSoLuong()) {
-                return ResponseEntity.badRequest().body(String.format(
-                        "Số lượng IMEI (%d) không khớp với số lượng mua (%d) " +
-                                "cho biến thể id=%d.",
-                        ct.getImeis().size(), ct.getSoLuong(), ct.getBienTheId()));
-            }
-            // Validate từng IMEI tồn tại và đang 'trong_kho'
-            for (String imei : ct.getImeis()) {
-                String imeiClean = imei.trim();
-                MayDienThoai may = mayDienThoaiRepository.findByImei1(imeiClean)
-                        .orElseThrow(() -> new EntityNotFoundException(
-                                "Không tìm thấy IMEI [" + imeiClean
-                                        + "] trong hệ thống."));
+            BigDecimal tienGiam = req.getTienGiam() != null ? req.getTienGiam() : BigDecimal.ZERO;
+            return ResponseEntity.ok(Map.of(
+                    "donHangId", donHang.getId(),
+                    "maDonHang", donHang.getMaDonHang(),
+                    "tongThanh", donHang.getTongThanhToan() != null ? donHang.getTongThanhToan() : req.getTongTien().subtract(tienGiam),
+                    "khachHang", donHang.getKhachHang() != null ? donHang.getKhachHang().getHoTen() : "Khách lẻ"));
 
-                if (!"trong_kho".equals(may.getTinhTrang())) {
-                    return ResponseEntity.badRequest().body(String.format(
-                            "IMEI [%s] không ở trạng thái 'trong_kho' (hiện tại: '%s'). " +
-                                    "Vui lòng kiểm tra lại.",
-                            imeiClean, may.getTinhTrang()));
-                }
-            }
+        } catch (EntityNotFoundException | IllegalArgumentException | IllegalStateException e) {
+            log.error("[POS] Lỗi thanh toán: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            log.error("[POS] Lỗi không xác định khi thanh toán: ", e);
+            return ResponseEntity.status(500).body("Lỗi hệ thống khi thanh toán: " + e.getMessage());
         }
+    }
 
-        // ── Bước 5: Sinh mã đơn hàng ──────────────────────────────────────
-        String maDonHang = sinhMaDonHang();
-        BigDecimal tienGiam = req.getTienGiam() != null
-                ? req.getTienGiam()
-                : BigDecimal.ZERO;
+    // ══════════════════════════════════════════════════════════════════════════
+    // IMEI RESERVATION (GIỮ IMEI)
+    // ══════════════════════════════════════════════════════════════════════════
 
-        // ── Bước 6: Build và lưu DonHang ──────────────────────────────────
-        DonHang donHang = DonHang.builder()
-                .maDonHang(maDonHang)
-                .khachHang(khachHang)
-                .nguoiXuLy(nhanVien)
-                .kenhBan("tai_quay")
-                .ngayDat(LocalDateTime.now())
-                .tongTienHang(req.getTongTien())
-                .tienGiamGia(tienGiam)
-                .phiShip(BigDecimal.ZERO) // Tại quầy: không phí ship
-                .trangThai("da_giao") // §2.1: Bán tại quầy = giao ngay
-                .trangThaiThanhToan("da_thanh_toan")
-                .ngayGiaoThucTe(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-
-        // Gán chương trình khuyến mãi nếu có
-        if (req.getCtkmId() != null) {
-            ctkmRepository.findById(req.getCtkmId())
-                    .ifPresent(donHang::setChuongTrinhKhuyenMai);
+    @PostMapping("/giu-imei")
+    public ResponseEntity<?> giuImei(@RequestParam String imei, @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
+        try {
+            banHangOfflineService.giuImei(imei, sessionUser.getId());
+            return ResponseEntity.ok("Đã giữ IMEI thành công");
+        } catch (Exception e) {
+            log.warn("[POS] Lỗi giữ IMEI {}: {}", imei, e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
 
-        donHang = donHangRepository.save(donHang);
-        final DonHang savedDonHang = donHang;
-
-        // ── Bước 7: Tạo ChiTietDonHang + Cập nhật IMEI + Trừ kho ─────────
-        LocalDateTime now = LocalDateTime.now();
-        for (PosThanhToanRequest.ChiTietPosRequest ct : req.getChiTiets()) {
-
-            // 7a. Load biến thể (đã validate ở bước 4, chắc chắn tồn tại)
-            BienTheSanPham bienThe = mayDienThoaiRepository
-                    .findByImei1(ct.getImeis().get(0).trim())
-                    .orElseThrow()
-                    .getBienTheSanPham();
-
-            // 7b. Tạo ChiTietDonHang - tính giá động nếu client không gửi donGia
-            BigDecimal donGia = ct.getDonGia() != null
-                    ? ct.getDonGia()
-                    : khuyenMaiService.tinhGiaSauKhuyenMai(bienThe.getId(), req.getTongTien());
-
-            ChiTietDonHang chiTiet = ChiTietDonHang.builder()
-                    .donHang(savedDonHang)
-                    .bienTheSanPham(bienThe)
-                    .soLuong(ct.getSoLuong())
-                    .donGiaBan(donGia)
-                    .build();
-            chiTietDonHangRepository.save(chiTiet);
-
-            // 7c. Cập nhật từng IMEI → 'da_ban'
-            for (String imei : ct.getImeis()) {
-                MayDienThoai may = mayDienThoaiRepository
-                        .findByImei1(imei.trim())
-                        .orElseThrow(); // Đã validate, không thể null
-
-                may.setTinhTrang(TRANG_THAI_DA_BAN);
-                may.setDonHang(savedDonHang);
-                mayDienThoaiRepository.save(may);
-                log.debug("[POS] Đã mark IMEI [{}] → da_ban.", imei.trim());
-            }
-
-            // 7d. Trừ tồn kho Kho Tổng
-            TonKho tonKho = tonKhoRepository
-                    .findByKhoAndBienTheSanPham(khoTong, bienThe)
-                    .orElseThrow(() -> new EntityNotFoundException(String.format(
-                            "Không tìm thấy tồn kho cho SKU [%s] tại Kho Tổng.",
-                            bienThe.getMaSku())));
-
-            int soLuongMoi = tonKho.getSoLuong() - ct.getSoLuong();
-            if (soLuongMoi < 0) {
-                throw new IllegalArgumentException(String.format(
-                        "Tồn kho SKU [%s] không đủ: hiện có %d, cần %d.",
-                        bienThe.getMaSku(), tonKho.getSoLuong(), ct.getSoLuong()));
-            }
-            tonKho.setSoLuong(soLuongMoi);
-            tonKho.setUpdatedAt(now);
-            tonKhoRepository.save(tonKho);
-
-            log.info("[POS] Trừ kho SKU [{}]: -{} → còn {}.",
-                    bienThe.getMaSku(), ct.getSoLuong(), soLuongMoi);
+    @PostMapping("/nha-imei")
+    public ResponseEntity<?> nhaImei(@RequestParam String imei, @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
+        try {
+            banHangOfflineService.nhaImei(imei, sessionUser.getId());
+            return ResponseEntity.ok("Đã nhả IMEI thành công");
+        } catch (Exception e) {
+            log.warn("[POS] Lỗi nhả IMEI {}: {}", imei, e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
 
-        log.info("[POS] Hoàn tất đơn POS — maDonHang={}, donHangId={}, khachHangId={}",
-                savedDonHang.getMaDonHang(), savedDonHang.getId(), khachHang.getId());
-
-        return ResponseEntity.ok(Map.of(
-                "donHangId", savedDonHang.getId(),
-                "maDonHang", savedDonHang.getMaDonHang(),
-                "tongThanh", req.getTongTien().subtract(tienGiam),
-                "khachHang", khachHang.getHoTen()));
+    @PostMapping("/nha-tat-ca-imei")
+    public ResponseEntity<?> nhaTatCaImei(@SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
+        try {
+            banHangOfflineService.nhaTatCaImeiCuaNhanVien(sessionUser.getId());
+            return ResponseEntity.ok("Đã nhả tất cả IMEI thành công");
+        } catch (Exception e) {
+            log.error("[POS] Lỗi nhả tất cả IMEI: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     // ══════════════════════════════════════════════════════════════════════════

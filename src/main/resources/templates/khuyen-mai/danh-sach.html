@@ -28,14 +28,13 @@
 <main class="container pm-shell py-4">
     <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
         <div>
-            <h1 class="pm-page-title h3 mb-1" th:text="${chiFlashSale ? 'Flash Sale' : 'Khuyến mãi PrimeMobile'}">Khuyến mãi PrimeMobile</h1>
+            <h1 class="pm-page-title h3 mb-1">Khuyến mãi PrimeMobile</h1>
             <div class="text-muted small">
                 <span th:text="${danhSachKhuyenMai != null ? danhSachKhuyenMai.size() : 0}">0</span> chương trình
             </div>
         </div>
         <div class="d-flex gap-2">
             <a class="btn btn-outline-secondary btn-sm" href="/khuyen-mai"><i class="fa fa-gift me-1"></i>Khuyến mãi</a>
-            <a class="btn btn-outline-danger btn-sm" href="/flash-sale"><i class="fa fa-bolt me-1"></i>Flash Sale</a>
         </div>
     </div>
 
@@ -44,8 +43,8 @@
             <article class="pm-promo-card d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
                     <span class="pm-promo-type">
-                        <i th:class="${km.loai == 'flash_sale'} ? 'fa fa-bolt' : 'fa fa-gift'"></i>
-                        <span th:text="${km.loai == 'flash_sale' ? 'Flash Sale' : (km.loai == 'don_hang_toi_thieu' ? 'Đơn hàng tối thiểu' : (km.loai == 'phan_tram' ? 'Giảm phần trăm' : 'Giảm trực tiếp'))}">Loại</span>
+                        <i class="fa fa-gift"></i>
+                        <span th:text="${km.loai == 'theo_don_hang' ? 'Theo Đơn Hàng' : 'Theo Sản Phẩm'}">Loại</span>
                     </span>
                     <span class="pm-status" th:classappend="${km.trangThai == 'chua_bat_dau'} ? ' waiting' : ''"
                           th:text="${km.trangThai == 'chua_bat_dau' ? 'Sắp diễn ra' : 'Đang diễn ra'}">Trạng thái</span>

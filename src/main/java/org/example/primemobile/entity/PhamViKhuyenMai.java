@@ -4,15 +4,15 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * Entity mapping bảng pham_vi_khuyen_mai (Module 9: Khuyến mãi).
+ * Entity mapping báº£ng pham_vi_khuyen_mai (Module 9: Khuyáº¿n mÃ£i).
  * <p>
- * Xác định phạm vi áp dụng của một chương trình khuyến mãi.
- * Có thể áp dụng theo 3 cấp độ (một hoặc nhiều cùng lúc):
- *  - Theo sản phẩm cụ thể ({@link SanPham})
+ * XÃ¡c Ä‘á»‹nh pháº¡m vi Ã¡p dá»¥ng cá»§a má»™t chÆ°Æ¡ng trÃ¬nh khuyáº¿n mÃ£i.
+ * CÃ³ thá»ƒ Ã¡p dá»¥ng theo 3 cáº¥p Ä‘á»™ (má»™t hoáº·c nhiá»u cÃ¹ng lÃºc):
+ *  - Theo sáº£n pháº©m cá»¥ thá»ƒ ({@link SanPham})
  * <p>
- * Quan hệ:
- *  - N:1 với {@link ChuongTrinhKhuyenMai} (FK ctkm_id, ON DELETE CASCADE)
- *  - N:1 với {@link SanPham}              (FK san_pham_id, nullable)
+ * Quan há»‡:
+ *  - N:1 vá»›i {@link ChuongTrinhKhuyenMai} (FK ctkm_id, ON DELETE CASCADE)
+ *  - N:1 vá»›i {@link SanPham}              (FK san_pham_id, nullable)
  */
 @Entity
 @Table(name = "pham_vi_khuyen_mai")
@@ -20,6 +20,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class PhamViKhuyenMai {
 
     @Id
@@ -27,8 +28,8 @@ public class PhamViKhuyenMai {
     private Integer id;
 
     /**
-     * Chương trình khuyến mãi áp dụng phạm vi này.
-     * ON DELETE CASCADE – xóa chương trình thì phạm vi tự xóa.
+     * ChÆ°Æ¡ng trÃ¬nh khuyáº¿n mÃ£i Ã¡p dá»¥ng pháº¡m vi nÃ y.
+     * ON DELETE CASCADE â€“ xÃ³a chÆ°Æ¡ng trÃ¬nh thÃ¬ pháº¡m vi tá»± xÃ³a.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -39,12 +40,13 @@ public class PhamViKhuyenMai {
     private ChuongTrinhKhuyenMai chuongTrinhKhuyenMai;
 
     /**
-     * Sản phẩm cụ thể được áp dụng.
-     * NULL = không giới hạn theo sản phẩm.
+     * Sáº£n pháº©m cá»¥ thá»ƒ Ä‘Æ°á»£c Ã¡p dá»¥ng.
+     * NOT NULL â€“ má»—i báº£n ghi pháº¡m vi pháº£i gáº¯n vá»›i 1 sáº£n pháº©m cá»¥ thá»ƒ.
      */
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
             name = "san_pham_id",
+            nullable = false,
             foreignKey = @ForeignKey(name = "fk_pvkm_sp")
     )
     private SanPham sanPham;

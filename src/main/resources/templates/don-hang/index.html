@@ -35,7 +35,7 @@
         .status-cho_xac_nhan { background:#fff7ed; color:#c2410c; }
         .status-da_xac_nhan { background:#eff6ff; color:#1d4ed8; }
         .status-dang_giao { background:#ecfeff; color:#0e7490; }
-        .status-da_giao { background:#ecfdf5; color:#047857; }
+        .status-da_hoan_thanh { background:#ecfdf5; color:#047857; }
         .status-da_huy { background:#f1f5f9; color:#475569; }
         @media (max-width: 768px) {
             .pm-toolbar { align-items:flex-start; flex-direction:column; }
@@ -196,41 +196,82 @@
         els.detailTitle.textContent = `Chi tiết ${order.maDonHang}`;
         els.detailDate.textContent = dateTime(order.ngayDat);
         els.detailError.classList.add('d-none');
+        
+        let kenhBanText = order.kenhBan === 'online' ? 'Mua Online' : 'Mua Tại Quầy';
+        let nhanVien = order.nhanVienXuLy || 'Hệ thống';
+        
         els.detailContent.innerHTML = `
-            <div class="row g-3 mb-3">
+            <div class="row g-4 mb-4">
                 <div class="col-md-6">
-                    <div class="fw-bold mb-1">Người nhận</div>
-                    <div>${esc(order.nguoiNhan || '')}</div>
-                    <div class="text-muted small">${esc(order.soDienThoaiNhan || '')}</div>
-                    <div class="text-muted small">${esc(order.diaChiNhan || '')}</div>
-                </div>
-                <div class="col-md-6">
-                    <div class="fw-bold mb-1">Trạng thái</div>
-                    <span class="badge status-${esc(order.trangThai)}">${esc(order.trangThaiText)}</span>
-                    <span class="badge text-bg-light">${esc(order.trangThaiThanhToanText)}</span>
-                </div>
-            </div>
-            <div class="fw-bold mb-2">Sản phẩm</div>
-            <div>
-                ${items.map(item => `
-                    <div class="pm-detail-row">
-                        <div>
-                            <div class="fw-bold">${esc(item.tenSanPham)}</div>
-                            <div class="small text-muted">${esc(item.mauSac)} - ${item.ramGb || 0}GB/${item.luuTruGb || 0}GB - SL: ${item.soLuong}</div>
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="card-title fw-bold text-uppercase text-muted mb-3"><i class="fa fa-user me-2"></i>Thông tin khách hàng</h6>
+                            <div class="mb-2"><strong>Tên:</strong> ${esc(order.nguoiNhan || '')}</div>
+                            <div class="mb-2"><strong>SĐT:</strong> ${esc(order.soDienThoaiNhan || '')}</div>
+                            <div class="mb-2"><strong>Email:</strong> ${esc(order.emailNhan || '')}</div>
+                            <div><strong>Địa chỉ:</strong> ${esc(order.diaChiNhan || '')}</div>
                         </div>
-                        <div class="fw-bold text-end">${money(item.thanhTien)}</div>
                     </div>
-                `).join('') || '<div class="text-muted">Không có sản phẩm.</div>'}
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="card-title fw-bold text-uppercase text-muted mb-3"><i class="fa fa-receipt me-2"></i>Thông tin đơn hàng</h6>
+                            <div class="mb-2"><strong>Mã đơn:</strong> ${esc(order.maDonHang)}</div>
+                            <div class="mb-2"><strong>Loại đơn:</strong> <span class="badge bg-secondary">${esc(kenhBanText)}</span></div>
+                            <div class="mb-2"><strong>Nhân viên tiếp nhận:</strong> ${esc(nhanVien)}</div>
+                            <div class="mb-2">
+                                <strong>Trạng thái:</strong> 
+                                <span class="badge status-${esc(order.trangThai)}">${esc(order.trangThaiText)}</span>
+                            </div>
+                            <div>
+                                <strong>Thanh toán:</strong> 
+                                <span class="badge text-bg-light border">${esc(order.trangThaiThanhToanText)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <hr>
-            <div class="d-flex justify-content-between mb-2"><span class="text-muted">Tiền hàng</span><strong>${money(order.tongTienHang)}</strong></div>
-            <div class="d-flex justify-content-between mb-2"><span class="text-muted">Giảm giá</span><strong>${money(order.tienGiamGia)}</strong></div>
-            <div class="d-flex justify-content-between mb-2"><span class="text-muted">Phí vận chuyển</span><strong>${money(order.phiShip)}</strong></div>
-            <div class="d-flex justify-content-between align-items-end">
-                <span class="text-muted">Tổng thanh toán</span>
-                <span class="pm-total">${money(order.tongThanhToan)}</span>
+            
+            <h6 class="fw-bold text-uppercase text-muted mb-3"><i class="fa fa-box-open me-2"></i>Danh sách sản phẩm</h6>
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-0">
+                    ${items.map(item => `
+                        <div class="pm-detail-row px-3 py-3 ${items.indexOf(item) !== items.length - 1 ? 'border-bottom' : ''}">
+                            <div>
+                                <div class="fw-bold fs-6 mb-1">${esc(item.tenSanPham)}</div>
+                                <div class="small text-muted mb-2">Phân loại: ${esc(item.mauSac)} - ${item.ramGb || 0}GB/${item.luuTruGb || 0}GB | SL: <strong>${item.soLuong}</strong></div>
+                                ${item.imeiList && item.imeiList.length > 0 ? `
+                                    <div class="small bg-light p-2 rounded">
+                                        <strong>IMEI:</strong> ${item.imeiList.map(i => `<span class="badge bg-white text-dark border me-1">${esc(i)}</span>`).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div class="text-end">
+                                ${item.giaGoc && item.giaGoc > item.donGiaBan ? `
+                                    <div class="text-muted small text-decoration-line-through">${money(item.giaGoc)}</div>
+                                ` : ''}
+                                <div class="fw-bold text-danger">${money(item.donGiaBan)}</div>
+                                <div class="small text-muted mt-1">Tổng: ${money(item.thanhTien)}</div>
+                            </div>
+                        </div>
+                    `).join('') || '<div class="p-3 text-muted">Không có sản phẩm.</div>'}
+                </div>
             </div>
-            ${order.ghiChu ? `<div class="alert alert-light border mt-3 mb-0">${esc(order.ghiChu)}</div>` : ''}
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-body bg-light rounded">
+                    <div class="d-flex justify-content-between mb-2"><span class="text-muted">Tổng tiền chưa giảm</span><strong>${money(order.tongTienHang)}</strong></div>
+                    <div class="d-flex justify-content-between mb-2"><span class="text-muted">Tiền giảm giá</span><strong class="text-success">-${money(order.tienGiamGia)}</strong></div>
+                    <div class="d-flex justify-content-between mb-2"><span class="text-muted">Phí vận chuyển</span><strong>${money(order.phiShip)}</strong></div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between align-items-end mt-2">
+                        <span class="fw-bold">Thành tiền (sau giảm)</span>
+                        <span class="pm-total fs-4 text-danger">${money(order.tongThanhToan)}</span>
+                    </div>
+                </div>
+            </div>
+            ${order.ghiChu ? `<div class="alert alert-warning border mt-3 mb-0"><i class="fa fa-info-circle me-2"></i><strong>Ghi chú:</strong> ${esc(order.ghiChu)}</div>` : ''}
         `;
     }
 

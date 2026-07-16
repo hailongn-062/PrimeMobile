@@ -26,19 +26,13 @@
         <div class="pm-card">
             <div class="pm-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <span><i class="fa fa-tags me-2"></i>Danh sách Chương trình Khuyến Mãi</span>
-                <!-- 4 nút Thêm mới tách biệt -->
+                <!-- 2 nút Thêm mới tách biệt -->
                 <div class="d-flex flex-wrap gap-2 btn-add-group">
-                    <a href="/admin/khuyen-mai/form/phan-tram" class="btn btn-sm btn-outline-primary">
-                        <i class="fa fa-percent me-1"></i> Thêm KM Phần trăm
+                    <a href="/admin/khuyen-mai/form/theo-don-hang" class="btn btn-sm btn-outline-success">
+                        <i class="fa fa-shopping-cart me-1"></i> Thêm KM Theo Đơn Hàng
                     </a>
-                    <a href="/admin/khuyen-mai/form/don-hang-toi-thieu" class="btn btn-sm btn-outline-success">
-                        <i class="fa fa-shopping-cart me-1"></i> Thêm KM Đơn tối thiểu
-                    </a>
-                    <a href="/admin/khuyen-mai/form/giam-gia-truc-tiep" class="btn btn-sm btn-outline-warning">
-                        <i class="fa fa-tag me-1"></i> Thêm Giảm giá trực tiếp
-                    </a>
-                    <a href="/admin/khuyen-mai/form/flash-sale" class="btn btn-sm btn-outline-danger">
-                        <i class="fa fa-bolt me-1"></i> Thêm Flash Sale
+                    <a href="/admin/khuyen-mai/form/theo-san-pham" class="btn btn-sm btn-outline-warning">
+                        <i class="fa fa-tag me-1"></i> Thêm KM Theo Sản Phẩm
                     </a>
                 </div>
             </div>
@@ -66,17 +60,11 @@
                                 </td>
                                 <td>
                                     <th:block th:switch="${ctkm.loai}">
-                                        <span th:case="'phan_tram'" class="badge bg-primary loai-badge">
-                                            <i class="fa fa-percent"></i> Phần trăm
+                                        <span th:case="'theo_don_hang'" class="badge bg-success loai-badge">
+                                            <i class="fa fa-shopping-cart"></i> Theo Đơn Hàng
                                         </span>
-                                        <span th:case="'don_hang_toi_thieu'" class="badge bg-success loai-badge">
-                                            <i class="fa fa-shopping-cart"></i> Đơn tối thiểu
-                                        </span>
-                                        <span th:case="'giam_gia_truc_tiep'" class="badge bg-warning text-dark loai-badge">
-                                            <i class="fa fa-tag"></i> Giảm trực tiếp
-                                        </span>
-                                        <span th:case="'flash_sale'" class="badge bg-danger loai-badge">
-                                            <i class="fa fa-bolt"></i> Flash Sale
+                                        <span th:case="'theo_san_pham'" class="badge bg-warning text-dark loai-badge">
+                                            <i class="fa fa-tag"></i> Theo Sản Phẩm
                                         </span>
                                         <span th:case="*" class="badge bg-secondary loai-badge" th:text="${ctkm.loai}"></span>
                                     </th:block>
@@ -103,56 +91,36 @@
                                 <td class="text-end pe-3">
                                     <!-- Nút Sửa - điều hướng về đúng form theo loai -->
                                     <th:block th:switch="${ctkm.loai}">
-                                        <a th:case="'phan_tram'"
-                                           th:href="@{/admin/khuyen-mai/form/phan-tram(id=${ctkm.id})}"
+                                        <a th:case="'theo_don_hang'"
+                                           th:href="@{/admin/khuyen-mai/form/theo-don-hang(id=${ctkm.id})}"
                                            class="btn btn-sm btn-outline-primary me-1" title="Sửa">
                                             <i class="fa fa-edit"></i>
                                         </a>
-                                        <a th:case="'don_hang_toi_thieu'"
-                                           th:href="@{/admin/khuyen-mai/form/don-hang-toi-thieu(id=${ctkm.id})}"
-                                           class="btn btn-sm btn-outline-primary me-1" title="Sửa">
-                                            <i class="fa fa-edit"></i>
-                                        </a>
-                                        <a th:case="'giam_gia_truc_tiep'"
-                                           th:href="@{/admin/khuyen-mai/form/giam-gia-truc-tiep(id=${ctkm.id})}"
-                                           class="btn btn-sm btn-outline-primary me-1" title="Sửa">
-                                            <i class="fa fa-edit"></i>
-                                        </a>
-                                        <a th:case="'flash_sale'"
-                                           th:href="@{/admin/khuyen-mai/form/flash-sale(id=${ctkm.id})}"
+                                        <a th:case="'theo_san_pham'"
+                                           th:href="@{/admin/khuyen-mai/form/theo-san-pham(id=${ctkm.id})}"
                                            class="btn btn-sm btn-outline-primary me-1" title="Sửa">
                                             <i class="fa fa-edit"></i>
                                         </a>
                                         <a th:case="*"
-                                           th:href="@{/admin/khuyen-mai/form/phan-tram(id=${ctkm.id})}"
+                                           th:href="@{/admin/khuyen-mai/form/theo-san-pham(id=${ctkm.id})}"
                                            class="btn btn-sm btn-outline-primary me-1" title="Sửa">
                                             <i class="fa fa-edit"></i>
                                         </a>
                                     </th:block>
                                     <!-- Nút Chi tiết - điều hướng đúng view theo loai -->
                                     <th:block th:switch="${ctkm.loai}">
-                                        <a th:case="'phan_tram'"
-                                           th:href="@{/admin/khuyen-mai/chi-tiet/phan-tram/{id}(id=${ctkm.id})}"
+                                        <a th:case="'theo_don_hang'"
+                                           th:href="@{/admin/khuyen-mai/chi-tiet/theo-don-hang/{id}(id=${ctkm.id})}"
                                            class="btn btn-sm btn-outline-info" title="Quản lý chi tiết">
                                             <i class="fa fa-list"></i>
                                         </a>
-                                        <a th:case="'don_hang_toi_thieu'"
-                                           th:href="@{/admin/khuyen-mai/chi-tiet/don-hang-toi-thieu/{id}(id=${ctkm.id})}"
+                                        <a th:case="'theo_san_pham'"
+                                           th:href="@{/admin/khuyen-mai/chi-tiet/theo-san-pham/{id}(id=${ctkm.id})}"
                                            class="btn btn-sm btn-outline-info" title="Quản lý chi tiết">
                                             <i class="fa fa-list"></i>
-                                        </a>
-                                        <a th:case="'giam_gia_truc_tiep'"
-                                           th:href="@{/admin/khuyen-mai/chi-tiet/giam-gia-truc-tiep/{id}(id=${ctkm.id})}"
-                                           class="btn btn-sm btn-outline-info" title="Quản lý chi tiết">
-                                            <i class="fa fa-list"></i>
-                                        </a>
-                                        <a th:case="'flash_sale'"
-                                           th:href="@{/admin/khuyen-mai/chi-tiet/flash-sale/{id}(id=${ctkm.id})}"
-                                           class="btn btn-sm btn-outline-danger" title="Quản lý Flash Sale">
-                                            <i class="fa fa-bolt"></i>
                                         </a>
                                         <a th:case="*"
-                                           th:href="@{/admin/khuyen-mai/chi-tiet/phan-tram/{id}(id=${ctkm.id})}"
+                                           th:href="@{/admin/khuyen-mai/chi-tiet/theo-san-pham/{id}(id=${ctkm.id})}"
                                            class="btn btn-sm btn-outline-info" title="Chi tiết">
                                             <i class="fa fa-list"></i>
                                         </a>

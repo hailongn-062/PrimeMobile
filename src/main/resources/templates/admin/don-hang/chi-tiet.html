@@ -78,7 +78,7 @@
             </th:block>
 
             <!-- DA_GIAO: Nút Xác nhận thanh toán (COD) + thông báo -->
-            <th:block th:if="${donHang.trangThai == 'da_giao'}">
+            <th:block th:if="${donHang.trangThai == 'da_hoan_thanh'}">
                 <span th:if="${donHang.trangThaiThanhToan == 'chua_thanh_toan'}">
                     <button class="btn btn-warning px-3" id="btn-thanh-toan"
                             th:data-id="${donHang.id}">
@@ -100,6 +100,14 @@
                 <span class="badge bg-danger fs-6 px-3 py-2 rounded-pill">
                     <i class="fa fa-ban me-1"></i>Đơn hàng đã hủy
                 </span>
+            </th:block>
+
+            <!-- CHO_HOAN_TIEN: Nút Xác nhận hoàn tiền -->
+            <th:block th:if="${donHang.trangThai == 'cho_hoan_tien'}">
+                <button class="btn btn-warning px-3" id="btn-xac-nhan-hoan-tien"
+                        th:data-id="${donHang.id}">
+                    <i class="fa fa-undo me-1"></i>Xác nhận hoàn tiền
+                </button>
             </th:block>
 
             <!-- Nút quay lại -->
@@ -137,14 +145,26 @@
                             <td class="ps-3 text-muted" th:text="${stat.index + 1}">1</td>
                             <td>
                                 <div class="fw-semibold" th:text="${ct.tenSanPham}">Tên SP</div>
-                                <div class="text-muted small" th:text="${ct.maSku + ' · ' + ct.mauSac + ' · ' + ct.ramGb + 'GB/' + ct.luuTruGb + 'GB'}">
+                                <div class="text-muted small mb-1" th:text="${ct.maSku + ' · ' + ct.mauSac + ' · ' + ct.ramGb + 'GB/' + ct.luuTruGb + 'GB'}">
                                     SKU · Màu · RAM/ROM
+                                </div>
+                                <div th:if="${ct.imeiList != null and !#lists.isEmpty(ct.imeiList)}" class="mt-1">
+                                    <span th:each="imei : ${ct.imeiList}" 
+                                          class="badge bg-light text-dark border fw-normal me-1 mb-1"
+                                          style="font-family: monospace; font-size: .80rem;">
+                                        <i class="fa fa-microchip text-primary me-1"></i><span th:text="${imei.imei1}">IMEI</span>
+                                    </span>
                                 </div>
                             </td>
                             <td class="text-center fw-bold" th:text="${ct.soLuong}">1</td>
-                            <td class="text-end"
-                                th:text="${#numbers.formatDecimal(ct.donGiaBan, 0, 'COMMA', 0, 'POINT')} + '₫'">
-                                0₫
+                            <td class="text-end">
+                                <div th:if="${ct.giaGoc != null and ct.giaGoc > ct.donGiaBan}" 
+                                     class="text-muted small text-decoration-line-through mb-1"
+                                     th:text="${#numbers.formatDecimal(ct.giaGoc, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</div>
+                                <div class="fw-bold text-danger"
+                                     th:text="${#numbers.formatDecimal(ct.donGiaBan, 0, 'COMMA', 0, 'POINT')} + '₫'">
+                                    0₫
+                                </div>
                             </td>
                             <td class="text-end pe-3 fw-bold text-primary"
                                 th:text="${#numbers.formatDecimal(ct.thanhTien, 0, 'COMMA', 0, 'POINT')} + '₫'">
@@ -178,26 +198,7 @@
                 </div>
             </div>
 
-            <!-- Danh sách IMEI đã gán cho đơn hàng -->
-            <div class="pm-card mb-4" th:if="${donHang.imeiList != null and !#lists.isEmpty(donHang.imeiList)}">
-                <div class="pm-card-header">
-                    <span><i class="fa fa-barcode me-2"></i>Danh sách IMEI đã xuất</span>
-                    <span class="badge bg-primary rounded-pill" th:text="${#lists.size(donHang.imeiList)} + ' IMEI'">0 IMEI</span>
-                </div>
-                <div class="card-body p-3">
-                    <div class="d-flex flex-wrap gap-2">
-                        <span th:each="imei : ${donHang.imeiList}"
-                              class="badge bg-light text-dark border fw-normal p-2"
-                              style="font-family: monospace; font-size: .85rem;">
-                            <i class="fa fa-microchip me-1 text-primary"></i>
-                            <span th:text="${imei.imei1}">IMEI</span>
-                            <span th:if="${imei.serial != null}"
-                                  class="text-muted ms-1 small"
-                                  th:text="'(' + ${imei.serial} + ')'">(SN)</span>
-                        </span>
-                    </div>
-                </div>
-            </div>
+
 
             <!-- Ghi chú -->
             <div class="pm-card" th:if="${donHang.ghiChu != null and !#strings.isEmpty(donHang.ghiChu)}">
@@ -218,8 +219,9 @@
                         <span th:if="${donHang.trangThai == 'cho_xac_nhan'}" class="badge bg-warning text-dark">⏳ Chờ xác nhận</span>
                         <span th:if="${donHang.trangThai == 'da_xac_nhan'}"  class="badge bg-info text-dark">✅ Đã xác nhận</span>
                         <span th:if="${donHang.trangThai == 'dang_giao'}"    class="badge bg-primary">🚚 Đang giao</span>
-                        <span th:if="${donHang.trangThai == 'da_giao'}"      class="badge bg-success">📦 Đã giao</span>
+                        <span th:if="${donHang.trangThai == 'da_hoan_thanh'}"      class="badge bg-success">📦 Đã giao</span>
                         <span th:if="${donHang.trangThai == 'da_huy'}"       class="badge bg-danger">❌ Đã hủy</span>
+                        <span th:if="${donHang.trangThai == 'cho_hoan_tien'}" class="badge bg-warning text-dark">⏳ Chờ hoàn tiền</span>
                     </div>
                     <div class="d-flex justify-content-between" style="font-size:.87rem;">
                         <span class="text-muted">Thanh toán:</span>
@@ -227,13 +229,15 @@
                         <span th:if="${donHang.trangThaiThanhToan == 'chua_thanh_toan'}"    class="badge bg-secondary">Chưa thanh toán</span>
                         <span th:if="${donHang.trangThaiThanhToan == 'that_bai'}"           class="badge bg-danger">Thất bại</span>
                         <span th:if="${donHang.trangThaiThanhToan == 'dang_chuyen_huong'}"  class="badge bg-warning text-dark">Đang xử lý</span>
+                        <span th:if="${donHang.trangThaiThanhToan == 'da_hoan_tien'}"       class="badge bg-info text-dark">Đã hoàn tiền</span>
                     </div>
                     <hr class="my-2">
-                    <div class="d-flex justify-content-between" style="font-size:.82rem;">
+                    <!-- Ẩn theo yêu cầu -->
+                    <div class="d-none justify-content-between" style="font-size:.82rem;">
                         <span class="text-muted">Ngày giao dự kiến:</span>
                         <span th:text="${donHang.ngayGiaoDuKien != null ? #temporals.format(donHang.ngayGiaoDuKien, 'dd/MM/yyyy') : '—'}">—</span>
                     </div>
-                    <div class="d-flex justify-content-between" style="font-size:.82rem;">
+                    <div class="d-none justify-content-between" style="font-size:.82rem;">
                         <span class="text-muted">Ngày giao thực tế:</span>
                         <span th:text="${donHang.ngayGiaoThucTe != null ? #temporals.format(donHang.ngayGiaoThucTe, 'dd/MM/yyyy HH:mm') : '—'}">—</span>
                     </div>
@@ -429,7 +433,7 @@
                 let imeiList = [];
                 try {
                     const imeiData = await callApi(
-                        `/api/admin/imei/danh-sach?bienTheSanPhamId=${bienTheId}&tinhTrang=trong_kho&khoId=${KHO_ONLINE_ID}`,
+                        `/api/admin/imei/danh-sach?bienTheSanPhamId=${bienTheId}&tinhTrang=trong_kho&khoId=1`,
                         'GET'
                     );
                     imeiList = imeiData || [];
@@ -453,7 +457,7 @@
                                         <label class="imei-checkbox-item d-flex align-items-center">
                                             <input type="checkbox" class="imei-checkbox me-2" value="${imei.imei1}">
                                             <span class="fw-semibold">${imei.imei1}</span>
-                                            ${imei.serial ? `<span class="text-muted small ms-2">(SN: ${imei.serial})</span>` : ''}
+
                                         </label>
                                     `).join('')}
                                 </div>
@@ -572,7 +576,7 @@
         }
     });
 
-    // ── 3. Hoàn thành giao hàng (PUT /trang-thai?trangThaiMoi=da_giao)
+    // ── 3. Hoàn thành giao hàng (PUT /trang-thai?trangThaiMoi=da_hoan_thanh)
     document.getElementById('btn-hoan-thanh')?.addEventListener('click', async function () {
         const result = await Swal.fire({
             icon: 'success', title: 'Xác nhận hoàn thành?',
@@ -587,7 +591,7 @@
         showLoading('Đang cập nhật...');
         try {
             const data = await callApi(
-                `/api/admin/don-hang/${DON_HANG_ID}/trang-thai?trangThaiMoi=da_giao`,
+                `/api/admin/don-hang/${DON_HANG_ID}/trang-thai?trangThaiMoi=da_hoan_thanh`,
                 'PUT'
             );
             if (data.success) showSuccess(data.message || 'Giao hàng hoàn thành!');
@@ -652,6 +656,34 @@
             showError('Lỗi kết nối đến server.');
         }
     });
+
+    // ── 6. Xác nhận hoàn tiền (POST /xac-nhan-hoan-tien) ────────
+    document.getElementById('btn-xac-nhan-hoan-tien')?.addEventListener('click', async function () {
+        const result = await Swal.fire({
+            icon: 'question',
+            title: 'Xác nhận hoàn tiền?',
+            text: 'Bạn xác nhận đã hoàn lại tiền cho khách hàng đối với đơn hàng này?',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check"></i> Xác nhận',
+            cancelButtonText: 'Hủy bỏ',
+            confirmButtonColor: '#F59E0B'
+        });
+        if (!result.isConfirmed) return;
+
+        showLoading('Đang xử lý...');
+        try {
+            const data = await callApi(`/api/admin/don-hang/${DON_HANG_ID}/xac-nhan-hoan-tien`, 'POST');
+            if (data.success) {
+                showSuccess(data.message || 'Xác nhận hoàn tiền thành công.');
+                reloadPage();
+            } else {
+                showError(data.message);
+            }
+        } catch (e) {
+            showError('Lỗi kết nối đến server.');
+        }
+    });
+
 </script>
 
 </body>

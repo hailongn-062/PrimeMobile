@@ -9,114 +9,89 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entity mapping bảng chuong_trinh_khuyen_mai (Module 9: Khuyến mãi).
+ * Entity mapping báº£ng chuong_trinh_khuyen_mai (Module 9: Khuyáº¿n mÃ£i).
  * <p>
- * Gộp chương trình khuyến mãi thông thường và Flash Sale vào cùng 1 bảng.
- * Flash Sale được phân biệt bằng loai = 'flash_sale' và các trường
- * gioFlashBatDau / gioFlashKetThuc có giá trị.
+ * Quáº£n lÃ½ cÃ¡c chÆ°Æ¡ng trÃ¬nh khuyáº¿n mÃ£i cá»§a cá»­a hÃ ng.
  * <p>
- * Phân loại (CHECK chk_ctkm_loai):
- *  "giam_gia_truc_tiep" | "phan_tram" | "flash_sale" | "don_hang_toi_thieu"
+ * PhÃ¢n loáº¡i (CHECK chk_ctkm_loai):
+ * "theo_don_hang" â€” Giáº£m giÃ¡ khi Ä‘Æ¡n hÃ ng Ä‘áº¡t Ä‘iá»u kiá»‡n tá»‘i thiá»ƒu.
+ * "theo_san_pham"  â€” Giáº£m giÃ¡ theo sáº£n pháº©m cá»¥ thá»ƒ (xem pham_vi_khuyen_mai).
  * <p>
- * Trạng thái (CHECK chk_ctkm_trang_thai):
- *  "chua_bat_dau" | "dang_dien_ra" | "da_ket_thuc" | "tam_dung"
+ * Tráº¡ng thÃ¡i (CHECK chk_ctkm_trang_thai):
+ * "chua_bat_dau" | "dang_dien_ra" | "da_ket_thuc" | "tam_dung"
  * <p>
- * Quan hệ:
- *  - 1-N với {@link PhamViKhuyenMai}   (mappedBy chuongTrinhKhuyenMai, CASCADE ALL)
- *  - 1-N với {@link ChiTietFlashSale}  (mappedBy chuongTrinhKhuyenMai, CASCADE ALL)
+ * Quan há»‡:
+ * - 1-N vá»›i {@link PhamViKhuyenMai} (mappedBy chuongTrinhKhuyenMai, CASCADE ALL)
  */
 @Entity
-@Table(
-        name = "chuong_trinh_khuyen_mai",
-        indexes = {
-                @Index(name = "idx_ctkm_tts", columnList = "trang_thai, ngay_bat_dau, ngay_ket_thuc")
-        }
-)
+@Table(name = "chuong_trinh_khuyen_mai", indexes = {
+        @Index(name = "idx_ctkm_tts", columnList = "trang_thai, ngay_bat_dau, ngay_ket_thuc")
+})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"phamViKhuyenMais", "chiTietFlashSales"})
-@EqualsAndHashCode(exclude = {"phamViKhuyenMais", "chiTietFlashSales"})
+@ToString(exclude = "phamViKhuyenMais")
+@EqualsAndHashCode(exclude = "phamViKhuyenMais")
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class ChuongTrinhKhuyenMai {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    /** Tên chương trình khuyến mãi. */
+    /** TÃªn chÆ°Æ¡ng trÃ¬nh khuyáº¿n mÃ£i. */
     @Column(name = "ten_ctkm", nullable = false, length = 200)
     private String tenCtkm;
 
-    /** Mô tả chi tiết về chương trình. */
+    /** MÃ´ táº£ chi tiáº¿t vá» chÆ°Æ¡ng trÃ¬nh. */
     @Column(name = "mo_ta", columnDefinition = "NVARCHAR(MAX)")
     private String moTa;
 
     /**
-     * Loại khuyến mãi (NOT NULL).
-     * Giá trị hợp lệ: "giam_gia_truc_tiep" | "phan_tram" 
-     *                | "flash_sale" | "don_hang_toi_thieu"
+     * Loáº¡i khuyáº¿n mÃ£i (NOT NULL).
+     * GiÃ¡ trá»‹ há»£p lá»‡: "theo_don_hang" | "theo_san_pham"
      */
     @Column(name = "loai", nullable = false, length = 25)
     private String loai;
 
-    /** Giá trị ưu đãi. */
-    @Column(name = "gia_tri_uu_dai", precision = 15, scale = 2)
+    /**
+     * GiÃ¡ trá»‹ Æ°u Ä‘Ã£i (sá»‘ tiá»n hoáº·c %).
+     * NOT NULL.
+     */
+    @Column(name = "gia_tri_uu_dai", nullable = false, precision = 15, scale = 2)
     private BigDecimal giaTriUuDai;
 
     /**
-     * Đơn hàng tối thiểu (áp dụng khi loai = 'don_hang_toi_thieu').
+     * ÄÆ¡n hÃ ng tá»‘i thiá»ƒu Ä‘á»ƒ Ã¡p dá»¥ng khuyáº¿n mÃ£i.
+     * NULL = khÃ´ng cÃ³ Ä‘iá»u kiá»‡n tá»‘i thiá»ƒu.
      */
     @Column(name = "don_hang_toi_thieu", precision = 15, scale = 2)
     private BigDecimal donHangToiThieu;
 
-
-    /** Ngày giờ bắt đầu chương trình. */
+    /** NgÃ y giá» báº¯t Ä‘áº§u chÆ°Æ¡ng trÃ¬nh. */
     @Column(name = "ngay_bat_dau", nullable = false)
     private LocalDateTime ngayBatDau;
 
-    /** Ngày giờ kết thúc chương trình. */
+    /** NgÃ y giá» káº¿t thÃºc chÆ°Æ¡ng trÃ¬nh. */
     @Column(name = "ngay_ket_thuc", nullable = false)
     private LocalDateTime ngayKetThuc;
 
-    // -------------------------------------------------------------------------
-    // FLASH SALE: các trường chỉ có giá trị khi loai = 'flash_sale'
-    // -------------------------------------------------------------------------
-
-    /** Giờ bắt đầu flash sale trong ngày. NULL nếu không phải flash sale. */
-    @Column(name = "gio_flash_bat_dau")
-    private LocalDateTime gioFlashBatDau;
-
-    /** Giờ kết thúc flash sale trong ngày. NULL nếu không phải flash sale. */
-    @Column(name = "gio_flash_ket_thuc")
-    private LocalDateTime gioFlashKetThuc;
-
-
-    /** Đếm số lần mã đã được sử dụng (DEFAULT 0). */
-    @Column(name = "so_lan_da_dung", nullable = false)
-    @Builder.Default
-    private Integer soLanDaDung = 0;
-
     /**
-     * Trạng thái chương trình (DEFAULT 'chua_bat_dau').
-     * Giá trị hợp lệ: "chua_bat_dau" | "dang_dien_ra" | "da_ket_thuc" | "tam_dung"
+     * Tráº¡ng thÃ¡i chÆ°Æ¡ng trÃ¬nh (DEFAULT 'chua_bat_dau').
+     * GiÃ¡ trá»‹ há»£p lá»‡: "chua_bat_dau" | "dang_dien_ra" | "da_ket_thuc" | "tam_dung"
      */
     @Column(name = "trang_thai", nullable = false, length = 15)
     @Builder.Default
     private String trangThai = "chua_bat_dau";
 
     // -------------------------------------------------------------------------
-    // Quan hệ 1-N
+    // Quan há»‡ 1-N
     // -------------------------------------------------------------------------
 
-    /** Danh sách phạm vi áp dụng (sản phẩm, danh mục, hãng). */
+    /** Danh sÃ¡ch pháº¡m vi Ã¡p dá»¥ng (sáº£n pháº©m). */
     @OneToMany(mappedBy = "chuongTrinhKhuyenMai", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<PhamViKhuyenMai> phamViKhuyenMais = new ArrayList<>();
-
-    /** Chi tiết giá flash sale cho từng biến thể (ON DELETE CASCADE). */
-    @OneToMany(mappedBy = "chuongTrinhKhuyenMai", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<ChiTietFlashSale> chiTietFlashSales = new ArrayList<>();
 }

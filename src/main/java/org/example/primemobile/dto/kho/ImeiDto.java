@@ -48,11 +48,6 @@ public class ImeiDto {
     private String imei2;
 
     /**
-     * Số serial của máy (tùy chọn).
-     */
-    private String serial;
-
-    /**
      * Trạng thái hiện tại của máy.
      * Các giá trị hợp lệ: 'trong_kho', 'da_ban', 'bao_hanh', 'loi_hong'
      */

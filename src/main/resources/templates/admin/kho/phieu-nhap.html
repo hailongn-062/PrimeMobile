@@ -147,6 +147,47 @@
                                 </table>
                             </div>
 
+                            <!-- IMPORT EXCEL KHU VỰC -->
+                            <div class="card mb-4 border-primary shadow-sm">
+                                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold"><i class="fa fa-file-excel me-2"></i> Import IMEI từ Excel</span>
+                                    <button type="button" class="btn btn-sm btn-light text-primary fw-bold" onclick="alert('Tính năng tải file mẫu đang phát triển')">
+                                        <i class="fa fa-download me-1"></i> Tải file mẫu
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-8">
+                                            <input class="form-control" type="file" id="excelFile" accept=".xlsx, .xls">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <button type="button" class="btn btn-outline-primary w-100 fw-bold" id="btn-import-excel">
+                                                <i class="fa fa-upload me-2"></i> Đối chiếu dữ liệu
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Vùng hiển thị kết quả đối chiếu -->
+                                    <div id="import-preview-area" class="mt-4 d-none">
+                                        <h6 class="fw-bold text-dark border-bottom pb-2">Kết quả đối chiếu:</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-sm align-middle text-center" id="previewTable">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Biến thể (SKU)</th>
+                                                        <th>SL Đặt</th>
+                                                        <th>SL Excel</th>
+                                                        <th>Trạng thái</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="previewBody">
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="summary-box d-flex justify-content-between align-items-center shadow-sm mb-4">
                                 <span class="fw-bold">Tổng tiền phiếu nhập:</span>
                                 <span class="text-danger fw-bold fs-4" id="tong-tien-text">0 đ</span>
@@ -235,6 +276,7 @@
                     <option value="">-- Chọn SKU --</option>
                     <option th:each="bt : ${danhSachBienThe}" th:value="${bt.id}"
                         th:text="${bt.maSku + (bt.sanPham != null ? ' - ' + bt.sanPham.tenSanPham : '')}"
+                        th:data-sku="${bt.maSku}"
                         th:data-gia-ban="${bt.giaBan}"></option>
                 </select>
             </td>
@@ -425,10 +467,15 @@
                         if (!firstDangerRow) firstDangerRow = row;
                     }
 
+                    const skuSelect = row.querySelector(".sku-select");
+                    const optionElement = skuSelect.options[skuSelect.selectedIndex];
+                    const skuString = optionElement ? optionElement.getAttribute('data-sku') : null;
+
                     chiTiets.push({
                         bienTheSanPhamId: parseInt(bienTheId),
                         soLuong: soLuong,
-                        donGiaNhap: donGia
+                        donGiaNhap: donGia,
+                        imeiRecords: skuString && window.validatedImeisBySku ? window.validatedImeisBySku[skuString] || [] : []
                     });
                 }
 
@@ -481,6 +528,138 @@
                     btnSubmitPhieu.innerHTML = '<i class="fa fa-check-circle me-2"></i> Chốt & Lưu Phiếu Nhập';
                 }
             });
+
+            // ─── Import Excel Preview ───
+            window.validatedImeisBySku = {};
+            const btnImportExcel = document.getElementById('btn-import-excel');
+            const excelFile = document.getElementById('excelFile');
+            const previewArea = document.getElementById('import-preview-area');
+            const previewBody = document.getElementById('previewBody');
+
+            if(btnImportExcel) {
+                btnImportExcel.addEventListener('click', async function() {
+                    if (!excelFile.files[0]) {
+                        Swal.fire('Lỗi', 'Vui lòng chọn file Excel', 'warning');
+                        return;
+                    }
+
+                    // Gôm thông tin chi tiết hiện tại để gửi lên preview
+                    const chiTiets = [];
+                    document.querySelectorAll('#chi-tiet-body tr').forEach(row => {
+                        const skuSelect = row.querySelector('.sku-select');
+                        const bienTheId = skuSelect.value;
+                        const soLuong = parseInt(row.querySelector('.sl-input').value) || 0;
+                        if (bienTheId && soLuong > 0) {
+                            chiTiets.push({
+                                bienTheSanPhamId: parseInt(bienTheId),
+                                soLuong: soLuong,
+                                donGiaNhap: 0
+                            });
+                        }
+                    });
+
+                    if (chiTiets.length === 0) {
+                        Swal.fire('Cảnh báo', 'Vui lòng chọn ít nhất 1 sản phẩm ở bảng trên trước khi import', 'warning');
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('file', excelFile.files[0]);
+                    formData.append('chiTietNhapJson', JSON.stringify(chiTiets));
+
+                    try {
+                        btnImportExcel.disabled = true;
+                        btnImportExcel.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>Đang xử lý...';
+
+                        const response = await fetch('/api/admin/kho/import-imei-preview', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            
+                            window.validatedImeisBySku = {};
+                            previewBody.innerHTML = '';
+                            
+                            data.skuStatuses.forEach(st => {
+                                window.validatedImeisBySku[st.sku] = st.validRecords || [];
+                                
+                                let badgeClass = 'bg-secondary';
+                                if (st.statusText.includes('Hợp lệ')) badgeClass = 'bg-success';
+                                else if (st.statusText.includes('Thiếu')) badgeClass = 'bg-warning text-dark';
+                                else badgeClass = 'bg-danger';
+
+                                let errorHtml = '';
+                                if (st.errorRecords && st.errorRecords.length > 0) {
+                                    errorHtml = `<div class="text-start mt-2" style="font-size: 0.8rem; color: #dc3545; max-height: 100px; overflow-y: auto;">`;
+                                    st.errorRecords.forEach(errRec => {
+                                        errorHtml += `Dòng ${errRec.rowIndex}: ${errRec.errors.join(', ')}<br>`;
+                                    });
+                                    errorHtml += `</div>`;
+                                }
+
+                                previewBody.innerHTML += `
+                                    <tr>
+                                        <td class="fw-bold">${st.sku}</td>
+                                        <td>${st.orderedQuantity}</td>
+                                        <td>${st.excelQuantity}</td>
+                                        <td>
+                                            <span class="badge ${badgeClass}">${st.statusText}</span>
+                                            ${errorHtml}
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                            
+                            previewArea.classList.remove('d-none');
+                            
+                            if (!data.allAcceptable) {
+                                btnSubmitPhieu.disabled = true;
+                                Swal.fire('Có lỗi trong file Excel', 'Vui lòng kiểm tra lại bảng kết quả đối chiếu, sửa file Excel và upload lại.', 'error');
+                            } else {
+                                btnSubmitPhieu.disabled = false;
+                                
+                                const hasThieu = data.skuStatuses.some(st => st.statusText.includes('Thiếu'));
+                                if (hasThieu) {
+                                    Swal.fire({
+                                        icon: 'info',
+                                        title: 'Xác nhận nhập thiếu?',
+                                        text: 'Có một số sản phẩm nhập ít IMEI hơn số lượng đặt. Hệ thống sẽ cho phép lưu và ghi nhận số lượng thực tế được import. Nếu muốn, hãy ấn Đồng ý để tự động giảm SL Đặt xuống bằng SL Excel.',
+                                        showCancelButton: true,
+                                        confirmButtonText: 'Đồng ý sửa SL',
+                                        cancelButtonText: 'Giữ nguyên'
+                                    }).then((result) => {
+                                        if (result.isConfirmed) {
+                                            data.skuStatuses.forEach(st => {
+                                                if (st.statusText.includes('Thiếu') && st.excelQuantity >= 0) {
+                                                    document.querySelectorAll('#chi-tiet-body tr').forEach(row => {
+                                                        const select = row.querySelector('.sku-select');
+                                                        const opt = select.options[select.selectedIndex];
+                                                        if (opt && opt.getAttribute('data-sku') === st.sku) {
+                                                            row.querySelector('.sl-input').value = st.excelQuantity;
+                                                        }
+                                                    });
+                                                }
+                                            });
+                                            calculateTotal();
+                                            Swal.fire('Đã cập nhật', 'Số lượng đặt đã điều chỉnh khớp với số IMEI Excel.', 'success');
+                                        }
+                                    });
+                                }
+                            }
+                        } else {
+                            const errorMsg = await response.text();
+                            Swal.fire('Lỗi server', errorMsg, 'error');
+                        }
+                    } catch (e) {
+                        Swal.fire('Lỗi', 'Không thể kết nối tới server', 'error');
+                    } finally {
+                        btnImportExcel.disabled = false;
+                        btnImportExcel.innerHTML = '<i class="fa fa-upload me-2"></i> Đối chiếu dữ liệu';
+                    }
+                });
+            }
 
             // ─── Tab lịch sử ───
             async function loadLichSu() {

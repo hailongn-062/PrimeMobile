@@ -63,8 +63,8 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link fw-semibold" th:classappend="${filterTrangThai == 'da_giao'} ? 'active' : ''"
-                       href="/admin/don-hang?trangThai=da_giao">
+                    <a class="nav-link fw-semibold" th:classappend="${filterTrangThai == 'da_hoan_thanh'} ? 'active' : ''"
+                       href="/admin/don-hang?trangThai=da_hoan_thanh">
                         <i class="fa fa-check-double me-1"></i>Đã giao
                     </a>
                 </li>
@@ -72,6 +72,12 @@
                     <a class="nav-link fw-semibold" th:classappend="${filterTrangThai == 'da_huy'} ? 'active' : ''"
                        href="/admin/don-hang?trangThai=da_huy">
                         <i class="fa fa-ban me-1"></i>Đã hủy
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold" th:classappend="${filterTrangThai == 'cho_hoan_tien'} ? 'active' : ''"
+                       href="/admin/don-hang?trangThai=cho_hoan_tien">
+                        <i class="fa fa-undo me-1"></i>Chờ hoàn tiền
                     </a>
                 </li>
             </ul>
@@ -152,10 +158,12 @@
                               class="badge rounded-pill bg-info text-dark">✅ Đã xác nhận</span>
                         <span th:if="${dh.trangThai == 'dang_giao'}"
                               class="badge rounded-pill bg-primary">🚚 Đang giao</span>
-                        <span th:if="${dh.trangThai == 'da_giao'}"
+                        <span th:if="${dh.trangThai == 'da_hoan_thanh'}"
                               class="badge rounded-pill bg-success">📦 Đã giao</span>
                         <span th:if="${dh.trangThai == 'da_huy'}"
                               class="badge rounded-pill bg-danger">❌ Đã hủy</span>
+                        <span th:if="${dh.trangThai == 'cho_hoan_tien'}"
+                              class="badge rounded-pill bg-warning text-dark">⏳ Chờ hoàn tiền</span>
                     </td>
                     <td class="text-center">
                             <span th:if="${dh.trangThaiThanhToan == 'da_thanh_toan'}"
@@ -166,6 +174,8 @@
                               class="badge rounded-pill bg-danger">Thất bại</span>
                         <span th:if="${dh.trangThaiThanhToan == 'dang_chuyen_huong'}"
                               class="badge rounded-pill bg-warning text-dark">Đang TT</span>
+                        <span th:if="${dh.trangThaiThanhToan == 'da_hoan_tien'}"
+                              class="badge rounded-pill bg-info text-dark">Đã hoàn tiền</span>
                     </td>
                     <td class="text-center">
                         <!-- Nút Xem chi tiết -->
@@ -204,7 +214,7 @@
                         </th:block>
 
                         <!-- Nút Xác nhận thanh toán cho đơn COD đã giao -->
-                        <th:block th:if="${dh.trangThai == 'da_giao' and dh.trangThaiThanhToan == 'chua_thanh_toan'}">
+                        <th:block th:if="${dh.trangThai == 'da_hoan_thanh' and dh.trangThaiThanhToan == 'chua_thanh_toan'}">
                             <button class="btn btn-warning btn-sm rounded-pill px-2 btn-thanh-toan"
                                     th:data-id="${dh.id}"
                                     th:data-madon="${dh.maDonHang}"
@@ -394,7 +404,7 @@
                 let imeiList = [];
                 try {
                     const imeiData = await callApi(
-                        `/api/admin/imei/danh-sach?bienTheSanPhamId=${bienTheId}&tinhTrang=trong_kho&khoId=${KHO_ONLINE_ID}`,
+                        `/api/admin/imei/danh-sach?bienTheSanPhamId=${bienTheId}&tinhTrang=trong_kho&khoId=1`,
                         'GET'
                     );
                     imeiList = imeiData || [];
@@ -418,7 +428,7 @@
                                         <label class="imei-checkbox-item d-flex align-items-center">
                                             <input type="checkbox" class="imei-checkbox me-2" value="${imei.imei1}">
                                             <span class="fw-semibold">${imei.imei1}</span>
-                                            ${imei.serial ? `<span class="text-muted small ms-2">(SN: ${imei.serial})</span>` : ''}
+
                                         </label>
                                     `).join('')}
                                 </div>
@@ -546,7 +556,7 @@
     });
 
     // =========================================================================
-    // 3. HOÀN THÀNH GIAO (dang_giao → da_giao)
+    // 3. HOÀN THÀNH GIAO (dang_giao → da_hoan_thanh)
     // =========================================================================
     document.querySelectorAll('.btn-hoan-thanh').forEach(btn => {
         btn.addEventListener('click', async function() {
@@ -565,7 +575,7 @@
 
             showLoading('Đang cập nhật...');
             try {
-                const data = await callApi(`/api/admin/don-hang/${id}/trang-thai?trangThaiMoi=da_giao`, 'PUT');
+                const data = await callApi(`/api/admin/don-hang/${id}/trang-thai?trangThaiMoi=da_hoan_thanh`, 'PUT');
                 if (data.success) {
                     showSuccess(data.message || 'Giao hàng hoàn thành!');
                     reloadPage();

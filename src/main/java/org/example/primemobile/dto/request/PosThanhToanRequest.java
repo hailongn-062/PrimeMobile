@@ -31,6 +31,9 @@ import java.util.List;
 @NoArgsConstructor
 public class PosThanhToanRequest {
 
+    /** ID đơn hàng chờ (nếu đang tiếp tục từ một đơn chờ trước đó). */
+    private Integer donHangId;
+
     /**
      * ID khách hàng (có thể null → hệ thống tự gán Khách lẻ mặc định).
      */

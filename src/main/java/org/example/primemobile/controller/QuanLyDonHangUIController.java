@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.primemobile.dto.auth.SessionUser;
+import org.example.primemobile.dto.kho.ImeiDto;
 import org.example.primemobile.dto.order.ChiTietDonHangDto;
 import org.example.primemobile.dto.order.DonHangChiTietDto;
 import org.example.primemobile.entity.BienTheSanPham;
@@ -114,9 +115,18 @@ public class QuanLyDonHangUIController {
             return null;
         }
 
+        // Lấy danh sách IMEI đã gán cho đơn hàng (trạng thái 'da_ban') trước
+        List<org.example.primemobile.entity.MayDienThoai> tempMayDienThoaiList = new java.util.ArrayList<>();
+        try {
+            tempMayDienThoaiList = quanLyDonHangService.layDanhSachImeiTheoDonHang(donHang.getId());
+        } catch (Exception e) {
+            log.warn("[DonHangUI] Không thể lấy danh sách IMEI cho đơn hàng {}: {}", donHang.getId(), e.getMessage());
+        }
+        final List<org.example.primemobile.entity.MayDienThoai> mayDienThoaiList = tempMayDienThoaiList;
+
         // Map danh sách chi tiết đơn hàng
         List<ChiTietDonHangDto> chiTietDtos = donHang.getChiTietDonHangs().stream()
-                .map(this::mapChiTietToDto)
+                .map(ct -> mapChiTietToDto(ct, mayDienThoaiList))
                 .collect(Collectors.toList());
 
         // Lấy thông tin khách hàng
@@ -137,13 +147,9 @@ public class QuanLyDonHangUIController {
                 ? donHang.getNguoiXuLy().getHoTen()
                 : null;
 
-        // Lấy danh sách IMEI đã gán cho đơn hàng (trạng thái 'da_ban')
-        List<org.example.primemobile.entity.MayDienThoai> imeiList = null;
-        try {
-            imeiList = quanLyDonHangService.layDanhSachImeiTheoDonHang(donHang.getId());
-        } catch (Exception e) {
-            log.warn("[DonHangUI] Không thể lấy danh sách IMEI cho đơn hàng {}: {}", donHang.getId(), e.getMessage());
-        }
+        List<ImeiDto> imeiList = mayDienThoaiList.stream()
+                .map(m -> new ImeiDto(m.getId(), m.getImei1(), m.getImei2(), m.getTinhTrang()))
+                .collect(Collectors.toList());
 
         return DonHangChiTietDto.builder()
                 .id(donHang.getId())
@@ -177,14 +183,23 @@ public class QuanLyDonHangUIController {
     /**
      * Chuyển đổi entity {@link ChiTietDonHang} sang DTO {@link ChiTietDonHangDto}.
      */
-    private ChiTietDonHangDto mapChiTietToDto(ChiTietDonHang chiTiet) {
+    private ChiTietDonHangDto mapChiTietToDto(ChiTietDonHang chiTiet, List<org.example.primemobile.entity.MayDienThoai> mayDienThoaiList) {
         BienTheSanPham bt = chiTiet.getBienTheSanPham();
         SanPham sp = (bt != null) ? bt.getSanPham() : null;
+
+        List<ImeiDto> ctImeis = new java.util.ArrayList<>();
+        if (mayDienThoaiList != null && bt != null) {
+            ctImeis = mayDienThoaiList.stream()
+                    .filter(m -> m.getBienTheSanPham() != null && m.getBienTheSanPham().getId().equals(bt.getId()))
+                    .map(m -> new ImeiDto(m.getId(), m.getImei1(), m.getImei2(), m.getTinhTrang()))
+                    .collect(Collectors.toList());
+        }
 
         return ChiTietDonHangDto.builder()
                 .id(chiTiet.getId())
                 .soLuong(chiTiet.getSoLuong())
                 .donGiaBan(chiTiet.getDonGiaBan())
+                .giaGoc(bt != null && bt.getGiaBan() != null ? bt.getGiaBan() : chiTiet.getDonGiaBan())
                 .thanhTien(chiTiet.getThanhTien())
                 .bienTheSanPhamId(bt != null ? bt.getId() : null)
                 .maSku(bt != null ? bt.getMaSku() : null)
@@ -192,6 +207,7 @@ public class QuanLyDonHangUIController {
                 .ramGb(bt != null ? bt.getRamGb() : null)
                 .luuTruGb(bt != null ? bt.getLuuTruGb() : null)
                 .tenSanPham(sp != null ? sp.getTenSanPham() : null)
+                .imeiList(ctImeis)
                 .build();
     }
 }

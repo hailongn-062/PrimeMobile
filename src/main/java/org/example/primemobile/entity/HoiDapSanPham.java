@@ -6,19 +6,19 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * Entity mapping bảng hoi_dap_san_pham (Module 12: Đánh giá & Hỏi đáp).
+ * Entity mapping báº£ng hoi_dap_san_pham (Module 12: ÄÃ¡nh giÃ¡ & Há»i Ä‘Ã¡p).
  * <p>
- * Khách hàng đặt câu hỏi về sản phẩm trên trang chi tiết sản phẩm.
- * Nhân viên / Admin trả lời trực tiếp trong cùng bản ghi.
+ * KhÃ¡ch hÃ ng Ä‘áº·t cÃ¢u há»i vá» sáº£n pháº©m trÃªn trang chi tiáº¿t sáº£n pháº©m.
+ * NhÃ¢n viÃªn / Admin tráº£ lá»i trá»±c tiáº¿p trong cÃ¹ng báº£n ghi.
  * <p>
- * Ghi chú (system_rules.md §7 – Tạm hoãn):
- *  Phân hệ hỏi đáp tạm hoãn triển khai.
- *  Entity tạo đủ để mapping DB.
+ * Ghi chÃº (system_rules.md Â§7 â€“ Táº¡m hoÃ£n):
+ *  PhÃ¢n há»‡ há»i Ä‘Ã¡p táº¡m hoÃ£n triá»ƒn khai.
+ *  Entity táº¡o Ä‘á»§ Ä‘á»ƒ mapping DB.
  * <p>
- * Quan hệ:
- *  - N:1 với {@link SanPham}    (FK san_pham_id)
- *  - N:1 với {@link KhachHang}  (FK khach_hang_id — người đặt câu hỏi)
- *  - N:1 với {@link NguoiDung}  (FK nguoi_tra_loi_id, ON DELETE SET NULL, nullable)
+ * Quan há»‡:
+ *  - N:1 vá»›i {@link SanPham}    (FK san_pham_id)
+ *  - N:1 vá»›i {@link KhachHang}  (FK khach_hang_id â€” ngÆ°á»i Ä‘áº·t cÃ¢u há»i)
+ *  - N:1 vá»›i {@link NguoiDung}  (FK nguoi_tra_loi_id, ON DELETE SET NULL, nullable)
  */
 @Entity
 @Table(
@@ -31,6 +31,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class HoiDapSanPham {
 
     @Id
@@ -38,7 +39,7 @@ public class HoiDapSanPham {
     private Integer id;
 
     /**
-     * Sản phẩm được hỏi.
+     * Sáº£n pháº©m Ä‘Æ°á»£c há»i.
      * NOT NULL.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -50,7 +51,7 @@ public class HoiDapSanPham {
     private SanPham sanPham;
 
     /**
-     * Khách hàng đặt câu hỏi.
+     * KhÃ¡ch hÃ ng Ä‘áº·t cÃ¢u há»i.
      * NOT NULL.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -61,21 +62,21 @@ public class HoiDapSanPham {
     )
     private KhachHang khachHang;
 
-    /** Nội dung câu hỏi của khách. */
+    /** Ná»™i dung cÃ¢u há»i cá»§a khÃ¡ch. */
     @Column(name = "cau_hoi", nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String cauHoi;
 
     /**
-     * Nội dung câu trả lời của nhân viên/Admin.
-     * NULL nếu chưa có ai trả lời.
+     * Ná»™i dung cÃ¢u tráº£ lá»i cá»§a nhÃ¢n viÃªn/Admin.
+     * NULL náº¿u chÆ°a cÃ³ ai tráº£ lá»i.
      */
     @Column(name = "tra_loi", columnDefinition = "NVARCHAR(MAX)")
     private String traLoi;
 
     /**
-     * Nhân viên / Admin trả lời câu hỏi.
-     * ON DELETE SET NULL – xóa nhân viên vẫn giữ nội dung trả lời.
-     * NULL nếu chưa được trả lời.
+     * NhÃ¢n viÃªn / Admin tráº£ lá»i cÃ¢u há»i.
+     * ON DELETE SET NULL â€“ xÃ³a nhÃ¢n viÃªn váº«n giá»¯ ná»™i dung tráº£ lá»i.
+     * NULL náº¿u chÆ°a Ä‘Æ°á»£c tráº£ lá»i.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
@@ -84,21 +85,21 @@ public class HoiDapSanPham {
     )
     private NguoiDung nguoiTraLoi;
 
-    /** Thời điểm khách đặt câu hỏi. */
+    /** Thá»i Ä‘iá»ƒm khÃ¡ch Ä‘áº·t cÃ¢u há»i. */
     @Column(name = "ngay_hoi", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime ngayHoi = LocalDateTime.now();
 
     /**
-     * Thời điểm nhân viên trả lời.
-     * NULL nếu chưa được trả lời.
+     * Thá»i Ä‘iá»ƒm nhÃ¢n viÃªn tráº£ lá»i.
+     * NULL náº¿u chÆ°a Ä‘Æ°á»£c tráº£ lá»i.
      */
     @Column(name = "ngay_tra_loi")
     private LocalDateTime ngayTraLoi;
 
     /**
-     * Trạng thái hiển thị công khai (DEFAULT true).
-     * false = ẩn khỏi trang sản phẩm (do vi phạm nội quy...).
+     * Tráº¡ng thÃ¡i hiá»ƒn thá»‹ cÃ´ng khai (DEFAULT true).
+     * false = áº©n khá»i trang sáº£n pháº©m (do vi pháº¡m ná»™i quy...).
      */
     @Column(name = "hien_thi", nullable = false)
     @Builder.Default
