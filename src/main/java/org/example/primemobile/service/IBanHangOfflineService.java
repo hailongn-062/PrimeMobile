@@ -31,7 +31,7 @@ public interface IBanHangOfflineService {
      * @return Đơn hàng mới được tạo với {@code trang_thai = "cho_thanh_toan"}.
      * @throws jakarta.persistence.EntityNotFoundException nếu nhanVienId không tồn tại.
      */
-    DonHang taoDonHangMoi(Integer nhanVienId);
+    DonHang taoDonHangMoi(Integer nhanVienId, Integer khachHangId);
 
     /**
      * Thêm sản phẩm vào đơn hàng đang nháp (hoặc cộng dồn số lượng nếu SKU đã có).

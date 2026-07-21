@@ -87,7 +87,7 @@
                         <label for="soDienThoai">Số điện thoại</label>
                         <div class="pm-input">
                             <i class="fa fa-phone"></i>
-                            <input type="tel" id="soDienThoai" name="soDienThoai" placeholder="0901234567" autocomplete="tel" required>
+                            <input type="tel" id="soDienThoai" name="soDienThoai" placeholder="0901234567" autocomplete="tel" required pattern="^(03|05|07|08|09)\d{8}$" title="Số điện thoại phải có 10 chữ số và bắt đầu bằng 03, 05, 07, 08 hoặc 09">
                             <span></span>
                         </div>
                     </div>
@@ -96,7 +96,7 @@
                         <label for="email">Email</label>
                         <div class="pm-input">
                             <i class="fa fa-envelope"></i>
-                            <input type="email" id="email" name="email" placeholder="email@example.com" autocomplete="email" required>
+                            <input type="email" id="email" name="email" placeholder="email@example.com" autocomplete="email" required pattern="^[a-zA-Z0-9._\-\+]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$" title="Email không hợp lệ." maxlength="254">
                             <span></span>
                         </div>
                     </div>

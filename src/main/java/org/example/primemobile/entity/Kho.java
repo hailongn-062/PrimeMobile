@@ -31,11 +31,11 @@ public class Kho {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    /** TÃªn kho hiá»ƒn thá»‹ (vÃ­ dá»¥: "Kho Tá»•ng", "Kho Online"). */
+    /** TÃªn kho hiá»ƒn thá»‹ (vÃ­ dá»¥: "Kho Tá»•ng", "kho t?ng"). */
     @Column(name = "ten_kho", nullable = false, length = 100)
     private String tenKho;
 
-    /** Äá»‹a chá»‰ váº­t lÃ½ cá»§a kho. NULL vá»›i kho_online. */
+    /** Äá»‹a chá»‰ váº­t lÃ½ cá»§a kho. NULL vá»›i kho_tong. */
     @Column(name = "dia_chi", length = 255)
     private String diaChi;
 

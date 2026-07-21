@@ -9,6 +9,7 @@ import org.example.primemobile.entity.NguoiDung;
 import org.example.primemobile.repository.KhachHangRepository;
 import org.example.primemobile.repository.NguoiDungRepository;
 import org.example.primemobile.service.IKhachHangAuthService;
+import org.example.primemobile.util.ValidationUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -132,20 +133,22 @@ public class KhachHangAuthServiceImpl implements IKhachHangAuthService {
         validateDangKy(hoTen, email, soDienThoai, matKhau);
 
         // Kiểm tra email chưa tồn tại trong nguoi_dung
-        if (nguoiDungRepository.existsByEmail(email.trim())) {
-            throw new IllegalArgumentException(
-                    "Email \"" + email.trim() + "\" đã được sử dụng. Vui lòng dùng email khác.");
+        String normalizedEmail = email.trim().toLowerCase();
+        if (nguoiDungRepository.existsByEmail(normalizedEmail)) {
+            throw new IllegalArgumentException(ValidationUtils.EMAIL_EXISTS_MSG);
         }
 
-        // Kiểm tra SĐT chưa tồn tại trong khach_hang
-        if (khachHangRepository.findBySoDienThoai(soDienThoai.trim()).isPresent()) {
+        // Kiểm tra SĐT trong khach_hang (Đồng bộ O2O)
+        KhachHang khachHang = khachHangRepository.findBySoDienThoai(soDienThoai.trim()).orElse(null);
+        if (khachHang != null && khachHang.getNguoiDung() != null) {
+            // SĐT đã được liên kết với một tài khoản khác
             throw new IllegalArgumentException(
                     "Số điện thoại \"" + soDienThoai.trim() + "\" đã được sử dụng bởi tài khoản khác.");
         }
 
         // Tạo NguoiDung (tài khoản đăng nhập)
         NguoiDung nguoiDung = new NguoiDung();
-        nguoiDung.setEmail(email.trim().toLowerCase());
+        nguoiDung.setEmail(normalizedEmail);
         nguoiDung.setMatKhau(matKhau);                  // Plain-text, chế độ demo
         nguoiDung.setHoTen(hoTen.trim());
         nguoiDung.setSoDienThoai(soDienThoai.trim());
@@ -155,14 +158,19 @@ public class KhachHangAuthServiceImpl implements IKhachHangAuthService {
         nguoiDung.setUpdatedAt(LocalDateTime.now());
         NguoiDung savedNguoiDung = nguoiDungRepository.save(nguoiDung);
 
-        // Tạo KhachHang (hồ sơ khách hàng) liên kết với NguoiDung
-        KhachHang khachHang = new KhachHang();
+        // Liên kết với KhachHang (Tạo mới hoặc dùng lại hồ sơ Offline)
+        if (khachHang == null) {
+            khachHang = new KhachHang();
+            khachHang.setSoDienThoai(soDienThoai.trim());
+            khachHang.setNgayTao(LocalDateTime.now());
+        }
+        
+        // Ghi đè họ tên, email theo thông tin khách điền
         khachHang.setNguoiDung(savedNguoiDung);
         khachHang.setHoTen(hoTen.trim());
-        khachHang.setEmail(email.trim().toLowerCase());
-        khachHang.setSoDienThoai(soDienThoai.trim());
-        khachHang.setNgayTao(LocalDateTime.now());
+        khachHang.setEmail(normalizedEmail);
         khachHang.setUpdatedAt(LocalDateTime.now());
+        
         KhachHang savedKhachHang = khachHangRepository.save(khachHang);
 
         log.info("[KhachHangAuth] Đăng ký thành công — khachHangId={}, email={}",
@@ -186,11 +194,14 @@ public class KhachHangAuthServiceImpl implements IKhachHangAuthService {
         if (email == null || email.isBlank()) {
             throw new IllegalArgumentException("Email không được để trống.");
         }
-        if (!email.contains("@")) {
-            throw new IllegalArgumentException("Email không hợp lệ.");
+        if (!ValidationUtils.isValidEmail(email)) {
+            throw new IllegalArgumentException(ValidationUtils.EMAIL_INVALID_MSG);
         }
         if (soDienThoai == null || soDienThoai.isBlank()) {
             throw new IllegalArgumentException("Số điện thoại không được để trống.");
+        }
+        if (!ValidationUtils.isValidPhoneNumber(soDienThoai)) {
+            throw new IllegalArgumentException(ValidationUtils.PHONE_INVALID_MSG);
         }
         if (matKhau == null || matKhau.isBlank()) {
             throw new IllegalArgumentException("Mật khẩu không được để trống.");

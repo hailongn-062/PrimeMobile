@@ -165,7 +165,7 @@ public class DonHangKhachHangController {
      * <p>
      * Điều kiện bắt buộc (system_rules.md §2.2):
      * - Đơn hàng phải đang ở trạng thái 'cho_xac_nhan'.
-     * - Không áp dụng hoàn kho vì lúc này kho_online chưa bị trừ.
+     * - Không áp dụng hoàn kho vì lúc này kho_tong chưa bị trừ.
      *
      * @param donHangId ID đơn hàng cần hủy.
      * @param httpRequest Servlet request để lấy session.
@@ -278,6 +278,43 @@ public class DonHangKhachHangController {
         r.put("diaChiNhan", buildAddress(donHang));
         r.put("ghiChu", donHang.getGhiChu());
         r.put("coTheHuy", "cho_xac_nhan".equals(donHang.getTrangThai()));
+        
+        // Add chiTiet directly to summary so UI can render products outside modal
+        List<Map<String, Object>> items = donHang.getChiTietDonHangs().stream()
+                .map(ct -> buildOrderItemSimplified(ct))
+                .toList();
+        r.put("chiTiet", items);
+        
+        return r;
+    }
+
+    private Map<String, Object> buildOrderItemSimplified(ChiTietDonHang chiTiet) {
+        BienTheSanPham bienThe = chiTiet.getBienTheSanPham();
+        SanPham sanPham = bienThe != null ? bienThe.getSanPham() : null;
+        
+        String anhChinhUrl = null;
+        if (bienThe != null && !bienThe.getHinhAnhSanPhams().isEmpty()) {
+            anhChinhUrl = bienThe.getHinhAnhSanPhams().stream()
+                    .filter(org.example.primemobile.entity.HinhAnhSanPham::getLaAnhChinh)
+                    .findFirst()
+                    .map(org.example.primemobile.entity.HinhAnhSanPham::getDuongDan)
+                    .orElse(bienThe.getHinhAnhSanPhams().get(0).getDuongDan());
+        }
+
+        Map<String, Object> r = new LinkedHashMap<>();
+        r.put("id", chiTiet.getId());
+        r.put("bienTheId", bienThe != null ? bienThe.getId() : null);
+        r.put("sanPhamId", sanPham != null ? sanPham.getId() : null);
+        r.put("tenSanPham", sanPham != null ? sanPham.getTenSanPham() : "Sản phẩm");
+        r.put("mauSac", bienThe != null ? bienThe.getMauSac() : null);
+        r.put("ramGb", bienThe != null ? bienThe.getRamGb() : null);
+        r.put("luuTruGb", bienThe != null ? bienThe.getLuuTruGb() : null);
+        r.put("soLuong", chiTiet.getSoLuong());
+        r.put("donGiaBan", valueOrZero(chiTiet.getDonGiaBan()));
+        r.put("thanhTien", chiTiet.getThanhTien() != null
+                ? chiTiet.getThanhTien()
+                : valueOrZero(chiTiet.getDonGiaBan()).multiply(BigDecimal.valueOf(chiTiet.getSoLuong())));
+        r.put("anhChinh", anhChinhUrl);
         return r;
     }
 
@@ -294,7 +331,20 @@ public class DonHangKhachHangController {
         if (donHang.getNguoiXuLy() != null) {
             r.put("nhanVienXuLy", donHang.getNguoiXuLy().getHoTen());
         }
-        r.put("emailNhan", donHang.getEmailNguoiNhan());
+        String emailKhach = null;
+        if (donHang.getKhachHang() != null) {
+            emailKhach = donHang.getKhachHang().getEmail();
+            if ((emailKhach == null || emailKhach.trim().isEmpty()) && donHang.getKhachHang().getNguoiDung() != null) {
+                emailKhach = donHang.getKhachHang().getNguoiDung().getEmail();
+            }
+        }
+        if (emailKhach == null || emailKhach.trim().isEmpty()) {
+            emailKhach = donHang.getEmailNguoiNhan();
+        }
+        if (emailKhach != null && emailKhach.trim().isEmpty()) {
+            emailKhach = null;
+        }
+        r.put("emailNhan", emailKhach);
         
         return r;
     }
@@ -306,6 +356,7 @@ public class DonHangKhachHangController {
         Map<String, Object> r = new LinkedHashMap<>();
         r.put("id", chiTiet.getId());
         r.put("bienTheId", bienThe != null ? bienThe.getId() : null);
+        r.put("sanPhamId", sanPham != null ? sanPham.getId() : null);
         r.put("tenSanPham", sanPham != null ? sanPham.getTenSanPham() : "Sản phẩm");
         r.put("maSku", bienThe != null ? bienThe.getMaSku() : null);
         r.put("mauSac", bienThe != null ? bienThe.getMauSac() : null);

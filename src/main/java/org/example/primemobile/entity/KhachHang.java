@@ -15,14 +15,14 @@ import java.time.LocalDateTime;
  * - KhÃ¡ch vÃ£ng lai (guest): nguoiDung = NULL, khÃ´ng cáº§n tÃ i khoáº£n.
  * - KhÃ¡ch cÃ³ tÃ i khoáº£n: nguoiDung != NULL, quan há»‡ 1-1 vá»›i báº£ng nguoi_dung.
  * <p>
- * Há»‡ thá»‘ng Ä‘Ã£ loáº¡i bá» chá»©c nÄƒng tÃ­ch Ä‘iá»ƒm vÃ  háº¡ng thÃ nh viÃªn.
+ * Há»‡ thá»‘ng Ä‘Ã£ loáº¡i bá»  chá»©c nÄƒng tÃ­ch Ä‘iá»ƒm vÃ  háº¡ng thÃ nh viÃªn.
  */
 @Entity
 @Table(name = "khach_hang", indexes = {
                 @Index(name = "idx_kh_sdt", columnList = "so_dien_thoai"),
                 @Index(name = "idx_kh_email", columnList = "email")
 }, uniqueConstraints = {
-                @UniqueConstraint(name = "uq_kh_nguoi_dung", columnNames = "nguoi_dung_id")
+                @UniqueConstraint(name = "uq_kh_so_dien_thoai", columnNames = "so_dien_thoai")
 })
 @Data
 @NoArgsConstructor
@@ -42,7 +42,7 @@ public class KhachHang {
          * ON DELETE SET NULL â€” khi xÃ³a nguoi_dung, khach_hang váº«n Ä‘Æ°á»£c giá»¯ láº¡i.
          */
         @OneToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "nguoi_dung_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_kh_nd"), unique = true)
+        @JoinColumn(name = "nguoi_dung_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_kh_nd"))
         @JsonIgnore
         private NguoiDung nguoiDung;
 
@@ -58,7 +58,7 @@ public class KhachHang {
         private String email;
 
         /** Sá»‘ Ä‘iá»‡n thoáº¡i liÃªn láº¡c (báº¯t buá»™c). */
-        @Column(name = "so_dien_thoai", nullable = false, length = 20)
+        @Column(name = "so_dien_thoai", nullable = false, length = 20, unique = true)
         private String soDienThoai;
 
         /**

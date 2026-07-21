@@ -138,9 +138,19 @@ public class QuanLyDonHangUIController {
                 ? donHang.getKhachHang().getSoDienThoai()
                 : donHang.getSdtNguoiNhan();
 
-        String emailKhach = donHang.getKhachHang() != null
-                ? donHang.getKhachHang().getEmail()
-                : null;
+        String emailKhach = null;
+        if (donHang.getKhachHang() != null) {
+            emailKhach = donHang.getKhachHang().getEmail();
+            if ((emailKhach == null || emailKhach.trim().isEmpty()) && donHang.getKhachHang().getNguoiDung() != null) {
+                emailKhach = donHang.getKhachHang().getNguoiDung().getEmail();
+            }
+        }
+        if (emailKhach == null || emailKhach.trim().isEmpty()) {
+            emailKhach = donHang.getEmailNguoiNhan();
+        }
+        if (emailKhach != null && emailKhach.trim().isEmpty()) {
+            emailKhach = null;
+        }
 
         // Lấy tên nhân viên xử lý
         String tenNguoiXuLy = donHang.getNguoiXuLy() != null

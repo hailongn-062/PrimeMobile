@@ -74,6 +74,22 @@ public interface IKhuyenMaiService {
     // ── POS / Bán hàng tại quầy ────────────────────────────────────────────
 
     /**
+     * Lấy danh sách chương trình khuyến mãi cho dropdown chọn ở đơn hàng.
+     * Chỉ trả về CTKM loại "theo_don_hang" và trạng thái "dang_dien_ra".
+     */
+    List<ChuongTrinhKhuyenMai> layDanhSachChoChonDonHang();
+
+    /**
+     * Áp dụng mã giảm giá cụ thể theo ID do người dùng/nhân viên chọn.
+     * Validate đủ điều kiện thì trả về tiền giảm, ngược lại ném Exception.
+     *
+     * @param ctkmId ID chương trình KM được chọn.
+     * @param tongTienHang Tổng tiền hàng.
+     * @return KhuyenMaiResult chứa thông tin đã tính toán.
+     */
+    KhuyenMaiResult apDungCtkmTheoId(Integer ctkmId, BigDecimal tongTienHang);
+
+    /**
      * Tìm chương trình khuyến mãi loại {@code "theo_don_hang"} mang lại
      * số tiền giảm LỚN NHẤT cho đơn hàng.
      *

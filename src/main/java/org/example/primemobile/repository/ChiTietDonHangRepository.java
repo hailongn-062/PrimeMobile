@@ -35,4 +35,16 @@ public interface ChiTietDonHangRepository extends JpaRepository<ChiTietDonHang, 
      */
     Optional<ChiTietDonHang> findByDonHangIdAndBienTheSanPhamId(Integer donHangId,
                                                                   Integer bienTheSanPhamId);
+
+    /**
+     * Thống kê số lượng bán của từng sản phẩm (từ các đơn hàng đã hoàn thành).
+     * Dùng cho thuật toán sắp xếp Bán chạy.
+     */
+    @Query("SELECT bt.sanPham.id, SUM(c.soLuong) " +
+           "FROM ChiTietDonHang c " +
+           "JOIN c.donHang dh " +
+           "JOIN c.bienTheSanPham bt " +
+           "WHERE dh.trangThai = 'da_hoan_thanh' " +
+           "GROUP BY bt.sanPham.id")
+    List<Object[]> thongKeSoLuongBanTheoSanPham();
 }

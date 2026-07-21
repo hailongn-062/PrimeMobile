@@ -6,8 +6,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.primemobile.entity.*;
 import org.example.primemobile.repository.*;
 import org.example.primemobile.service.IBanHangOfflineService;
+import org.example.primemobile.service.IBaoHanhService;
 import org.example.primemobile.service.IBienTheSanPhamService;
 import org.example.primemobile.service.IKhuyenMaiService;
+import org.example.primemobile.dto.KhuyenMaiResult;
+import org.example.primemobile.dto.request.PosThanhToanRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,8 +30,8 @@ import java.util.Optional;
  * {@code so_dien_thoai = '0000000000'}.</li>
  * <li>Hàng bán từ <b>Kho Tổng</b> ({@code loai = 'kho_tong'}) — không từ Kho
  * Online.</li>
- * <li><b>Safety Stock Rule (§3.1):</b> Sau khi trừ bán, tồn kho Kho Tổng KHÔNG
- * được xuống dưới {@value #TON_KHO_TOI_THIEU} đơn vị / SKU.</li>
+ * <li><b>Stock Rule (§3.1):</b> Sau khi trừ bán, tồn kho Kho Tổng KHÔNG
+ * được âm. Không áp dụng mức dự trữ tối thiểu.</li>
  * <li>Khi hoàn tất thanh toán tại quầy:
  * Trạng thái đơn → {@code "da_hoan_thanh"}, thanh toán → {@code "da_thanh_toan"},
  * tồn kho bị trừ ngay lập tức.</li>
@@ -54,17 +57,14 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
         // HẰNG SỐ NGHIỆP VỤ
         // -----------------------------------------------------------------------
 
-        /** Mức tồn kho tối thiểu bắt buộc (system_rules.md §3.1). */
-        private static final int TON_KHO_TOI_THIEU = 5;
+        /** Số lượng tồn kho tối thiểu được phép bán = 0 (không áp dụng Safety Stock — §3.1).
+         * Bị chặn khi tồn kho sau khi trừ < 0 (tức âm kho). */
 
         /** SĐT của tài khoản khách lẻ mặc định (system_rules.md §2.1). */
-        private static final String SDT_KHACH_LE_MAC_DINH = "0000000000";
-
-
         /**
          * Trạng thái đơn hàng đang nháp, chờ xác nhận (khớp với CHECK constraint DB).
          */
-        private static final String TRANG_THAI_CHO_THANH_TOAN = "cho_xac_nhan";
+        private static final String TRANG_THAI_CHO_THANH_TOAN = "cho_thanh_toan";
 
         /** Pattern sinh mã đơn hàng: DH-YYYYMM-<millis 6 chữ số cuối>. */
         private static final DateTimeFormatter MA_DON_DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
@@ -90,6 +90,9 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
         // Service tính giá sau khuyến mãi động
         private final IKhuyenMaiService khuyenMaiService;
 
+        // Service tự động tạo phiếu bảo hành sau khi bán
+        private final IBaoHanhService baoHanhService;
+
         // =======================================================================
         // PUBLIC METHODS
         // =======================================================================
@@ -100,16 +103,15 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
          * <h3>Luồng chi tiết:</h3>
          * <ol>
          * <li>Validate nhân viên tồn tại và đang hoạt động.</li>
-         * <li>Lấy khách lẻ mặc định (sdt = '0000000000') để gắn vào đơn hàng.
-         * Controller có thể cập nhật khách hàng thực sau.</li>
+         * <li>Lấy thông tin khách hàng để gắn vào đơn hàng.</li>
          * <li>Sinh mã đơn hàng và lưu.</li>
          * </ol>
          */
         @Override
         @Transactional
-        public DonHang taoDonHangMoi(Integer nhanVienId) {
+        public DonHang taoDonHangMoi(Integer nhanVienId, Integer khachHangId) {
 
-                log.info("[BanHangOffline] Tạo đơn hàng mới — nhanVienId={}", nhanVienId);
+                log.info("[BanHangOffline] Tạo đơn hàng mới — nhanVienId={}, khachHangId={}", nhanVienId, khachHangId);
 
                 // ------------------------------------------------------------------
                 // Bước 1: Validate nhân viên
@@ -119,13 +121,14 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
                                                 "Không tìm thấy nhân viên có ID: " + nhanVienId));
 
                 // ------------------------------------------------------------------
-                // Bước 2: Lấy tài khoản khách lẻ mặc định (system_rules.md §2.1)
+                // Bước 2: Lấy thông tin khách hàng
                 // ------------------------------------------------------------------
-                KhachHang khachLe = khachHangRepository.findBySoDienThoai(SDT_KHACH_LE_MAC_DINH)
+                if (khachHangId == null) {
+                    throw new IllegalArgumentException("Vui lòng chọn hoặc thêm khách hàng để tạo đơn hàng. (Bắt buộc phục vụ bảo hành)");
+                }
+                KhachHang khachHang = khachHangRepository.findById(khachHangId)
                                 .orElseThrow(() -> new EntityNotFoundException(
-                                                "Không tìm thấy tài khoản khách lẻ mặc định (sdt='" +
-                                                                SDT_KHACH_LE_MAC_DINH
-                                                                + "'). Vui lòng kiểm tra dữ liệu khởi tạo."));
+                                                "Không tìm thấy khách hàng có ID: " + khachHangId));
 
                 // ------------------------------------------------------------------
                 // Bước 3: Build và lưu DonHang
@@ -134,7 +137,7 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
 
                 DonHang donHang = DonHang.builder()
                                 .maDonHang(maDonHang)
-                                .khachHang(khachLe)
+                                .khachHang(khachHang)
                                 .nguoiXuLy(nhanVien)
                                 .kenhBan("tai_quay") // §2.1: Bán hàng offline
                                 .ngayDat(LocalDateTime.now())
@@ -235,24 +238,20 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
                 int tonKhoSauKhiTru = tonKho.getSoLuong() - tongSoLuongSauKhiThem;
 
                 // ================================================================
-                // ⚠️ RÀNG BUỘC SỐNG CÒN — SAFETY STOCK RULE (system_rules.md §3.1)
+                // ⚠️ CHECK TỒN KHO
                 // ================================================================
-                if (tonKhoSauKhiTru < TON_KHO_TOI_THIEU) {
+                if (tonKhoSauKhiTru < 0) {
                         throw new IllegalArgumentException(String.format(
-                                        "Vi phạm quy tắc tồn kho. Số lượng còn lại tối thiểu phải là %d. " +
+                                        "Không đủ tồn kho. " +
                                                         "Sản phẩm [%s] tại Kho Tổng: " +
-                                                        "Tồn kho = %d, Đã có trong đơn = %d, Muốn thêm = %d, " +
-                                                        "Còn lại sau khi bán = %d (< %d).",
-                                        TON_KHO_TOI_THIEU,
+                                                        "Tồn kho = %d, Cần bán (bao gồm đã có trong đơn) = %d.",
                                         bienThe.getMaSku(),
-                                        tonKho.getSoLuong(), soLuongDaTrongDon, soLuong,
-                                        tonKhoSauKhiTru, TON_KHO_TOI_THIEU));
+                                        tonKho.getSoLuong(), tongSoLuongSauKhiThem));
                 }
                 // ================================================================
 
                 // ------------------------------------------------------------------
                 // Bước 5: UPSERT ChiTietDonHang (thêm mới hoặc cộng dồn số lượng)
-                // Đã sửa để loại bỏ lambda, tránh lỗi effectively final
                 // ------------------------------------------------------------------
                 ChiTietDonHang chiTiet;
                 Optional<ChiTietDonHang> existingOpt = chiTietDonHangRepository
@@ -303,7 +302,7 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
          * (Bán tại quầy = giao hàng tức thì theo system_rules.md §2.1).</li>
          * <li>Tạo bản ghi {@link ThanhToan} với {@code trang_thai = "thanh_cong"}.</li>
          * <li>Duyệt từng {@link ChiTietDonHang} → trừ tồn kho Kho Tổng thực tế.
-         * Kiểm tra Safety Stock lần cuối trước khi trừ.</li>
+         * Kiểm tra chống âm kho lần cuối trước khi trừ.</li>
          * </ol>
          */
         @Override
@@ -324,6 +323,10 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
                         throw new IllegalStateException(String.format(
                                         "Đơn hàng [%s] đang ở trạng thái '%s', không thể thanh toán.",
                                         donHang.getMaDonHang(), donHang.getTrangThai()));
+                }
+
+                if (donHang.getKhachHang() == null) {
+                    throw new IllegalArgumentException("Vui lòng chọn khách hàng trước khi thanh toán. (Bắt buộc phục vụ bảo hành)");
                 }
 
                 // ------------------------------------------------------------------
@@ -347,38 +350,31 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
                                                                 + phuongThucThanhToanId));
 
                 // ------------------------------------------------------------------
-                // Bước 4: TRỪ KHO THỰC TẾ — Chiến lược Fail-Fast (Pre-validate ALL trước)
-                // Kiểm tra toàn bộ trước khi trừ bất kỳ dòng nào → Rollback hoàn toàn nếu lỗi
+                // Bước 4: TRỪ KHO THỰC TẾ
                 // ------------------------------------------------------------------
                 Kho khoTong = timKhoTong();
 
-                // PRE-VALIDATE: Kiểm tra tất cả SKU trước khi trừ kho
-                for (ChiTietDonHang chiTiet : danhSachChiTiet) {
-                        BienTheSanPham bienThe = chiTiet.getBienTheSanPham();
-                        TonKho tonKho = tonKhoRepository
-                                        .findByKhoAndBienTheSanPham(khoTong, bienThe)
-                                        .orElseThrow(() -> new EntityNotFoundException(String.format(
-                                                        "Không tìm thấy tồn kho cho [%s] tại Kho Tổng.",
-                                                        bienThe.getMaSku())));
-
-                        int tonKhoSauTru = tonKho.getSoLuong() - chiTiet.getSoLuong();
-                        if (tonKhoSauTru < TON_KHO_TOI_THIEU) {
-                                throw new IllegalArgumentException(String.format(
-                                                "Vi phạm quy tắc tồn kho khi hoàn tất thanh toán. " +
-                                                                "Sản phẩm [%s]: Tồn kho = %d, Bán = %d, Còn lại = %d (< %d).",
-                                                bienThe.getMaSku(), tonKho.getSoLuong(),
-                                                chiTiet.getSoLuong(), tonKhoSauTru, TON_KHO_TOI_THIEU));
-                        }
-                }
-
-                // EXECUTE: Tất cả đã pass → Trừ kho từng dòng
+                // EXECUTE: Dùng Pessimistic Lock khi trừ kho thực tế (§3.1 chống race condition)
                 LocalDateTime now = LocalDateTime.now();
                 for (ChiTietDonHang chiTiet : danhSachChiTiet) {
                         TonKho tonKho = tonKhoRepository
-                                        .findByKhoAndBienTheSanPham(khoTong, chiTiet.getBienTheSanPham())
-                                        .orElseThrow(); // Đã kiểm tra ở trên, không thể null
+                                        .findByKhoAndBienTheSanPhamForUpdate(khoTong, chiTiet.getBienTheSanPham())
+                                        .orElseThrow(() -> new EntityNotFoundException(String.format(
+                                                        "Không tìm thấy tồn kho cho [%s] tại Kho Tổng.",
+                                                        chiTiet.getBienTheSanPham().getMaSku())));
 
-                        tonKho.setSoLuong(tonKho.getSoLuong() - chiTiet.getSoLuong());
+                        int soLuongMoi = tonKho.getSoLuong() - chiTiet.getSoLuong();
+
+                        // ⚠️ GUARD chống âm kho — lớp bảo vệ thứ 2 (lớp 1 đã kiểm tra Safety Stock phía trên)
+                        if (soLuongMoi < 0) {
+                                throw new IllegalStateException(String.format(
+                                                "[BanHangOffline] Tồn kho không được âm sau khi trừ. "
+                                                + "SKU [%s]: tồn=%d, bán=%d, mới=%d.",
+                                                chiTiet.getBienTheSanPham().getMaSku(),
+                                                tonKho.getSoLuong(), chiTiet.getSoLuong(), soLuongMoi));
+                        }
+
+                        tonKho.setSoLuong(soLuongMoi);
                         tonKho.setUpdatedAt(now);
                         tonKhoRepository.save(tonKho);
 
@@ -390,7 +386,6 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
                 // ------------------------------------------------------------------
                 // Bước 5: Cập nhật trạng thái đơn hàng
                 // Bán tại quầy = giao hàng tức thì, đơn hàng hoàn thành (system_rules.md §2.1)
-                // ------------------------------------------------------------------
                 // ------------------------------------------------------------------
                 donHang.setTrangThai("da_hoan_thanh");
                 donHang.setTrangThaiThanhToan("da_thanh_toan");
@@ -408,6 +403,10 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
                 }
                 donHang.setUpdatedAt(now);
                 donHangRepository.save(donHang);
+
+                // Tự động tạo Phiếu bảo hành cho các IMEI trong đơn
+                baoHanhService.taoPhieuBaoHanhChoDonHang(donHang);
+                log.info("[BanHangOffline] Đã tạo phiếu BH cho đơn [{}].", donHang.getMaDonHang());
 
                 // ------------------------------------------------------------------
                 // Bước 6: Lưu lịch sử thanh toán
@@ -446,15 +445,7 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
          * <ol>
          * <li>Validate đơn hàng tồn tại và đang ở trạng thái có thể sửa
          * ({@code "cho_xac_nhan"}).</li>
-         * <li>Xác định khách hàng theo thứ tự ưu tiên:
-         * <ol type="a">
-         * <li>Nếu {@code khachHangId != null} → Query DB.
-         * Nếu tìm thấy → dùng khách đó.</li>
-         * <li>Nếu {@code khachHangId == null} HOẶC không tìm thấy trong DB →
-         * Tự động lấy tài khoản khách lẻ mặc định (sdt = '0000000000').</li>
-         * </ol>
-         * </li>
-         * <li>Gán {@code khachHang} vào đơn hàng và lưu.</li>
+         * <li>Gán khách hàng vào đơn hàng và lưu.</li>
          * </ol>
          */
         @Override
@@ -478,35 +469,16 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
                 }
 
                 // ------------------------------------------------------------------
-                // Bước 2: Chốt khách hàng — Optional-based resolution
+                // Bước 2: Chốt khách hàng
                 // ------------------------------------------------------------------
-                KhachHang khachHang;
-
-                Optional<KhachHang> khachOptional = Optional.ofNullable(khachHangId)
-                                .flatMap(khachHangRepository::findById);
-
-                if (khachOptional.isPresent()) {
-                        // Trường hợp 1: Khách có tài khoản hợp lệ
-                        khachHang = khachOptional.get();
-                        log.info("[BanHangOffline] Gán khách hàng id={} ('{}') vào đơn [{}].",
-                                        khachHang.getId(), khachHang.getHoTen(), donHang.getMaDonHang());
-                } else {
-                        // Trường hợp 2: khachHangId null hoặc không tìm thấy → Khách lẻ mặc định
-                        if (khachHangId != null) {
-                                // ID được cung cấp nhưng không tồn tại trong DB → cảnh báo, fallback
-                                log.warn("[BanHangOffline] Không tìm thấy khách hàng id={}. " +
-                                                "Tự động gán vào tài khoản khách lẻ mặc định.", khachHangId);
-                        } else {
-                                log.info("[BanHangOffline] khachHangId = null. Gán vào tài khoản khách lẻ mặc định.");
-                        }
-                        khachHang = khachHangRepository.findBySoDienThoai(SDT_KHACH_LE_MAC_DINH)
-                                        .orElseThrow(() -> new EntityNotFoundException(
-                                                        "Không tìm thấy tài khoản khách lẻ mặc định (sdt='" +
-                                                                        SDT_KHACH_LE_MAC_DINH
-                                                                        + "'). Vui lòng kiểm tra dữ liệu khởi tạo DB."));
+                if (khachHangId == null) {
+                    throw new IllegalArgumentException("Vui lòng chọn hoặc thêm khách hàng. (Bắt buộc phục vụ bảo hành)");
                 }
+                
+                KhachHang khachHang = khachHangRepository.findById(khachHangId)
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Không tìm thấy khách hàng có ID: " + khachHangId));
 
-                // ------------------------------------------------------------------
                 // Bước 3: Gán và lưu
                 // ------------------------------------------------------------------
                 donHang.setKhachHang(khachHang);
@@ -573,10 +545,26 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
                         NguoiDung nhanVien = nguoiDungRepository.findById(nhanVienId)
                                         .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy nhân viên"));
 
-                        KhachHang khachHang = Optional.ofNullable(payload.getKhachHangId())
-                                        .flatMap(khachHangRepository::findById)
-                                        .orElseGet(() -> khachHangRepository.findBySoDienThoai(SDT_KHACH_LE_MAC_DINH)
-                                                        .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Khách lẻ")));
+                        if (payload.getKhachHangId() == null) {
+                            throw new IllegalArgumentException("Vui lòng chọn hoặc thêm khách hàng để tạo đơn hàng. (Bắt buộc phục vụ bảo hành)");
+                        }
+                        KhachHang khachHang = khachHangRepository.findById(payload.getKhachHangId())
+                                        .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Khách hàng"));
+
+                        BigDecimal tienGiamGia = BigDecimal.ZERO;
+                        ChuongTrinhKhuyenMai ctkm = null;
+
+                        if (payload.getCtkmId() != null) {
+                                KhuyenMaiResult kmResult = khuyenMaiService.apDungCtkmTheoId(payload.getCtkmId(), payload.getTongTien());
+                                tienGiamGia = kmResult.getTienGiam();
+                                ctkm = ctkmRepository.findById(payload.getCtkmId()).orElse(null);
+                        } else {
+                                KhuyenMaiResult kmResult = khuyenMaiService.tinhKhuyenMaiChoDonHang(payload.getTongTien());
+                                tienGiamGia = kmResult.getTienGiam();
+                                if (kmResult.getCtkmId() != null) {
+                                        ctkm = ctkmRepository.findById(kmResult.getCtkmId()).orElse(null);
+                                }
+                        }
 
                         donHang = DonHang.builder()
                                         .maDonHang(sinhMaDonHang())
@@ -585,16 +573,14 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
                                         .kenhBan("tai_quay")
                                         .ngayDat(LocalDateTime.now())
                                         .tongTienHang(payload.getTongTien())
-                                        .tienGiamGia(payload.getTienGiam() != null ? payload.getTienGiam() : BigDecimal.ZERO)
+                                        .tienGiamGia(tienGiamGia)
                                         .phiShip(BigDecimal.ZERO)
+                                        .chuongTrinhKhuyenMai(ctkm)
                                         .trangThai("don_hang_cho")
                                         .trangThaiThanhToan("chua_thanh_toan")
                                         .updatedAt(LocalDateTime.now())
                                         .build();
                         
-                        if (payload.getCtkmId() != null) {
-                                ctkmRepository.findById(payload.getCtkmId()).ifPresent(donHang::setChuongTrinhKhuyenMai);
-                        }
                         donHang = donHangRepository.save(donHang);
                 } else {
                         // Cập nhật đơn hiện tại
@@ -605,23 +591,34 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
                                 throw new IllegalStateException("Đơn hàng không ở trạng thái hợp lệ để lưu chờ");
                         }
 
-                        KhachHang khachHang = Optional.ofNullable(payload.getKhachHangId())
-                                        .flatMap(khachHangRepository::findById)
-                                        .orElseGet(() -> khachHangRepository.findBySoDienThoai(SDT_KHACH_LE_MAC_DINH)
-                                                        .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Khách lẻ")));
+                        if (payload.getKhachHangId() == null) {
+                            throw new IllegalArgumentException("Vui lòng chọn hoặc thêm khách hàng để tạo đơn hàng. (Bắt buộc phục vụ bảo hành)");
+                        }
+                        KhachHang khachHang = khachHangRepository.findById(payload.getKhachHangId())
+                                        .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy Khách hàng"));
                         
+                        BigDecimal tienGiamGia = BigDecimal.ZERO;
+                        ChuongTrinhKhuyenMai ctkm = null;
+
+                        if (payload.getCtkmId() != null) {
+                                KhuyenMaiResult kmResult = khuyenMaiService.apDungCtkmTheoId(payload.getCtkmId(), payload.getTongTien());
+                                tienGiamGia = kmResult.getTienGiam();
+                                ctkm = ctkmRepository.findById(payload.getCtkmId()).orElse(null);
+                        } else {
+                                KhuyenMaiResult kmResult = khuyenMaiService.tinhKhuyenMaiChoDonHang(payload.getTongTien());
+                                tienGiamGia = kmResult.getTienGiam();
+                                if (kmResult.getCtkmId() != null) {
+                                        ctkm = ctkmRepository.findById(kmResult.getCtkmId()).orElse(null);
+                                }
+                        }
+
                         donHang.setKhachHang(khachHang);
                         donHang.setTongTienHang(payload.getTongTien());
-                        donHang.setTienGiamGia(payload.getTienGiam() != null ? payload.getTienGiam() : BigDecimal.ZERO);
+                        donHang.setTienGiamGia(tienGiamGia);
+                        donHang.setChuongTrinhKhuyenMai(ctkm);
                         donHang.setTrangThai("don_hang_cho");
                         donHang.setTrangThaiThanhToan("chua_thanh_toan");
                         donHang.setUpdatedAt(LocalDateTime.now());
-                        
-                        if (payload.getCtkmId() != null) {
-                                ctkmRepository.findById(payload.getCtkmId()).ifPresent(donHang::setChuongTrinhKhuyenMai);
-                        } else {
-                                donHang.setChuongTrinhKhuyenMai(null);
-                        }
                         
                         // Clear chi tiết cũ (upsert mới theo payload)
                         chiTietDonHangRepository.deleteAll(donHang.getChiTietDonHangs());

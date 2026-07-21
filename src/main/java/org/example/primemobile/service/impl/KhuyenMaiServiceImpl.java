@@ -150,6 +150,54 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // CHỌN MÃ GIẢM GIÁ CHO ĐƠN HÀNG (ONLINE & POS)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ChuongTrinhKhuyenMai> layDanhSachChoChonDonHang() {
+        return ctkmRepo.layKhuyenMaiApDungToanDonHang();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public KhuyenMaiResult apDungCtkmTheoId(Integer ctkmId, BigDecimal tongTienHang) {
+        if (tongTienHang == null || tongTienHang.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Tổng tiền hàng không hợp lệ.");
+        }
+
+        ChuongTrinhKhuyenMai ctkm = ctkmRepo.findById(ctkmId)
+                .orElseThrow(() -> new IllegalArgumentException("Mã giảm giá không tồn tại."));
+
+        if (!"theo_don_hang".equals(ctkm.getLoai())) {
+            throw new IllegalArgumentException("Mã này không áp dụng cho toàn đơn hàng.");
+        }
+        
+        if (!"dang_dien_ra".equals(ctkm.getTrangThai())) {
+            throw new IllegalArgumentException("Mã giảm giá đã hết hạn hoặc chưa kích hoạt.");
+        }
+
+        if (ctkm.getDonHangToiThieu() != null && tongTienHang.compareTo(ctkm.getDonHangToiThieu()) < 0) {
+            throw new IllegalArgumentException("Đơn hàng chưa đạt giá trị tối thiểu " + ctkm.getDonHangToiThieu() + "đ để dùng mã này.");
+        }
+
+        BigDecimal tienGiam = tongTienHang
+                .multiply(ctkm.getGiaTriUuDai())
+                .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+
+        log.info("[KhuyenMai] Chủ động chọn CTKM: id={}, ten='{}', giảm {}%, tiền giảm={}",
+                ctkm.getId(), ctkm.getTenCtkm(), ctkm.getGiaTriUuDai(), tienGiam);
+
+        return KhuyenMaiResult.builder()
+                .ctkmId(ctkm.getId())
+                .tenCtkm(ctkm.getTenCtkm())
+                .giaTriUuDai(ctkm.getGiaTriUuDai())
+                .tienGiam(tienGiam)
+                .tongSauGiam(tongTienHang.subtract(tienGiam))
+                .build();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // POS — BÁN HÀNG TẠI QUẦY
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -244,27 +292,7 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
                     bienTheId, giaGoc, phanTram, giaSauKM);
         }
 
-        // ── 2. Theo đơn hàng (toàn đơn) ─────────────────────────────────────
-        if (tongTienHang != null && tongTienHang.compareTo(BigDecimal.ZERO) > 0) {
-            List<ChuongTrinhKhuyenMai> ctkmList = ctkmRepo.layKhuyenMaiApDungToanDonHang();
-            Optional<ChuongTrinhKhuyenMai> bestCtkm = ctkmList.stream()
-                    .filter(ctkm -> {
-                        BigDecimal nguong = ctkm.getDonHangToiThieu();
-                        if (nguong != null && tongTienHang.compareTo(nguong) < 0) {
-                            return false;
-                        }
-                        return true;
-                    })
-                    .max(Comparator.comparing(ChuongTrinhKhuyenMai::getGiaTriUuDai));
-
-            if (bestCtkm.isPresent()) {
-                BigDecimal phanTram = bestCtkm.get().getGiaTriUuDai();
-                giaSauKM = giaSauKM.multiply(
-                        BigDecimal.ONE.subtract(phanTram.divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP)));
-                log.debug("[KhuyenMai] Áp dụng toàn đơn: biếnTheId={}, giảm {}%, giá mới={}",
-                        bienTheId, phanTram, giaSauKM);
-            }
-        }
+        // (Bỏ tính khuyến mãi theo đơn hàng vào giá sản phẩm để tránh lỗi double discount)
 
         log.debug("[KhuyenMai] Kết quả cuối: biếnTheId={}, giá gốc={}, giá sau KM={}", bienTheId, giaGoc, giaSauKM);
         return giaSauKM;

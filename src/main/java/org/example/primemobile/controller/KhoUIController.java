@@ -54,7 +54,7 @@ public class KhoUIController {
                     .map(List::of).orElseGet(List::of);
 
             model.addAttribute("danhSachKho", danhSachKho);
-            model.addAttribute("danhSachNhaCungCap", nhaCungCapRepository.findAll());
+            model.addAttribute("danhSachNhaCungCap", nhaCungCapRepository.findByTrangThaiOrderByTenNccAsc("dang_hop_tac"));
             model.addAttribute("danhSachBienThe", bienTheSanPhamRepository.findAll());
 
             model.addAttribute("pageTitle", "Tạo Phiếu Nhập Kho");

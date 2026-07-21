@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.primemobile.entity.NguoiDung;
 import org.example.primemobile.repository.NguoiDungRepository;
 import org.example.primemobile.service.INhanVienService;
+import org.example.primemobile.util.ValidationUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -101,15 +102,24 @@ public class NhanVienServiceImpl implements INhanVienService {
         // ------------------------------------------------------------------
         // Bước 1: Validate trùng email
         // ------------------------------------------------------------------
-        if (nguoiDungRepository.existsByEmail(nhanVien.getEmail())) {
-            throw new IllegalArgumentException(
-                    "Email '" + nhanVien.getEmail() + "' đã được sử dụng bởi tài khoản khác.");
+        if (nhanVien.getEmail() == null || nhanVien.getEmail().isBlank()) {
+            throw new IllegalArgumentException("Email không được để trống.");
         }
+        if (!ValidationUtils.isValidEmail(nhanVien.getEmail())) {
+            throw new IllegalArgumentException(ValidationUtils.EMAIL_INVALID_MSG);
+        }
+        String emailMoi = nhanVien.getEmail().trim().toLowerCase();
+        if (nguoiDungRepository.existsByEmail(emailMoi)) {
+            throw new IllegalArgumentException(ValidationUtils.EMAIL_EXISTS_MSG);
+        }
+        nhanVien.setEmail(emailMoi);
 
         // ------------------------------------------------------------------
         // Bước 2: Validate trùng số điện thoại (nếu có)
-        // ------------------------------------------------------------------
         if (nhanVien.getSoDienThoai() != null && !nhanVien.getSoDienThoai().isBlank()) {
+            if (!ValidationUtils.isValidPhoneNumber(nhanVien.getSoDienThoai())) {
+                throw new IllegalArgumentException(ValidationUtils.PHONE_INVALID_MSG);
+            }
             nguoiDungRepository.findBySoDienThoai(nhanVien.getSoDienThoai())
                     .ifPresent(existing -> {
                         throw new IllegalArgumentException(
@@ -161,16 +171,26 @@ public class NhanVienServiceImpl implements INhanVienService {
         // ------------------------------------------------------------------
         // Validate trùng email với tài khoản KHÁC
         // ------------------------------------------------------------------
-        if (!existing.getEmail().equals(nhanVien.getEmail())
-                && nguoiDungRepository.existsByEmail(nhanVien.getEmail())) {
-            throw new IllegalArgumentException(
-                    "Email '" + nhanVien.getEmail() + "' đã được sử dụng bởi tài khoản khác.");
+        if (nhanVien.getEmail() == null || nhanVien.getEmail().isBlank()) {
+            throw new IllegalArgumentException("Email không được để trống.");
         }
+        if (!ValidationUtils.isValidEmail(nhanVien.getEmail())) {
+            throw new IllegalArgumentException(ValidationUtils.EMAIL_INVALID_MSG);
+        }
+        String emailCapNhat = nhanVien.getEmail().trim().toLowerCase();
+        if (!existing.getEmail().equals(emailCapNhat)
+                && nguoiDungRepository.existsByEmail(emailCapNhat)) {
+            throw new IllegalArgumentException(ValidationUtils.EMAIL_EXISTS_MSG);
+        }
+        nhanVien.setEmail(emailCapNhat);
 
         // ------------------------------------------------------------------
         // Validate trùng SĐT với tài khoản KHÁC (nếu có)
         // ------------------------------------------------------------------
         if (nhanVien.getSoDienThoai() != null && !nhanVien.getSoDienThoai().isBlank()) {
+            if (!ValidationUtils.isValidPhoneNumber(nhanVien.getSoDienThoai())) {
+                throw new IllegalArgumentException(ValidationUtils.PHONE_INVALID_MSG);
+            }
             nguoiDungRepository.findBySoDienThoai(nhanVien.getSoDienThoai())
                     .ifPresent(other -> {
                         if (!other.getId().equals(id)) {

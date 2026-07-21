@@ -134,7 +134,7 @@ public class GioHangController {
      * Ví dụ: {@code PUT /api/public/gio-hang/item/5?soLuongMoi=3}
      *
      * @param itemId     ID dòng {@code chi_tiet_gio_hang} cần cập nhật.
-     * @param soLuongMoi Số lượng mới (phải > 0 và ≤ tồn kho kho_online).
+     * @param soLuongMoi Số lượng mới (phải > 0 và ≤ tồn kho kho_tong).
      */
     @PutMapping("/item/{itemId}")
     public ResponseEntity<?> capNhatSoLuong(

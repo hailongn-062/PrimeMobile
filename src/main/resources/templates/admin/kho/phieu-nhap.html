@@ -98,14 +98,7 @@
                     <div class="tab-pane fade show active" id="tao-pnk" role="tabpanel">
                         <form id="formTaoPhieu">
                             <div class="row g-3 mb-4">
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Kho nhận (Kho Tổng) <span
-                                            class="text-danger">*</span></label>
-                                    <select id="khoId" class="form-select shadow-sm" required disabled>
-                                        <option value="1" selected>Kho Tổng Miền Bắc</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <label class="form-label fw-semibold">Nhà cung cấp <span
                                             class="text-danger">*</span></label>
                                     <select id="nhaCungCapId" class="form-select shadow-sm" required>
@@ -114,7 +107,7 @@
                                             th:text="${ncc.tenNcc}"></option>
                                     </select>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <label class="form-label fw-semibold">Ghi chú</label>
                                     <textarea id="ghiChu" class="form-control shadow-sm" rows="1"
                                         placeholder="Nhập ghi chú..."></textarea>
@@ -208,7 +201,6 @@
                                 <thead>
                                     <tr>
                                         <th>Mã phiếu</th>
-                                        <th>Kho nhận</th>
                                         <th>Nhà cung cấp</th>
                                         <th>Ngày nhập</th>
                                         <th class="text-end">Tổng tiền</th>
@@ -309,7 +301,6 @@
             const tongTienLabel = document.getElementById("tong-tien-text");
             const btnSubmitPhieu = document.getElementById("btn-luu-phieu");
             const formTaoPhieu = document.getElementById("formTaoPhieu");
-            const khoId = document.getElementById("khoId");
             const nhaCungCapId = document.getElementById("nhaCungCapId");
             const ghiChu = document.getElementById("ghiChu");
             const lichSuTab = document.getElementById("lich-su-tab");
@@ -496,7 +487,7 @@
                 }
 
                 const payload = {
-                    khoId: parseInt(khoId.value),
+                    khoId: 1,
                     nhaCungCapId: parseInt(nhaCungCapId.value),
                     ghiChu: ghiChu.value.trim(),
                     chiTiets: chiTiets
@@ -677,7 +668,6 @@
                         html += `
                             <tr>
                                 <td class="fw-bold">PN-${pn.id}</td>
-                                <td>${pn.tenKho ? pn.tenKho : 'N/A'}</td>
                                 <td>${pn.tenNhaCungCap ? pn.tenNhaCungCap : 'N/A'}</td>
                                 <td>${new Date(pn.ngayNhap).toLocaleString('vi-VN')}</td>
                                 <td class="text-end fw-semibold text-danger">${formatVND(pn.tongTien)}</td>

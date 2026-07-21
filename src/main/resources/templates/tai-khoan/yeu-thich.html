@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle} + ' | PrimeMobile'">Sản phẩm yêu thích | PrimeMobile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root { --pm-primary:#0d9488; --pm-primary-dark:#115e59; --pm-accent:#dc2626; --pm-bg:#f5f7fb; --pm-text:#0f172a; --pm-muted:#64748b; --pm-line:#e2e8f0; }
+        body { font-family:'Inter',sans-serif; background:var(--pm-bg); color:var(--pm-text); min-height:100vh; }
+        .pm-page { padding:28px 0 56px; }
+        .pm-shell { max-width:1180px; }
+        .pm-title { font-weight:900; }
+        .pm-grid { display:grid; grid-template-columns:340px minmax(0,1fr); gap:18px; align-items:start; }
+        .pm-panel { background:#fff; border:1px solid var(--pm-line); border-radius:8px; box-shadow:0 10px 28px rgba(15,23,42,.06); overflow:hidden; }
+        .pm-panel-header { padding:16px 18px; border-bottom:1px solid var(--pm-line); font-weight:900; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+        .pm-panel-body { padding:18px; }
+        .pm-profile-head { background:#115e59; color:#fff; padding:22px; }
+        .pm-avatar { width:54px; height:54px; border-radius:50%; background:#fff; color:#115e59; display:flex; align-items:center; justify-content:center; font-size:1.4rem; }
+        .pm-action-link { display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:8px; color:#334155; text-decoration:none; font-weight:800; }
+        .pm-action-link:hover, .pm-action-link.active { background:#e6fffb; color:#0f766e; }
+        .pm-product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+        .pm-product-card { background: #fff; border: 1px solid var(--pm-line); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s; position: relative; }
+        .pm-product-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
+        .pm-product-img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #f8fafc; }
+        .pm-product-info { padding: 12px; display: flex; flex-direction: column; flex-grow: 1; }
+        .pm-product-name { font-weight: 700; font-size: 0.95rem; line-height: 1.4; margin-bottom: 8px; color: var(--pm-text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .pm-btn-remove { position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.9); border: none; width: 32px; height: 32px; border-radius: 50%; color: var(--pm-accent); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .pm-btn-remove:hover { background: var(--pm-accent); color: white; }
+        @media (max-width: 992px) { .pm-grid { grid-template-columns:1fr; } }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/header :: navbar}"></div>
+
+<main class="pm-page">
+    <div class="container pm-shell">
+        <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+            <div>
+                <h1 class="pm-title h3 mb-1">Sản phẩm yêu thích</h1>
+                <div class="text-muted">Danh sách các sản phẩm bạn đã quan tâm</div>
+            </div>
+            <a href="/tra-cuu-don-hang" class="btn btn-outline-secondary">
+                <i class="fa fa-receipt me-1"></i> Đơn hàng
+            </a>
+        </div>
+
+        <div class="pm-grid">
+            <aside class="pm-panel">
+                <div class="pm-profile-head">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="pm-avatar"><i class="fa fa-user"></i></div>
+                        <div>
+                            <h2 class="h5 fw-black mb-1" th:text="${currentCustomer.hoTen}">Khách hàng</h2>
+                            <div style="color:rgba(255,255,255,.78);" th:text="${currentCustomer.soDienThoai}">0900000000</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pm-panel-body">
+                    <a class="pm-action-link" href="/toi"><i class="fa fa-id-card"></i><span>Thông tin cá nhân</span></a>
+                    <a class="pm-action-link" href="/tra-cuu-don-hang"><i class="fa fa-box"></i><span>Đơn hàng của tôi</span></a>
+                    <a class="pm-action-link active" href="/yeu-thich"><i class="fa fa-heart"></i><span>Sản phẩm yêu thích</span></a>
+                    <a class="pm-action-link" href="/san-pham"><i class="fa fa-mobile-screen"></i><span>Tiếp tục mua hàng</span></a>
+                    <a class="pm-action-link text-danger" href="/dang-xuat"><i class="fa fa-right-from-bracket"></i><span>Đăng xuất</span></a>
+                </div>
+            </aside>
+
+            <section class="d-grid gap-3">
+                <div class="pm-panel">
+                    <div class="pm-panel-header">
+                        <span><i class="fa fa-heart me-2 text-danger"></i>Đã thích (<span th:text="${danhSachYeuThich != null ? danhSachYeuThich.size() : 0}">0</span>)</span>
+                    </div>
+                    <div class="pm-panel-body">
+                        <div th:if="${#lists.isEmpty(danhSachYeuThich)}" class="alert alert-info mb-0 text-center py-4">
+                            <i class="fa fa-heart-crack mb-2 text-muted" style="font-size: 2rem;"></i><br>
+                            Danh sách yêu thích của bạn đang trống.<br>
+                            <a href="/san-pham" class="btn btn-sm btn-primary mt-3">Khám phá sản phẩm</a>
+                        </div>
+                        
+                        <div class="pm-product-grid" th:unless="${#lists.isEmpty(danhSachYeuThich)}">
+                            <!-- Loop qua danh sách yêu thích -->
+                            <div th:each="yt : ${danhSachYeuThich}" class="pm-product-card" th:id="'yt-' + ${yt.sanPham.id}">
+                                <a th:href="@{'/san-pham/' + ${yt.sanPham.id}}" class="text-decoration-none text-dark d-block h-100">
+                                    <!-- Lấy ảnh đầu tiên của biến thể đầu tiên làm đại diện -->
+                                    <th:block th:with="anhDaiDien=${(yt.sanPham.bienTheSanPhams != null and !yt.sanPham.bienTheSanPhams.isEmpty() and yt.sanPham.bienTheSanPhams[0].hinhAnhSanPhams != null and !yt.sanPham.bienTheSanPhams[0].hinhAnhSanPhams.isEmpty()) ? yt.sanPham.bienTheSanPhams[0].hinhAnhSanPhams[0].duongDan : '/img/placeholder.png'}">
+                                        <img th:src="${anhDaiDien}" alt="Product" class="pm-product-img">
+                                    </th:block>
+                                    <div class="pm-product-info">
+                                        <div class="pm-product-name" th:text="${yt.sanPham.tenSanPham}">Tên sản phẩm</div>
+                                        <div class="text-muted small mt-auto" th:text="'Thêm lúc: ' + ${#temporals.format(yt.ngayThem, 'dd/MM/yyyy HH:mm')}">Thêm lúc</div>
+                                    </div>
+                                </a>
+                                <!-- Nút xóa yêu thích (ngăn sự kiện click link) -->
+                                <button type="button" class="pm-btn-remove" th:onclick="'removeFromWishlist(' + ${yt.sanPham.id} + ', event)'" title="Gỡ khỏi danh sách">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function removeFromWishlist(sanPhamId, event) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        if (!confirm('Bạn có chắc chắn muốn gỡ sản phẩm này khỏi danh sách yêu thích?')) return;
+        
+        fetch(`/api/khach-hang/yeu-thich/${sanPhamId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => {
+            if (res.ok) {
+                // Xóa phần tử khỏi giao diện
+                const card = document.getElementById('yt-' + sanPhamId);
+                if (card) {
+                    card.remove();
+                    // Có thể reload trang để cập nhật số lượng nếu muốn, hoặc chỉ trừ đi 1 bằng JS
+                    window.location.reload(); 
+                }
+            } else {
+                alert('Có lỗi xảy ra, vui lòng thử lại.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Lỗi kết nối.');
+        });
+    }
+</script>
+</body>
+</html>

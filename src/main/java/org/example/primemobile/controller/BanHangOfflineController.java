@@ -63,11 +63,12 @@ public class BanHangOfflineController {
      */
     @PostMapping("/tao-don")
     public ResponseEntity<?> taoDonHangMoi(
+            @RequestParam Integer khachHangId,
             @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
 
-        log.info("[BanHangOfflineController] Tạo đơn mới — nhanVienId={}", sessionUser.getId());
+        log.info("[BanHangOfflineController] Tạo đơn mới — nhanVienId={}, khachHangId={}", sessionUser.getId(), khachHangId);
         try {
-            DonHang donHang = banHangOfflineService.taoDonHangMoi(sessionUser.getId());
+            DonHang donHang = banHangOfflineService.taoDonHangMoi(sessionUser.getId(), khachHangId);
             log.info("[BanHangOfflineController] Tạo đơn thành công — donHangId={}", donHang.getId());
             return ResponseEntity.ok(donHang);
 

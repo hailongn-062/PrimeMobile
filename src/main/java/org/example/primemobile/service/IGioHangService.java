@@ -17,8 +17,8 @@ import java.math.BigDecimal;
  * <p>
  * <b>Ràng buộc kho hàng bắt buộc:</b>
  * Mọi thao tác thêm/cập nhật số lượng đều phải kiểm tra tồn kho tại
- * {@code kho_online}
- * (kho có {@code loai = 'kho_online'}). Nếu số lượng yêu cầu vượt quá tồn kho,
+ * {@code kho_tong}
+ * (kho có {@code loai = 'kho_tong'}). Nếu số lượng yêu cầu vượt quá tồn kho,
  * ném
  * {@link IllegalArgumentException} ngay lập tức.
  */
@@ -47,7 +47,7 @@ public interface IGioHangService {
      * <li>Nếu chưa có: INSERT dòng mới với soLuong = soLuong yêu cầu.</li>
      * <li>Nếu đã có: tổng soLuong_cũ + soLuong_mới.</li>
      * <li><b>LUẬT RÀNG BUỘC:</b> Trước khi lưu, kiểm tra soLuong tổng
-     * ≤ tồn kho {@code kho_online}. Nếu vi phạm →
+     * ≤ tồn kho {@code kho_tong}. Nếu vi phạm →
      * {@link IllegalArgumentException}.</li>
      * </ol>
      *
@@ -57,7 +57,7 @@ public interface IGioHangService {
      * @param soLuong          Số lượng cần thêm (phải > 0).
      * @return {@link GioHang} sau khi cập nhật.
      * @throws IllegalArgumentException                    nếu soLuong > tồn kho
-     *                                                     kho_online hoặc soLuong
+     *                                                     kho_tong hoặc soLuong
      *                                                     <= 0.
      * @throws jakarta.persistence.EntityNotFoundException nếu biến thể không tồn
      *                                                     tại.
@@ -68,13 +68,13 @@ public interface IGioHangService {
     /**
      * Cập nhật số lượng của một sản phẩm trong giỏ hàng.
      * <p>
-     * <b>LUẬT RÀNG BUỘC:</b> soLuong mới phải ≤ tồn kho {@code kho_online}.
+     * <b>LUẬT RÀNG BUỘC:</b> soLuong mới phải ≤ tồn kho {@code kho_tong}.
      *
      * @param chiTietGioHangId ID dòng chi tiết giỏ hàng cần cập nhật.
      * @param soLuongMoi       Số lượng mới (phải > 0).
      * @return {@link GioHang} cha sau khi cập nhật.
      * @throws IllegalArgumentException                    nếu soLuongMoi > tồn kho
-     *                                                     kho_online hoặc
+     *                                                     kho_tong hoặc
      *                                                     soLuongMoi <= 0.
      * @throws jakarta.persistence.EntityNotFoundException nếu chiTietGioHangId
      *                                                     không tồn tại.

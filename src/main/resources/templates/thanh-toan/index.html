@@ -126,7 +126,7 @@
                                     </div>
                                     <div class="pm-form-group">
                                         <label for="newSdt">Số điện thoại <span class="text-danger">*</span></label>
-                                        <input type="tel" id="newSdt" class="pm-form-control" placeholder="0901234567" required>
+                                        <input type="tel" id="newSdt" class="pm-form-control" placeholder="0901234567" required pattern="^(03|05|07|08|09)\d{8}$" title="Số điện thoại phải có 10 chữ số và bắt đầu bằng 03, 05, 07, 08 hoặc 09">
                                     </div>
                                     <div class="pm-form-group">
                                         <label for="newDiaChiChiTiet">Địa chỉ chi tiết (số nhà, tên đường) <span class="text-danger">*</span></label>
@@ -174,7 +174,7 @@
                                     </div>
                                     <div class="pm-form-group">
                                         <label for="newSdt2">Số điện thoại <span class="text-danger">*</span></label>
-                                        <input type="tel" id="newSdt2" class="pm-form-control" placeholder="0901234567" required>
+                                        <input type="tel" id="newSdt2" class="pm-form-control" placeholder="0901234567" required pattern="^(03|05|07|08|09)\d{8}$" title="Số điện thoại phải có 10 chữ số và bắt đầu bằng 03, 05, 07, 08 hoặc 09">
                                     </div>
                                     <div class="pm-form-group">
                                         <label for="newDiaChiChiTiet2">Địa chỉ chi tiết (số nhà, tên đường) <span class="text-danger">*</span></label>
@@ -246,6 +246,16 @@
                     <span>Phí vận chuyển</span>
                     <strong id="summary-ship">0đ</strong>
                 </div>
+                <div class="pm-row text-success">
+                    <span>Mã giảm giá</span>
+                    <select id="ctkmSelect" class="form-select form-select-sm w-auto" style="max-width: 150px;">
+                        <option value="">-- Không chọn --</option>
+                    </select>
+                </div>
+                <div class="pm-row text-success">
+                    <span>Được giảm</span>
+                    <strong id="summary-discount">-0đ</strong>
+                </div>
                 <div class="d-flex align-items-end justify-content-between mb-3">
                     <span class="text-muted">Tổng thanh toán</span>
                     <span class="pm-total" id="summary-total">0đ</span>
@@ -279,6 +289,9 @@
         total: document.getElementById('summary-total'),
         button: document.getElementById('btn-place-order'),
         error: document.getElementById('checkout-error'),
+        btnSave2: document.getElementById('btn-save-address2'),
+        ctkmSelect: document.getElementById('ctkmSelect'),
+        discount: document.getElementById('summary-discount'),
         success: document.getElementById('success-box'),
         successMessage: document.getElementById('success-message'),
         grid: document.getElementById('checkout-grid'),
@@ -584,14 +597,61 @@
         return text ? JSON.parse(text) : null;
     }
 
+    let currentDiscountFee = 0;
+    let selectedCtkmId = null;
+    let khuyenMais = [];
+    let currentSubtotal = 0;
+    
+    async function loadKhuyenMai() {
+        try {
+            const res = await fetchJson('/api/public/khuyen-mai/don-hang');
+            if (res && res.data) {
+                khuyenMais = res.data;
+                const html = ['<option value="">-- Không chọn --</option>'];
+                khuyenMais.forEach(km => {
+                    html.push(`<option value="${km.id}">[Giảm ${km.giaTriUuDai}%] ${esc(km.tenCtkm)} (Từ ${money(km.donHangToiThieu)})</option>`);
+                });
+                els.ctkmSelect.innerHTML = html.join('');
+            }
+        } catch (e) {
+            console.error('Lỗi tải mã giảm giá:', e);
+        }
+    }
+    
+    els.ctkmSelect.addEventListener('change', function() {
+        const id = this.value;
+        selectedCtkmId = id ? Number(id) : null;
+        recalcTotal();
+    });
+    
+    function recalcTotal() {
+        currentDiscountFee = 0;
+        if (selectedCtkmId) {
+            const km = khuyenMais.find(k => k.id === selectedCtkmId);
+            if (km) {
+                if (currentSubtotal >= (km.donHangToiThieu || 0)) {
+                    currentDiscountFee = currentSubtotal * km.giaTriUuDai / 100;
+                } else {
+                    alert(`Đơn hàng chưa đạt tối thiểu ${money(km.donHangToiThieu)} để dùng mã này.`);
+                    els.ctkmSelect.value = '';
+                    selectedCtkmId = null;
+                }
+            }
+        }
+        els.discount.textContent = '-' + money(currentDiscountFee);
+        els.total.textContent = money(Math.max(0, currentSubtotal + currentShipFee - currentDiscountFee));
+    }
+
     function renderCart(cart) {
         const items = cart?.items || [];
         const subtotal = Number(cart?.tongTienTamTinh || 0);
+        currentSubtotal = subtotal;
+        
         els.loading.classList.add('d-none');
         els.count.textContent = String(cart?.soLuongSanPham || 0);
         els.subtotal.textContent = money(subtotal);
         els.ship.textContent = money(currentShipFee);
-        els.total.textContent = money(subtotal + currentShipFee);
+        recalcTotal();
         if (els.badge) els.badge.textContent = String(cart?.soLuongSanPham || 0);
 
         if (!items.length) {
@@ -632,6 +692,8 @@
             } else {
                 updateShippingDisplay(0);
             }
+            // Load promotions
+            await loadKhuyenMai();
         } catch (error) {
             els.loading.innerHTML = `<span class="text-danger">${esc(error.message)}</span>`;
             els.button.disabled = true;
@@ -668,6 +730,7 @@
                         sessionId: null,
                         diaChiGiaoId: Number(diaChi.value),
                         phuongThucThanhToanId: Number(ptttRadio.value),
+                        ctkmId: selectedCtkmId,
                         phiShip: currentShipFee,
                         ghiChu: document.getElementById('ghiChu').value.trim() || null
                     })
@@ -689,6 +752,7 @@
                         sessionId: null,
                         diaChiGiaoId: Number(diaChi.value),
                         phuongThucThanhToanId: Number(ptttRadio.value),
+                        ctkmId: selectedCtkmId,
                         phiShip: currentShipFee,
                         ghiChu: document.getElementById('ghiChu').value.trim() || null
                     })
@@ -730,7 +794,7 @@
             loadProvinces('provinceSelect', 'districtSelect', 'wardSelect');
         }
         // Nếu đã có địa chỉ, form ẩn sẽ được load khi bấm nút
-        loadCart();
+        loadKhuyenMai().then(loadCart);
     });
 
     // Hàm chọn địa chỉ (click vào item)

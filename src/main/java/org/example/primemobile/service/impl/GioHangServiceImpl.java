@@ -18,10 +18,10 @@ import java.util.Optional;
 /**
  * Triển khai phân hệ Giỏ Hàng Online.
  *
- * <h2>Ràng buộc Tồn kho Online (Bắt buộc):</h2>
+ * <h2>Ràng buộc Tồn kho t?ng (Bắt buộc):</h2>
  * <p>
- * Mọi thao tác thêm/cập nhật đều kiểm tra tồn kho tại {@code kho_online}
- * (kho có {@code loai = 'kho_online'}).
+ * Mọi thao tác thêm/cập nhật đều kiểm tra tồn kho tại {@code kho_tong}
+ * (kho có {@code loai = 'kho_tong'}).
  * Nếu số lượng yêu cầu vượt quá tồn kho thực tế → ném
  * {@link IllegalArgumentException} ngay.
  *
@@ -40,7 +40,7 @@ public class GioHangServiceImpl implements IGioHangService {
     // -----------------------------------------------------------------------
     // CONSTANTS
     // -----------------------------------------------------------------------
-    private static final int TON_KHO_TOI_THIEU_DE_BAN = 5;
+    // Không còn Safety Stock (TON_KHO_TOI_THIEU_DE_BAN) — chỉ chặn khi hết hàng (§3.1)
 
     // -----------------------------------------------------------------------
     // DEPENDENCIES
@@ -73,7 +73,7 @@ public class GioHangServiceImpl implements IGioHangService {
      * {@inheritDoc}
      * <p>
      * Toàn bộ thao tác (tạo giỏ + upsert item + kiểm tra kho) trong 1 transaction.
-     * Rollback hoàn toàn nếu vi phạm kho online.
+     * Rollback hoàn toàn nếu vi phạm kho t?ng.
      */
     @Override
     @Transactional
@@ -107,9 +107,9 @@ public class GioHangServiceImpl implements IGioHangService {
         }
 
         // ====================================================================
-        // RÀNG BUỘC TỒN KHO ONLINE — LUẬT BẮT BUỘC
+        // RÀNG BUỘC TỒN kho t?ng — LUẬT BẮT BUỘC
         // ====================================================================
-        kiemTraTonKhoOnline(bienThe, soLuongTong);
+        kiemTraTonkhoTong(bienThe, soLuongTong);
 
         // Lưu hoặc cập nhật chi tiết giỏ hàng
         if (chiTietOpt.isPresent()) {
@@ -154,9 +154,9 @@ public class GioHangServiceImpl implements IGioHangService {
                         "Không tìm thấy dòng chi tiết giỏ hàng ID: " + chiTietGioHangId));
 
         // ====================================================================
-        // RÀNG BUỘC TỒN KHO ONLINE — LUẬT BẮT BUỘC
+        // RÀNG BUỘC TỒN kho t?ng — LUẬT BẮT BUỘC
         // ====================================================================
-        kiemTraTonKhoOnline(chiTiet.getBienTheSanPham(), soLuongMoi);
+        kiemTraTonkhoTong(chiTiet.getBienTheSanPham(), soLuongMoi);
 
         chiTiet.setSoLuong(soLuongMoi);
         chiTietGioHangRepository.save(chiTiet);
@@ -206,38 +206,41 @@ public class GioHangServiceImpl implements IGioHangService {
     // =========================================================================
 
     /**
-     * Kiểm tra tồn kho tại kho_online trước khi cho phép thêm/cập nhật số lượng.
+     * Kiểm tra tồn kho tại kho_tong trước khi cho phép thêm/cập nhật số lượng.
      * <p>
-     * Tìm kho online theo {@code loai = 'kho_online'}, sau đó truy vấn bảng
+     * Tìm kho t?ng theo {@code loai = 'kho_tong'}, sau đó truy vấn bảng
      * {@code ton_kho}.
      * Nếu không tìm thấy bản ghi tồn kho hoặc số lượng yêu cầu > tồn kho thực → ném
      * exception.
      *
      * @param bienThe Biến thể SKU cần kiểm tra.
      * @param soLuong Số lượng muốn đặt (tổng cuối cùng trong giỏ).
-     * @throws IllegalArgumentException nếu kho online không đủ hàng.
+     * @throws IllegalArgumentException nếu kho t?ng không đủ hàng.
      */
-    private void kiemTraTonKhoOnline(BienTheSanPham bienThe, int soLuong) {
-        Kho khoOnline = khoRepository.findById(1)
+    /**
+     * Kiểm tra tồn kho kho tổng trước khi thêm vào giỏ hàng.
+     * Quy tắc §3.1: Chặn khi hết hàng (tồn kho = 0) hoặc số lượng yêu cầu
+     * vượt quá tồn kho hiện có. Không áp dụng mức dự trữ tối thiểu.
+     */
+    private void kiemTraTonkhoTong(BienTheSanPham bienThe, int soLuong) {
+        Kho khoTong = khoRepository.findById(1)
                 .orElseThrow(() -> new IllegalStateException(
                         "Không tìm thấy kho ID=1 trong hệ thống. Liên hệ Admin."));
 
         int tonKhoHienTai = tonKhoRepository
-                .findByKhoAndBienTheSanPham(khoOnline, bienThe)
+                .findByKhoAndBienTheSanPham(khoTong, bienThe)
                 .map(TonKho::getSoLuong)
                 .orElse(0);
 
-        int soLuongCoTheBan = Math.max(tonKhoHienTai - TON_KHO_TOI_THIEU_DE_BAN, 0);
-        if (tonKhoHienTai <= TON_KHO_TOI_THIEU_DE_BAN) {
+        if (tonKhoHienTai <= 0) {
             throw new IllegalArgumentException(
-                    "Sản phẩm này chưa đủ tồn kho để bán online. Tồn kho phải lớn hơn "
-                            + TON_KHO_TOI_THIEU_DE_BAN + ".");
+                    "Sản phẩm [" + bienThe.getMaSku() + "] đã hết hàng.");
         }
 
-        if (soLuong > soLuongCoTheBan) {
+        if (soLuong > tonKhoHienTai) {
             throw new IllegalArgumentException(
-                    "Số lượng sản phẩm trong kho online không đủ. " +
-                            "Yêu cầu: " + soLuong + ", có thể bán: " + soLuongCoTheBan + ".");
+                    "Số lượng yêu cầu (" + soLuong + ") vượt quá tồn kho hiện có ("
+                            + tonKhoHienTai + ") của sản phẩm [" + bienThe.getMaSku() + "].");
         }
     }
 
@@ -353,10 +356,10 @@ public class GioHangServiceImpl implements IGioHangService {
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // 2. Áp dụng khuyến mãi toàn đơn
-        KhuyenMaiResult result = khuyenMaiService.tinhKhuyenMaiChoDonHang(tongSauKhuyenMaiSanPham);
+        // Bỏ logic áp dụng tự động khuyến mãi toàn đơn vì tính năng mới yêu cầu khách hàng tự chọn
+        // KhuyenMaiResult result = khuyenMaiService.tinhKhuyenMaiChoDonHang(tongSauKhuyenMaiSanPham);
 
-        // 3. Trả về tổng cuối cùng
-        return result.getTongSauGiam();
+        // 3. Trả về tổng tiền hàng (chỉ tính khuyến mãi theo sản phẩm)
+        return tongSauKhuyenMaiSanPham;
     }
 }

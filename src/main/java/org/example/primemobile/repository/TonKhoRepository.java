@@ -11,6 +11,10 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.Lock;
+
+import jakarta.persistence.LockModeType;
+
 @Repository
 public interface TonKhoRepository extends JpaRepository<TonKho, Integer> {
 
@@ -19,6 +23,21 @@ public interface TonKhoRepository extends JpaRepository<TonKho, Integer> {
      * Dùng để kiểm tra trước khi cộng / trừ tồn kho.
      */
     Optional<TonKho> findByKhoAndBienTheSanPham(Kho kho, BienTheSanPham bienTheSanPham);
+
+    /**
+     * Tìm bản ghi tồn kho với Pessimistic Write Lock (SELECT ... FOR UPDATE).
+     * <p>
+     * <b>TUYỆT ĐỐI chỉ dùng tại bước EXECUTE (trừ kho thực tế)</b> — không dùng
+     * cho bước pre-validate thông thường.
+     * <p>
+     * Cơ chế: Khi luồng A giữ lock, luồng B bị block cho đến khi A commit.
+     * Sau đó B đọc lại tồn kho thực tế, tránh Lost Update (race condition §3.1).
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT t FROM TonKho t WHERE t.kho = :kho AND t.bienTheSanPham = :bienTheSanPham")
+    Optional<TonKho> findByKhoAndBienTheSanPhamForUpdate(@Param("kho") Kho kho,
+                                                         @Param("bienTheSanPham") BienTheSanPham bienTheSanPham);
+
 
     /**
      * Tìm bản ghi tồn kho theo ID kho và ID biến thể.

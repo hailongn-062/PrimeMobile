@@ -97,6 +97,51 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
             </div>
+    </div>
+</div>
+
+<!-- Modal Đánh giá -->
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:8px;">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Đánh giá sản phẩm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger d-none" id="review-error"></div>
+                <div class="alert alert-success d-none" id="review-success"></div>
+                
+                <form id="review-form">
+                    <input type="hidden" id="review-sanphamid">
+                    <input type="hidden" id="review-donhangid">
+                    
+                    <div class="text-center mb-3">
+                        <div class="fs-2 text-warning" style="cursor:pointer;" id="star-rating-container">
+                            <i class="fa-regular fa-star" data-star="1"></i>
+                            <i class="fa-regular fa-star" data-star="2"></i>
+                            <i class="fa-regular fa-star" data-star="3"></i>
+                            <i class="fa-regular fa-star" data-star="4"></i>
+                            <i class="fa-regular fa-star" data-star="5"></i>
+                        </div>
+                        <input type="hidden" id="review-sao" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tiêu đề (tuỳ chọn)</label>
+                        <input type="text" class="form-control" id="review-tieude" placeholder="Nhập tiêu đề đánh giá...">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nội dung <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="review-noidung" rows="3" placeholder="Chia sẻ cảm nhận của bạn về sản phẩm..." required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-danger" id="btn-submit-review">Gửi đánh giá</button>
+            </div>
         </div>
     </div>
 </div>
@@ -116,6 +161,7 @@
         detailError: document.getElementById('detail-error')
     };
     const detailModal = new bootstrap.Modal(document.getElementById('orderDetailModal'));
+    const reviewModal = new bootstrap.Modal(document.getElementById('reviewModal'));
 
     function money(value) {
         return Number(value || 0).toLocaleString('vi-VN') + 'đ';
@@ -161,28 +207,51 @@
         }
         els.empty.classList.add('d-none');
         els.list.innerHTML = orders.map(order => `
-            <article class="pm-order" data-order-id="${order.id}">
-                <div>
-                    <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
-                        <strong>${esc(order.maDonHang)}</strong>
-                        <span class="badge status-${esc(order.trangThai)}">${esc(order.trangThaiText)}</span>
-                        <span class="badge text-bg-light">${esc(order.trangThaiThanhToanText)}</span>
+            <article class="pm-panel mb-4 shadow-sm border-0" data-order-id="${order.id}">
+                <div class="d-flex align-items-center justify-content-between p-3 border-bottom flex-wrap gap-2 bg-light rounded-top">
+                    <div>
+                        <strong class="fs-6">${esc(order.maDonHang)}</strong>
+                        <span class="badge status-${esc(order.trangThai)} ms-2 px-2 py-1">${esc(order.trangThaiText)}</span>
                     </div>
-                    <div class="pm-meta">
+                    <div class="pm-meta text-end">
+                        <span class="badge text-bg-light border me-2">${esc(order.trangThaiThanhToanText)}</span>
                         <i class="fa fa-clock me-1"></i>${esc(dateTime(order.ngayDat))}
-                        ${order.nguoiNhan ? `<span class="ms-2"><i class="fa fa-user me-1"></i>${esc(order.nguoiNhan)}</span>` : ''}
                     </div>
-                    ${order.diaChiNhan ? `<div class="pm-meta mt-1"><i class="fa fa-location-dot me-1"></i>${esc(order.diaChiNhan)}</div>` : ''}
                 </div>
-                <div class="text-lg-end">
-                    <div class="pm-total mb-2">${money(order.tongThanhToan)}</div>
+                
+                <div class="p-3 border-bottom">
+                    ${(order.chiTiet || []).map(item => `
+                        <div class="d-flex align-items-center gap-3 py-3" style="${(order.chiTiet || []).indexOf(item) !== 0 ? 'border-top: 1px solid #f1f5f9;' : ''}">
+                            ${item.anhChinh ? `<img src="${item.anhChinh}" alt="${esc(item.tenSanPham)}" style="width:80px; height:80px; object-fit:cover; border-radius:6px; border:1px solid #eee;">` : `<div style="width:80px; height:80px; background:#f1f5f9; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#94a3b8;"><i class="fa fa-image fa-2x"></i></div>`}
+                            <div class="flex-grow-1">
+                                <div class="fw-bold fs-6 text-dark">${esc(item.tenSanPham)}</div>
+                                <div class="small text-muted mt-1">Phân loại: ${esc(item.mauSac)} - ${item.ramGb || 0}GB/${item.luuTruGb || 0}GB</div>
+                                <div class="small mt-1 text-muted">x${item.soLuong}</div>
+                            </div>
+                            <div class="text-end ms-3">
+                                <div class="text-danger fw-bold mb-2">${money(item.thanhTien)}</div>
+                                ${order.trangThai === 'da_hoan_thanh' ? `
+                                    <button class="btn btn-sm btn-warning fw-bold px-3 shadow-sm text-dark mt-1" type="button" data-action="review" data-spid="${item.sanPhamId}" data-orderid="${order.id}">
+                                        <i class="fa fa-star me-1 text-danger"></i> Đánh giá sản phẩm
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="p-3 d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div>
+                        <span class="text-muted me-2">Thành tiền:</span>
+                        <span class="pm-total fs-5 text-danger">${money(order.tongThanhToan)}</span>
+                    </div>
                     <div class="pm-actions">
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-action="detail" data-id="${order.id}">
-                            <i class="fa fa-eye me-1"></i>Chi tiết
+                        <button class="btn btn-outline-secondary px-4 fw-semibold" type="button" data-action="detail" data-id="${order.id}">
+                            Chi tiết đơn hàng
                         </button>
                         ${order.coTheHuy ? `
-                            <button class="btn btn-sm btn-outline-danger" type="button" data-action="cancel" data-id="${order.id}">
-                                <i class="fa fa-ban me-1"></i>Hủy đơn
+                            <button class="btn btn-outline-danger px-4 fw-semibold ms-2" type="button" data-action="cancel" data-id="${order.id}">
+                                Hủy đơn
                             </button>
                         ` : ''}
                     </div>
@@ -253,6 +322,11 @@
                                 ` : ''}
                                 <div class="fw-bold text-danger">${money(item.donGiaBan)}</div>
                                 <div class="small text-muted mt-1">Tổng: ${money(item.thanhTien)}</div>
+                                ${order.trangThai === 'da_hoan_thanh' ? `
+                                    <button class="btn btn-sm btn-outline-warning mt-2 w-100" type="button" data-action="review" data-spid="${item.sanPhamId}" data-orderid="${order.id}">
+                                        <i class="fa fa-star me-1"></i>Đánh giá
+                                    </button>
+                                ` : ''}
                             </div>
                         </div>
                     `).join('') || '<div class="p-3 text-muted">Không có sản phẩm.</div>'}
@@ -278,7 +352,34 @@
     async function loadOrders() {
         try {
             const data = await fetchJson('/api/public/don-hang-cua-toi');
-            renderOrders(data?.danhSachDonHang || []);
+            const orders = data?.danhSachDonHang || [];
+            renderOrders(orders);
+            
+            // Tự động bật Đánh giá nếu có reviewProductId trên URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const reviewProductId = urlParams.get('reviewProductId');
+            if (reviewProductId && orders.length > 0) {
+                let found = false;
+                for (const order of orders) {
+                    if (order.trangThai === 'da_hoan_thanh' && order.chiTiet) {
+                        const productToReview = order.chiTiet.find(item => String(item.sanPhamId) === reviewProductId);
+                        if (productToReview) {
+                            const btn = document.querySelector(`button[data-action="review"][data-spid="${reviewProductId}"][data-orderid="${order.id}"]`);
+                            if (btn) {
+                                btn.click();
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (!found) {
+                    alert('Sản phẩm này chưa đủ điều kiện để đánh giá (Đơn hàng chưa hoàn thành hoặc không tồn tại).');
+                    // Xóa param trên URL để không báo lỗi mãi
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            }
+            
         } catch (error) {
             els.loading.classList.add('d-none');
             els.error.textContent = error.message;
@@ -323,12 +424,111 @@
         }
     }
 
+    function handleReviewClick(button) {
+        // Setup review modal
+        document.getElementById('review-sanphamid').value = button.dataset.spid;
+        document.getElementById('review-donhangid').value = button.dataset.orderid;
+        document.getElementById('review-sao').value = '';
+        document.getElementById('review-tieude').value = '';
+        document.getElementById('review-noidung').value = '';
+        document.getElementById('review-error').classList.add('d-none');
+        document.getElementById('review-success').classList.add('d-none');
+        document.getElementById('btn-submit-review').disabled = false;
+        document.getElementById('btn-submit-review').classList.remove('d-none');
+        document.getElementById('btn-submit-review').textContent = 'Gửi đánh giá';
+        
+        // Reset stars
+        document.querySelectorAll('#star-rating-container i').forEach(star => {
+            star.classList.remove('fa-solid');
+            star.classList.add('fa-regular');
+        });
+        
+        detailModal.hide();
+        reviewModal.show();
+    }
+
     els.list.addEventListener('click', event => {
         const button = event.target.closest('button[data-action]');
         if (!button) return;
         const id = button.dataset.id;
         if (button.dataset.action === 'detail') showDetail(id);
         if (button.dataset.action === 'cancel') cancelOrder(id);
+        if (button.dataset.action === 'review') handleReviewClick(button);
+    });
+
+    document.getElementById('detail-content').addEventListener('click', event => {
+        const button = event.target.closest('button[data-action="review"]');
+        if (!button) return;
+        handleReviewClick(button);
+    });
+
+    // Star rating logic
+    document.getElementById('star-rating-container').addEventListener('click', e => {
+        if (e.target.tagName !== 'I') return;
+        const val = parseInt(e.target.dataset.star);
+        document.getElementById('review-sao').value = val;
+        
+        document.querySelectorAll('#star-rating-container i').forEach(star => {
+            const starVal = parseInt(star.dataset.star);
+            if (starVal <= val) {
+                star.classList.remove('fa-regular');
+                star.classList.add('fa-solid');
+            } else {
+                star.classList.remove('fa-solid');
+                star.classList.add('fa-regular');
+            }
+        });
+    });
+
+    // Submit review logic
+    document.getElementById('btn-submit-review').addEventListener('click', async () => {
+        const sao = document.getElementById('review-sao').value;
+        const noiDung = document.getElementById('review-noidung').value;
+        const tieuDe = document.getElementById('review-tieude').value;
+        const sanPhamId = document.getElementById('review-sanphamid').value;
+        const donHangId = document.getElementById('review-donhangid').value;
+        
+        const errEl = document.getElementById('review-error');
+        const sucEl = document.getElementById('review-success');
+        const btn = document.getElementById('btn-submit-review');
+        
+        if (!sao) {
+            errEl.textContent = 'Vui lòng chọn số sao đánh giá.';
+            errEl.classList.remove('d-none');
+            return;
+        }
+        if (!noiDung.trim()) {
+            errEl.textContent = 'Vui lòng nhập nội dung đánh giá.';
+            errEl.classList.remove('d-none');
+            return;
+        }
+        
+        errEl.classList.add('d-none');
+        sucEl.classList.add('d-none');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Đang gửi';
+        
+        try {
+            const data = await fetchJson('/api/khach-hang/danh-gia', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    sanPhamId: Number(sanPhamId),
+                    donHangId: Number(donHangId),
+                    sao: Number(sao),
+                    tieuDe: tieuDe,
+                    noiDung: noiDung
+                })
+            });
+            sucEl.textContent = data.message || 'Gửi đánh giá thành công!';
+            sucEl.classList.remove('d-none');
+            btn.classList.add('d-none'); // Hide submit button on success
+        } catch (e) {
+            errEl.textContent = e.message;
+            errEl.classList.remove('d-none');
+            btn.disabled = false;
+            btn.textContent = 'Gửi đánh giá';
+        }
     });
 
     loadOrders();

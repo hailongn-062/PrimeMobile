@@ -39,10 +39,11 @@
     7. **Logic hoàn kho khi hủy đơn:** Khi đơn hàng bị hủy thành công, hệ thống bắt buộc phải cộng hoàn lại số lượng sản phẩm tương ứng vào **Kho Online**.
 
 ## 3. QUY TẮC QUẢN LÝ KHO & IMEI MÁY VẬT LÝ (INVENTORY & PHYSICAL IMEI CONTROL)
-### 3.1. Ràng buộc Tồn kho tối thiểu (Safety Stock Rule)
-- Hệ thống áp dụng quy tắc tồn kho an toàn nghiêm ngặt cho cả Kho Tổng và Kho Online: **Mức tồn kho tối thiểu bắt buộc của mỗi biến thể (SKU) là 5 sản phẩm**.
-- **Logic chặn xuất hàng:** Hệ thống không được phép cho nhân viên chuyển kho hoặc khách hàng đặt hàng trực tuyến nếu hành động đó làm cho số lượng tồn kho của SKU đó tại kho tương ứng tụt xuống dưới mức 5.
-- *Ví dụ cụ thể:* Nếu biến thể iPhone 15 Pro Max trong Kho Online đang có số lượng tồn là 7 sản phẩm, hệ thống chỉ cho phép khách hàng đặt mua tối đa với số lượng là 2 sản phẩm (Nếu chọn số lượng là 3, hệ thống phải báo lỗi vì tồn kho sẽ giảm xuống còn 4, vi phạm quy tắc tồn kho tối thiểu).
+### 3.1. Quy tắc Tồn kho (Stock Rule)
+- **Không áp dụng mức tồn kho dự trữ tối thiểu.** Hệ thống chỉ chặn giao dịch khi tồn kho không đủ để đáp ứng số lượng yêu cầu.
+- **Logic chặn xuất hàng:** Hệ thống không được phép cho nhân viên bán offline hoặc khách hàng đặt hàng trực tuyến nếu số lượng muốn mua **vượt quá tồn kho hiện có** tại kho tương ứng (tức là sau khi trừ, tồn kho không được âm — `soLuong >= 0`).
+- *Ví dụ cụ thể:* Nếu biến thể iPhone 15 Pro Max đang có tồn kho là 3 sản phẩm, hệ thống cho phép mua tối đa 3 sản phẩm. Nếu mua 4, hệ thống báo lỗi "Không đủ tồn kho". Nếu tồn kho = 0, hệ thống báo "Hết hàng".
+- **Chống race condition:** Tại bước trừ kho thực tế, hệ thống bắt buộc sử dụng **Pessimistic Write Lock** (`SELECT ... FOR UPDATE`) để đảm bảo khi có nhiều giao dịch đồng thời, chỉ giao dịch hợp lệ đầu tiên được thực hiện, các giao dịch sau sẽ bị chặn sau khi đọc lại tồn kho thực tế.
 
 ### 3.2. Luồng dịch chuyển hàng hóa giữa các kho
 - **Nhập kho từ Nhà cung cấp (Inbound):** Khi nhân viên tạo `phieu_nhap_kho` từ nhà cung cấp, sản phẩm mặc định chui vào **Kho Tổng** (`kho_tong`). Trạng thái phiếu nhập hoàn thành sẽ cộng trực tiếp vào số lượng của `ton_kho` Kho Tổng.

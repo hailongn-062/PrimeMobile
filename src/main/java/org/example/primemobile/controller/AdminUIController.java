@@ -35,11 +35,9 @@ public class AdminUIController {
      */
     @GetMapping({ "/dashboard", "" })
     public String dashboard(Model model, HttpSession session) {
-        SessionUser currentUser = (SessionUser) session.getAttribute(SESSION_KEY);
-        model.addAttribute("currentUser", currentUser);
         model.addAttribute("pageTitle", "Tổng quan");
         model.addAttribute("activePage", "dashboard");
-        log.info("[AdminUI] Dashboard — user={}", currentUser != null ? currentUser.getEmail() : "unknown");
+        log.info("[AdminUI] Dashboard — user={}", session.getAttribute(SESSION_KEY) != null ? ((SessionUser) session.getAttribute(SESSION_KEY)).getEmail() : "unknown");
         return "admin/dashboard";
     }
 
@@ -49,11 +47,9 @@ public class AdminUIController {
      */
     @GetMapping("/ban-hang-offline")
     public String banHangPos(Model model, HttpSession session) {
-        SessionUser currentUser = (SessionUser) session.getAttribute(SESSION_KEY);
-        model.addAttribute("currentUser", currentUser);
         model.addAttribute("pageTitle", "Bán hàng tại quầy (POS)");
         model.addAttribute("activePage", "ban-hang-offline");
-        log.info("[AdminUI] POS — user={}", currentUser != null ? currentUser.getEmail() : "unknown");
+        log.info("[AdminUI] POS — user={}", session.getAttribute(SESSION_KEY) != null ? ((SessionUser) session.getAttribute(SESSION_KEY)).getEmail() : "unknown");
         return "admin/ban-hang-pos";
     }
 
@@ -69,13 +65,31 @@ public class AdminUIController {
      */
     @GetMapping("/error-403")
     public String error403(Model model, HttpSession session) {
-        SessionUser currentUser = (SessionUser) session.getAttribute(SESSION_KEY);
-        model.addAttribute("currentUser", currentUser);
         model.addAttribute("pageTitle", "Không có quyền truy cập");
         model.addAttribute("activePage", "");
         log.warn("[AdminUI] 403 Error Page — user={}",
-                currentUser != null ? currentUser.getEmail() : "unknown");
+                session.getAttribute(SESSION_KEY) != null ? ((SessionUser) session.getAttribute(SESSION_KEY)).getEmail() : "unknown");
         return "admin/error-403";
+    }
+
+    /**
+     * Trang Tiếp nhận bảo hành
+     */
+    @GetMapping("/bao-hanh/tiep-nhan")
+    public String tiepNhanBaoHanh(Model model, HttpSession session) {
+        model.addAttribute("pageTitle", "Tiếp nhận bảo hành");
+        model.addAttribute("activePage", "bao-hanh");
+        return "admin/bao-hanh/tiep-nhan";
+    }
+
+    /**
+     * Trang Danh sách yêu cầu bảo hành
+     */
+    @GetMapping("/bao-hanh/danh-sach")
+    public String danhSachBaoHanh(Model model, HttpSession session) {
+        model.addAttribute("pageTitle", "Danh sách bảo hành");
+        model.addAttribute("activePage", "bao-hanh");
+        return "admin/bao-hanh/danh-sach";
     }
 
     /**

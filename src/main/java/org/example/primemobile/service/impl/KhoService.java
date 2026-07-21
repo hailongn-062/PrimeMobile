@@ -24,8 +24,8 @@ import java.util.List;
  * <ul>
  *   <li>Hệ thống có <b>1 kho duy nhất</b> với ID = 1.</li>
  *   <li>Nhập hàng: NCC → kho ID=1.</li>
- *   <li><b>Safety Stock Rule</b>: Sau bất kỳ thao tác trừ kho nào, tồn kho còn lại
- *       TUYỆT ĐỐI KHÔNG được dưới {@value #TON_KHO_TOI_THIEU} đơn vị / SKU / kho.</li>
+ *   <li><b>Stock Rule (§3.1)</b>: Không áp dụng mức tồn kho dự trữ tối thiểu (Safety Stock).
+ *       Chỉ chặn khi tồn kho sau khi trừ < 0 (tức âm kho).</li>
  *   <li>Phiếu nhập được <b>chốt ngay</b> (hoan_thanh) khi tạo, không qua bước chờ duyệt.</li>
  * </ul>
  */
@@ -38,8 +38,7 @@ public class KhoService implements IKhoService {
     // HẰNG SỐ NGHIỆP VỤ
     // -----------------------------------------------------------------------
 
-    /** Mức tồn kho tối thiểu bắt buộc theo system_rules.md §3.1. */
-    private static final int TON_KHO_TOI_THIEU = 5;
+    // Không còn Safety Stock (TON_KHO_TOI_THIEU) — chỉ chặn khi âm kho (§3.1)
 
     /** ID kho duy nhất trong hệ thống. */
     private static final Integer KHO_DUY_NHAT_ID = 1;

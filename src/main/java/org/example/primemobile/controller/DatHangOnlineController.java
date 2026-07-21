@@ -136,7 +136,7 @@ public class DatHangOnlineController {
                     .body(buildErrorResponse(404, e.getMessage()));
 
         } catch (IllegalStateException e) {
-            // Lỗi cấu hình hệ thống: kho online chưa tồn tại trong DB...
+            // Lỗi cấu hình hệ thống: kho t?ng chưa tồn tại trong DB...
             log.error("[DatHangController] ❌ Lỗi cấu hình hệ thống (500): {}", e.getMessage(), e);
             return ResponseEntity.internalServerError()
                     .body(buildErrorResponse(500, "Lỗi hệ thống nội bộ. Vui lòng liên hệ Admin."));

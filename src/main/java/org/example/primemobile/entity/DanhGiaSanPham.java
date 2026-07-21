@@ -62,21 +62,24 @@ public class DanhGiaSanPham {
         /**
          * KhÃ¡ch hÃ ng viáº¿t Ä‘Ã¡nh giÃ¡.
          * NOT NULL â€“ chá»‰ khÃ¡ch cÃ³ tÃ i khoáº£n má»›i Ä‘Æ°á»£c Ä‘Ã¡nh giÃ¡.
+         * Khách hàng viết đánh giá.
+         * NOT NULL – chỉ khách có tài khoản mới được đánh giá.
          */
         @ManyToOne(fetch = FetchType.LAZY, optional = false)
         @JoinColumn(name = "khach_hang_id", nullable = false, foreignKey = @ForeignKey(name = "fk_dg_kh"))
         private KhachHang khachHang;
 
         /**
-         * ÄÆ¡n hÃ ng liÃªn káº¿t vá»›i Ä‘Ã¡nh giÃ¡ (Ä‘áº£m báº£o Ä‘Ã£ mua má»›i Ä‘Æ°á»£c Ä‘Ã¡nh giÃ¡).
+         * Đơn hàng liên kết với đánh giá (đảm bảo đã mua mới được đánh giá).
          * NOT NULL.
          */
         @ManyToOne(fetch = FetchType.LAZY, optional = false)
         @JoinColumn(name = "don_hang_id", nullable = false, foreignKey = @ForeignKey(name = "fk_dg_dh"))
+        @com.fasterxml.jackson.annotation.JsonIgnore
         private DonHang donHang;
 
         /**
-         * Sá»‘ sao Ä‘Ã¡nh giÃ¡.
+         * Số sao đánh giá.
          * CHECK: sao BETWEEN 1 AND 5.
          */
         @Column(name = "sao", nullable = false)

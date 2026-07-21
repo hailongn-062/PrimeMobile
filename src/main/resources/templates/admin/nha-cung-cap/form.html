@@ -41,13 +41,13 @@
                         <!-- Số điện thoại -->
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Số điện thoại</label>
-                            <input type="text" class="form-control" th:field="*{soDienThoai}" placeholder="VD: 0912345678" />
+                            <input type="text" class="form-control" th:field="*{soDienThoai}" placeholder="VD: 0912345678" pattern="^(03|05|07|08|09)\d{8}$" title="Số điện thoại phải có 10 chữ số và bắt đầu bằng 03, 05, 07, 08 hoặc 09" />
                         </div>
 
                         <!-- Email -->
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Email</label>
-                            <input type="email" class="form-control" th:field="*{email}" placeholder="VD: lienhe@apple.vn" />
+                            <input type="email" class="form-control" th:field="*{email}" placeholder="VD: lienhe@apple.vn" pattern="^[a-zA-Z0-9._\-\+]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$" title="Email không hợp lệ." maxlength="254" />
                         </div>
                     </div>
 

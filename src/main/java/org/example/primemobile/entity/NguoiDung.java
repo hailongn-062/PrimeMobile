@@ -20,9 +20,6 @@ import java.time.LocalDateTime;
         name = "nguoi_dung",
         indexes = {
                 @Index(name = "idx_nd_email", columnList = "email")
-        },
-        uniqueConstraints = {
-                @UniqueConstraint(name = "uq_nd_email", columnNames = "email")
         }
 )
 @Data
@@ -40,7 +37,7 @@ public class NguoiDung {
      * Email Ä‘Äƒng nháº­p â€“ duy nháº¥t trong há»‡ thá»‘ng.
      * CÃ³ thá»ƒ dÃ¹ng thay tháº¿ so_dien_thoai khi xÃ¡c thá»±c.
      */
-    @Column(name = "email", nullable = false, length = 100, unique = true)
+    @Column(name = "email", nullable = false, length = 100)
     private String email;
 
     /**

@@ -63,6 +63,8 @@ let promoState = {
     tienGiam: 0
 };
 
+let posKhuyenMais = [];
+
 let promoDebounceTimer = null;  // setTimeout ref cho auto-promo
 let isFetchingPromo = false; // Prevent concurrent promo fetches
 
@@ -81,12 +83,11 @@ const API = {
 };
 
 /**
- * Customer mode — quản lý 3 chế độ chọn khách hàng:
- *   'khach_le'  → Khách lẻ mặc định (sdt 0000000000)
+ * Customer mode — quản lý 2 chế độ chọn khách hàng:
  *   'vang_lai'  → Nhập thông tin khách vãng lai mới
  *   'chon_cu'   → Chọn khách hàng đã có từ dropdown
  */
-let customerMode = 'khach_le';
+let customerMode = 'vang_lai'; // vang_lai | chon_cu
 let vlKhachHangId = null;  // ID khách vãng lai đã tạo (cache để không tạo lại)
 
 // Hằng số: ID của Kho Tổng (theo dữ liệu mẫu)
@@ -151,11 +152,9 @@ function resolveDOM() {
         searchCustomer: el('searchCustomer'),
         posClock: el('pos-clock'),
         btnToggleSidebar: el('btnToggleSidebar'),
-        // Customer tabs
-        tabKhachLe: el('tabKhachLe'),
+        // Khách hàng
         tabVangLai: el('tabVangLai'),
         tabChonCu: el('tabChonCu'),
-        panelKhachLe: el('panelKhachLe'),
         panelVangLai: el('panelVangLai'),
         panelChonCu: el('panelChonCu'),
         vlHoTen: el('vlHoTen'),
@@ -173,6 +172,7 @@ function resolveDOM() {
         rowPromoName: el('row-promo-name'),
         sumPromoName: el('sum-promo-name'),
         sumPromoPct: el('sum-promo-pct'),
+        posCtkmSelect: el('posCtkmSelect'),
         // Bill modal
         billContent: el('bill-content'),
         btnPrintBill: el('btnPrintBill'),
@@ -682,18 +682,56 @@ async function changeQty(bienTheId, delta) {
         return;
     }
 
-    item.soLuong = newQty;
-
     if (delta < 0) {
         const imeiList = parseImeis(item.imeis);
         if (imeiList.length > newQty) {
-            const removedImei = imeiList.pop(); // Lấy phần tử cuối
-            item.imeis = imeiList.join(', ');
-            try {
-                fetch(`/api/admin/pos/nha-imei?imei=${removedImei}`, { method: 'POST' });
-            } catch (e) { console.error('Lỗi nhả IMEI', e); }
+            if (imeiList.length === 1) {
+                // Chỉ có 1 IMEI, xóa luôn không cần hỏi
+                const removedImei = imeiList[0];
+                item.imeis = "";
+                try {
+                    fetch(`/api/admin/pos/nha-imei?imei=${removedImei}`, { method: 'POST' });
+                } catch (e) { console.error('Lỗi nhả IMEI', e); }
+                item.soLuong = newQty;
+                onCartChanged();
+            } else {
+                // Hiện popup cho phép người dùng chọn IMEI để nhả
+                const inputOptions = {};
+                imeiList.forEach(imei => {
+                    inputOptions[imei] = imei;
+                });
+                
+                const result = await Swal.fire({
+                    title: 'Chọn IMEI để hoàn kho',
+                    text: 'Vui lòng chọn 1 mã IMEI để bỏ khỏi giỏ hàng',
+                    input: 'radio',
+                    inputOptions: inputOptions,
+                    inputValidator: (value) => {
+                        if (!value) return 'Bạn cần chọn 1 mã IMEI';
+                    },
+                    showCancelButton: true,
+                    confirmButtonText: 'Xác nhận',
+                    cancelButtonText: 'Huỷ'
+                });
+                
+                if (result.isConfirmed && result.value) {
+                    const removedImei = result.value;
+                    item.imeis = imeiList.filter(i => i !== removedImei).join(', ');
+                    try {
+                        fetch(`/api/admin/pos/nha-imei?imei=${removedImei}`, { method: 'POST' });
+                    } catch (e) { console.error('Lỗi nhả IMEI', e); }
+                    item.soLuong = newQty;
+                    onCartChanged();
+                }
+            }
+            // Trả về ngay vì onCartChanged đã được gọi trong các nhánh con
+            return; 
         }
     }
+
+    // Cập nhật số lượng
+    item.soLuong = newQty;
+
     if (delta > 0) {
         const success = await selectAdditionalImeis(item, 1);
         if (!success) {
@@ -850,6 +888,25 @@ function triggerAutoPromo() {
     promoDebounceTimer = setTimeout(fetchPromo, PROMO_DEBOUNCE_MS);
 }
 
+async function loadKhuyenMaiPos() {
+    try {
+        const res = await fetch('/api/admin/khuyen-mai/don-hang', { credentials: 'include' });
+        if (res.ok) {
+            posKhuyenMais = await res.json();
+            const sel = DOM.posCtkmSelect;
+            if(sel) {
+                const html = ['<option value="">-- Tự động chọn mã --</option>'];
+                posKhuyenMais.forEach(km => {
+                    html.push(`<option value="${km.id}">[Giảm ${km.giaTriUuDai}%] ${escHtml(km.tenCtkm)} (Từ ${fmt(km.donHangToiThieu)})</option>`);
+                });
+                sel.innerHTML = html.join('');
+            }
+        }
+    } catch(e) {
+        console.error('Lỗi tải mã giảm giá POS', e);
+    }
+}
+
 /**
  * Gọi API tính khuyến mãi tự động.
  * Chỉ gọi khi cart không rỗng. Nếu tongTien = 0 → reset promoState.
@@ -863,6 +920,28 @@ async function fetchPromo() {
         promoState = { ctkmId: null, tenCtkm: null, giaTriUuDai: 0, tienGiam: 0 };
         updateSummaryUI();
         return;
+    }
+
+    const manualCtkmId = DOM.posCtkmSelect ? Number(DOM.posCtkmSelect.value) : null;
+    
+    if (manualCtkmId) {
+        const km = posKhuyenMais.find(k => k.id === manualCtkmId);
+        if (km) {
+            if (tongTien >= (km.donHangToiThieu || 0)) {
+                promoState = {
+                    ctkmId: km.id,
+                    tenCtkm: km.tenCtkm,
+                    giaTriUuDai: km.giaTriUuDai,
+                    tienGiam: (tongTien * km.giaTriUuDai / 100)
+                };
+                updateSummaryUI();
+                return;
+            } else {
+                toastWarn(`Đơn hàng chưa đạt tối thiểu ${fmt(km.donHangToiThieu)} để dùng mã này.`);
+                DOM.posCtkmSelect.value = '';
+                // fallthrough to auto
+            }
+        }
     }
 
     isFetchingPromo = true;
@@ -928,6 +1007,9 @@ function initCheckout() {
     DOM.btnCheckout?.addEventListener('click', handleCheckout);
     DOM.btnSavePending?.addEventListener('click', handleSavePending);
     DOM.btnClearCart?.addEventListener('click', handleClearCart);
+    if (DOM.posCtkmSelect) {
+        DOM.posCtkmSelect.addEventListener('change', triggerAutoPromo);
+    }
 }
 
 async function handleClearCart() {
@@ -1014,8 +1096,17 @@ async function handleCheckout() {
         khachHangId = DOM.selectKhachHang?.value
             ? parseInt(DOM.selectKhachHang.value, 10)
             : null;
+        if (!khachHangId) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Chưa chọn khách hàng',
+                text: 'Vui lòng chọn khách hàng từ danh sách hoặc tạo khách vãng lai.',
+                confirmButtonColor: '#F57F17'
+            });
+            return;
+        }
     }
-    // customerMode === 'khach_le' → khachHangId = null (server fallback)
+
 
     const payload = {
         donHangId: currentPendingOrderId,
@@ -1229,9 +1320,9 @@ function initBillModal() {
 
 /** Khởi tạo 3-tab chọn khách hàng */
 function initCustomerTabs() {
-    const tabs = [DOM.tabKhachLe, DOM.tabVangLai, DOM.tabChonCu];
-    const panels = [DOM.panelKhachLe, DOM.panelVangLai, DOM.panelChonCu];
-    const modes = ['khach_le', 'vang_lai', 'chon_cu'];
+    const tabs = [DOM.tabVangLai, DOM.tabChonCu];
+    const panels = [DOM.panelVangLai, DOM.panelChonCu];
+    const modes = ['vang_lai', 'chon_cu'];
 
     tabs.forEach((tab, i) => {
         if (!tab) return;
@@ -1301,9 +1392,7 @@ async function createOrGetVangLai() {
 
     const payload = {
         hoTen: DOM.vlHoTen?.value?.trim(),
-        soDienThoai: DOM.vlSoDienThoai?.value?.trim(),
-        email: DOM.vlEmail?.value?.trim() || null,
-        gioiTinh: DOM.vlGioiTinh?.value || null,
+        soDienThoai: DOM.vlSoDienThoai?.value?.trim()
     };
 
     try {
@@ -1477,6 +1566,16 @@ async function handleSavePending() {
         khachHangId = vlResult;
     } else if (customerMode === 'chon_cu') {
         khachHangId = DOM.selectKhachHang?.value ? parseInt(DOM.selectKhachHang.value, 10) : null;
+        if (!khachHangId) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Chưa chọn khách hàng',
+                text: 'Vui lòng chọn khách hàng từ danh sách hoặc tạo khách vãng lai.',
+                confirmButtonColor: '#F57F17'
+            });
+            setSavePendingLoading(false);
+            return;
+        }
     }
 
     const payload = {
@@ -1769,6 +1868,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePendingOrdersCount(); // Cập nhật số lượng đơn chờ trên topbar
     loadProducts();
     loadCustomers();          // Load danh sách khách hàng mặc định
+    loadKhuyenMaiPos();
 });
 
 /* Expose tới onclick="" attributes trong HTML */

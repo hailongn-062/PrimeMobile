@@ -14,10 +14,10 @@ import java.util.List;
  * <ol>
  *   <li>Xem danh sách đơn hàng có phân trang và bộ lọc.</li>
  *   <li>Xem chi tiết 1 đơn hàng kèm danh sách sản phẩm.</li>
- *   <li>Xác nhận đơn hàng: kiểm tra Safety Stock §3.1 → trừ kho_online → chuyển trạng thái.</li>
+ *   <li>Xác nhận đơn hàng: kiểm tra Safety Stock §3.1 → trừ kho_tong → chuyển trạng thái.</li>
  *   <li>Cập nhật lộ trình giao hàng: da_xac_nhan → dang_giao → da_hoan_thanh.</li>
  *   <li>Hủy đơn hàng kèm hoàn kho nếu kho đã bị trừ trước đó (§2.2.7).</li>
- *   <li><b>Xác nhận đơn hàng có chọn IMEI</b> – chỉ cho phép chọn IMEI ở Kho Online.</li>
+ *   <li><b>Xác nhận đơn hàng có chọn IMEI</b> – chỉ cho phép chọn IMEI ở kho t?ng.</li>
  *   <li><b>Xác nhận thanh toán cho đơn hàng COD</b> – khi đơn đã giao và chưa thanh toán.</li>
  *   <li><b>Lấy danh sách IMEI đã gán cho đơn hàng</b> – phục vụ hiển thị chi tiết đơn.</li>
  * </ol>
@@ -54,9 +54,9 @@ public interface IQuanLyDonHangService {
      * <h3>Logic:</h3>
      * <ol>
      *   <li>Kiểm tra trạng thái phải là {@code "cho_xac_nhan"}.</li>
-     *   <li>Fail-Fast: Kiểm tra toàn bộ SKU xem {@code kho_online} có đủ không.
+     *   <li>Fail-Fast: Kiểm tra toàn bộ SKU xem {@code kho_tong} có đủ không.
      *       Áp dụng Safety Stock Rule §3.1: tồn kho sau khi trừ KHÔNG được &lt; 5.</li>
-     *   <li>Trừ thực tế vào {@code ton_kho} của {@code kho_online}.</li>
+     *   <li>Trừ thực tế vào {@code ton_kho} của {@code kho_tong}.</li>
      *   <li>Chuyển trạng thái đơn → {@code "da_xac_nhan"}.</li>
      * </ol>
      *
@@ -80,11 +80,11 @@ public interface IQuanLyDonHangService {
      *   <li>Với mỗi {@link ImeiSelection}:
      *     <ul>
      *       <li>Kiểm tra số lượng IMEI khớp với số lượng sản phẩm trong chi tiết đơn.</li>
-     *       <li>Kiểm tra từng IMEI tồn tại, có {@code tinhTrang = 'trong_kho'} và {@code kho_id} = Kho Online.</li>
+     *       <li>Kiểm tra từng IMEI tồn tại, có {@code tinhTrang = 'trong_kho'} và {@code kho_id} = kho t?ng.</li>
      *       <li>Cập nhật IMEI: {@code tinhTrang = 'da_ban'}, gán {@code donHang}.</li>
      *     </ul>
      *   </li>
-     *   <li>Trừ tồn kho Kho Online cho từng SKU (kiểm tra Safety Stock).</li>
+     *   <li>Trừ tồn kho kho t?ng cho từng SKU (kiểm tra Safety Stock).</li>
      *   <li>Chuyển trạng thái đơn → {@code "da_xac_nhan"}, gán nhân viên xử lý.</li>
      * </ol>
      *
@@ -120,7 +120,7 @@ public interface IQuanLyDonHangService {
      * <ul>
      *   <li>{@code cho_xac_nhan}: Kho chưa bị trừ → chỉ đổi trạng thái, KHÔNG hoàn kho.</li>
      *   <li>{@code da_xac_nhan} hoặc {@code dang_giao}: Kho ĐÃ bị trừ trước đó
-     *       → BẮT BUỘC cộng hoàn lại số lượng vào {@code kho_online}.</li>
+     *       → BẮT BUỘC cộng hoàn lại số lượng vào {@code kho_tong}.</li>
      * </ul>
      *
      * @param donHangId  ID đơn hàng cần hủy.

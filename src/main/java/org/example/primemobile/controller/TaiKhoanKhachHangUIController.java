@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class TaiKhoanKhachHangUIController {
 
     private final DiaChiKhachHangRepository diaChiKhachHangRepository;
+    private final org.example.primemobile.service.IYeuThichService yeuThichService;
 
     @GetMapping({"/toi", "/dia-chi"})
     public String taiKhoan(HttpServletRequest request, Model model) {
@@ -28,5 +29,19 @@ public class TaiKhoanKhachHangUIController {
         model.addAttribute("diaChis", diaChiKhachHangRepository
                 .findByKhachHangIdOrderByMacDinhDesc(currentCustomer.getKhachHangId()));
         return "tai-khoan/index";
+    }
+
+    @GetMapping("/yeu-thich")
+    public String yeuThich(HttpServletRequest request, Model model) {
+        HttpSession session = request.getSession(false);
+        Object customer = session == null ? null : session.getAttribute(SessionKhachHang.SESSION_KEY);
+        if (!(customer instanceof SessionKhachHang currentCustomer)) {
+            return "redirect:/dang-nhap";
+        }
+
+        model.addAttribute("pageTitle", "Sản phẩm yêu thích");
+        model.addAttribute("currentCustomer", currentCustomer);
+        model.addAttribute("danhSachYeuThich", yeuThichService.layDanhSach(currentCustomer.getKhachHangId()));
+        return "tai-khoan/yeu-thich";
     }
 }

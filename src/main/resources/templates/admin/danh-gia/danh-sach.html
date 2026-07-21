@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
+    <title th:text="${pageTitle} + ' | PrimeMobile Admin'">Quản lý đánh giá</title>
+</head>
+<body>
+    <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
+    <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
+
+    <main id="pmContent">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 fw-bold mb-0 text-gray-800">Quản lý Đánh giá sản phẩm</h1>
+        </div>
+
+        <div class="pm-card">
+            <div class="pm-card-header">
+                Danh sách đánh giá
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Khách hàng</th>
+                                <th>Sản phẩm</th>
+                                <th>Số sao</th>
+                                <th>Nội dung</th>
+                                <th>Ngày tạo</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="review-table-body">
+                            <tr>
+                                <td colspan="7" class="text-center py-4">
+                                    <i class="fa fa-spinner fa-spin text-muted me-2"></i> Đang tải dữ liệu...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+
+    <script th:inline="javascript">
+        async function loadReviews() {
+            try {
+                const res = await fetch('/api/admin/danh-gia?size=100');
+                if (!res.ok) throw new Error('Không thể tải danh sách đánh giá');
+                const data = await res.json();
+                
+                const tbody = document.getElementById('review-table-body');
+                if (!data.content || data.content.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Chưa có đánh giá nào.</td></tr>';
+                    return;
+                }
+
+                let html = '';
+                data.content.forEach(review => {
+                    const date = new Date(review.ngayTao).toLocaleDateString('vi-VN');
+                    let stars = '';
+                    for (let i = 1; i <= 5; i++) {
+                        stars += i <= review.sao ? '<i class="fa-solid fa-star text-warning"></i>' : '<i class="fa-regular fa-star text-warning"></i>';
+                    }
+                    
+                    let statusBadge = '';
+                    if (review.trangThai === 'cho_duyet') statusBadge = '<span class="badge bg-warning text-dark">Chờ duyệt</span>';
+                    else if (review.trangThai === 'da_duyet') statusBadge = '<span class="badge bg-success">Đã duyệt</span>';
+                    else if (review.trangThai === 'da_an') statusBadge = '<span class="badge bg-secondary">Đã ẩn</span>';
+
+                    html += `
+                        <tr>
+                            <td>
+                                <strong>${review.khachHang ? review.khachHang.hoTen : 'Unknown'}</strong><br>
+                                <small class="text-muted">${review.khachHang ? review.khachHang.email : ''}</small>
+                            </td>
+                            <td>${review.sanPham ? review.sanPham.tenSanPham : ''}</td>
+                            <td>${stars}</td>
+                            <td>
+                                <strong>${review.tieuDe || ''}</strong>
+                                <p class="mb-0 text-muted small">${review.noiDung}</p>
+                            </td>
+                            <td>${date}</td>
+                            <td>${statusBadge}</td>
+                            <td class="text-end">
+                                ${review.trangThai === 'cho_duyet' || review.trangThai === 'da_an' ? 
+                                    `<button class="btn btn-sm btn-success me-1" onclick="approveReview(${review.id})"><i class="fa fa-check"></i> Duyệt</button>` : ''}
+                                ${review.trangThai === 'da_duyet' || review.trangThai === 'cho_duyet' ? 
+                                    `<button class="btn btn-sm btn-secondary" onclick="hideReview(${review.id})"><i class="fa fa-eye-slash"></i> Ẩn</button>` : ''}
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+            } catch (err) {
+                console.error(err);
+                document.getElementById('review-table-body').innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Lỗi tải dữ liệu.</td></tr>';
+            }
+        }
+
+        async function approveReview(id) {
+            if (!confirm('Duyệt đánh giá này?')) return;
+            try {
+                const res = await fetch(`/api/admin/danh-gia/${id}/duyet`, { method: 'PUT' });
+                if (!res.ok) throw new Error('Lỗi khi duyệt');
+                loadReviews();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function hideReview(id) {
+            if (!confirm('Ẩn đánh giá này?')) return;
+            try {
+                const res = await fetch(`/api/admin/danh-gia/${id}/an`, { method: 'PUT' });
+                if (!res.ok) throw new Error('Lỗi khi ẩn');
+                loadReviews();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadReviews);
+    </script>
+</body>
+</html>

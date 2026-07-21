@@ -30,53 +30,35 @@ import java.util.regex.Pattern;
 public class ChatBotController {
 
     private final SanPhamRepository sanPhamRepository;
+    private final org.example.primemobile.service.IChatbotService chatbotService;
 
     @PostMapping({"", "/ask"})
-    @Transactional(readOnly = true)
-    public ResponseEntity<?> tuVan(@RequestBody Map<String, String> request) {
-        String rawMessage = request.getOrDefault("message", "");
-        String message = normalize(rawMessage);
+    @Transactional
+    public ResponseEntity<?> tuVan(@RequestBody Map<String, String> requestBody, jakarta.servlet.http.HttpSession session) {
+        String rawMessage = requestBody.getOrDefault("message", "");
+        if (rawMessage.isBlank()) {
+            Map<String, Object> err = new LinkedHashMap<>();
+            err.put("success", false);
+            return ResponseEntity.ok(err);
+        }
+
+        org.example.primemobile.dto.auth.SessionKhachHang currentCustomer = 
+            (org.example.primemobile.dto.auth.SessionKhachHang) session.getAttribute("CURRENT_CUSTOMER");
+        Integer khachHangId = currentCustomer != null ? currentCustomer.getKhachHangId() : null;
+        String sessionId = session.getId();
+
+        org.example.primemobile.entity.CuocHoiThoai cuocHoiThoai = chatbotService.layHoacTaoCuocHoiThoai(khachHangId, sessionId);
+        
+        String aiReply = chatbotService.guiTinNhan(cuocHoiThoai.getId(), rawMessage);
 
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("success", true);
-        response.put("reply", buildReply(message));
+        response.put("reply", aiReply);
+        
+        String message = normalize(rawMessage);
         response.put("products", recommendProducts(message));
         response.put("quickReplies", quickReplies(message));
         return ResponseEntity.ok(response);
-    }
-
-    private String buildReply(String message) {
-        if (message.isBlank() || containsAny(message, "xin chao", "hello", "chao")) {
-            return "Chào bạn, mình là trợ lý PrimeMobile. Bạn có thể hỏi theo hãng, ngân sách hoặc nhu cầu như camera, pin, chơi game.";
-        }
-        if (containsAny(message, "bao hanh", "warranty")) {
-            return "Sản phẩm chính hãng được bảo hành theo chính sách hãng. Bạn có thể xem chi tiết tại trang Chính sách bảo hành hoặc liên hệ hotline 1900 1234.";
-        }
-        if (containsAny(message, "doi tra", "tra hang", "hoan hang")) {
-            return "PrimeMobile hỗ trợ đổi trả khi sản phẩm đủ điều kiện chính sách. Máy cần còn đầy đủ hộp, phụ kiện, hóa đơn và không hư hỏng do người dùng.";
-        }
-        if (containsAny(message, "dat hang", "mua hang", "thanh toan", "checkout")) {
-            return "Bạn chọn sản phẩm, thêm vào giỏ, đăng nhập, chọn địa chỉ nhận hàng rồi bấm đặt hàng. Sau đó có thể theo dõi tại mục Đơn hàng.";
-        }
-        if (containsAny(message, "gio hang", "cart")) {
-            return "Bạn có thể xem sản phẩm đã chọn tại Giỏ hàng, chỉnh số lượng rồi chuyển sang thanh toán khi đã sẵn sàng.";
-        }
-        if (containsAny(message, "lien he", "hotline", "dia chi")) {
-            return "PrimeMobile hỗ trợ qua hotline 1900 1234, email support@primemobile.vn hoặc tại 123 Đường Láng, Đống Đa, Hà Nội.";
-        }
-        if (containsAny(message, "re", "gia tot", "duoi", "tam", "trieu", "ngan sach")) {
-            return "Mình đã lọc vài mẫu phù hợp ngân sách cho bạn. Bạn có thể bấm xem chi tiết để chọn màu và dung lượng.";
-        }
-        if (containsAny(message, "camera", "chup anh", "anh dep")) {
-            return "Nếu ưu tiên camera, bạn nên xem các dòng cao cấp như iPhone Pro Max, Galaxy S Ultra hoặc Xiaomi flagship.";
-        }
-        if (containsAny(message, "pin", "choi game", "gaming", "man hinh")) {
-            return "Nếu cần pin tốt, màn hình lớn hoặc chơi game, bạn nên ưu tiên máy có RAM cao, pin lớn và dòng hiệu năng tốt.";
-        }
-        if (containsAny(message, "iphone", "apple", "samsung", "xiaomi", "oppo", "vivo")) {
-            return "Mình đã tìm các mẫu theo hãng bạn quan tâm. Bạn có thể bấm xem chi tiết để kiểm tra giá và cấu hình.";
-        }
-        return "Mình có thể tư vấn theo hãng, tầm giá hoặc nhu cầu. Ví dụ: \"iPhone dưới 30 triệu\", \"máy pin tốt\", \"Samsung camera đẹp\".";
     }
 
     private List<Map<String, Object>> recommendProducts(String message) {

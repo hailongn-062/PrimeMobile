@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.primemobile.entity.NhaCungCap;
 import org.example.primemobile.repository.NhaCungCapRepository;
 import org.example.primemobile.service.INhaCungCapService;
+import org.example.primemobile.util.ValidationUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -54,12 +55,25 @@ public class NhaCungCapServiceImpl implements INhaCungCapService {
         if (nhaCungCapRepo.existsByMaNcc(maNcc)) {
             throw new IllegalArgumentException("Mã nhà cung cấp '" + maNcc + "' đã tồn tại.");
         }
+        if (request.getSoDienThoai() != null && !request.getSoDienThoai().isBlank()) {
+            if (!ValidationUtils.isValidPhoneNumber(request.getSoDienThoai())) {
+                throw new IllegalArgumentException(ValidationUtils.PHONE_INVALID_MSG);
+            }
+        }
+
+        String email = null;
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            if (!ValidationUtils.isValidEmail(request.getEmail())) {
+                throw new IllegalArgumentException(ValidationUtils.EMAIL_INVALID_MSG);
+            }
+            email = request.getEmail().trim().toLowerCase();
+        }
 
         NhaCungCap entity = NhaCungCap.builder()
                 .maNcc(maNcc)
                 .tenNcc(request.getTenNcc().trim())
                 .soDienThoai(request.getSoDienThoai())
-                .email(request.getEmail())
+                .email(email)
                 .diaChi(request.getDiaChi())
                 .nguoiLienHe(request.getNguoiLienHe())
                 .trangThai("dang_hop_tac")
@@ -75,8 +89,22 @@ public class NhaCungCapServiceImpl implements INhaCungCapService {
     public NhaCungCap capNhat(Integer id, NhaCungCap request) {
         NhaCungCap entity = layHoacNemLoi(id);
         if (request.getTenNcc()     != null) entity.setTenNcc(request.getTenNcc().trim());
-        if (request.getSoDienThoai()!= null) entity.setSoDienThoai(request.getSoDienThoai());
-        if (request.getEmail()      != null) entity.setEmail(request.getEmail());
+        if (request.getSoDienThoai()!= null) {
+            if (!request.getSoDienThoai().isBlank() && !ValidationUtils.isValidPhoneNumber(request.getSoDienThoai())) {
+                throw new IllegalArgumentException(ValidationUtils.PHONE_INVALID_MSG);
+            }
+            entity.setSoDienThoai(request.getSoDienThoai());
+        }
+        if (request.getEmail()      != null) {
+            if (!request.getEmail().isBlank()) {
+                if (!ValidationUtils.isValidEmail(request.getEmail())) {
+                    throw new IllegalArgumentException(ValidationUtils.EMAIL_INVALID_MSG);
+                }
+                entity.setEmail(request.getEmail().trim().toLowerCase());
+            } else {
+                entity.setEmail(null);
+            }
+        }
         if (request.getDiaChi()     != null) entity.setDiaChi(request.getDiaChi());
         if (request.getNguoiLienHe()!= null) entity.setNguoiLienHe(request.getNguoiLienHe());
         log.info("[NhaCungCap] Cập nhật — id={}", id);

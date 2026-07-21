@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.primemobile.entity.KhachHang;
 import org.example.primemobile.repository.KhachHangRepository;
 import org.example.primemobile.service.IKhachHangService;
+import org.example.primemobile.util.ValidationUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,6 +73,9 @@ public class KhachHangServiceImpl implements IKhachHangService {
 
         // Validate SĐT mới không trùng với khách khác
         if (khachHangMoi.getSoDienThoai() != null && !khachHangMoi.getSoDienThoai().isBlank()) {
+            if (!ValidationUtils.isValidPhoneNumber(khachHangMoi.getSoDienThoai())) {
+                throw new IllegalArgumentException(ValidationUtils.PHONE_INVALID_MSG);
+            }
             String sdtMoi = khachHangMoi.getSoDienThoai().trim();
             khachHangRepository.findBySoDienThoai(sdtMoi)
                     .ifPresent(other -> {
@@ -85,12 +89,14 @@ public class KhachHangServiceImpl implements IKhachHangService {
 
         // Validate email mới không trùng với khách khác (nếu có giá trị)
         if (khachHangMoi.getEmail() != null && !khachHangMoi.getEmail().isBlank()) {
+            if (!ValidationUtils.isValidEmail(khachHangMoi.getEmail())) {
+                throw new IllegalArgumentException(ValidationUtils.EMAIL_INVALID_MSG);
+            }
             String emailMoi = khachHangMoi.getEmail().trim().toLowerCase();
             khachHangRepository.findByEmailIgnoreCase(emailMoi)
                     .ifPresent(other -> {
                         if (!other.getId().equals(id)) {
-                            throw new IllegalArgumentException(
-                                    "Email \"" + emailMoi + "\" đã được sử dụng bởi khách hàng khác.");
+                            throw new IllegalArgumentException(ValidationUtils.EMAIL_EXISTS_MSG);
                         }
                     });
             existing.setEmail(emailMoi);
@@ -131,6 +137,9 @@ public class KhachHangServiceImpl implements IKhachHangService {
         if (khachHangMoi.getSoDienThoai() == null || khachHangMoi.getSoDienThoai().isBlank()) {
             throw new IllegalArgumentException("Số điện thoại không được để trống.");
         }
+        if (!ValidationUtils.isValidPhoneNumber(khachHangMoi.getSoDienThoai())) {
+            throw new IllegalArgumentException(ValidationUtils.PHONE_INVALID_MSG);
+        }
 
         String sdt = khachHangMoi.getSoDienThoai().trim();
         String hoTen = khachHangMoi.getHoTen().trim();
@@ -143,13 +152,22 @@ public class KhachHangServiceImpl implements IKhachHangService {
             return existing.get();
         }
 
+        String email = null;
+        if (khachHangMoi.getEmail() != null && !khachHangMoi.getEmail().isBlank()) {
+            if (!ValidationUtils.isValidEmail(khachHangMoi.getEmail())) {
+                throw new IllegalArgumentException(ValidationUtils.EMAIL_INVALID_MSG);
+            }
+            email = khachHangMoi.getEmail().trim().toLowerCase();
+            if (khachHangRepository.findByEmailIgnoreCase(email).isPresent()) {
+                throw new IllegalArgumentException(ValidationUtils.EMAIL_EXISTS_MSG);
+            }
+        }
+
         // Tạo mới khách vãng lai (nguoiDung = null → không có tài khoản)
         KhachHang khachMoi = KhachHang.builder()
                 .hoTen(hoTen)
                 .soDienThoai(sdt)
-                .email(khachHangMoi.getEmail() != null && !khachHangMoi.getEmail().isBlank()
-                        ? khachHangMoi.getEmail().trim().toLowerCase()
-                        : null)
+                .email(email)
                 .gioiTinh(khachHangMoi.getGioiTinh())
                 .nguoiDung(null) // Guest — không liên kết tài khoản
                 .ngayTao(LocalDateTime.now())

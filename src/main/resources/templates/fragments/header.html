@@ -42,6 +42,12 @@
                     </a>
                 </li>
 
+                <li class="nav-item" th:if="${session.CURRENT_CUSTOMER != null}">
+                    <a class="nav-link text-white px-2 d-flex align-items-center gap-1" href="/yeu-thich" title="Yêu thích">
+                        <i class="fa fa-heart fa-lg text-danger"></i>
+                    </a>
+                </li>
+
                 <li class="nav-item">
                     <a class="nav-link position-relative text-white px-2 d-flex align-items-center gap-1" href="/gio-hang" id="nav-gio-hang" title="Giỏ hàng">
                         <div class="position-relative">
@@ -68,6 +74,7 @@
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="userDropdown" style="font-size:.95rem;border-radius:8px;z-index:1050!important;">
                         <li><a class="dropdown-item py-2" href="/toi"><i class="fa fa-user me-3 text-muted"></i>Tài khoản</a></li>
                         <li><a class="dropdown-item py-2" href="/tra-cuu-don-hang"><i class="fa fa-box me-3 text-muted"></i>Đơn hàng của tôi</a></li>
+                        <li><a class="dropdown-item py-2" href="/yeu-thich"><i class="fa fa-heart me-3 text-danger"></i>Sản phẩm yêu thích</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item py-2 text-danger" href="/dang-xuat"><i class="fa fa-sign-out-alt me-3"></i>Đăng xuất</a></li>
                     </ul>

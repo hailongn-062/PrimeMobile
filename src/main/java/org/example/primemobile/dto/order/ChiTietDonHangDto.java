@@ -73,6 +73,9 @@ public class ChiTietDonHangDto {
 
     /** Tên sản phẩm (ví dụ: "iPhone 15 Pro Max") – lấy từ SanPham.tenSanPham */
     private String tenSanPham;
+    
+    /** ID của sản phẩm cha (san_pham.id) */
+    private Integer sanPhamId;
 
     /** Danh sách IMEI đã gán cho chi tiết đơn hàng này */
     private java.util.List<org.example.primemobile.dto.kho.ImeiDto> imeiList;

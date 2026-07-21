@@ -14,8 +14,8 @@ import java.time.LocalDateTime;
  * Luá»“ng xá»­ lÃ½:
  * Nháº­n mÃ¡y tá»« khÃ¡ch â†’ [Sá»­a táº¡i cá»­a hÃ ng / Gá»­i TTBH] â†’ Nháº­n láº¡i â†’ Tráº£ khÃ¡ch.
  * <p>
- * HÃ¬nh thá»©c xá»­ lÃ½ (CHECK chk_ycbh_hinh_thuc):
- * "sua_chua" | "doi_moi" | "hoan_tien"
+ * Hình thức xử lý (CHECK chk_ycbh_hinh_thuc):
+ * "sua_chua"
  * <p>
  * Tráº¡ng thÃ¡i yÃªu cáº§u (CHECK chk_ycbh_trang_thai):
  * "tiep_nhan" | "dang_kiem_tra" | "da_gui_ttbh" | "ttbh_dang_xu_ly"
@@ -74,8 +74,8 @@ public class YeuCauBaoHanh {
     private String moTaLoi;
 
     /**
-     * HÃ¬nh thá»©c xá»­ lÃ½ báº£o hÃ nh.
-     * GiÃ¡ trá»‹ há»£p lá»‡: "sua_chua" | "doi_moi" | "hoan_tien"
+     * Hình thức xử lý bảo hành.
+     * Giá trị hợp lệ: "sua_chua" (Chỉ sửa chữa, không đổi mới, hoàn tiền)
      */
     @Column(name = "hinh_thuc", nullable = false, length = 15)
     private String hinhThuc;

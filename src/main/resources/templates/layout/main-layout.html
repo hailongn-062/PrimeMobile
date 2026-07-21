@@ -76,13 +76,49 @@
 
         /* Product cards */
         .pm-product-card {
-            border: none; border-radius: var(--pm-radius);
-            transition: transform .22s ease, box-shadow .22s ease;
-            overflow: hidden; background: #fff; box-shadow: var(--pm-shadow);
+            border: 0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 4px 12px rgba(15,23,42,.04);
+            transition: transform .18s, box-shadow .18s;
+            position: relative;
         }
         .pm-product-card:hover { transform: translateY(-5px); box-shadow: 0 8px 32px rgba(21,101,192,.18); }
         .pm-product-card img { height: 200px; object-fit: contain; padding: 12px; background: #fafbff; }
-        .pm-price { color: #ea580c; font-weight: 700; font-size: 1.05rem; }
+        .pm-img-wrap { position: relative; display: block; overflow: hidden; background: #fafbff; border-radius: 8px 8px 0 0; }
+        .pm-favorite-btn {
+            background: transparent;
+            border: none;
+            color: #dc3545; /* Red outline */
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+        .pm-favorite-btn:hover {
+            color: #dc3545; /* Red on hover */
+            transform: scale(1.1);
+        }
+        .pm-favorite-btn.active {
+            color: #dc3545; /* Red when active */
+        }
+        .pm-favorite-btn.active i {
+            font-weight: 900; /* Solid heart */
+        }
+        .pm-favorite-btn i {
+            font-weight: 400; /* Outline heart by default (FontAwesome 5: far) */
+        }
+        .pm-rating-display {
+            font-size: 1rem;
+            color: #ffc107;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
 
         /* Category pills */
         .pm-cat-pill {

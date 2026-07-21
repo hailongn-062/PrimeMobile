@@ -1,13 +1,17 @@
 package org.example.primemobile.controller;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.primemobile.dto.auth.SessionKhachHang;
 import org.example.primemobile.entity.BienTheSanPham;
 import org.example.primemobile.entity.DanhMuc;
 import org.example.primemobile.entity.HangSanXuat;
 import org.example.primemobile.entity.SanPham;
+import org.example.primemobile.repository.DanhGiaSanPhamRepository;
 import org.example.primemobile.repository.TonKhoRepository;
+import org.example.primemobile.repository.YeuThichRepository;
 import org.example.primemobile.service.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,11 +24,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.springframework.util.StringUtils.hasText;
 
 @Slf4j
 @Controller
@@ -34,7 +37,6 @@ public class SanPhamPublicUIController {
     private static final int PAGE_SIZE = 12;
     private static final int SEARCH_LIMIT = 200;
     private static final int    KHO_ID                  = 1; // Kho duy nhất trong hệ thống
-    private static final int    TON_KHO_TOI_THIEU_DE_BAN = 5;
 
     private final ISanPhamService sanPhamService;
     private final IDanhMucService danhMucService;
@@ -42,7 +44,10 @@ public class SanPhamPublicUIController {
     private final IBienTheSanPhamService bienTheSanPhamService;
     private final IThongSoKyThuatService thongSoKyThuatService;
     private final TonKhoRepository tonKhoRepository;
-    private final IKhuyenMaiService khuyenMaiService; // ✅ Inject service khuyến mãi
+    private final IKhuyenMaiService khuyenMaiService;
+    private final DanhGiaSanPhamRepository danhGiaRepository;
+    private final YeuThichRepository yeuThichRepository;
+    private final org.example.primemobile.repository.ChiTietDonHangRepository chiTietDonHangRepository;
 
     @GetMapping("/san-pham")
     public String danhSachSanPham(
@@ -51,8 +56,14 @@ public class SanPhamPublicUIController {
             @RequestParam(required = false) String danhMuc,
             @RequestParam(required = false) String tuKhoa,
             @RequestParam(required = false) String q,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) List<Integer> luuTruGbs,
+            @RequestParam(required = false) List<String> mauSacs,
+            @RequestParam(required = false) String sortOption,
             @RequestParam(defaultValue = "0") int page,
-            Model model) {
+            Model model,
+            HttpSession session) {
 
         List<DanhMuc> danhMucs = danhMucService.layDanhSachKichHoat();
         List<HangSanXuat> hangSanXuats = hangSanXuatService.layTatCa();
@@ -83,55 +94,116 @@ public class SanPhamPublicUIController {
 
         String keyword = firstText(tuKhoa, q);
         int safePage = Math.max(page, 0);
-        Sort sort = Sort.by(Sort.Direction.DESC, "id");
-        List<SanPham> sanPhams;
-        int totalPages;
-        long totalItems;
-        boolean hasPrevious;
-        boolean hasNext;
+        
+        // 1. Fetch products from DB
+        // Fetch a large number (e.g. 500) to allow accurate in-memory filtering and sorting.
+        Page<SanPham> allProducts = sanPhamService.layDanhSachCongKhai(
+                resolvedDanhMucId,
+                resolvedHangSanXuatId,
+                PageRequest.of(0, 1000, Sort.by(Sort.Direction.DESC, "id")));
 
-        if (hasText(keyword)) {
-            Page<SanPham> allProducts = sanPhamService.layDanhSachCongKhai(
-                    resolvedDanhMucId,
-                    resolvedHangSanXuatId,
-                    PageRequest.of(0, SEARCH_LIMIT, sort));
+        List<SanPham> sanPhamsList = new ArrayList<>(allProducts.getContent());
 
-            List<SanPham> filtered = allProducts.getContent().stream()
-                    .filter(sp -> containsText(sp, keyword))
-                    .toList();
-
-            int fromIndex = Math.min(safePage * PAGE_SIZE, filtered.size());
-            int toIndex = Math.min(fromIndex + PAGE_SIZE, filtered.size());
-            sanPhams = filtered.subList(fromIndex, toIndex);
-            totalItems = filtered.size();
-            totalPages = Math.max(1, (int) Math.ceil(filtered.size() / (double) PAGE_SIZE));
-            hasPrevious = safePage > 0;
-            hasNext = safePage + 1 < totalPages;
-            filterLabel = "Kết quả tìm kiếm";
-        } else {
-            Pageable pageable = PageRequest.of(safePage, PAGE_SIZE, sort);
-            Page<SanPham> productPage = sanPhamService.layDanhSachCongKhai(
-                    resolvedDanhMucId,
-                    resolvedHangSanXuatId,
-                    pageable);
-            sanPhams = productPage.getContent();
-            totalItems = productPage.getTotalElements();
-            totalPages = productPage.getTotalPages() == 0 ? 1 : productPage.getTotalPages();
-            hasPrevious = productPage.hasPrevious();
-            hasNext = productPage.hasNext();
-        }
-
-        // ── Tính giá sau khuyến mãi cho từng sản phẩm (lấy biến thể đầu tiên) ──
+        // Pre-calculate prices to avoid recalculating during sort/filter
+        Map<Integer, BigDecimal> giaMinTheoSanPham = new HashMap<>();
+        Map<Integer, BigDecimal> giaMaxTheoSanPham = new HashMap<>();
         Map<Integer, BigDecimal> giaSauKhuyenMaiTheoSanPham = new HashMap<>();
-        for (SanPham sp : sanPhams) {
+
+        for (SanPham sp : sanPhamsList) {
             if (sp.getBienTheSanPhams() != null && !sp.getBienTheSanPhams().isEmpty()) {
+                BigDecimal minP = null;
+                BigDecimal maxP = null;
+                // Display price is usually the first variant's price
                 BienTheSanPham firstBt = sp.getBienTheSanPhams().get(0);
-                BigDecimal giaSauKM = khuyenMaiService.tinhGiaSauKhuyenMai(firstBt.getId(), null);
-                giaSauKhuyenMaiTheoSanPham.put(sp.getId(), giaSauKM != null ? giaSauKM : firstBt.getGiaBan());
+                BigDecimal giaSauKMDauTien = khuyenMaiService.tinhGiaSauKhuyenMai(firstBt.getId(), null);
+                giaSauKhuyenMaiTheoSanPham.put(sp.getId(), giaSauKMDauTien != null ? giaSauKMDauTien : firstBt.getGiaBan());
+
+                for (BienTheSanPham bt : sp.getBienTheSanPhams()) {
+                    BigDecimal giaKM = khuyenMaiService.tinhGiaSauKhuyenMai(bt.getId(), null);
+                    BigDecimal finalGia = giaKM != null ? giaKM : bt.getGiaBan();
+                    if (minP == null || finalGia.compareTo(minP) < 0) minP = finalGia;
+                    if (maxP == null || finalGia.compareTo(maxP) > 0) maxP = finalGia;
+                }
+                giaMinTheoSanPham.put(sp.getId(), minP);
+                giaMaxTheoSanPham.put(sp.getId(), maxP);
             }
         }
 
-        model.addAttribute("sanPhams", sanPhams);
+        // 2. Apply Filters (In-Memory)
+        List<SanPham> filtered = sanPhamsList.stream().filter(sp -> {
+            // Keyword filter
+            if (hasText(keyword) && !containsText(sp, keyword)) {
+                return false;
+            }
+
+            // Variants filter (Price, ROM, Color)
+            boolean hasMatchingVariant = false;
+            if (sp.getBienTheSanPhams() != null) {
+                for (BienTheSanPham bt : sp.getBienTheSanPhams()) {
+                    boolean match = true;
+                    // Price filter
+                    BigDecimal gia = khuyenMaiService.tinhGiaSauKhuyenMai(bt.getId(), null);
+                    if (gia == null) gia = bt.getGiaBan();
+                    if (minPrice != null && gia.compareTo(minPrice) < 0) match = false;
+                    if (maxPrice != null && gia.compareTo(maxPrice) > 0) match = false;
+                    
+                    // Memory filter
+                    if (luuTruGbs != null && !luuTruGbs.isEmpty() && !luuTruGbs.contains(bt.getLuuTruGb())) match = false;
+                    
+                    // Color filter
+                    if (mauSacs != null && !mauSacs.isEmpty() && !mauSacs.contains(bt.getMauSac())) match = false;
+
+                    if (match) {
+                        hasMatchingVariant = true;
+                        break;
+                    }
+                }
+            }
+            // If any specific variant filter is active, we MUST have a matching variant
+            if ((minPrice != null || maxPrice != null || (luuTruGbs != null && !luuTruGbs.isEmpty()) || (mauSacs != null && !mauSacs.isEmpty())) && !hasMatchingVariant) {
+                return false;
+            }
+
+            return true;
+        }).collect(Collectors.toList());
+
+        // 3. Apply Sorting
+        if (hasText(sortOption)) {
+            if ("price_asc".equals(sortOption)) {
+                filtered.sort(Comparator.comparing((SanPham sp) -> giaMinTheoSanPham.getOrDefault(sp.getId(), BigDecimal.valueOf(Long.MAX_VALUE))));
+            } else if ("price_desc".equals(sortOption)) {
+                filtered.sort(Comparator.comparing((SanPham sp) -> giaMinTheoSanPham.getOrDefault(sp.getId(), BigDecimal.ZERO)).reversed());
+            } else if ("best_selling".equals(sortOption)) {
+                List<Object[]> thongKe = chiTietDonHangRepository.thongKeSoLuongBanTheoSanPham();
+                Map<Integer, Long> soldMap = new HashMap<>();
+                for (Object[] row : thongKe) {
+                    soldMap.put((Integer) row[0], ((Number) row[1]).longValue());
+                }
+                filtered.sort((sp1, sp2) -> {
+                    Long s1 = soldMap.getOrDefault(sp1.getId(), 0L);
+                    Long s2 = soldMap.getOrDefault(sp2.getId(), 0L);
+                    return s2.compareTo(s1);
+                });
+            } else if ("newest".equals(sortOption)) {
+                filtered.sort(Comparator.comparing(SanPham::getId).reversed());
+            }
+        }
+
+        // 4. Pagination
+        int totalItems = filtered.size();
+        int totalPages = Math.max(1, (int) Math.ceil(totalItems / (double) PAGE_SIZE));
+        safePage = Math.min(safePage, totalPages - 1); // Avoid out of bounds
+        if (safePage < 0) safePage = 0;
+        
+        int fromIndex = Math.min(safePage * PAGE_SIZE, totalItems);
+        int toIndex = Math.min(fromIndex + PAGE_SIZE, totalItems);
+        List<SanPham> paginatedSanPhams = filtered.subList(fromIndex, toIndex);
+
+        if (hasText(keyword) && totalItems > 0) {
+            filterLabel = "Kết quả tìm kiếm";
+        }
+
+        model.addAttribute("sanPhams", paginatedSanPhams);
         model.addAttribute("danhMucs", danhMucs);
         model.addAttribute("hangSanXuats", hangSanXuats);
         model.addAttribute("selectedDanhMucId", resolvedDanhMucId);
@@ -141,13 +213,44 @@ public class SanPhamPublicUIController {
         model.addAttribute("currentPage", safePage);
         model.addAttribute("totalPages", totalPages);
         model.addAttribute("totalItems", totalItems);
-        model.addAttribute("hasPrevious", hasPrevious);
-        model.addAttribute("hasNext", hasNext);
+        model.addAttribute("hasPrevious", safePage > 0);
+        model.addAttribute("hasNext", safePage + 1 < totalPages);
         model.addAttribute("pageTitle", hasText(keyword) ? "Tìm kiếm sản phẩm" : "Sản phẩm");
-        model.addAttribute("giaSauKhuyenMaiTheoSanPham", giaSauKhuyenMaiTheoSanPham); // ✅ Truyền vào view
+        
+        // Pass filter states to view
+        model.addAttribute("minPrice", minPrice);
+        model.addAttribute("maxPrice", maxPrice);
+        model.addAttribute("luuTruGbs", luuTruGbs != null ? luuTruGbs : new ArrayList<>());
+        model.addAttribute("mauSacs", mauSacs != null ? mauSacs : new ArrayList<>());
+        model.addAttribute("sortOption", sortOption);
+        model.addAttribute("giaSauKhuyenMaiTheoSanPham", giaSauKhuyenMaiTheoSanPham);
+
+        // ── Thêm dữ liệu Đánh giá và Yêu thích ──
+        Map<Integer, Double> ratingTbTheoSp = new HashMap<>();
+        Map<Integer, Long> ratingCountTheoSp = new HashMap<>();
+        Set<Integer> sanPhamYeuThichIds = new HashSet<>();
+
+        if (!paginatedSanPhams.isEmpty()) {
+            List<Integer> spIds = paginatedSanPhams.stream().map(SanPham::getId).collect(Collectors.toList());
+            List<Object[]> ratings = danhGiaRepository.getAverageSaoAndCountBySanPhamIds(spIds);
+            for (Object[] row : ratings) {
+                ratingTbTheoSp.put((Integer) row[0], (Double) row[1]);
+                ratingCountTheoSp.put((Integer) row[0], (Long) row[2]);
+            }
+
+            SessionKhachHang kh = (SessionKhachHang) session.getAttribute(SessionKhachHang.SESSION_KEY);
+            if (kh != null) {
+                List<Integer> ytIds = yeuThichRepository.findSanPhamIdsByKhachHangIdAndSanPhamIds(kh.getKhachHangId(), spIds);
+                sanPhamYeuThichIds.addAll(ytIds);
+            }
+        }
+        model.addAttribute("ratingTbTheoSp", ratingTbTheoSp);
+        model.addAttribute("ratingCountTheoSp", ratingCountTheoSp);
+        model.addAttribute("sanPhamYeuThichIds", sanPhamYeuThichIds);
 
         return "san-pham/danh-sach";
     }
+
 
     @GetMapping("/san-pham/{id}")
     public String chiTietSanPham(@PathVariable Integer id, Model model) {
@@ -157,12 +260,12 @@ public class SanPhamPublicUIController {
         }
 
         List<BienTheSanPham> bienTheSanPhams = bienTheSanPhamService.layTheoSanPhamId(id);
-        Map<Integer, Integer> tonKhoTheoBienThe = layTonKhoOnlineTheoBienThe(bienTheSanPhams);
+        Map<Integer, Integer> tonKhoTheoBienThe = layTonkhoTongTheoBienThe(bienTheSanPhams);
         Map<Integer, Integer> soLuongCoTheBanTheoBienThe = tonKhoTheoBienThe.entrySet()
                 .stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        entry -> Math.max(entry.getValue() - TON_KHO_TOI_THIEU_DE_BAN, 0)));
+                        Map.Entry::getValue)); // tồn kho thực tế = số lượng có thể mua (§3.1)
 
         // ── Tính giá sau khuyến mãi cho từng biến thể (Flash Sale và Giảm trực tiếp) ──
         Map<Integer, BigDecimal> giaSauKhuyenMaiTheoBienThe = new HashMap<>();
@@ -200,7 +303,7 @@ public class SanPhamPublicUIController {
         model.addAttribute("bienTheSanPhams", bienTheSanPhams);
         model.addAttribute("tonKhoTheoBienThe", tonKhoTheoBienThe);
         model.addAttribute("soLuongCoTheBanTheoBienThe", soLuongCoTheBanTheoBienThe);
-        model.addAttribute("tonKhoToiThieuDeBan", TON_KHO_TOI_THIEU_DE_BAN);
+        // tonKhoToiThieuDeBan đã bị xóa — không còn Safety Stock (§3.1)
         
         List<org.example.primemobile.entity.ThongSoKyThuat> thongSoKyThuats = thongSoKyThuatService.layTheoSanPham(id);
         java.util.Map<String, java.util.List<org.example.primemobile.entity.ThongSoKyThuat>> thongSoKyThuatGrouped = new java.util.LinkedHashMap<>();
@@ -217,7 +320,7 @@ public class SanPhamPublicUIController {
         return "san-pham/chi-tiet";
     }
 
-    private Map<Integer, Integer> layTonKhoOnlineTheoBienThe(List<BienTheSanPham> bienTheSanPhams) {
+    private Map<Integer, Integer> layTonkhoTongTheoBienThe(List<BienTheSanPham> bienTheSanPhams) {
         List<Integer> ids = bienTheSanPhams.stream()
                 .map(BienTheSanPham::getId)
                 .toList();

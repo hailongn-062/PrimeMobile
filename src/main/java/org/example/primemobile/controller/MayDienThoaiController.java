@@ -179,7 +179,7 @@ public class MayDienThoaiController {
      * Endpoint này được dùng cho:
      * <ul>
      *   <li>Màn hình POS: lấy IMEI có sẵn (trạng thái 'trong_kho') để nhân viên chọn.</li>
-     *   <li>Xác nhận đơn online: chỉ lấy IMEI ở Kho Online.</li>
+     *   <li>Xác nhận đơn online: chỉ lấy IMEI ở kho t?ng.</li>
      * </ul>
      * <p>
      * <b>Lưu ý:</b> Nếu không truyền {@code tinhTrang}, sẽ lấy tất cả IMEI của biến

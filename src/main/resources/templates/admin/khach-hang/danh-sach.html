@@ -37,8 +37,8 @@
                     <thead class="table-light">
                         <tr>
                             <th>ID & Họ Tên</th>
-                            <th>Liên hệ</th>
-                            <th>Giới tính & Ngày sinh</th>
+                            <th>Số điện thoại</th>
+                            <th>Email</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -48,12 +48,10 @@
                                 <span class="fw-bold" th:text="${kh.hoTen}"></span>
                             </td>
                             <td>
-                                <div><i class="fa fa-envelope text-muted small"></i> <span th:text="${kh.email}"></span></div>
                                 <div><i class="fa fa-phone text-muted small"></i> <span th:text="${kh.soDienThoai}"></span></div>
                             </td>
                             <td>
-                                <span th:text="${kh.gioiTinh}"></span><br>
-                                <span class="text-muted small" th:text="${#temporals.format(kh.ngaySinh, 'dd/MM/yyyy')}"></span>
+                                <span class="text-muted" th:text="${kh.email != null and !kh.email.isEmpty() ? kh.email : '—'}"></span>
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(khachHangs)}">

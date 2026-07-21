@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${pageTitle != null ? pageTitle + ' | PrimeMobile' : 'Sản phẩm | PrimeMobile'}">Sản phẩm | PrimeMobile</title>
     <link rel="icon" href="/images/PrimeMobile_logo.png">
+    <link rel="stylesheet" th:href="@{/css/trang-chu.css}">
+    <link rel="stylesheet" th:href="@{/css/danh-sach.css}">
+    <!-- noUiSlider CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -38,6 +42,87 @@
         @media (max-width: 991px) {
             .pm-layout { grid-template-columns:1fr; }
             .pm-sidebar { position:static; }
+        }
+        .pm-favorite-btn {
+            background: transparent;
+            border: none;
+            color: #dc3545; /* Red outline */
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+        .pm-favorite-btn:hover {
+            color: #dc3545;
+            transform: scale(1.1);
+        }
+        .pm-favorite-btn.active {
+            color: #dc3545;
+        }
+        .pm-favorite-btn.active i {
+            font-weight: 900; /* Solid heart */
+        }
+        .pm-favorite-btn i {
+            font-weight: 400; /* Outline heart by default */
+        }
+        .pm-rating-display {
+            font-size: 1rem;
+            color: #ffc107;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        /* Checkbox filter styles */
+        .pm-filter-checkbox {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+        }
+        .pm-filter-checkbox input[type="checkbox"] {
+            margin-right: 0.5rem;
+            width: 1rem;
+            height: 1rem;
+            accent-color: #dc3545;
+        }
+        .pm-filter-checkbox span {
+            font-size: 0.9rem;
+            color: #333;
+        }
+        /* Custom nouislider colors & shapes to match design */
+        .noUi-target {
+            background: #e9ecef;
+            border: none;
+            border-radius: 4px;
+            box-shadow: none;
+            height: 6px; /* thicker track */
+        }
+        .noUi-connect {
+            background: #009688; /* teal green */
+        }
+        .noUi-handle {
+            border-radius: 50%;
+            background: #009688;
+            border: none;
+            box-shadow: none;
+            cursor: pointer;
+            width: 20px !important;
+            height: 20px !important;
+            right: -10px !important; /* half of width */
+            top: -7px !important; /* center on 6px track */
+        }
+        .noUi-handle::before, .noUi-handle::after {
+            display: none; /* remove inner lines */
+        }
+        /* Custom input styling for price */
+        .pm-price-input {
+            border-radius: 8px;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            width: 46%;
         }
     </style>
 </head>
@@ -92,13 +177,82 @@
                 <span th:text="${hang.tenHang}">Hãng</span>
                 <i class="fa fa-chevron-right small"></i>
             </a>
+
+            <!-- Mức giá -->
+            <div class="pm-filter-title mt-4 d-flex justify-content-between align-items-center">
+                <span>Mức giá</span>
+                <i class="fa fa-plus text-muted small"></i>
+            </div>
+            <div class="mb-3 px-1">
+                <!-- noUiSlider container -->
+                <div id="pm-price-slider" class="mt-4 mb-4 mx-2"></div>
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <input type="text" id="pm-min-price" class="form-control form-control-sm text-center fw-bold pm-price-input" placeholder="Tối thiểu" th:value="${minPrice != null ? #numbers.formatDecimal(minPrice, 0, 'COMMA', 0, 'POINT') : ''}">
+                    <span class="text-muted fw-bold mx-2">-</span>
+                    <input type="text" id="pm-max-price" class="form-control form-control-sm text-center fw-bold pm-price-input" placeholder="Tối đa" th:value="${maxPrice != null ? #numbers.formatDecimal(maxPrice, 0, 'COMMA', 0, 'POINT') : ''}">
+                </div>
+                <button type="button" class="btn w-100 btn-sm mb-3 fw-bold pm-apply-price-btn" style="background-color: #009688; border-color: #009688; color: white;">ÁP DỤNG</button>
+            </div>
+
+            <!-- Phiên bản (ROM) -->
+            <div class="pm-filter-title mt-4">Bộ nhớ trong</div>
+            <div class="d-flex flex-column gap-1 mb-3 pm-checkbox-group pm-rom-group">
+                <label class="pm-filter-checkbox">
+                    <input type="checkbox" value="64" th:checked="${luuTruGbs != null and #lists.contains(luuTruGbs, 64)}">
+                    <span>64GB</span>
+                </label>
+                <label class="pm-filter-checkbox">
+                    <input type="checkbox" value="128" th:checked="${luuTruGbs != null and #lists.contains(luuTruGbs, 128)}">
+                    <span>128GB</span>
+                </label>
+                <label class="pm-filter-checkbox">
+                    <input type="checkbox" value="256" th:checked="${luuTruGbs != null and #lists.contains(luuTruGbs, 256)}">
+                    <span>256GB</span>
+                </label>
+                <label class="pm-filter-checkbox">
+                    <input type="checkbox" value="512" th:checked="${luuTruGbs != null and #lists.contains(luuTruGbs, 512)}">
+                    <span>512GB</span>
+                </label>
+            </div>
+
+            <!-- Màu sắc -->
+            <div class="pm-filter-title mt-4">Màu sắc</div>
+            <div class="d-flex flex-column gap-1 mb-3 pm-checkbox-group pm-color-group">
+                <label class="pm-filter-checkbox">
+                    <input type="checkbox" value="Đen" th:checked="${mauSacs != null and #lists.contains(mauSacs, 'Đen')}">
+                    <span>Đen</span>
+                </label>
+                <label class="pm-filter-checkbox">
+                    <input type="checkbox" value="Trắng" th:checked="${mauSacs != null and #lists.contains(mauSacs, 'Trắng')}">
+                    <span>Trắng</span>
+                </label>
+                <label class="pm-filter-checkbox">
+                    <input type="checkbox" value="Xám" th:checked="${mauSacs != null and #lists.contains(mauSacs, 'Xám')}">
+                    <span>Xám</span>
+                </label>
+            </div>
         </aside>
 
         <section>
+            <!-- Sắp xếp theo -->
+            <div class="d-flex align-items-center gap-2 mb-3 pm-sort-bar bg-white p-2 rounded border" style="font-size: 0.9rem;">
+                <span class="fw-bold text-muted px-2">Sắp xếp theo</span>
+                <button type="button" class="btn btn-sm pm-sort-btn" data-sort="newest" th:classappend="${sortOption == 'newest' or sortOption == null} ? 'btn-pm text-white' : 'btn-outline-secondary'">Mới nhất</button>
+                <button type="button" class="btn btn-sm pm-sort-btn" data-sort="best_selling" th:classappend="${sortOption == 'best_selling'} ? 'btn-pm text-white' : 'btn-outline-secondary'">Bán chạy</button>
+                <button type="button" class="btn btn-sm pm-sort-price-btn" 
+                        th:classappend="${sortOption == 'price_asc' or sortOption == 'price_desc'} ? 'btn-pm text-white' : 'btn-outline-secondary'"
+                        th:attr="data-current-sort=${sortOption}">
+                    Giá tiền
+                    <i class="fa fa-arrow-down small ms-1" th:if="${sortOption == 'price_desc'}"></i>
+                    <i class="fa fa-arrow-up small ms-1" th:if="${sortOption == 'price_asc'}"></i>
+                    <i class="fa fa-arrows-v small ms-1" th:unless="${sortOption == 'price_asc' or sortOption == 'price_desc'}"></i>
+                </button>
+            </div>
+
             <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-3" th:if="${sanPhams != null and !#lists.isEmpty(sanPhams)}">
                 <div class="col" th:each="sp : ${sanPhams}">
-                    <article class="card pm-product-card h-100">
-                        <a th:href="@{/san-pham/{id}(id=${sp.id})}" class="text-decoration-none">
+                    <article class="card pm-product-card h-100 d-flex flex-column">
+                        <a th:href="@{/san-pham/{id}(id=${sp.id})}" class="text-decoration-none text-dark d-flex flex-column flex-grow-1">
                             <div class="pm-img-wrap">
                                 <img th:if="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams) and sp.bienTheSanPhams[0].hinhAnhSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams[0].hinhAnhSanPhams)}"
                                      th:src="${sp.bienTheSanPhams[0].hinhAnhSanPhams[0].duongDan}"
@@ -119,27 +273,39 @@
                                     <span th:text="${sp.hangSanXuat != null ? sp.hangSanXuat.tenHang : 'PrimeMobile'}">PrimeMobile</span>
                                 </span>
                             </div>
-                        </a>
-                        <div class="card-body p-3 d-flex flex-column">
-                            <span class="badge bg-light text-secondary border align-self-start mb-2"
-                                  th:if="${sp.hangSanXuat != null}"
-                                  th:text="${sp.hangSanXuat.tenHang}">Hãng</span>
-                            <a th:href="@{/san-pham/{id}(id=${sp.id})}" class="pm-name text-decoration-none mb-2" th:text="${sp.tenSanPham}">Tên sản phẩm</a>
-                            <div class="mt-auto">
-                                <!-- ── Hiển thị giá sau khuyến mãi ── -->
-                                <div th:if="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams)}"
-                                     th:with="giaGoc=${sp.bienTheSanPhams[0].giaBan},
-                                              giaSauKM=${giaSauKhuyenMaiTheoSanPham != null ? giaSauKhuyenMaiTheoSanPham[sp.id] : giaGoc}">
-                                    <span th:if="${giaSauKM != null and giaSauKM < giaGoc}" class="pm-price-old">
-                                        <span th:text="${#numbers.formatDecimal(giaGoc, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
-                                    </span>
-                                    <div class="pm-price" th:text="${#numbers.formatDecimal(giaSauKM, 0, 'COMMA', 0, 'POINT')} + 'đ'"></div>
+                            <div class="card-body p-3 pb-0 d-flex flex-column flex-grow-1">
+                                <span class="badge bg-light text-secondary border align-self-start mb-2"
+                                      th:if="${sp.hangSanXuat != null}"
+                                      th:text="${sp.hangSanXuat.tenHang}">Hãng</span>
+                                
+                                <div class="pm-name mb-2" th:text="${sp.tenSanPham}">Tên sản phẩm</div>
+                                <div class="mt-auto">
+                                    <!-- ── Hiển thị giá sau khuyến mãi ── -->
+                                    <div th:if="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams)}"
+                                         th:with="giaGoc=${sp.bienTheSanPhams[0].giaBan},
+                                                  giaSauKM=${giaSauKhuyenMaiTheoSanPham != null ? giaSauKhuyenMaiTheoSanPham[sp.id] : giaGoc}">
+                                        <span th:if="${giaSauKM != null and giaSauKM < giaGoc}" class="pm-price-old">
+                                            <span th:text="${#numbers.formatDecimal(giaGoc, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                                        </span>
+                                        <div class="pm-price" th:text="${#numbers.formatDecimal(giaSauKM, 0, 'COMMA', 0, 'POINT')} + 'đ'"></div>
+                                    </div>
+                                    <div th:unless="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams)}" class="text-muted small mb-2">Liên hệ báo giá</div>
                                 </div>
-                                <div th:unless="${sp.bienTheSanPhams != null and !#lists.isEmpty(sp.bienTheSanPhams)}" class="text-muted small mb-2">Liên hệ báo giá</div>
-                                <a th:href="@{/san-pham/{id}(id=${sp.id})}" class="btn btn-pm btn-sm w-100">
-                                    <i class="fa fa-eye me-1"></i> Xem chi tiết
-                                </a>
                             </div>
+                        </a>
+                        <div class="p-3 pt-2 d-flex justify-content-between align-items-center">
+                            <!-- ── Đánh giá sao trung bình ── -->
+                            <div class="pm-rating-display" th:with="ratingVal=${(ratingTbTheoSp != null and ratingTbTheoSp[sp.id] != null) ? ratingTbTheoSp[sp.id] : 5.0}">
+                                <i class="fa fa-star"></i>
+                                <span th:text="${#strings.replace(#numbers.formatDecimal(ratingVal, 1, 1, 'POINT'), '.0', '')}">5</span>
+                            </div>
+                            
+                            <button class="pm-favorite-btn" 
+                                    th:classappend="${sanPhamYeuThichIds != null and sanPhamYeuThichIds.contains(sp.id)} ? 'active' : ''"
+                                    th:attr="data-id=${sp.id}"
+                                    title="Thêm vào yêu thích">
+                                <i class="fa fa-heart"></i>
+                            </button>
                         </div>
                     </article>
                 </div>
@@ -172,6 +338,7 @@
 <div th:replace="~{fragments/footer :: footer}"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js"></script>
 <script>
     function brandFallbackImage(img) {
         const text = `${img.dataset.brand || ''} ${img.alt || ''}`.toLowerCase();
@@ -195,6 +362,144 @@
         const fallback = img.parentElement ? img.parentElement.querySelector('.pm-image-fallback') : null;
         if (fallback) fallback.classList.remove('d-none');
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle favorite
+        document.querySelectorAll('.pm-favorite-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent link click
+                const spId = this.getAttribute('data-id');
+                
+                fetch('/api/khach-hang/yeu-thich/' + spId, {
+                    method: 'POST'
+                }).then(response => {
+                    if (response.status === 401) {
+                        alert('Vui lòng đăng nhập để sử dụng tính năng này.');
+                        window.location.href = '/dang-nhap';
+                        return;
+                    }
+                    if (response.ok) {
+                        this.classList.toggle('active');
+                        return response.text();
+                    }
+                }).then(text => {
+                    if(text) console.log(text);
+                }).catch(err => {
+                    console.error(err);
+                });
+            });
+        });
+
+        // URL Parameters helper
+        function updateUrlParameters(url, paramsToUpdate) {
+            let urlObj = new URL(url, window.location.origin);
+            for (const [key, value] of Object.entries(paramsToUpdate)) {
+                if (value === null || value === '' || (Array.isArray(value) && value.length === 0)) {
+                    urlObj.searchParams.delete(key);
+                } else if (Array.isArray(value)) {
+                    urlObj.searchParams.delete(key);
+                    value.forEach(v => urlObj.searchParams.append(key, v));
+                } else {
+                    urlObj.searchParams.set(key, value);
+                }
+            }
+            urlObj.searchParams.delete('page'); // Reset page when filtering
+            return urlObj.toString();
+        }
+
+        // --- 1. Price Slider ---
+        const slider = document.getElementById('pm-price-slider');
+        const minPriceInput = document.getElementById('pm-min-price');
+        const maxPriceInput = document.getElementById('pm-max-price');
+
+        // Helper to unformat comma string to number
+        function getNumber(str) {
+            if (!str) return 0;
+            return parseInt(str.toString().replace(/,/g, '')) || 0;
+        }
+        
+        // Helper to format number to comma string
+        function formatNumber(num) {
+            return new Intl.NumberFormat('en-US').format(Math.round(num));
+        }
+
+        let startMin = minPriceInput.value ? getNumber(minPriceInput.value) : 0;
+        let startMax = maxPriceInput.value ? getNumber(maxPriceInput.value) : 50000000;
+
+        noUiSlider.create(slider, {
+            start: [startMin, startMax],
+            connect: true,
+            step: 100000,
+            range: {
+                'min': 0,
+                'max': 50000000
+            }
+        });
+
+        slider.noUiSlider.on('update', function (values, handle) {
+            if (handle === 0) {
+                minPriceInput.value = formatNumber(values[0]);
+            } else {
+                maxPriceInput.value = formatNumber(values[1]);
+            }
+        });
+
+        minPriceInput.addEventListener('change', function () {
+            slider.noUiSlider.set([getNumber(this.value), null]);
+        });
+        maxPriceInput.addEventListener('change', function () {
+            slider.noUiSlider.set([null, getNumber(this.value)]);
+        });
+
+        // Apply Price Button
+        document.querySelector('.pm-apply-price-btn').addEventListener('click', function() {
+            window.location.href = updateUrlParameters(window.location.href, {
+                'minPrice': getNumber(minPriceInput.value),
+                'maxPrice': getNumber(maxPriceInput.value)
+            });
+        });
+
+        // --- 2. Checkboxes for ROM and Color ---
+        function applyCheckboxFilters() {
+            let selectedRoms = Array.from(document.querySelectorAll('.pm-rom-group input[type="checkbox"]:checked')).map(cb => cb.value);
+            let selectedColors = Array.from(document.querySelectorAll('.pm-color-group input[type="checkbox"]:checked')).map(cb => cb.value);
+            
+            window.location.href = updateUrlParameters(window.location.href, {
+                'luuTruGbs': selectedRoms.length > 0 ? selectedRoms.join(',') : null,
+                'mauSacs': selectedColors.length > 0 ? selectedColors.join(',') : null
+            });
+        }
+
+        document.querySelectorAll('.pm-filter-checkbox input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', function() {
+                applyCheckboxFilters();
+            });
+        });
+
+        // --- 3. Sorting ---
+        document.querySelectorAll('.pm-sort-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                let sort = this.getAttribute('data-sort');
+                window.location.href = updateUrlParameters(window.location.href, { 'sortOption': sort });
+            });
+        });
+
+        const sortPriceBtn = document.querySelector('.pm-sort-price-btn');
+        if(sortPriceBtn) {
+            sortPriceBtn.addEventListener('click', function() {
+                let currentSort = this.getAttribute('data-current-sort');
+                let nextSort = '';
+                if (currentSort === 'price_desc') {
+                    nextSort = 'price_asc';
+                } else if (currentSort === 'price_asc') {
+                    nextSort = '';
+                } else {
+                    nextSort = 'price_desc';
+                }
+                window.location.href = updateUrlParameters(window.location.href, { 'sortOption': nextSort });
+            });
+        }
+    });
 </script>
 </body>
 </html>

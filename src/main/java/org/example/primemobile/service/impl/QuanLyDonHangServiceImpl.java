@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.primemobile.entity.*;
 import org.example.primemobile.repository.*;
+import org.example.primemobile.service.IBaoHanhService;
 import org.example.primemobile.service.IQuanLyDonHangService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,14 +21,15 @@ import java.util.Set;
  *
  * <h2>Quy tắc nghiệp vụ cốt lõi (system_rules.md):</h2>
  * <ul>
- * <li><b>§2.2.5 – Trừ kho khi xác nhận:</b> Kho_online bị trừ đúng tại bước
+ * <li><b>§2.2.5 – Trừ kho khi xác nhận:</b> kho_tong bị trừ đúng tại bước
  * {@code xacNhanDonHang},
  * không phải lúc khách đặt hàng.</li>
- * <li><b>§3.1 – Safety Stock Rule:</b> Sau khi trừ, tồn kho {@code kho_online}
- * KHÔNG ĐƯỢC xuống dưới {@value #TON_KHO_TOI_THIEU} đơn vị / SKU.</li>
+ * <li><b>§3.1 – Stock Rule:</b> Sau khi trừ, tồn kho {@code kho_tong}
+ * KHÔNG ĐƯỢC âm. Không áp dụng mức dự trữ tối thiểu (Safety Stock).
+ * Pessimistic Write Lock được dùng tại bước EXECUTE để chống race condition.</li>
  * <li><b>§2.2.7 – Hoàn kho khi hủy:</b> Nếu đơn đang ở {@code da_xac_nhan} hoặc
  * {@code dang_giao}
- * (kho đã bị trừ), BẮT BUỘC cộng hoàn lại vào kho_online khi hủy.</li>
+ * (kho đã bị trừ), BẮT BUỘC cộng hoàn lại vào kho_tong khi hủy.</li>
  * <li><b>§7.4 – Tạm hoãn tích điểm:</b> Không viết code cộng điểm / cộng
  * tong_chi_tieu
  * khi đơn chuyển sang {@code da_hoan_thanh}.</li>
@@ -46,8 +48,8 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
         // HẰNG SỐ NGHIỆP VỤ
         // ───────────────────────────────────────────────────────────────────────
 
-        /** Mức tồn kho tối thiểu bắt buộc (system_rules.md §3.1). */
-        private static final int TON_KHO_TOI_THIEU = 5;
+        /** Số lượng tồn kho tối thiểu được phép bán = 0 (không áp dụng Safety Stock — §3.1).
+         * Bị chặn khi tồn kho sau khi trừ < 0 (tức âm kho). */
 
         /** Các trạng thái đơn hàng mà kho đã bị trừ — cần hoàn kho khi hủy. */
         private static final Set<String> TRANG_THAI_DA_TRU_KHO = Set.of("da_xac_nhan", "dang_giao");
@@ -62,6 +64,7 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
         private final TonKhoRepository tonKhoRepository;
         private final NguoiDungRepository nguoiDungRepository;
         private final MayDienThoaiRepository mayDienThoaiRepository; // ✅ Thêm để kiểm tra IMEI
+        private final IBaoHanhService baoHanhService; // ✅ Tự động tạo phiếu BH khi đơn hoàn thành
 
         // =========================================================================
         // 1. XEM DANH SÁCH & CHI TIẾT
@@ -110,7 +113,7 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
          * <li>Validate đơn hàng ở trạng thái {@code "cho_xac_nhan"}.</li>
          * <li>Load ChiTietDonHang với FETCH JOIN (tránh N+1).</li>
          * <li><b>Fail-Fast — PRE-VALIDATE toàn bộ:</b>
-         * Với mỗi SKU: kiểm tra tồn kho kho_online &ge; (soLuong + Safety Stock).
+         * Với mỗi SKU: kiểm tra tồn kho kho_tong &ge; (soLuong + Safety Stock).
          * Ném lỗi ngay nếu bất kỳ SKU nào vi phạm — chưa trừ dòng nào.</li>
          * <li><b>EXECUTE:</b> Tất cả pass → trừ kho từng dòng.</li>
          * <li>Cập nhật trạng thái đơn → {@code "da_xac_nhan"}, ghi nhân viên xử
@@ -145,8 +148,8 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
                                                         "Không thể xác nhận đơn rỗng.");
                 }
 
-                // --- Lấy kho online ---
-                Kho khoOnline = layKhoOnlineHoacNemLoi();
+                // --- Lấy kho t?ng ---
+                Kho khoTong = layKhoTongHoacNemLoi();
 
                 // ═══════════════════════════════════════════════════════════════════
                 // BƯỚC FAIL-FAST: PRE-VALIDATE TOÀN BỘ trước khi trừ bất kỳ dòng nào
@@ -155,38 +158,46 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
                         BienTheSanPham bienThe = chiTiet.getBienTheSanPham();
 
                         TonKho tonKho = tonKhoRepository
-                                        .findByKhoAndBienTheSanPham(khoOnline, bienThe)
+                                        .findByKhoAndBienTheSanPham(khoTong, bienThe)
                                         .orElseThrow(() -> new EntityNotFoundException(String.format(
-                                                        "Không tìm thấy tồn kho cho sản phẩm [%s] tại kho online. " +
+                                                        "Không tìm thấy tồn kho cho sản phẩm [%s] tại kho t?ng. " +
                                                                         "Vui lòng kiểm tra dữ liệu kho.",
                                                         bienThe.getMaSku())));
 
                         int tonKhoSauKhiTru = tonKho.getSoLuong() - chiTiet.getSoLuong();
 
-                        // ⚠️ SAFETY STOCK RULE §3.1: Sau khi trừ KHÔNG được < 5
-                        if (tonKhoSauKhiTru < TON_KHO_TOI_THIEU) {
+                        // ⚠️ QUY TẮc TỒN KHO §3.1: Sau khi trừ KHÔNG được âm
+                        if (tonKhoSauKhiTru < 0) {
                                 throw new IllegalArgumentException(String.format(
-                                                "Vi phạm quy tắc tồn kho tối thiểu khi xác nhận đơn [%s]. " +
-                                                                "Sản phẩm [%s] tại kho online: Tồn kho = %d, Bán = %d, "
-                                                                +
-                                                                "Còn lại = %d (< mức tối thiểu %d).",
+                                                "Không đủ tồn kho khi xác nhận đơn [%s]. " +
+                                                                "Sản phẩm [%s] tại kho tổng: Tồn kho = %d, Bán = %d.",
                                                 donHang.getMaDonHang(), bienThe.getMaSku(),
-                                                tonKho.getSoLuong(), chiTiet.getSoLuong(),
-                                                tonKhoSauKhiTru, TON_KHO_TOI_THIEU));
+                                                tonKho.getSoLuong(), chiTiet.getSoLuong()));
                         }
                 }
 
                 // ═══════════════════════════════════════════════════════════════════
-                // EXECUTE: Tất cả SKU đã pass → Trừ kho thực tế
+                // EXECUTE: Dùng Pessimistic Lock khi trừ kho thực tế (§3.1 chống race condition)
                 // ═══════════════════════════════════════════════════════════════════
                 LocalDateTime now = LocalDateTime.now();
                 for (ChiTietDonHang chiTiet : danhSachChiTiet) {
                         TonKho tonKho = tonKhoRepository
-                                        .findByKhoAndBienTheSanPham(khoOnline, chiTiet.getBienTheSanPham())
+                                        .findByKhoAndBienTheSanPhamForUpdate(khoTong, chiTiet.getBienTheSanPham())
                                         .orElseThrow(); // Đã validate ở trên, không thể null
 
                         int soLuongTruoc = tonKho.getSoLuong();
-                        tonKho.setSoLuong(tonKho.getSoLuong() - chiTiet.getSoLuong());
+                        int soLuongMoi = soLuongTruoc - chiTiet.getSoLuong();
+
+                        // ⚠️ GUARD chống âm kho — lớp bảo vệ cuối cùng sau Pessimistic Lock
+                        if (soLuongMoi < 0) {
+                                throw new IllegalStateException(String.format(
+                                                "[QuanLyDonHang] Tồn kho không được âm sau khi trừ. "
+                                                + "SKU [%s]: tồn=%d, bán=%d, mới=%d.",
+                                                chiTiet.getBienTheSanPham().getMaSku(),
+                                                soLuongTruoc, chiTiet.getSoLuong(), soLuongMoi));
+                        }
+
+                        tonKho.setSoLuong(soLuongMoi);
                         tonKho.setUpdatedAt(now);
                         tonKhoRepository.save(tonKho);
 
@@ -222,14 +233,14 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
          * <ol>
          * <li>Validate đơn hàng ở trạng thái {@code "cho_xac_nhan"}.</li>
          * <li>Load ChiTietDonHang với FETCH JOIN (tránh N+1).</li>
-         * <li>Lấy kho online.</li>
+         * <li>Lấy kho t?ng.</li>
          * <li><b>Fail-Fast — PRE-VALIDATE toàn bộ:</b>
          * <ul>
          * <li>Với mỗi {@link ImeiSelection}: kiểm tra chi tiết đơn tồn tại, số lượng
          * IMEI khớp.</li>
          * <li>Với mỗi IMEI: kiểm tra tồn tại, tinhTrang='trong_kho', thuộc đúng biến
          * thể.</li>
-         * <li>Kiểm tra tồn kho kho_online đủ (Safety Stock).</li>
+         * <li>Kiểm tra tồn kho kho_tong đủ (Safety Stock).</li>
          * </ul>
          * Ném lỗi ngay nếu bất kỳ vi phạm nào — chưa thay đổi dữ liệu.
          * </li>
@@ -272,8 +283,8 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
                                                         "Không thể xác nhận đơn rỗng.");
                 }
 
-                // --- Lấy kho online ---
-                Kho khoOnline = layKhoOnlineHoacNemLoi();
+                // --- Lấy kho t?ng ---
+                Kho khoTong = layKhoTongHoacNemLoi();
 
                 // ═══════════════════════════════════════════════════════════════════
                 // BƯỚC FAIL-FAST: PRE-VALIDATE TOÀN BỘ trước khi thay đổi dữ liệu
@@ -338,23 +349,20 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
                                 imeiToUpdate.add(may);
                         }
 
-                        // Kiểm tra tồn kho online (Safety Stock)
+                        // Kiểm tra tồn kho t?ng (Safety Stock)
                         TonKho tonKho = tonKhoRepository
-                                        .findByKhoAndBienTheSanPham(khoOnline, chiTiet.getBienTheSanPham())
+                                        .findByKhoAndBienTheSanPham(khoTong, chiTiet.getBienTheSanPham())
                                         .orElseThrow(() -> new EntityNotFoundException(String.format(
-                                                        "Không tìm thấy tồn kho cho sản phẩm [%s] tại kho online.",
+                                                        "Không tìm thấy tồn kho cho sản phẩm [%s] tại kho t?ng.",
                                                         chiTiet.getBienTheSanPham().getMaSku())));
 
                         int tonKhoSauKhiTru = tonKho.getSoLuong() - chiTiet.getSoLuong();
-                        if (tonKhoSauKhiTru < TON_KHO_TOI_THIEU) {
+                        if (tonKhoSauKhiTru < 0) {
                                 throw new IllegalArgumentException(String.format(
-                                                "Vi phạm quy tắc tồn kho tối thiểu khi xác nhận đơn [%s]. " +
-                                                                "Sản phẩm [%s] tại kho online: Tồn kho = %d, Bán = %d, "
-                                                                +
-                                                                "Còn lại = %d (< mức tối thiểu %d).",
+                                                "Không đủ tồn kho khi xác nhận đơn [%s] với IMEI. " +
+                                                                "Sản phẩm [%s] tại kho tổng: Tồn kho = %d, Bán = %d.",
                                                 donHang.getMaDonHang(), chiTiet.getBienTheSanPham().getMaSku(),
-                                                tonKho.getSoLuong(), chiTiet.getSoLuong(),
-                                                tonKhoSauKhiTru, TON_KHO_TOI_THIEU));
+                                                tonKho.getSoLuong(), chiTiet.getSoLuong()));
                         }
                 }
 
@@ -372,13 +380,24 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
                 }
                 log.info("[QuanLyDonHang] Đã cập nhật {} IMEI thành da_ban.", imeiToUpdate.size());
 
-                // 2. Trừ kho online
+                // 2. Trừ kho tổng — dùng Pessimistic Lock (§3.1 chống race condition)
                 for (ChiTietDonHang chiTiet : danhSachChiTiet) {
                         TonKho tonKho = tonKhoRepository
-                                        .findByKhoAndBienTheSanPham(khoOnline, chiTiet.getBienTheSanPham())
+                                        .findByKhoAndBienTheSanPhamForUpdate(khoTong, chiTiet.getBienTheSanPham())
                                         .orElseThrow(); // Đã validate ở trên
 
-                        tonKho.setSoLuong(tonKho.getSoLuong() - chiTiet.getSoLuong());
+                        int soLuongMoi2 = tonKho.getSoLuong() - chiTiet.getSoLuong();
+
+                        // ⚠️ GUARD chống âm kho — lớp bảo vệ cuối cùng sau Pessimistic Lock
+                        if (soLuongMoi2 < 0) {
+                                throw new IllegalStateException(String.format(
+                                                "[QuanLyDonHang] Tồn kho không được âm sau khi trừ (IMEI flow). "
+                                                + "SKU [%s]: tồn=%d, bán=%d, mới=%d.",
+                                                chiTiet.getBienTheSanPham().getMaSku(),
+                                                tonKho.getSoLuong(), chiTiet.getSoLuong(), soLuongMoi2));
+                        }
+
+                        tonKho.setSoLuong(soLuongMoi2);
                         tonKho.setUpdatedAt(now);
                         tonKhoRepository.save(tonKho);
 
@@ -441,10 +460,11 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
                 // Ghi ngày giao thực tế khi hoàn tất giao hàng
                 if ("da_hoan_thanh".equals(trangThaiMoi)) {
                         donHang.setNgayGiaoThucTe(now);
-                        // ⚠️ TODO (§7.4): Cộng điểm thưởng & cập nhật tong_chi_tieu cho khách hàng
-                        // sẽ được triển khai ở sprint sau khi có lệnh mới.
-                        log.info("[QuanLyDonHang] ℹ️ §7.4 Tạm hoãn: Chưa cộng điểm/tong_chi_tieu cho đơn [{}].",
-                                        donHang.getMaDonHang());
+                        donHangRepository.save(donHang);
+                        // Tự động tạo Phiếu bảo hành cho các IMEI trong đơn
+                        baoHanhService.taoPhieuBaoHanhChoDonHang(donHang);
+                        log.info("[QuanLyDonHang] Đã gọi tạo phiếu BH cho đơn [{}].", donHang.getMaDonHang());
+                        return donHang;
                 }
 
                 donHangRepository.save(donHang);
@@ -466,7 +486,7 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
          * <li>{@code cho_xac_nhan}: Kho chưa bị trừ → chỉ đổi trạng thái, KHÔNG thao
          * tác kho.</li>
          * <li>{@code da_xac_nhan} | {@code dang_giao}: Kho ĐÃ bị trừ trước đó
-         * → BẮT BUỘC cộng hoàn lại số lượng vào {@code kho_online}.</li>
+         * → BẮT BUỘC cộng hoàn lại số lượng vào {@code kho_tong}.</li>
          * <li>{@code da_hoan_thanh} | {@code da_huy}: Không được hủy → ném lỗi.</li>
          * </ul>
          */
@@ -498,21 +518,21 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
                 // HOÀN KHO TỒN KHO — chỉ thực hiện khi kho đã bị trừ trước đó (§2.2.7)
                 // ═══════════════════════════════════════════════════════════════════
                 if (TRANG_THAI_DA_TRU_KHO.contains(trangThaiHienTai)) {
-                        log.info("[QuanLyDonHang] 🔄 Hoàn kho — đơn [{}] đang ở '{}', cần cộng hoàn kho_online.",
+                        log.info("[QuanLyDonHang] 🔄 Hoàn kho — đơn [{}] đang ở '{}', cần cộng hoàn kho_tong.",
                                         donHang.getMaDonHang(), trangThaiHienTai);
 
                         List<ChiTietDonHang> danhSachChiTiet = chiTietDonHangRepository
                                         .findByDonHangIdWithDetails(donHangId);
 
-                        Kho khoOnline = layKhoOnlineHoacNemLoi();
+                        Kho khoTong = layKhoTongHoacNemLoi();
 
                         for (ChiTietDonHang chiTiet : danhSachChiTiet) {
                                 BienTheSanPham bienThe = chiTiet.getBienTheSanPham();
 
                                 TonKho tonKho = tonKhoRepository
-                                                .findByKhoAndBienTheSanPham(khoOnline, bienThe)
+                                                .findByKhoAndBienTheSanPham(khoTong, bienThe)
                                                 .orElseThrow(() -> new EntityNotFoundException(String.format(
-                                                                "Không tìm thấy tồn kho cho [%s] tại kho online khi hoàn hàng.",
+                                                                "Không tìm thấy tồn kho cho [%s] tại kho t?ng khi hoàn hàng.",
                                                                 bienThe.getMaSku())));
 
                                 int soLuongTruoc = tonKho.getSoLuong();
@@ -525,7 +545,7 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
                                                 chiTiet.getSoLuong(), tonKho.getSoLuong());
                         }
 
-                        log.info("[QuanLyDonHang] ✅ Hoàn kho xong — {} dòng CTDH được cộng lại vào kho_online.",
+                        log.info("[QuanLyDonHang] ✅ Hoàn kho xong — {} dòng CTDH được cộng lại vào kho_tong.",
                                         danhSachChiTiet.size());
                 } else {
                         // cho_xac_nhan: kho chưa bị trừ → không cần hoàn kho
@@ -719,7 +739,7 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
          * Lấy kho duy nhất trong hệ thống (ID = 1).
          * Ném lỗi rõ ràng nếu chưa cấu hình.
          */
-        private Kho layKhoOnlineHoacNemLoi() {
+        private Kho layKhoTongHoacNemLoi() {
                 return khoRepository.findById(1)
                                 .orElseThrow(() -> new IllegalStateException(
                                                 "Không tìm thấy kho ID=1 trong hệ thống. " +

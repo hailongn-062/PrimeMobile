@@ -70,8 +70,11 @@ public record DatHangRequest(
          */
         Integer phuongThucThanhToanId,
 
-
-
+        /**
+         * ID Chương trình khuyến mãi do khách hàng chọn (nullable).
+         */
+        Integer ctkmId,
+        
         /**
          * Phí vận chuyển (từ GHN API hoặc frontend tính).
          * Mặc định 0 nếu miễn phí hoặc API lỗi (system_rules.md §6).

@@ -34,6 +34,7 @@ public class ThanhToanUIController {
                 .findByKhachHangIdOrderByMacDinhDesc(currentCustomer.getKhachHangId());
         List<PhuongThucThanhToan> phuongThucs = phuongThucThanhToanRepository.findAll().stream()
                 .filter(pt -> Boolean.TRUE.equals(pt.getKichHoat()))
+                .filter(pt -> !"Chuyen khoan".equalsIgnoreCase(pt.getTenPttt()))
                 .sorted(Comparator
                         .comparing((PhuongThucThanhToan pt) -> !"Tien mat".equalsIgnoreCase(pt.getTenPttt()))
                         .thenComparing(PhuongThucThanhToan::getId))

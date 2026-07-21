@@ -36,7 +36,7 @@ import java.util.List;
  *       bằng đúng số lượng sản phẩm của chi tiết đơn hàng đó.</li>
  *   <li>IMEI phải tồn tại trong hệ thống, có {@code tinhTrang = 'trong_kho'}
  *       và thuộc đúng biến thể sản phẩm.</li>
- *   <li>IMEI phải có {@code kho_id} = Kho Online.</li>
+ *   <li>IMEI phải có {@code kho_id} = kho t?ng.</li>
  * </ul>
  */
 @Data

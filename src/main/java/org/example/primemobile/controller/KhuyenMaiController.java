@@ -43,6 +43,15 @@ public class KhuyenMaiController {
         return ResponseEntity.ok(service.layDanhSach());
     }
 
+    /**
+     * Lấy danh sách CTKM loại 'theo_don_hang' đang diễn ra cho POS (Nhân viên chọn).
+     */
+    @GetMapping("/api/admin/khuyen-mai/don-hang")
+    public ResponseEntity<List<ChuongTrinhKhuyenMai>> layDanhSachChoChonDonHang(
+            @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
+        return ResponseEntity.ok(service.layDanhSachChoChonDonHang());
+    }
+
     @PostMapping("/api/admin/khuyen-mai")
     public ResponseEntity<?> taoMoi(
             @RequestBody ChuongTrinhKhuyenMai request,

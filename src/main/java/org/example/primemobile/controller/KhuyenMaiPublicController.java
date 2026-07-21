@@ -44,7 +44,17 @@ public class KhuyenMaiPublicController {
     public ResponseEntity<?> layKhuyenMaiDangDienRa() {
         log.info("[KhuyenMaiPublicController] GET /api/public/khuyen-mai");
         List<ChuongTrinhKhuyenMai> danhSach = khuyenMaiService.layKhuyenMaiDangDienRa();
-        return ResponseEntity.ok(buildSuccessResponse("Lấy danh sách khuyến mãi thành công.", danhSach));
+        return ResponseEntity.ok(buildSuccessResponse("Lấy danh sách khuyến mãi đang diễn ra thành công.", danhSach));
+    }
+    /**
+     * Lấy danh sách các chương trình khuyến mãi loại 'theo_don_hang' và đang diễn ra.
+     * Dùng cho dropdown khi khách hàng checkout (chọn mã).
+     */
+    @GetMapping("/khuyen-mai/don-hang")
+    public ResponseEntity<?> layKhuyenMaiChoChonDonHang() {
+        log.info("[KhuyenMaiPublicController] GET /api/public/khuyen-mai/don-hang");
+        List<ChuongTrinhKhuyenMai> danhSach = khuyenMaiService.layDanhSachChoChonDonHang();
+        return ResponseEntity.ok(buildSuccessResponse("Lấy danh sách khuyến mãi đơn hàng thành công.", danhSach));
     }
 
     // =========================================================================

@@ -86,9 +86,16 @@
             </div>
 
             <div class="col-lg-6">
-                <span class="badge bg-light text-secondary border mb-2" th:if="${sanPham.hangSanXuat != null}" th:text="${sanPham.hangSanXuat.tenHang}">Hãng</span>
-                <h1 class="h3 fw-bold mb-2" th:text="${sanPham.tenSanPham}">Tên sản phẩm</h1>
-                <p class="text-muted" th:if="${sanPham.moTaNgan != null and !#strings.isEmpty(sanPham.moTaNgan)}" th:text="${sanPham.moTaNgan}">Mô tả ngắn</p>
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                    <div>
+                        <span class="badge bg-light text-secondary border mb-2" th:if="${sanPham.hangSanXuat != null}" th:text="${sanPham.hangSanXuat.tenHang}">Hãng</span>
+                        <h1 class="h3 fw-bold mb-2" th:text="${sanPham.tenSanPham}">Tên sản phẩm</h1>
+                        <p class="text-muted" th:if="${sanPham.moTaNgan != null and !#strings.isEmpty(sanPham.moTaNgan)}" th:text="${sanPham.moTaNgan}">Mô tả ngắn</p>
+                    </div>
+                    <button class="btn btn-outline-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; flex-shrink: 0;" title="Thêm vào yêu thích" id="btn-wishlist" th:attr="data-spid=${sanPham.id}" onclick="toggleWishlist()">
+                        <i class="fa-regular fa-heart" id="icon-wishlist"></i>
+                    </button>
+                </div>
 
                 <!-- Container động cho biến thể -->
                 <div id="product-variants-container" class="d-none">
@@ -169,7 +176,110 @@
             Chưa có thông số kỹ thuật cho sản phẩm này.
         </div>
     </section>
+
+    <!-- ĐÁNH GIÁ SẢN PHẨM -->
+    <section class="pm-panel p-3 p-lg-4 mb-4" id="danh-gia-section">
+        <h2 class="h5 fw-bold mb-3">Đánh giá sản phẩm</h2>
+        
+        <div class="row align-items-center mb-4">
+            <div class="col-md-4 text-center border-end">
+                <div class="display-4 fw-bold text-danger" id="avg-rating-number">0.0/5</div>
+                <div class="text-warning fs-5 my-2" id="avg-rating-stars">
+                    <i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i>
+                </div>
+                <div class="text-muted"><span id="total-reviews-count">0</span> lượt đánh giá</div>
+                <button type="button" class="btn btn-danger mt-3 px-4 rounded-pill fw-semibold" id="btn-open-review">Viết đánh giá</button>
+            </div>
+            <div class="col-md-8 ps-md-4" id="rating-bars-container">
+                <!-- Sẽ render bằng JS nếu muốn làm chi tiết, hoặc để mẫu -->
+                <div class="d-flex align-items-center mb-2">
+                    <span class="me-2" style="width: 20px;">5 <i class="fa fa-star text-warning"></i></span>
+                    <div class="progress flex-grow-1 bg-light" style="height: 8px;">
+                        <div class="progress-bar bg-danger" style="width: 100%" role="progressbar"></div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center mb-2">
+                    <span class="me-2" style="width: 20px;">4 <i class="fa fa-star text-warning"></i></span>
+                    <div class="progress flex-grow-1 bg-light" style="height: 8px;">
+                        <div class="progress-bar bg-danger" style="width: 0%" role="progressbar"></div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center mb-2">
+                    <span class="me-2" style="width: 20px;">3 <i class="fa fa-star text-warning"></i></span>
+                    <div class="progress flex-grow-1 bg-light" style="height: 8px;">
+                        <div class="progress-bar bg-danger" style="width: 0%" role="progressbar"></div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center mb-2">
+                    <span class="me-2" style="width: 20px;">2 <i class="fa fa-star text-warning"></i></span>
+                    <div class="progress flex-grow-1 bg-light" style="height: 8px;">
+                        <div class="progress-bar bg-danger" style="width: 0%" role="progressbar"></div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center mb-2">
+                    <span class="me-2" style="width: 20px;">1 <i class="fa fa-star text-warning"></i></span>
+                    <div class="progress flex-grow-1 bg-light" style="height: 8px;">
+                        <div class="progress-bar bg-danger" style="width: 0%" role="progressbar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr>
+
+        <div id="reviews-list-container">
+            <div class="text-center py-4 text-muted" id="reviews-loading">
+                <i class="fa fa-spinner fa-spin fa-2x mb-2"></i><br>Đang tải đánh giá...
+            </div>
+        </div>
+    </section>
 </main>
+
+<!-- Modal Đánh giá -->
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:8px;">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Đánh giá sản phẩm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger d-none" id="review-error"></div>
+                <div class="alert alert-success d-none" id="review-success"></div>
+                
+                <form id="review-form">
+                    <input type="hidden" id="review-sanphamid" th:value="${sanPham.id}">
+                    <input type="hidden" id="review-donhangid">
+                    
+                    <div class="text-center mb-3">
+                        <div class="fs-2 text-warning" style="cursor:pointer;" id="star-rating-container">
+                            <i class="fa-regular fa-star" data-star="1"></i>
+                            <i class="fa-regular fa-star" data-star="2"></i>
+                            <i class="fa-regular fa-star" data-star="3"></i>
+                            <i class="fa-regular fa-star" data-star="4"></i>
+                            <i class="fa-regular fa-star" data-star="5"></i>
+                        </div>
+                        <input type="hidden" id="review-sao" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tiêu đề (tuỳ chọn)</label>
+                        <input type="text" class="form-control" id="review-tieude" placeholder="Nhập tiêu đề đánh giá...">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nội dung <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="review-noidung" rows="3" placeholder="Chia sẻ cảm nhận của bạn về sản phẩm..." required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-danger" id="btn-submit-review">Gửi đánh giá</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
 
@@ -477,6 +587,256 @@
             button.innerHTML = oldHtml;
         }
     }
+
+    // --- LOGIC YÊU THÍCH (WISHLIST) ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnWishlist = document.getElementById('btn-wishlist');
+        if (!btnWishlist) return;
+        const sanPhamId = btnWishlist.dataset.spid;
+        
+        if (currentCustomerId) {
+            fetch(`/api/khach-hang/yeu-thich/check/${sanPhamId}`)
+                .then(res => res.json())
+                .then(data => {
+                    const icon = document.getElementById('icon-wishlist');
+                    if (data.isLiked) {
+                        icon.classList.remove('fa-regular');
+                        icon.classList.add('fa-solid');
+                    }
+                }).catch(console.error);
+        }
+    });
+
+    function toggleWishlist() {
+        if (!currentCustomerId) {
+            alert('Vui lòng đăng nhập để sử dụng tính năng này.');
+            window.location.href = '/dang-nhap';
+            return;
+        }
+        
+        const btn = document.getElementById('btn-wishlist');
+        const sanPhamId = btn.dataset.spid;
+        btn.disabled = true;
+        
+        fetch(`/api/khach-hang/yeu-thich/${sanPhamId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Lỗi cập nhật yêu thích');
+            return res.json();
+        })
+        .then(data => {
+            const icon = document.getElementById('icon-wishlist');
+            if (data.isAdded) {
+                icon.classList.remove('fa-regular');
+                icon.classList.add('fa-solid');
+            } else {
+                icon.classList.remove('fa-solid');
+                icon.classList.add('fa-regular');
+            }
+        })
+        .catch(console.error)
+        .finally(() => btn.disabled = false);
+    }
+
+    // --- FETCH ĐÁNH GIÁ (REVIEWS) ---
+    function loadReviews() {
+        const sanPhamId = document.getElementById('btn-wishlist') ? document.getElementById('btn-wishlist').dataset.spid : null;
+        if (!sanPhamId) return;
+
+        // Fetch Sao trung bình
+        fetch(`/api/public/san-pham/${sanPhamId}/sao-trung-binh`)
+            .then(res => res.json())
+            .then(data => {
+                const avg = data.saoTrungBinh || 0;
+                const count = data.tongDanhGia || 0;
+                document.getElementById('avg-rating-number').textContent = avg.toFixed(1) + '/5';
+                document.getElementById('total-reviews-count').textContent = count;
+                
+                // Draw stars
+                let starsHtml = '';
+                for(let i = 1; i <= 5; i++) {
+                    if (i <= avg) starsHtml += '<i class="fa-solid fa-star"></i>';
+                    else if (i - 0.5 <= avg) starsHtml += '<i class="fa-solid fa-star-half-stroke"></i>';
+                    else starsHtml += '<i class="fa-regular fa-star"></i>';
+                }
+                document.getElementById('avg-rating-stars').innerHTML = starsHtml;
+            }).catch(console.error);
+
+        // Fetch danh sách đánh giá
+        fetch(`/api/public/san-pham/${sanPhamId}/danh-gia`)
+            .then(res => res.json())
+            .then(list => {
+                const container = document.getElementById('reviews-list-container');
+                if (!list || list.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-4">Chưa có đánh giá nào. Bạn hãy là người đầu tiên đánh giá sản phẩm này nhé!</div>';
+                    return;
+                }
+
+                let html = '';
+                list.forEach(dg => {
+                    let stars = '';
+                    for(let i=1; i<=5; i++) {
+                        stars += i <= dg.sao ? '<i class="fa-solid fa-star text-warning"></i>' : '<i class="fa-regular fa-star text-warning"></i>';
+                    }
+                    
+                    const date = new Date(dg.ngayTao).toLocaleDateString('vi-VN');
+                    
+                    html += `
+                        <div class="d-flex mb-4 border-bottom pb-3">
+                            <div class="me-3">
+                                <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-weight: bold;">
+                                    ${dg.hoTen.charAt(0).toUpperCase()}
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1 fw-bold">${dg.hoTen}</h6>
+                                <div class="mb-2">${stars}</div>
+                                <h6 class="fw-bold mb-1">${dg.tieuDe || ''}</h6>
+                                <p class="mb-1 text-dark">${dg.noiDung}</p>
+                                <div class="text-muted small mt-2"><i class="fa-regular fa-clock me-1"></i> Đánh giá đã đăng vào ${date}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            }).catch(e => {
+                console.error(e);
+                document.getElementById('reviews-list-container').innerHTML = '<div class="text-danger text-center py-3">Lỗi tải dữ liệu đánh giá.</div>';
+            });
+    }
+
+    // --- ĐÁNH GIÁ SẢN PHẨM TRỰC TIẾP ---
+    const reviewModal = new bootstrap.Modal(document.getElementById('reviewModal'));
+    
+    document.getElementById('btn-open-review')?.addEventListener('click', () => {
+        const sanPhamId = document.getElementById('review-sanphamid').value;
+        if (!currentCustomerId) {
+            alert('Vui lòng đăng nhập để đánh giá sản phẩm.');
+            window.location.href = '/dang-nhap';
+            return;
+        }
+        
+        // Gọi API kiểm tra điều kiện
+        const btn = document.getElementById('btn-open-review');
+        const oldText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Đang kiểm tra...';
+        
+        fetch(`/api/khach-hang/danh-gia/kiem-tra-dieu-kien?sanPhamId=${sanPhamId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.hopLe) {
+                    // Set thông tin và mở modal
+                    document.getElementById('review-donhangid').value = data.donHangId;
+                    document.getElementById('review-sao').value = '';
+                    document.getElementById('review-tieude').value = '';
+                    document.getElementById('review-noidung').value = '';
+                    document.getElementById('review-error').classList.add('d-none');
+                    document.getElementById('review-success').classList.add('d-none');
+                    
+                    document.getElementById('btn-submit-review').disabled = false;
+                    document.getElementById('btn-submit-review').classList.remove('d-none');
+                    document.getElementById('btn-submit-review').textContent = 'Gửi đánh giá';
+                    
+                    document.querySelectorAll('#star-rating-container i').forEach(star => {
+                        star.classList.remove('fa-solid');
+                        star.classList.add('fa-regular');
+                    });
+                    
+                    reviewModal.show();
+                } else {
+                    alert(data.message || 'Bạn chưa đủ điều kiện đánh giá sản phẩm này.');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Có lỗi xảy ra khi kiểm tra điều kiện đánh giá.');
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = oldText;
+            });
+    });
+
+    // Xử lý chọn sao
+    document.getElementById('star-rating-container')?.addEventListener('click', e => {
+        if (e.target.tagName !== 'I') return;
+        const rating = parseInt(e.target.dataset.star);
+        document.getElementById('review-sao').value = rating;
+        
+        document.querySelectorAll('#star-rating-container i').forEach((star, index) => {
+            if (index < rating) {
+                star.classList.remove('fa-regular');
+                star.classList.add('fa-solid');
+            } else {
+                star.classList.remove('fa-solid');
+                star.classList.add('fa-regular');
+            }
+        });
+    });
+
+    // Gửi đánh giá
+    document.getElementById('btn-submit-review')?.addEventListener('click', () => {
+        const sao = document.getElementById('review-sao').value;
+        const noiDung = document.getElementById('review-noidung').value;
+        const tieuDe = document.getElementById('review-tieude').value;
+        const sanPhamId = document.getElementById('review-sanphamid').value;
+        const donHangId = document.getElementById('review-donhangid').value;
+        
+        const errEl = document.getElementById('review-error');
+        const sucEl = document.getElementById('review-success');
+        const btn = document.getElementById('btn-submit-review');
+        
+        if (!sao) {
+            errEl.textContent = 'Vui lòng chọn số sao đánh giá.';
+            errEl.classList.remove('d-none');
+            return;
+        }
+        if (!noiDung.trim()) {
+            errEl.textContent = 'Vui lòng nhập nội dung đánh giá.';
+            errEl.classList.remove('d-none');
+            return;
+        }
+        
+        errEl.classList.add('d-none');
+        sucEl.classList.add('d-none');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Đang gửi';
+        
+        fetch(`/api/khach-hang/danh-gia`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                sanPhamId: Number(sanPhamId),
+                donHangId: Number(donHangId),
+                sao: Number(sao),
+                tieuDe: tieuDe,
+                noiDung: noiDung
+            })
+        })
+        .then(async res => {
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Lỗi server');
+            return data;
+        })
+        .then(data => {
+            sucEl.textContent = data.message || 'Gửi đánh giá thành công!';
+            sucEl.classList.remove('d-none');
+            btn.classList.add('d-none'); // Ẩn nút sau khi gửi thành công
+            // Load lại danh sách review sau vài giây nếu muốn, nhưng do review cần duyệt nên có thể bỏ qua
+        })
+        .catch(e => {
+            errEl.textContent = e.message;
+            errEl.classList.remove('d-none');
+            btn.disabled = false;
+            btn.textContent = 'Gửi đánh giá';
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', loadReviews);
+
 </script>
 </body>
 </html>

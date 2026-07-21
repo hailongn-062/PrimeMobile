@@ -12,7 +12,7 @@ import org.example.primemobile.entity.DonHang;
  *
  * <h3>Luật kho bắt buộc:</h3>
  * <ul>
- *   <li>Kiểm tra {@code kho_online} tại thời điểm checkout → ném lỗi nếu không đủ.</li>
+ *   <li>Kiểm tra {@code kho_tong} tại thời điểm checkout → ném lỗi nếu không đủ.</li>
  *   <li><b>KHÔNG trừ kho lúc đặt hàng.</b> Kho bị trừ khi nhân viên <b>xác nhận đơn</b>.</li>
  * </ul>
  *
@@ -26,7 +26,7 @@ public interface IDatHangOnlineService {
      * <h3>Các bước xử lý:</h3>
      * <ol>
      *   <li><b>Lấy giỏ hàng</b> theo khachHangId / sessionId — ném lỗi nếu giỏ trống.</li>
-     *   <li><b>Kiểm tra kho_online</b> cho từng SKU — ném {@link IllegalArgumentException} nếu hết hàng.</li>
+     *   <li><b>Kiểm tra kho_tong</b> cho từng SKU — ném {@link IllegalArgumentException} nếu hết hàng.</li>
      *   <li><b>Lưu DonHang</b>: kenh_ban="online", trang_thai="cho_xac_nhan", snapshot địa chỉ.</li>
      *   <li><b>Lưu ChiTietDonHang</b>: price snapshot. <b>Tuyệt đối KHÔNG trừ kho.</b></li>
      *   <li><b>Tạo ThanhToan</b>:

@@ -34,6 +34,12 @@
             width: 100%;
         }
 
+        /* ── FIX BẢNG CHỌN DROPDOWN BỊ TRÙNG MÀU TRONG DARK MODE ── */
+        select option {
+            background-color: var(--pos-right-bg);
+            color: #fff;
+        }
+
         /* ── SIDEBAR ── */
         #pmSidebar {
             width: 220px;
@@ -1305,30 +1311,14 @@
 
                         <!-- Tab bar -->
                         <div class="cust-tab-bar">
-                            <button class="cust-tab-btn active" data-tab="khach_le" id="tabKhachLe" type="button">
-                                <i class="fa fa-user"></i> Khách lẻ
-                            </button>
-                            <button class="cust-tab-btn" data-tab="vang_lai" id="tabVangLai" type="button">
+                            <button class="cust-tab-btn active" data-tab="vang_lai" id="tabVangLai" type="button">
                                 <i class="fa fa-user-plus"></i> Vãng lai
                             </button>
                             <button class="cust-tab-btn" data-tab="chon_cu" id="tabChonCu" type="button">
                                 <i class="fa fa-address-book"></i> Chọn khách
                             </button>
                         </div>
-
-                        <!-- ── Panel 1: Khách lẻ (mặc định) ── -->
-                        <div class="cust-tab-panel active" id="panelKhachLe">
-                            <div class="guest-default-badge">
-                                <div class="badge-icon">👤</div>
-                                <div class="badge-text">
-                                    Khách lẻ (mặc định)
-                                    <small>Không cần nhập thông tin</small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- ── Panel 2: Khách vãng lai (CellphoneS-style form card) ── -->
-                        <div class="cust-tab-panel" id="panelVangLai">
+                        <div class="cust-tab-panel active" id="panelVangLai">
                             <div class="vl-card">
                                 <!-- Card header strip -->
                                 <div class="vl-card-header">
@@ -1374,7 +1364,7 @@
                                         </label>
                                         <div class="vl-input-wrap">
                                             <input type="tel" class="vl-input" id="vlSoDienThoai"
-                                                   placeholder="VD: 0912 345 678" autocomplete="off" maxlength="15">
+                                                   placeholder="VD: 0912345678" autocomplete="off" maxlength="10" pattern="^(03|05|07|08|09)\d{8}$" title="Số điện thoại phải có 10 chữ số và bắt đầu bằng 03, 05, 07, 08 hoặc 09">
                                             <i class="fa fa-phone-alt vl-icon"></i>
                                         </div>
                                         <div class="vl-error-msg" id="vlSdtErr">
@@ -1382,41 +1372,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- Divider -->
-                                    <hr class="vl-section-divider">
-
-                                    <!-- Section: Optional info -->
-                                    <div class="vl-section-label">
-                                        <i class="fa fa-info-circle" style="font-size:.55rem;color:rgba(255,255,255,.2);"></i>
-                                        Thông tin thêm
-                                    </div>
-
-                                    <div class="vl-form-row">
-                                        <div class="vl-form-group">
-                                            <label>
-                                                Email <span class="optional-tag">Tùy chọn</span>
-                                            </label>
-                                            <div class="vl-input-wrap">
-                                                <input type="email" class="vl-input" id="vlEmail"
-                                                       placeholder="email@gmail.com" autocomplete="off">
-                                                <i class="fa fa-envelope vl-icon"></i>
-                                            </div>
-                                        </div>
-                                        <div class="vl-form-group">
-                                            <label>
-                                                Giới tính <span class="optional-tag">Tùy chọn</span>
-                                            </label>
-                                            <div class="vl-input-wrap">
-                                                <select class="vl-select" id="vlGioiTinh" style="padding-left:2.1rem;">
-                                                    <option value="">-- Chọn --</option>
-                                                    <option value="Nam">Nam</option>
-                                                    <option value="Nu">Nữ</option>
-                                                    <option value="Khac">Khác</option>
-                                                </select>
-                                                <i class="fa fa-venus-mars vl-icon"></i>
-                                            </div>
-                                        </div>
-                                    </div>
 
                                     <!-- Hint -->
                                     <div class="vl-hint">
@@ -1459,6 +1414,14 @@
                         <div class="summary-row">
                             <span class="lbl">Tổng tiền hàng</span>
                             <span class="val" id="sum-tong-tien">0 ₫</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="lbl">Mã giảm giá</span>
+                            <span class="val">
+                                <select id="posCtkmSelect" style="width:100%;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;padding:.2rem .4rem;font-size:.85rem;cursor:pointer;max-width: 170px;">
+                                    <option value="">-- Tự động chọn mã --</option>
+                                </select>
+                            </span>
                         </div>
                         <div class="summary-row discount" id="row-giam" style="display:none;">
                             <span class="lbl"><i class="fa fa-tag me-1"></i>Giảm giá</span>

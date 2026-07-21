@@ -8,6 +8,7 @@ import org.example.primemobile.entity.KhachHang;
 import org.example.primemobile.repository.DiaChiKhachHangRepository;
 import org.example.primemobile.repository.KhachHangRepository;
 import org.example.primemobile.service.IDiaChiService;
+import org.example.primemobile.util.ValidationUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,7 +80,12 @@ public class DiaChiServiceImpl implements IDiaChiService {
         // Chỉ cập nhật field nào được gửi lên
         if (request.getLoaiDiaChi()           != null) entity.setLoaiDiaChi(request.getLoaiDiaChi());
         if (request.getHoTenNguoiNhan()       != null) entity.setHoTenNguoiNhan(request.getHoTenNguoiNhan());
-        if (request.getSoDienThoaiNguoiNhan() != null) entity.setSoDienThoaiNguoiNhan(request.getSoDienThoaiNguoiNhan());
+        if (request.getSoDienThoaiNguoiNhan() != null) {
+            if (!ValidationUtils.isValidPhoneNumber(request.getSoDienThoaiNguoiNhan())) {
+                throw new IllegalArgumentException(ValidationUtils.PHONE_INVALID_MSG);
+            }
+            entity.setSoDienThoaiNguoiNhan(request.getSoDienThoaiNguoiNhan());
+        }
         if (request.getDiaChiChiTiet()        != null) entity.setDiaChiChiTiet(request.getDiaChiChiTiet());
         if (request.getTinhThanhId()          != null) entity.setTinhThanhId(request.getTinhThanhId());
         if (request.getQuanHuyenId()          != null) entity.setQuanHuyenId(request.getQuanHuyenId());
@@ -164,6 +170,11 @@ public class DiaChiServiceImpl implements IDiaChiService {
     }
 
     private void validateDiaChiRequest(DiaChiKhachHang req) {
+        if (req.getSoDienThoaiNguoiNhan() != null && !req.getSoDienThoaiNguoiNhan().isBlank()) {
+            if (!ValidationUtils.isValidPhoneNumber(req.getSoDienThoaiNguoiNhan())) {
+                throw new IllegalArgumentException(ValidationUtils.PHONE_INVALID_MSG);
+            }
+        }
         if (req.getDiaChiChiTiet() == null || req.getDiaChiChiTiet().isBlank()) {
             throw new IllegalArgumentException("Địa chỉ chi tiết không được trống.");
         }

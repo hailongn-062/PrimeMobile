@@ -438,6 +438,12 @@
                         Sản phẩm & Biến thể
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="/admin/danh-gia" th:class="${activePage == 'danh-gia'} ? 'nav-link active' : 'nav-link'">
+                        <span class="nav-icon"><i class="fa fa-star"></i></span>
+                        Quản lý đánh giá
+                    </a>
+                </li>
 
                 <!-- Độc quyền Admin -->
                 <th:block th:if="${currentUser != null and currentUser.role == 'Admin'}">
@@ -457,6 +463,16 @@
                     <a href="/admin/kho" th:class="${activePage == 'kho'} ? 'nav-link active' : 'nav-link'">
                         <span class="nav-icon"><i class="fa fa-warehouse"></i></span>
                         Quản lý Kho
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-section-label">Bảo hành & Hỗ trợ</div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a href="/admin/bao-hanh/danh-sach" th:class="${activePage == 'bao-hanh'} ? 'nav-link active' : 'nav-link'">
+                        <span class="nav-icon"><i class="fa fa-wrench"></i></span>
+                        Bảo hành sửa chữa
                     </a>
                 </li>
             </ul>

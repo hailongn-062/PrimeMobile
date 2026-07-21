@@ -13,6 +13,7 @@ import org.example.primemobile.repository.*;
 import org.example.primemobile.service.IDatHangOnlineService;
 import org.example.primemobile.service.IKhuyenMaiService;
 import org.example.primemobile.service.IVnPayService;
+import org.example.primemobile.util.ValidationUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +29,7 @@ import java.util.List;
  * <ul>
  * <li>Đơn online: {@code kenh_ban = "online"},
  * {@code trang_thai = "cho_xac_nhan"}.</li>
- * <li>Kiểm tra tồn kho tại {@code kho_online} — chặn đặt quá số lượng.</li>
+ * <li>Kiểm tra tồn kho tại {@code kho_tong} — chặn đặt quá số lượng.</li>
  * <li><b>⚠️ TUYỆT ĐỐI KHÔNG trừ kho lúc đặt hàng</b> (§2.2).
  * Kho bị trừ khi nhân viên xác nhận đơn ở bước tiếp theo.</li>
  * <li>VNPay: {@code trangThaiThanhToan = "dang_chuyen_huong"} +
@@ -169,24 +170,24 @@ public class DatHangOnlineServiceImpl implements IDatHangOnlineService {
                 gioHang.getId(), danhSachGio.size());
 
         // ─────────────────────────────────────────────────────────────────────
-        // BƯỚC 2 — KIỂM TRA KHO ONLINE & TÍNH TỔNG TIỀN SAU KHUYẾN MÃI SẢN PHẨM
+        // BƯỚC 2 — KIỂM TRA kho t?ng & TÍNH TỔNG TIỀN SAU KHUYẾN MÃI SẢN PHẨM
         // ─────────────────────────────────────────────────────────────────────
-        Kho khoOnline = layKhoOnlineHoacNemLoi();
+        Kho khoTong = layKhoTongHoacNemLoi();
         BigDecimal tongTienHang = BigDecimal.ZERO; // Tổng tiền sau khuyến mãi sản phẩm
 
         for (ChiTietGioHang item : danhSachGio) {
             BienTheSanPham bienThe = item.getBienTheSanPham();
             int soLuongYeuCau = item.getSoLuong();
 
-            // Kiểm tra tồn kho kho_online
+            // Kiểm tra tồn kho kho_tong
             int tonKhoHienTai = tonKhoRepository
-                    .findByKhoAndBienTheSanPham(khoOnline, bienThe)
+                    .findByKhoAndBienTheSanPham(khoTong, bienThe)
                     .map(TonKho::getSoLuong)
                     .orElse(0);
 
             if (soLuongYeuCau > tonKhoHienTai) {
                 throw new IllegalArgumentException(String.format(
-                        "Sản phẩm [%s] không đủ hàng trong kho online. " +
+                        "Sản phẩm [%s] không đủ hàng trong kho t?ng. " +
                                 "Yêu cầu: %d, còn lại: %d.",
                         bienThe.getMaSku(), soLuongYeuCau, tonKhoHienTai));
             }
@@ -201,20 +202,21 @@ public class DatHangOnlineServiceImpl implements IDatHangOnlineService {
         log.info("[DatHangOnline] Kiểm tra kho OK — tongTienHang={}", tongTienHang);
 
         // ─────────────────────────────────────────────────────────────────────
-        // BƯỚC 3 — XỬ LÝ KHUYẾN MÃI TOÀN ĐƠN
+        // BƯỚC 3 — XỬ LÝ KHUYẾN MÃI TOÀN ĐƠN (CHỈ ÁP DỤNG KHI KHÁCH CHỌN)
         // ─────────────────────────────────────────────────────────────────────
-        KhuyenMaiResult kmResult = khuyenMaiService.tinhKhuyenMaiChoDonHang(tongTienHang);
-        BigDecimal tienGiamGia = kmResult.getTienGiam();
+        BigDecimal tienGiamGia = BigDecimal.ZERO;
         ChuongTrinhKhuyenMai ctkm = null;
 
-        if (kmResult.getCtkmId() != null) {
-            ctkm = chuongTrinhKhuyenMaiRepository.findById(kmResult.getCtkmId())
-                    .orElse(null);
-            log.info("[DatHangOnline] Áp dụng CTKM toàn đơn: id={}, ten='{}', giảm={}%, tiền giảm={}",
+        if (request.ctkmId() != null) {
+            KhuyenMaiResult kmResult = khuyenMaiService.apDungCtkmTheoId(request.ctkmId(), tongTienHang);
+            tienGiamGia = kmResult.getTienGiam();
+            ctkm = chuongTrinhKhuyenMaiRepository.findById(kmResult.getCtkmId()).orElse(null);
+            
+            log.info("[DatHangOnline] Áp dụng CTKM khách chọn: id={}, ten='{}', giảm={}%, tiền giảm={}",
                     kmResult.getCtkmId(), kmResult.getTenCtkm(),
                     kmResult.getGiaTriUuDai(), tienGiamGia);
         } else {
-            log.debug("[DatHangOnline] Không có CTKM toàn đơn phù hợp.");
+            log.debug("[DatHangOnline] Khách không chọn mã giảm giá.");
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -268,6 +270,12 @@ public class DatHangOnlineServiceImpl implements IDatHangOnlineService {
                     .phuongXaGiao(dc.getPhuongXaTen());
             log.debug("[DatHangOnline] Snapshot địa chỉ cũ — diaChiId={}", dc.getId());
         } else {
+            if (request.sdtNguoiNhan() == null || request.sdtNguoiNhan().isBlank()) {
+                throw new IllegalArgumentException("Số điện thoại người nhận không được để trống.");
+            }
+            if (!ValidationUtils.isValidPhoneNumber(request.sdtNguoiNhan())) {
+                throw new IllegalArgumentException(ValidationUtils.PHONE_INVALID_MSG);
+            }
             builder.hoTenNguoiNhan(request.hoTenNguoiNhan())
                     .sdtNguoiNhan(request.sdtNguoiNhan())
                     .diaChiGiaCuThe(request.diaChiGiaoCuThe())
@@ -389,7 +397,7 @@ public class DatHangOnlineServiceImpl implements IDatHangOnlineService {
      * Lấy kho duy nhất trong hệ thống (ID = 1).
      * Ném {@link IllegalStateException} nếu chưa cấu hình kho.
      */
-    private Kho layKhoOnlineHoacNemLoi() {
+    private Kho layKhoTongHoacNemLoi() {
         return khoRepository.findById(1)
                 .orElseThrow(() -> new IllegalStateException(
                         "Không tìm thấy kho ID=1 trong hệ thống. " +
