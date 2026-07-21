@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.example.primemobile.service.IVnPayService;
 
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
@@ -52,6 +53,7 @@ public class DonHangKhachHangController {
 
     private final DonHangRepository donHangRepository;
     private final org.example.primemobile.repository.MayDienThoaiRepository mayDienThoaiRepository;
+    private final IVnPayService vnPayService;
 
     // =========================================================================
     // GET /api/public/don-hang-cua-toi — Lịch sử đơn hàng
@@ -237,6 +239,85 @@ public class DonHangKhachHangController {
     }
 
     // =========================================================================
+    // PUT /api/public/don-hang-cua-toi/{donHangId}/doi-sang-cod — Đổi VNPay kẹt sang COD
+    // =========================================================================
+    @PutMapping("/{donHangId}/doi-sang-cod")
+    public ResponseEntity<?> doiSangCod(
+            @PathVariable Integer donHangId,
+            HttpServletRequest httpRequest) {
+
+        SessionKhachHang session = requireLogin(httpRequest);
+        if (session == null) {
+            return ResponseEntity.status(401).body(buildErrorResponse("Vui lòng đăng nhập."));
+        }
+
+        DonHang donHang = donHangRepository.findById(donHangId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy đơn hàng #" + donHangId));
+
+        if (!donHang.getKhachHang().getId().equals(session.getKhachHangId())) {
+            return ResponseEntity.status(403).body(buildErrorResponse("Bạn không có quyền truy cập đơn hàng này."));
+        }
+
+        if (!"cho_xac_nhan".equals(donHang.getTrangThai())) {
+            return ResponseEntity.badRequest().body(buildErrorResponse("Chỉ áp dụng cho đơn hàng chờ xác nhận."));
+        }
+
+        if (!"dang_chuyen_huong".equals(donHang.getTrangThaiThanhToan()) && !"that_bai".equals(donHang.getTrangThaiThanhToan())) {
+            return ResponseEntity.badRequest().body(buildErrorResponse("Chỉ áp dụng cho đơn VNPay thanh toán chưa thành công."));
+        }
+
+        donHang.setTrangThaiThanhToan("chua_thanh_toan");
+        String ghiChu = donHang.getGhiChu() != null ? donHang.getGhiChu() + " | " : "";
+        donHang.setGhiChu(ghiChu + "[KHÁCH ĐỔI SANG COD]");
+        donHangRepository.save(donHang);
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+        response.put("message", "Đã đổi sang thanh toán COD thành công.");
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================================
+    // POST /api/public/don-hang-cua-toi/{donHangId}/thanh-toan-vnpay-lai
+    // =========================================================================
+    @PostMapping("/{donHangId}/thanh-toan-vnpay-lai")
+    public ResponseEntity<?> thanhToanVnPayLai(
+            @PathVariable Integer donHangId,
+            HttpServletRequest httpRequest) {
+
+        SessionKhachHang session = requireLogin(httpRequest);
+        if (session == null) {
+            return ResponseEntity.status(401).body(buildErrorResponse("Vui lòng đăng nhập."));
+        }
+
+        DonHang donHang = donHangRepository.findById(donHangId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy đơn hàng #" + donHangId));
+
+        if (!donHang.getKhachHang().getId().equals(session.getKhachHangId())) {
+            return ResponseEntity.status(403).body(buildErrorResponse("Bạn không có quyền truy cập đơn hàng này."));
+        }
+
+        if (!"cho_xac_nhan".equals(donHang.getTrangThai())) {
+            return ResponseEntity.badRequest().body(buildErrorResponse("Chỉ áp dụng cho đơn hàng chờ xác nhận."));
+        }
+
+        if (!"dang_chuyen_huong".equals(donHang.getTrangThaiThanhToan()) && !"that_bai".equals(donHang.getTrangThaiThanhToan())) {
+            return ResponseEntity.badRequest().body(buildErrorResponse("Chỉ áp dụng cho đơn VNPay thanh toán chưa thành công."));
+        }
+
+        if ("that_bai".equals(donHang.getTrangThaiThanhToan())) {
+            donHang.setTrangThaiThanhToan("dang_chuyen_huong");
+            donHangRepository.save(donHang);
+        }
+
+        String vnpUrl = vnPayService.createPaymentUrl(donHang, httpRequest.getRemoteAddr());
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+        response.put("vnpUrl", vnpUrl);
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================================
     // PRIVATE HELPERS
     // =========================================================================
 
@@ -411,7 +492,7 @@ public class DonHangKhachHangController {
             case "cho_xac_nhan" -> "Chờ xác nhận";
             case "da_xac_nhan" -> "Đã xác nhận";
             case "dang_giao" -> "Đang giao";
-            case "da_hoan_thanh" -> "Đã giao";
+            case "da_hoan_thanh" -> "Đã hoàn thành";
             case "da_huy" -> "Đã hủy";
             default -> status;
         };

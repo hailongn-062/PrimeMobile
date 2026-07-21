@@ -191,37 +191,7 @@
                 <button type="button" class="btn btn-danger mt-3 px-4 rounded-pill fw-semibold" id="btn-open-review">Viết đánh giá</button>
             </div>
             <div class="col-md-8 ps-md-4" id="rating-bars-container">
-                <!-- Sẽ render bằng JS nếu muốn làm chi tiết, hoặc để mẫu -->
-                <div class="d-flex align-items-center mb-2">
-                    <span class="me-2" style="width: 20px;">5 <i class="fa fa-star text-warning"></i></span>
-                    <div class="progress flex-grow-1 bg-light" style="height: 8px;">
-                        <div class="progress-bar bg-danger" style="width: 100%" role="progressbar"></div>
-                    </div>
-                </div>
-                <div class="d-flex align-items-center mb-2">
-                    <span class="me-2" style="width: 20px;">4 <i class="fa fa-star text-warning"></i></span>
-                    <div class="progress flex-grow-1 bg-light" style="height: 8px;">
-                        <div class="progress-bar bg-danger" style="width: 0%" role="progressbar"></div>
-                    </div>
-                </div>
-                <div class="d-flex align-items-center mb-2">
-                    <span class="me-2" style="width: 20px;">3 <i class="fa fa-star text-warning"></i></span>
-                    <div class="progress flex-grow-1 bg-light" style="height: 8px;">
-                        <div class="progress-bar bg-danger" style="width: 0%" role="progressbar"></div>
-                    </div>
-                </div>
-                <div class="d-flex align-items-center mb-2">
-                    <span class="me-2" style="width: 20px;">2 <i class="fa fa-star text-warning"></i></span>
-                    <div class="progress flex-grow-1 bg-light" style="height: 8px;">
-                        <div class="progress-bar bg-danger" style="width: 0%" role="progressbar"></div>
-                    </div>
-                </div>
-                <div class="d-flex align-items-center mb-2">
-                    <span class="me-2" style="width: 20px;">1 <i class="fa fa-star text-warning"></i></span>
-                    <div class="progress flex-grow-1 bg-light" style="height: 8px;">
-                        <div class="progress-bar bg-danger" style="width: 0%" role="progressbar"></div>
-                    </div>
-                </div>
+                <!-- Sẽ render bằng JS -->
             </div>
         </div>
 
@@ -669,10 +639,48 @@
             .then(res => res.json())
             .then(list => {
                 const container = document.getElementById('reviews-list-container');
+                const barsContainer = document.getElementById('rating-bars-container');
+                
                 if (!list || list.length === 0) {
                     container.innerHTML = '<div class="text-center text-muted py-4">Chưa có đánh giá nào. Bạn hãy là người đầu tiên đánh giá sản phẩm này nhé!</div>';
+                    // Render empty bars
+                    let barsHtml = '';
+                    for (let i = 5; i >= 1; i--) {
+                        barsHtml += `
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="me-2" style="width: 20px;">${i} <i class="fa fa-star text-warning"></i></span>
+                            <div class="progress flex-grow-1 bg-light" style="height: 8px;">
+                                <div class="progress-bar bg-danger" style="width: 0%" role="progressbar"></div>
+                            </div>
+                        </div>
+                        `;
+                    }
+                    if(barsContainer) barsContainer.innerHTML = barsHtml;
                     return;
                 }
+
+                // Tính toán tỷ lệ phần trăm các mức sao
+                let starCounts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+                list.forEach(dg => {
+                    if (dg.sao >= 1 && dg.sao <= 5) {
+                        starCounts[dg.sao]++;
+                    }
+                });
+
+                let total = list.length;
+                let barsHtml = '';
+                for (let i = 5; i >= 1; i--) {
+                    let percent = total > 0 ? (starCounts[i] / total) * 100 : 0;
+                    barsHtml += `
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="me-2" style="width: 20px;">${i} <i class="fa fa-star text-warning"></i></span>
+                        <div class="progress flex-grow-1 bg-light" style="height: 8px;">
+                            <div class="progress-bar bg-danger" style="width: ${percent}%" role="progressbar"></div>
+                        </div>
+                    </div>
+                    `;
+                }
+                if(barsContainer) barsContainer.innerHTML = barsHtml;
 
                 let html = '';
                 list.forEach(dg => {

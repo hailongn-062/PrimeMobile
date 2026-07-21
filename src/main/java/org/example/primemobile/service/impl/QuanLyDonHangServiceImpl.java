@@ -139,6 +139,10 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
                                         donHang.getMaDonHang(), donHang.getTrangThai()));
                 }
 
+                if ("dang_chuyen_huong".equals(donHang.getTrangThaiThanhToan()) || "that_bai".equals(donHang.getTrangThaiThanhToan())) {
+                        throw new IllegalStateException("Không thể xác nhận đơn hàng đang thanh toán VNPay chưa thành công hoặc thất bại.");
+                }
+
                 // --- Lấy danh sách chi tiết đơn (eager-load) ---
                 List<ChiTietDonHang> danhSachChiTiet = chiTietDonHangRepository.findByDonHangIdWithDetails(donHangId);
 
@@ -272,6 +276,10 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
                                         "Đơn hàng [%s] đang ở trạng thái '%s', không thể xác nhận. " +
                                                         "Chỉ được xác nhận khi trạng thái là 'cho_xac_nhan'.",
                                         donHang.getMaDonHang(), donHang.getTrangThai()));
+                }
+
+                if ("dang_chuyen_huong".equals(donHang.getTrangThaiThanhToan()) || "that_bai".equals(donHang.getTrangThaiThanhToan())) {
+                        throw new IllegalStateException("Không thể xác nhận đơn hàng đang thanh toán VNPay chưa thành công hoặc thất bại.");
                 }
 
                 // --- Lấy danh sách chi tiết đơn (eager-load) ---
@@ -460,6 +468,13 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
                 // Ghi ngày giao thực tế khi hoàn tất giao hàng
                 if ("da_hoan_thanh".equals(trangThaiMoi)) {
                         donHang.setNgayGiaoThucTe(now);
+
+                        // Tự động xác nhận thanh toán cho đơn COD
+                        if ("chua_thanh_toan".equals(donHang.getTrangThaiThanhToan())) {
+                                donHang.setTrangThaiThanhToan("da_thanh_toan");
+                                log.info("[QuanLyDonHang] Đã tự động chuyển trạng thái thanh toán sang 'da_thanh_toan' cho đơn [{}].", donHang.getMaDonHang());
+                        }
+
                         donHangRepository.save(donHang);
                         // Tự động tạo Phiếu bảo hành cho các IMEI trong đơn
                         baoHanhService.taoPhieuBaoHanhChoDonHang(donHang);

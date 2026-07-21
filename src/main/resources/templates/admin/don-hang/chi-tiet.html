@@ -43,7 +43,7 @@
 
             <!-- CHO_XAC_NHAN: Nút Xác nhận + Hủy -->
             <th:block th:if="${donHang.trangThai == 'cho_xac_nhan'}">
-                <button class="btn btn-success px-3" id="btn-xac-nhan"
+                <button class="btn btn-success px-3" id="btn-xac-nhan" th:if="${donHang.trangThaiThanhToan != 'dang_chuyen_huong' and donHang.trangThaiThanhToan != 'that_bai'}"
                         th:data-id="${donHang.id}">
                     <i class="fa fa-check-circle me-1"></i>Xác nhận & Trừ kho
                 </button>
@@ -77,21 +77,13 @@
                 </button>
             </th:block>
 
-            <!-- DA_GIAO: Nút Xác nhận thanh toán (COD) + thông báo -->
+            <!-- DA_GIAO: Thông báo Đã giao và Đã thanh toán -->
             <th:block th:if="${donHang.trangThai == 'da_hoan_thanh'}">
-                <span th:if="${donHang.trangThaiThanhToan == 'chua_thanh_toan'}">
-                    <button class="btn btn-warning px-3" id="btn-thanh-toan"
-                            th:data-id="${donHang.id}">
-                        <i class="fa fa-money-bill me-1"></i>Xác nhận thanh toán
-                    </button>
-                </span>
-                <span th:unless="${donHang.trangThaiThanhToan == 'chua_thanh_toan'}">
-                    <span class="badge bg-success fs-6 px-3 py-2 rounded-pill">
-                        <i class="fa fa-check me-1"></i>Đã thanh toán
-                    </span>
+                <span class="badge bg-success fs-6 px-3 py-2 rounded-pill">
+                    <i class="fa fa-check me-1"></i>Đã thanh toán
                 </span>
                 <span class="badge bg-success fs-6 px-3 py-2 rounded-pill ms-2">
-                    <i class="fa fa-check-double me-1"></i>Đã giao
+                    <i class="fa fa-check-double me-1"></i>Đã hoàn thành
                 </span>
             </th:block>
 
@@ -219,7 +211,7 @@
                         <span th:if="${donHang.trangThai == 'cho_xac_nhan'}" class="badge bg-warning text-dark">⏳ Chờ xác nhận</span>
                         <span th:if="${donHang.trangThai == 'da_xac_nhan'}"  class="badge bg-info text-dark">✅ Đã xác nhận</span>
                         <span th:if="${donHang.trangThai == 'dang_giao'}"    class="badge bg-primary">🚚 Đang giao</span>
-                        <span th:if="${donHang.trangThai == 'da_hoan_thanh'}"      class="badge bg-success">📦 Đã giao</span>
+                        <span th:if="${donHang.trangThai == 'da_hoan_thanh'}"      class="badge bg-success">📦 Đã hoàn thành</span>
                         <span th:if="${donHang.trangThai == 'da_huy'}"       class="badge bg-danger">❌ Đã hủy</span>
                         <span th:if="${donHang.trangThai == 'cho_hoan_tien'}" class="badge bg-warning text-dark">⏳ Chờ hoàn tiền</span>
                     </div>
@@ -579,8 +571,8 @@
     // ── 3. Hoàn thành giao hàng (PUT /trang-thai?trangThaiMoi=da_hoan_thanh)
     document.getElementById('btn-hoan-thanh')?.addEventListener('click', async function () {
         const result = await Swal.fire({
-            icon: 'success', title: 'Xác nhận hoàn thành?',
-            text: 'Đơn hàng sẽ được đánh dấu là "Đã giao thành công".',
+            icon: 'question', title: 'Hoàn thành giao hàng?',
+            text: 'Đơn hàng sẽ được đánh dấu là "Đã hoàn thành".',
             showCancelButton: true,
             confirmButtonText: '<i class="fa fa-check-double"></i> Hoàn thành',
             cancelButtonText: 'Hủy bỏ',
