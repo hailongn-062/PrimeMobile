@@ -133,6 +133,14 @@ public interface IQuanLyDonHangService {
     DonHang huyDonHang(Integer donHangId, String lyDoHuy);
 
     /**
+     * Báo cáo đơn hàng giao thất bại.
+     * @param donHangId ID đơn hàng
+     * @param lyDo Lý do giao thất bại
+     * @return Đối tượng DonHang sau khi cập nhật
+     */
+    DonHang giaoHangThatBai(Integer donHangId, String lyDo);
+
+    /**
      * Xác nhận đã hoàn tiền cho đơn hàng bị hủy (chuyển trạng thái từ cho_hoan_tien -> da_huy, da_hoan_tien).
      * @param donHangId ID của đơn hàng
      * @param idNhanVien ID nhân viên thao tác

@@ -133,6 +133,12 @@ public class DanhGiaServiceImpl implements IDanhGiaService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Page<DanhGiaSanPham> timKiemVaLocDanhGia(String tuKhoa, String trangThai, Integer sao, java.time.LocalDateTime tuNgay, java.time.LocalDateTime denNgay, Pageable pageable) {
+        return danhGiaRepository.timKiemVaLocDanhGia(tuKhoa, trangThai, sao, tuNgay, denNgay, pageable);
+    }
+
+    @Override
     @Transactional
     public DanhGiaSanPham duyetDanhGia(Integer danhGiaId) {
         DanhGiaSanPham danhGia = danhGiaRepository.findById(danhGiaId)

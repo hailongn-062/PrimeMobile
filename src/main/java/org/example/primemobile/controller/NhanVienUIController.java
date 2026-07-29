@@ -24,14 +24,26 @@ public class NhanVienUIController {
     private final INhanVienService nhanVienService;
 
     @GetMapping
-    public String danhSach(Model model, HttpSession session) {
+    public String danhSach(
+            @RequestParam(required = false) String tuKhoa,
+            @RequestParam(required = false) String trangThai,
+            Model model, HttpSession session) {
+        
         SessionUser currentUser = (SessionUser) session.getAttribute(SESSION_KEY);
-        List<NguoiDung> danhSach = nhanVienService.layDanhSachNhanVien();
+        
+        String finalTuKhoa = (tuKhoa != null && !tuKhoa.trim().isEmpty()) ? tuKhoa.trim() : null;
+        String finalTrangThai = (trangThai != null && !trangThai.trim().isEmpty()) ? trangThai.trim() : null;
+        
+        List<NguoiDung> danhSach = nhanVienService.timKiemVaLocNhanVien(finalTuKhoa, finalTrangThai);
 
         model.addAttribute("currentUser", currentUser);
         model.addAttribute("pageTitle", "Quản lý Nhân viên");
         model.addAttribute("activePage", "nhan-vien");
         model.addAttribute("danhSachNhanVien", danhSach);
+        
+        // Pass filter parameters back to the view
+        model.addAttribute("tuKhoa", tuKhoa);
+        model.addAttribute("trangThai", trangThai);
 
         return "admin/nhan-vien/danh-sach";
     }

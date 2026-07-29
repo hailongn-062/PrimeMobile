@@ -64,6 +64,20 @@ public class BaoHanhServiceImpl implements IBaoHanhService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> goiYSoDienThoai(String sdt) {
+        if (sdt == null || sdt.trim().length() < 2) return List.of();
+        return phieuBaoHanhRepository.suggestSdt(sdt.trim()).stream().limit(10).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> goiYImei(String imei) {
+        if (imei == null || imei.trim().length() < 3) return List.of();
+        return phieuBaoHanhRepository.suggestImei(imei.trim()).stream().limit(10).collect(Collectors.toList());
+    }
+
     /**
      * Tự động tạo PhieuBaoHanh cho mọi MayDienThoai trong đơn hàng đã hoàn thành.
      * - Lấy danh sách may theo don_hang_id
@@ -201,35 +215,46 @@ public class BaoHanhServiceImpl implements IBaoHanhService {
     @Transactional(readOnly = true)
     public List<org.example.primemobile.dto.baohanh.YeuCauBaoHanhResponse> layDanhSachYeuCauDtos() {
         return yeuCauBaoHanhRepository.findAllWithDetails().stream()
-                .map(y -> {
-                    var pbh = y.getPhieuBaoHanh();
-                    var may = (pbh != null) ? pbh.getMayDienThoai() : null;
-                    var btsp = (may != null) ? may.getBienTheSanPham() : null;
-                    var sp = (btsp != null) ? btsp.getSanPham() : null;
-                    var kh = (pbh != null) ? pbh.getKhachHang() : null;
-
-                    return org.example.primemobile.dto.baohanh.YeuCauBaoHanhResponse.builder()
-                        .id(y.getId())
-                        .maYeuCau(y.getMaYeuCau())
-                        .maPhieu(pbh != null ? pbh.getMaPhieu() : null)
-                        .trangThai(y.getTrangThai())
-                        .moTaLoi(y.getMoTaLoi())
-                        .ghiChu(y.getGhiChu())
-                        .ketQuaTtbh(y.getKetQuaTtbh())
-                        .ngayTiepNhan(y.getNgayTiepNhan())
-                        .ngayGuiTtbh(y.getNgayGuiTtbh())
-                        .ngayNhanLaiTtbh(y.getNgayNhanLaiTtbh())
-                        .ngayTraKhach(y.getNgayTraKhach())
-                        .imei(may != null ? may.getImei1() : null)
-                        .tenTrungTam(y.getTrungTamBaoHanh() != null ? y.getTrungTamBaoHanh().getTenTrungTam() : null)
-                        .tenNguoiTiepNhan(y.getNguoiTiepNhan() != null ? y.getNguoiTiepNhan().getHoTen() : null)
-                        .tenKhachHang(kh != null ? kh.getHoTen() : null)
-                        .soDienThoai(kh != null ? kh.getSoDienThoai() : null)
-                        .tenSanPham(sp != null ? sp.getTenSanPham() : null)
-                        .tenBienThe(btsp != null ? (btsp.getMauSac() + " - " + btsp.getRamGb() + "GB/" + btsp.getLuuTruGb() + "GB") : null)
-                        .build();
-                })
+                .map(this::convertToDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<org.example.primemobile.dto.baohanh.YeuCauBaoHanhResponse> timKiemVaLoc(
+            String tuKhoa, String trangThai, Integer trungTamBhId, LocalDateTime tuNgay, LocalDateTime denNgay) {
+        return yeuCauBaoHanhRepository.timKiemVaLocBaoHanh(tuKhoa, trangThai, trungTamBhId, tuNgay, denNgay).stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    private org.example.primemobile.dto.baohanh.YeuCauBaoHanhResponse convertToDto(YeuCauBaoHanh y) {
+        var pbh = y.getPhieuBaoHanh();
+        var may = (pbh != null) ? pbh.getMayDienThoai() : null;
+        var btsp = (may != null) ? may.getBienTheSanPham() : null;
+        var sp = (btsp != null) ? btsp.getSanPham() : null;
+        var kh = (pbh != null) ? pbh.getKhachHang() : null;
+
+        return org.example.primemobile.dto.baohanh.YeuCauBaoHanhResponse.builder()
+            .id(y.getId())
+            .maYeuCau(y.getMaYeuCau())
+            .maPhieu(pbh != null ? pbh.getMaPhieu() : null)
+            .trangThai(y.getTrangThai())
+            .moTaLoi(y.getMoTaLoi())
+            .ghiChu(y.getGhiChu())
+            .ketQuaTtbh(y.getKetQuaTtbh())
+            .ngayTiepNhan(y.getNgayTiepNhan())
+            .ngayGuiTtbh(y.getNgayGuiTtbh())
+            .ngayNhanLaiTtbh(y.getNgayNhanLaiTtbh())
+            .ngayTraKhach(y.getNgayTraKhach())
+            .imei(may != null ? may.getImei1() : null)
+            .tenTrungTam(y.getTrungTamBaoHanh() != null ? y.getTrungTamBaoHanh().getTenTrungTam() : null)
+            .tenNguoiTiepNhan(y.getNguoiTiepNhan() != null ? y.getNguoiTiepNhan().getHoTen() : null)
+            .tenKhachHang(kh != null ? kh.getHoTen() : null)
+            .soDienThoai(kh != null ? kh.getSoDienThoai() : null)
+            .tenSanPham(sp != null ? sp.getTenSanPham() : null)
+            .tenBienThe(btsp != null ? (btsp.getMauSac() + " - " + btsp.getRamGb() + "GB/" + btsp.getLuuTruGb() + "GB") : null)
+            .build();
     }
 
     @Override

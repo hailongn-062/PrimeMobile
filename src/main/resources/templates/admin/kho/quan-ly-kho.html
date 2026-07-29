@@ -107,8 +107,10 @@
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
                 <h5 class="fw-bold mb-0 text-dark"><i class="fa fa-search me-2 text-info"></i>Tra cứu Tồn Kho</h5>
-                <div style="width: 300px;">
-                    <select id="filterKho" class="form-select shadow-sm fw-semibold">
+                <div class="d-flex gap-2">
+                    <input type="text" id="searchSku" class="form-control shadow-sm" placeholder="Mã SKU..." style="width: 150px;">
+                    <input type="text" id="searchTenSanPham" class="form-control shadow-sm" placeholder="Tên sản phẩm..." style="width: 250px;">
+                    <select id="filterKho" class="form-select shadow-sm fw-semibold" style="width: 200px;">
                         <option value="">-- Tất cả kho bãi --</option>
                         <option th:each="kho : ${danhSachKho}"
                                 th:value="${kho.id}"
@@ -191,14 +193,26 @@
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const filterKho = document.getElementById("filterKho");
+        const searchSku = document.getElementById("searchSku");
+        const searchTenSanPham = document.getElementById("searchTenSanPham");
         const tonKhoBody = document.getElementById("tonKhoBody");
+        let searchTimeout;
 
         // ── Hàm load dữ liệu tồn kho ──
-        async function loadTonKho(khoId = '') {
+        async function loadTonKho() {
             try {
+                const khoId = filterKho.value;
+                const maSku = searchSku.value;
+                const tenSanPham = searchTenSanPham.value;
+                
                 tonKhoBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4"><i class="fa fa-spinner fa-spin fa-lg me-2"></i> Đang tải dữ liệu tồn kho...</td></tr>';
 
-                const url = khoId ? `/api/admin/kho/ton-kho?khoId=${khoId}` : `/api/admin/kho/ton-kho`;
+                const params = new URLSearchParams();
+                if (khoId) params.append('khoId', khoId);
+                if (maSku) params.append('maSku', maSku);
+                if (tenSanPham) params.append('tenSanPham', tenSanPham);
+
+                const url = `/api/admin/kho/ton-kho?${params.toString()}`;
                 const response = await fetch(url, { credentials: 'include' });
 
                 if (!response.ok) {
@@ -367,7 +381,15 @@
 
         // ── Lọc theo kho ──
         filterKho.addEventListener("change", function() {
-            loadTonKho(this.value);
+            loadTonKho();
+        });
+
+        // ── Tìm kiếm với debounce ──
+        ['searchSku', 'searchTenSanPham'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => loadTonKho(), 400);
+            });
         });
     });
 </script>

@@ -47,9 +47,7 @@ public class TrangChuController {
         model.addAttribute("danhSachDanhMuc", danhMucService.layDanhSachKichHoat());
 
         Page<SanPham> trangSanPham = sanPhamService.layDanhSachCongKhai(
-                null,
-                null,
-                PageRequest.of(0, SO_LUONG_NOI_BAT, Sort.by(Sort.Direction.DESC, "id"))
+                null, null, null, PageRequest.of(0, SO_LUONG_NOI_BAT, Sort.by(Sort.Direction.DESC, "id"))
         );
         List<SanPham> sanPhamNoiBat = trangSanPham.getContent();
 

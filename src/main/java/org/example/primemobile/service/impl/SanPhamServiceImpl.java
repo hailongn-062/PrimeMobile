@@ -53,8 +53,8 @@ public class SanPhamServiceImpl implements ISanPhamService {
     /** {@inheritDoc} */
     @Override
     @Transactional(readOnly = true)
-    public Page<SanPham> layDanhSach(Integer danhMucId, Integer hangSanXuatId, Pageable pageable) {
-        return sanPhamRepository.timKiemVaLocSanPham(danhMucId, hangSanXuatId, pageable);
+    public Page<SanPham> layDanhSach(String tuKhoa, Integer danhMucId, Integer hangSanXuatId, Pageable pageable) {
+        return sanPhamRepository.timKiemVaLocSanPham(tuKhoa, danhMucId, hangSanXuatId, pageable);
     }
 
     /**
@@ -64,8 +64,8 @@ public class SanPhamServiceImpl implements ISanPhamService {
      */
     @Override
     @Transactional(readOnly = true)
-    public Page<SanPham> layDanhSachCongKhai(Integer danhMucId, Integer hangSanXuatId, Pageable pageable) {
-        return sanPhamRepository.timKiemSanPhamPublic(danhMucId, hangSanXuatId, pageable);
+    public Page<SanPham> layDanhSachCongKhai(String tuKhoa, Integer danhMucId, Integer hangSanXuatId, Pageable pageable) {
+        return sanPhamRepository.timKiemSanPhamPublic(tuKhoa, danhMucId, hangSanXuatId, pageable);
     }
 
     /** {@inheritDoc} */

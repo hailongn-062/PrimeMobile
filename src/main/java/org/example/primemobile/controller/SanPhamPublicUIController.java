@@ -98,6 +98,7 @@ public class SanPhamPublicUIController {
         // 1. Fetch products from DB
         // Fetch a large number (e.g. 500) to allow accurate in-memory filtering and sorting.
         Page<SanPham> allProducts = sanPhamService.layDanhSachCongKhai(
+                null,
                 resolvedDanhMucId,
                 resolvedHangSanXuatId,
                 PageRequest.of(0, 1000, Sort.by(Sort.Direction.DESC, "id")));

@@ -56,7 +56,7 @@ public class DatHangOnlineServiceImpl implements IDatHangOnlineService {
     private static final int VNPAY_HET_HAN_PHUT = 15;
     private static final String KENH_BAN_ONLINE = "online";
     private static final String TRANG_THAI_CHO_XAC_NHAN = "cho_xac_nhan";
-    private static final DateTimeFormatter MA_DON_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final DateTimeFormatter MA_DON_FMT = DateTimeFormatter.ofPattern("yyMMdd");
 
     // ───────────────────────────────────────────────────────────────────────
     // DEPENDENCIES
@@ -410,7 +410,7 @@ public class DatHangOnlineServiceImpl implements IDatHangOnlineService {
      */
     private String sinhMaDonHang() {
         String datePart = LocalDateTime.now().format(MA_DON_FMT);
-        String randPart = String.format("%06d", System.currentTimeMillis() % 1_000_000L);
-        return "DHO-" + datePart + "-" + randPart;
+        String randPart = String.format("%04d", System.currentTimeMillis() % 10_000L);
+        return "DHO" + datePart + randPart;
     }
 }

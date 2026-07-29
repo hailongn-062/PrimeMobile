@@ -25,22 +25,24 @@ public class QuanLySanPhamUIController {
     private final IBienTheSanPhamService bienTheSanPhamService;
     private final IThongSoKyThuatService thongSoKyThuatService;
     private final IHinhAnhSanPhamService hinhAnhSanPhamService;
+    private final IFileStorageService fileStorageService;
 
     @GetMapping
     public String index(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String tuKhoa,
             @RequestParam(required = false) Integer danhMucId,
             @RequestParam(required = false) Integer hangSanXuatId,
             Model model) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("ngayTao").descending());
-        Page<SanPham> sanPhamPage = sanPhamService.layDanhSach(danhMucId, hangSanXuatId, pageable);
+        Page<SanPham> sanPhamPage = sanPhamService.layDanhSach(tuKhoa, danhMucId, hangSanXuatId, pageable);
 
-        model.addAttribute("sanPhamPage", sanPhamPage);
         model.addAttribute("sanPhamPage", sanPhamPage);
         model.addAttribute("danhMucs", danhMucService.layDanhSachKichHoat());
         model.addAttribute("hangSanXuats", hangSanXuatService.layTatCa());
+        model.addAttribute("tuKhoa", tuKhoa);
         model.addAttribute("selectedDanhMucId", danhMucId);
         model.addAttribute("selectedHangSanXuatId", hangSanXuatId);
         
@@ -160,8 +162,17 @@ public class QuanLySanPhamUIController {
     }
 
     @PostMapping("/bien-the/hinh-anh/save")
-    public String saveHinhAnh(@ModelAttribute("newHinhAnh") HinhAnhSanPham hinhAnh) {
-        Integer bienTheId = hinhAnh.getBienTheSanPham().getId();
+    public String saveHinhAnh(@RequestParam("bienTheSanPham.id") Integer bienTheId, 
+                              @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        // Lưu file và lấy đường dẫn
+        String fileUrl = fileStorageService.storeFile(file);
+
+        // Tạo đối tượng HinhAnhSanPham
+        HinhAnhSanPham hinhAnh = new HinhAnhSanPham();
+        hinhAnh.setDuongDan(fileUrl);
+        hinhAnh.setLaAnhChinh(false); // Mặc định là false
+
+        // Lưu vào cơ sở dữ liệu
         hinhAnhSanPhamService.themAnh(bienTheId, hinhAnh);
         return "redirect:/admin/san-pham/bien-the/" + bienTheId + "/hinh-anh";
     }

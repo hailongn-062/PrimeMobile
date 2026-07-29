@@ -70,4 +70,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/favicon.ico"      // Icon trình duyệt
                 );
     }
+    @Override
+    public void addResourceHandlers(org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:uploads/");
+    }
 }

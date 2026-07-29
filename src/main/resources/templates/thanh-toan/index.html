@@ -609,7 +609,10 @@
                 khuyenMais = res.data;
                 const html = ['<option value="">-- Không chọn --</option>'];
                 khuyenMais.forEach(km => {
-                    html.push(`<option value="${km.id}">[Giảm ${km.giaTriUuDai}%] ${esc(km.tenCtkm)} (Từ ${money(km.donHangToiThieu)})</option>`);
+                    let label = `[Giảm ${km.giaTriUuDai}%`;
+                    if (km.giamToiDa) label += ` - Tối đa ${money(km.giamToiDa)}`;
+                    label += `] ${esc(km.tenCtkm)} (Từ ${money(km.donHangToiThieu)})`;
+                    html.push(`<option value="${km.id}">${label}</option>`);
                 });
                 els.ctkmSelect.innerHTML = html.join('');
             }
@@ -624,20 +627,28 @@
         recalcTotal();
     });
     
-    function recalcTotal() {
+    async function recalcTotal() {
         currentDiscountFee = 0;
-        if (selectedCtkmId) {
-            const km = khuyenMais.find(k => k.id === selectedCtkmId);
-            if (km) {
-                if (currentSubtotal >= (km.donHangToiThieu || 0)) {
-                    currentDiscountFee = currentSubtotal * km.giaTriUuDai / 100;
+        
+        if (selectedCtkmId && currentSubtotal > 0) {
+            try {
+                const res = await fetch(`/api/public/khuyen-mai/tinh-toan?tongTien=${encodeURIComponent(currentSubtotal)}&ctkmId=${encodeURIComponent(selectedCtkmId)}`);
+                const data = await res.json();
+                
+                if (data.success) {
+                    currentDiscountFee = data.data.tienGiam || 0;
                 } else {
-                    alert(`Đơn hàng chưa đạt tối thiểu ${money(km.donHangToiThieu)} để dùng mã này.`);
+                    alert(data.message || 'Mã giảm giá không hợp lệ.');
                     els.ctkmSelect.value = '';
                     selectedCtkmId = null;
                 }
+            } catch (err) {
+                console.error('Lỗi tính khuyến mãi:', err);
+                els.ctkmSelect.value = '';
+                selectedCtkmId = null;
             }
         }
+        
         els.discount.textContent = '-' + money(currentDiscountFee);
         els.total.textContent = money(Math.max(0, currentSubtotal + currentShipFee - currentDiscountFee));
     }

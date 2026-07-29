@@ -43,6 +43,8 @@
             .pm-actions { justify-content:flex-start; }
             .pm-total { white-space:normal; }
         }
+        .pm-product-link { color: inherit; text-decoration: none; }
+        .pm-product-link:hover { text-decoration: underline; color: inherit; }
     </style>
 </head>
 <body>
@@ -125,6 +127,11 @@
         return new Date(value).toLocaleString('vi-VN');
     }
 
+    function date(value) {
+        if (!value) return '';
+        return new Date(value).toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit', year: 'numeric'});
+    }
+
     function esc(value) {
         return String(value ?? '').replace(/[&<>"']/g, ch => ({
             '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;'
@@ -160,61 +167,53 @@
         }
         els.empty.classList.add('d-none');
         els.list.innerHTML = orders.map(order => `
-            <article class="pm-panel mb-4 shadow-sm border-0" data-order-id="${order.id}">
-                <div class="d-flex align-items-center justify-content-between p-3 border-bottom flex-wrap gap-2 bg-light rounded-top">
-                    <div>
-                        <strong class="fs-6">${esc(order.maDonHang)}</strong>
-                        <span class="badge status-${esc(order.trangThai)} ms-2 px-2 py-1">${esc(order.trangThaiText)}</span>
+            <article class="pm-panel mb-3 shadow-sm border" data-order-id="${order.id}">
+                <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom flex-wrap gap-2 bg-light rounded-top">
+                    <div class="text-muted small">
+                        Đơn hàng: <strong class="text-dark">#${esc(order.maDonHang)}</strong> 
+                        <span class="mx-2">•</span> 
+                        Ngày đặt hàng: <strong class="text-dark">${date(order.ngayDat)}</strong>
                     </div>
-                    <div class="pm-meta text-end">
-                        <span class="badge text-bg-light border me-2">${esc(order.trangThaiThanhToanText)}</span>
-                        <i class="fa fa-clock me-1"></i>${esc(dateTime(order.ngayDat))}
+                    <div class="text-end">
+                        <span class="badge text-bg-light border me-1">${esc(order.trangThaiThanhToanText)}</span>
+                        <span class="badge status-${esc(order.trangThai)}">${esc(order.trangThaiText)}</span>
                     </div>
                 </div>
                 
-                <div class="p-3 border-bottom">
+                <div class="px-3 pt-2 pb-1">
                     ${(order.chiTiet || []).map(item => `
-                        <div class="d-flex align-items-center gap-3 py-3" style="${(order.chiTiet || []).indexOf(item) !== 0 ? 'border-top: 1px solid #f1f5f9;' : ''}">
-                            ${item.anhChinh ? `<img src="${item.anhChinh}" alt="${esc(item.tenSanPham)}" style="width:80px; height:80px; object-fit:cover; border-radius:6px; border:1px solid #eee;">` : `<div style="width:80px; height:80px; background:#f1f5f9; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#94a3b8;"><i class="fa fa-image fa-2x"></i></div>`}
+                        <div class="d-flex align-items-center gap-3 py-2" style="${(order.chiTiet || []).indexOf(item) !== 0 ? 'border-top: 1px solid #f1f5f9;' : ''}">
+                            ${item.anhChinh ? `<img src="${item.anhChinh}" alt="${esc(item.tenSanPham)}" style="width:60px; height:60px; object-fit:cover; border-radius:4px; border:1px solid #eee;">` : `<div style="width:60px; height:60px; background:#f1f5f9; border-radius:4px; display:flex; align-items:center; justify-content:center; color:#94a3b8;"><i class="fa fa-image fa-lg"></i></div>`}
                             <div class="flex-grow-1">
-                                <div class="fw-bold fs-6 text-dark">${esc(item.tenSanPham)}</div>
-                                <div class="small text-muted mt-1">Phân loại: ${esc(item.mauSac)} - ${item.ramGb || 0}GB/${item.luuTruGb || 0}GB</div>
-                                <div class="small mt-1 text-muted">x${item.soLuong}</div>
-                            </div>
-                            <div class="text-end ms-3">
-                                <div class="text-danger fw-bold mb-2">${money(item.thanhTien)}</div>
-                                ${order.trangThai === 'da_hoan_thanh' ? `
-                                    <button class="btn btn-sm btn-warning fw-bold px-3 shadow-sm text-dark mt-1" type="button" data-action="review" data-spid="${item.sanPhamId}" data-orderid="${order.id}">
-                                        <i class="fa fa-star me-1 text-danger"></i> Đánh giá sản phẩm
-                                    </button>
-                                ` : ''}
+                                <a href="/san-pham/${item.sanPhamId}" class="pm-product-link fw-bold text-dark text-uppercase" style="font-size: 0.95rem;">${esc(item.tenSanPham)}</a>
+                                <div class="fw-bold text-dark mt-1">${money(item.donGiaBan)} <span class="fw-normal text-muted ms-2">x${item.soLuong}</span></div>
                             </div>
                         </div>
                     `).join('')}
                 </div>
                 
-                <div class="p-3 d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="px-3 pb-3 pt-1 d-flex flex-column align-items-end gap-2 bg-white rounded-bottom">
                     <div>
-                        <span class="text-muted me-2">Thành tiền:</span>
-                        <span class="pm-total fs-5 text-danger">${money(order.tongThanhToan)}</span>
+                        <span class="text-muted me-2 small">Tổng thanh toán:</span>
+                        <span class="pm-total text-danger fs-5">${money(order.tongThanhToan)}</span>
                     </div>
-                    <div class="pm-actions">
-                        <button class="btn btn-outline-secondary px-4 fw-semibold" type="button" data-action="detail" data-id="${order.id}">
-                            Chi tiết đơn hàng
-                        </button>
+                    <div class="pm-actions d-flex gap-2 justify-content-end w-100 flex-wrap mt-1">
                         ${order.coTheHuy ? `
-                            <button class="btn btn-outline-danger px-4 fw-semibold ms-2" type="button" data-action="cancel" data-id="${order.id}">
+                            <button class="btn btn-sm btn-outline-danger px-3 fw-semibold" type="button" data-action="cancel" data-id="${order.id}">
                                 Hủy đơn
                             </button>
                         ` : ''}
                         ${order.trangThai === 'cho_xac_nhan' && (order.trangThaiThanhToan === 'dang_chuyen_huong' || order.trangThaiThanhToan === 'that_bai') ? `
-                            <button class="btn btn-outline-warning px-4 fw-semibold ms-2" type="button" data-action="switch-cod" data-id="${order.id}">
+                            <button class="btn btn-sm btn-outline-warning px-3 fw-semibold" type="button" data-action="switch-cod" data-id="${order.id}">
                                 Đổi sang COD
                             </button>
-                            <button class="btn btn-outline-primary px-4 fw-semibold ms-2" type="button" data-action="retry-vnpay" data-id="${order.id}">
-                                Thanh toán lại VNPay
+                            <button class="btn btn-sm btn-outline-primary px-3 fw-semibold" type="button" data-action="retry-vnpay" data-id="${order.id}">
+                                Thanh toán lại
                             </button>
                         ` : ''}
+                        <button class="btn btn-sm border-0 text-dark fw-semibold px-2 d-flex align-items-center" type="button" data-action="detail" data-id="${order.id}">
+                            Xem chi tiết <i class="fa fa-chevron-right ms-1" style="font-size: 0.75rem;"></i>
+                        </button>
                     </div>
                 </div>
             </article>
@@ -258,6 +257,18 @@
                                 <strong>Thanh toán:</strong> 
                                 <span class="badge text-bg-light border">${esc(order.trangThaiThanhToanText)}</span>
                             </div>
+                            <hr class="my-2">
+                            <div class="mb-2">
+                                <strong>Phương thức:</strong> ${esc(order.phuongThucThanhToan || '—')}
+                            </div>
+                            ${order.tenKhuyenMai ? `
+                            <div>
+                                <strong>Khuyến mãi:</strong>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle ms-1">
+                                    <i class="fa fa-tag me-1"></i>${esc(order.tenKhuyenMai)} (-${money(order.tienGiamGia)})
+                                </span>
+                            </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -269,7 +280,7 @@
                     ${items.map(item => `
                         <div class="pm-detail-row px-3 py-3 ${items.indexOf(item) !== items.length - 1 ? 'border-bottom' : ''}">
                             <div>
-                                <div class="fw-bold fs-6 mb-1">${esc(item.tenSanPham)}</div>
+                                <a href="/san-pham/${item.sanPhamId}" class="pm-product-link fw-bold fs-6 mb-1 d-block">${esc(item.tenSanPham)}</a>
                                 <div class="small text-muted mb-2">Phân loại: ${esc(item.mauSac)} - ${item.ramGb || 0}GB/${item.luuTruGb || 0}GB | SL: <strong>${item.soLuong}</strong></div>
                                 ${item.imeiList && item.imeiList.length > 0 ? `
                                     <div class="small bg-light p-2 rounded">
@@ -283,11 +294,6 @@
                                 ` : ''}
                                 <div class="fw-bold text-danger">${money(item.donGiaBan)}</div>
                                 <div class="small text-muted mt-1">Tổng: ${money(item.thanhTien)}</div>
-                                ${order.trangThai === 'da_hoan_thanh' ? `
-                                    <button class="btn btn-sm btn-outline-warning mt-2 w-100" type="button" data-action="review" data-spid="${item.sanPhamId}" data-orderid="${order.id}">
-                                        <i class="fa fa-star me-1"></i>Đánh giá
-                                    </button>
-                                ` : ''}
                             </div>
                         </div>
                     `).join('') || '<div class="p-3 text-muted">Không có sản phẩm.</div>'}

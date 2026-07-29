@@ -21,12 +21,45 @@
             </div>
 
             <div class="card">
-                <div class="card-body">
-                    <div class="table-responsive">
+                <!-- Bộ lọc & Tìm kiếm -->
+                <div class="card-body p-3 bg-light border-bottom">
+                    <form id="filterForm" class="row g-2 align-items-center text-sm">
+                        <div class="col-md-3">
+                            <input type="text" class="form-control form-control-sm" id="tuKhoa" name="tuKhoa" placeholder="Tìm theo Mã phiếu, IMEI, Khách hàng, SĐT...">
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select form-select-sm" id="trangThai" name="trangThai">
+                                <option value="">- Tất cả trạng thái -</option>
+                                <option value="tiep_nhan">Tiếp nhận</option>
+                                <option value="da_gui_ttbh">Đã gửi TTBH</option>
+                                <option value="da_nhan_lai_ttbh">Đã nhận lại từ TTBH</option>
+                                <option value="da_tra_khach">Đã trả khách</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select form-select-sm" id="trungTamBhId" name="trungTamBhId">
+                                <option value="">- Tất cả Trung tâm BH -</option>
+                                <option th:each="tt : ${trungTamBaoHanhs}" th:value="${tt.id}" th:text="${tt.tenTrungTam}"></option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="date" class="form-control form-control-sm" id="tuNgay" name="tuNgay" placeholder="Từ ngày">
+                        </div>
+                        <div class="col-md-3 d-flex gap-2">
+                            <input type="date" class="form-control form-control-sm" id="denNgay" name="denNgay" placeholder="Đến ngày">
+                            <button type="button" class="btn btn-secondary btn-sm text-nowrap" id="btnResetFilter" title="Làm mới">
+                                <i class="bi bi-arrow-clockwise"></i> Làm mới
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive p-3">
                         <table class="table table-hover align-middle" id="tblBaoHanh">
                             <thead class="table-light">
                                 <tr>
                                     <th>Mã phiếu</th>
+                                    <th>Khách hàng</th>
                                     <th>Ngày nhận</th>
                                     <th>IMEI</th>
                                     <th>Lỗi (khách báo)</th>
@@ -36,7 +69,7 @@
                                 </tr>
                             </thead>
                             <tbody id="tbodyBaoHanh">
-                                <tr><td colspan="7" class="text-center text-muted">Đang tải...</td></tr>
+                                <tr><td colspan="8" class="text-center text-muted">Đang tải...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -100,9 +133,29 @@
             const paginationEl = document.getElementById('pagination');
             let currentList = [];
 
+            let currentPageIndex = 0;
+            let filterTimeout = null;
+
+            function buildQueryStr(page) {
+                const tuKhoa = document.getElementById('tuKhoa').value.trim();
+                const trangThai = document.getElementById('trangThai').value;
+                const trungTamBhId = document.getElementById('trungTamBhId').value;
+                const tuNgay = document.getElementById('tuNgay').value;
+                const denNgay = document.getElementById('denNgay').value;
+                
+                let q = '/api/admin/bao-hanh/yeu-cau?page=' + page + '&size=10';
+                if (tuKhoa) q += '&tuKhoa=' + encodeURIComponent(tuKhoa);
+                if (trangThai) q += '&trangThai=' + encodeURIComponent(trangThai);
+                if (trungTamBhId) q += '&trungTamBhId=' + encodeURIComponent(trungTamBhId);
+                if (tuNgay) q += '&tuNgay=' + encodeURIComponent(tuNgay);
+                if (denNgay) q += '&denNgay=' + encodeURIComponent(denNgay);
+                return q;
+            }
+
             // === LOAD DATA ===
             function loadData(page) {
-                fetch('/api/admin/bao-hanh/yeu-cau?page=' + page + '&size=10')
+                currentPageIndex = page;
+                fetch(buildQueryStr(page))
                     .then(function (res) {
                         if (!res.ok) throw new Error('Lỗi tải danh sách');
                         return res.json();
@@ -113,16 +166,30 @@
                         renderPagination(data, page);
                     })
                     .catch(function (err) {
-                        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">' + err.message + '</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">' + err.message + '</td></tr>';
                     });
             }
+
+            function triggerFilter() {
+                if (filterTimeout) clearTimeout(filterTimeout);
+                filterTimeout = setTimeout(() => {
+                    loadData(0);
+                }, 400);
+            }
+
+            document.getElementById('filterForm').addEventListener('input', triggerFilter);
+            document.getElementById('filterForm').addEventListener('change', triggerFilter);
+            document.getElementById('btnResetFilter').addEventListener('click', function() {
+                document.getElementById('filterForm').reset();
+                loadData(0);
+            });
 
             // === RENDER TABLE ===
             function renderTable(list) {
                 tbody.innerHTML = '';
 
                 if (!list || list.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Chưa có dữ liệu</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Chưa có dữ liệu</td></tr>';
                     return;
                 }
 
@@ -153,6 +220,8 @@
                         ? new Date(item.ngayTiepNhan).toLocaleDateString('vi-VN')
                         : '';
 
+                    const khachHangInfo = (item.tenKhachHang || 'Khách lẻ') + '<br><small class="text-muted">' + (item.soDienThoai || '') + '</small>';
+
                     const tr = document.createElement('tr');
                     tr.style.cursor = 'pointer';
                     tr.dataset.index = index;
@@ -160,6 +229,7 @@
 
                     tr.innerHTML =
                         '<td><a href="#" class="text-decoration-none fw-bold view-detail" data-index="' + index + '">' + (item.maYeuCau || '') + '</a></td>' +
+                        '<td>' + khachHangInfo + '</td>' +
                         '<td>' + formattedDate + '</td>' +
                         '<td><code>' + (item.imei || '') + '</code></td>' +
                         '<td>' + (item.moTaLoi || '') + '</td>' +

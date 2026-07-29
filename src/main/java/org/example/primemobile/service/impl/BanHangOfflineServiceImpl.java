@@ -67,7 +67,7 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
         private static final String TRANG_THAI_CHO_THANH_TOAN = "cho_thanh_toan";
 
         /** Pattern sinh mã đơn hàng: DH-YYYYMM-<millis 6 chữ số cuối>. */
-        private static final DateTimeFormatter MA_DON_DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
+        private static final DateTimeFormatter MA_DON_DATE_FMT = DateTimeFormatter.ofPattern("yyMMdd");
 
         // -----------------------------------------------------------------------
         // DEPENDENCIES
@@ -526,8 +526,8 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
          */
         private String sinhMaDonHang() {
                 String datePart = LocalDateTime.now().format(MA_DON_DATE_FMT);
-                String randPart = String.format("%06d", System.currentTimeMillis() % 1_000_000L);
-                return "DH-" + datePart + "-" + randPart;
+                String randPart = String.format("%04d", System.currentTimeMillis() % 10_000L);
+                return "DH" + datePart + randPart;
         }
 
         // =======================================================================

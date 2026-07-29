@@ -517,14 +517,10 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
 
                 String trangThaiHienTai = donHang.getTrangThai();
 
-                // Chỉ cho phép hủy khi đang ở các trạng thái hủy được
-                if ("da_hoan_thanh".equals(trangThaiHienTai)) {
+                // Chỉ cho phép hủy khi đang ở trạng thái chờ xác nhận
+                if (!"cho_xac_nhan".equals(trangThaiHienTai)) {
                         throw new IllegalArgumentException(String.format(
-                                        "Đơn hàng [%s] đã giao thành công, không thể hủy.", donHang.getMaDonHang()));
-                }
-                if ("da_huy".equals(trangThaiHienTai)) {
-                        throw new IllegalArgumentException(String.format(
-                                        "Đơn hàng [%s] đã bị hủy trước đó.", donHang.getMaDonHang()));
+                                        "Chỉ được hủy đơn ở trạng thái chờ xác nhận. Đơn hàng [%s] đang ở trạng thái %s.", donHang.getMaDonHang(), trangThaiHienTai));
                 }
 
                 LocalDateTime now = LocalDateTime.now();
@@ -759,6 +755,71 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
                                 .orElseThrow(() -> new IllegalStateException(
                                                 "Không tìm thấy kho ID=1 trong hệ thống. " +
                                                                 "Vui lòng kiểm tra dữ liệu bảng kho."));
+        }
+
+        @Override
+        @Transactional
+        public DonHang giaoHangThatBai(Integer donHangId, String lyDo) {
+                log.info("[QuanLyDonHang] ▶ Giao hàng thất bại — donHangId={}", donHangId);
+
+                DonHang donHang = donHangRepository.findById(donHangId)
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Không tìm thấy đơn hàng có ID: " + donHangId));
+
+                String trangThaiHienTai = donHang.getTrangThai();
+
+                if (!"dang_giao".equals(trangThaiHienTai)) {
+                        throw new IllegalArgumentException(String.format(
+                                        "Chỉ được báo giao thất bại khi đơn hàng đang giao. Đơn hàng [%s] đang ở trạng thái %s.", 
+                                        donHang.getMaDonHang(), trangThaiHienTai));
+                }
+
+                LocalDateTime now = LocalDateTime.now();
+
+                // 1. Hoàn kho tồn kho (vì đơn đang giao nên chắc chắn kho đã bị trừ)
+                List<ChiTietDonHang> danhSachChiTiet = chiTietDonHangRepository.findByDonHangIdWithDetails(donHangId);
+                Kho khoTong = layKhoTongHoacNemLoi();
+
+                for (ChiTietDonHang chiTiet : danhSachChiTiet) {
+                        BienTheSanPham bienThe = chiTiet.getBienTheSanPham();
+                        TonKho tonKho = tonKhoRepository
+                                        .findByKhoAndBienTheSanPham(khoTong, bienThe)
+                                        .orElseThrow(() -> new EntityNotFoundException(String.format(
+                                                        "Không tìm thấy tồn kho cho [%s] tại kho tổng khi hoàn hàng.",
+                                                        bienThe.getMaSku())));
+
+                        tonKho.setSoLuong(tonKho.getSoLuong() + chiTiet.getSoLuong());
+                        tonKho.setUpdatedAt(now);
+                        tonKhoRepository.save(tonKho);
+                }
+                log.info("[QuanLyDonHang] ✅ Hoàn kho xong khi giao thất bại.");
+
+                // 2. Nhả IMEI ngay lập tức (nếu có)
+                List<MayDienThoai> imeis = mayDienThoaiRepository.findByDonHangIdAndTinhTrang(donHangId, "da_ban");
+                if (!imeis.isEmpty()) {
+                        for (MayDienThoai may : imeis) {
+                                may.setTinhTrang("trong_kho");
+                                may.setDonHang(null);
+                                mayDienThoaiRepository.save(may);
+                        }
+                        log.info("[QuanLyDonHang] ✅ Đã nhả {} IMEI về kho do giao thất bại.", imeis.size());
+                }
+
+                // 3. Cập nhật trạng thái và ghi chú
+                boolean daThanhToanOnline = "da_thanh_toan".equals(donHang.getTrangThaiThanhToan());
+                if (daThanhToanOnline) {
+                        donHang.setTrangThai("cho_hoan_tien");
+                        log.info("[QuanLyDonHang] ℹ️ Đơn [{}] đã thanh toán -> chuyển sang chờ hoàn tiền.", donHang.getMaDonHang());
+                } else {
+                        donHang.setTrangThai("giao_that_bai");
+                        donHang.setTrangThaiThanhToan("chua_thanh_toan");
+                }
+                donHang.setUpdatedAt(now);
+
+                String ghiChuCu = (donHang.getGhiChu() != null) ? donHang.getGhiChu() + " | " : "";
+                donHang.setGhiChu(ghiChuCu + "[GIAO THẤT BẠI " + now.toLocalDate() + "]: " + lyDo);
+
+                return donHangRepository.save(donHang);
         }
 
         /**

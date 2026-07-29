@@ -143,6 +143,12 @@ public class DonHangChiTietDto {
     /** Ghi chú của khách hàng hoặc nhân viên */
     private String ghiChu;
 
+    /** Tên chương trình khuyến mãi (nếu có) */
+    private String tenKhuyenMai;
+
+    /** Phương thức thanh toán (từ bản ghi thanh toán) */
+    private String phuongThucThanhToan;
+
     /**
      * Lý do hủy đơn (nếu đơn hàng đã hủy, lấy từ ghiChu hoặc một trường riêng).
      * Hiện tại lý do hủy được ghi vào ghiChu, nên có thể không cần trường riêng.

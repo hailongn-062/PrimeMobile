@@ -28,6 +28,8 @@ public interface INhanVienService {
      */
     List<NguoiDung> layDanhSachNhanVien();
 
+    List<NguoiDung> timKiemVaLocNhanVien(String tuKhoa, String trangThai);
+
     /**
      * Lấy thông tin chi tiết một nhân viên theo ID.
      *

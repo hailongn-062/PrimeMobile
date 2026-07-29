@@ -72,11 +72,11 @@ public class ChatBotController {
         }
 
         return sanPhamRepository
-                .timKiemSanPhamPublic(null, null, PageRequest.of(0, 24, Sort.by(Sort.Direction.DESC, "ngayTao")))
+                .timKiemSanPhamPublic(null, null, null, PageRequest.of(0, 24, Sort.by(Sort.Direction.DESC, "ngayTao")))
                 .getContent()
                 .stream()
                 .filter(product -> matchesBrand(product, brand))
-                .map(product -> Map.entry(product, minPrice(product)))
+                .map(product -> new java.util.AbstractMap.SimpleEntry<SanPham, Optional<BigDecimal>>(product, minPrice(product)))
                 .filter(entry -> entry.getValue().isPresent())
                 .filter(entry -> maxBudget == null || entry.getValue().get().compareTo(maxBudget) <= 0)
                 .sorted(Comparator.comparing(entry -> entry.getValue().get()))

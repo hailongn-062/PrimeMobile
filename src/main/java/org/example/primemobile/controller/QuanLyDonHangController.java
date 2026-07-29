@@ -411,6 +411,34 @@ public class QuanLyDonHangController {
     }
 
     // =========================================================================
+    // POST /api/admin/don-hang/{id}/giao-that-bai — Giao hàng thất bại
+    // =========================================================================
+    
+    @PostMapping("/{id}/giao-that-bai")
+    public ResponseEntity<?> giaoHangThatBai(
+            @PathVariable Integer id,
+            @RequestBody Map<String, String> payload,
+            @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
+
+        log.info("[QuanLyDonHang] Nhận yêu cầu giao hàng thất bại đơn {}, user={}", id, sessionUser.getEmail());
+        String lyDo = payload.get("lyDo");
+
+        if (lyDo == null || lyDo.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(buildErrorResponse("Lý do giao hàng thất bại không được để trống."));
+        }
+
+        try {
+            DonHang updated = quanLyDonHangService.giaoHangThatBai(id, lyDo);
+            return ResponseEntity.ok(buildSuccessResponse("Đã cập nhật giao hàng thất bại.", updated));
+        } catch (IllegalArgumentException e) {
+            log.warn("[QuanLyDonHang] ❌ Giao hàng thất bại lỗi validation donHangId={}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(buildErrorResponse(e.getMessage()));
+        } catch (EntityNotFoundException e) {
+            log.warn("[QuanLyDonHang] ❌ Không tìm thấy đơn hàng khi báo giao thất bại id={}: {}", id, e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+    // =========================================================================
     // Exception Handler cục bộ (fallback)
     // =========================================================================
 

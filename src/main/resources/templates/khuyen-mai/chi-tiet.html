@@ -65,6 +65,12 @@
                     <div class="fw-bold" th:text="${#numbers.formatDecimal(khuyenMai.donHangToiThieu, 0, 'COMMA', 0, 'POINT')} + 'đ'">0đ</div>
                 </div>
             </div>
+            <div class="col-md-6" th:if="${khuyenMai.giamToiDa != null}">
+                <div class="border rounded-3 p-3 h-100">
+                    <div class="text-muted small">Giảm tối đa</div>
+                    <div class="fw-bold text-warning" th:text="${#numbers.formatDecimal(khuyenMai.giamToiDa, 0, 'COMMA', 0, 'POINT')} + 'đ'">0đ</div>
+                </div>
+            </div>
         </div>
     </section>
 

@@ -924,3 +924,11 @@ GO
 ALTER TABLE khach_hang
 ADD CONSTRAINT uq_kh_so_dien_thoai UNIQUE (so_dien_thoai);
 GO
+
+
+ALTER TABLE chuong_trinh_khuyen_mai ADD giam_toi_da DECIMAL(15, 2) NULL;
+
+ALTER TABLE don_hang DROP CONSTRAINT chk_dh_trang_thai;
+ALTER TABLE don_hang ADD CONSTRAINT chk_dh_trang_thai CHECK (
+    trang_thai IN ('cho_xac_nhan', 'cho_hoan_tien', 'da_xac_nhan', 'dang_giao', 'da_hoan_thanh', 'da_huy', 'don_hang_cho', 'giao_that_bai')
+);

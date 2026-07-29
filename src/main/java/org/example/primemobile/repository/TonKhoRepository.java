@@ -47,6 +47,14 @@ public interface TonKhoRepository extends JpaRepository<TonKho, Integer> {
     Optional<TonKho> findByKhoIdAndBienTheId(@Param("khoId") Integer khoId,
                                              @Param("bienTheId") Integer bienTheId);
 
+    @Query("SELECT t FROM TonKho t JOIN FETCH t.bienTheSanPham bt JOIN FETCH bt.sanPham sp " +
+           "WHERE (:khoId IS NULL OR t.kho.id = :khoId) " +
+           "AND (:maSku IS NULL OR LOWER(bt.maSku) LIKE LOWER(CONCAT('%', :maSku, '%'))) " +
+           "AND (:tenSanPham IS NULL OR LOWER(sp.tenSanPham) LIKE LOWER(CONCAT('%', :tenSanPham, '%')))")
+    List<TonKho> timKiemTonKho(@Param("khoId") Integer khoId,
+                               @Param("maSku") String maSku,
+                               @Param("tenSanPham") String tenSanPham);
+
     /**
      * Lấy toàn bộ tồn kho của một kho cụ thể, eager-load biến thể để hiển thị UI.
      */

@@ -57,8 +57,15 @@ public class NhanVienServiceImpl implements INhanVienService {
     @Override
     @Transactional(readOnly = true)
     public List<NguoiDung> layDanhSachNhanVien() {
-        log.debug("[NhanVienService] Lấy danh sách nhân viên");
+        log.info("[NhanVienService] Bắt đầu lấy danh sách nhân viên");
         return nguoiDungRepository.findByVaiTroOrderByNgayTaoDesc(VAI_TRO_NHAN_VIEN);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<NguoiDung> timKiemVaLocNhanVien(String tuKhoa, String trangThai) {
+        log.info("[NhanVienService] Bắt đầu tìm kiếm và lọc nhân viên: tuKhoa={}, trangThai={}", tuKhoa, trangThai);
+        return nguoiDungRepository.timKiemVaLocNhanVien(VAI_TRO_NHAN_VIEN, tuKhoa, trangThai);
     }
 
     /**

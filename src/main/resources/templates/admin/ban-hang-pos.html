@@ -146,7 +146,7 @@
             min-height: 0; /* Quan trọng để flex không bị giãn ra quá cha */
             overflow-y: auto;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: .8rem;
             padding-bottom: .5rem;
             align-content: start;
@@ -161,119 +161,131 @@
             border-radius: 4px;
         }
 
-        /* Product card */
-        .prod-card {
-            background: #fff;
-            border-radius: var(--card-radius);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, .07);
+        /* Product card - Horizontal Layout */
+        .prod-card-h {
+            background: #232840;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
             display: flex;
-            flex-direction: column;
-            min-height: 290px; /* Đảm bảo thẻ luôn đủ cao để hiển thị mọi thứ */
-            overflow: hidden;
+            align-items: center;
+            padding: 10px;
+            gap: 12px;
             transition: transform .18s, box-shadow .18s;
-            cursor: pointer;
-            border: 2px solid transparent;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        .prod-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, .12);
-            border-color: var(--pos-accent);
+        .prod-card-h:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, .4);
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
-        .prod-card .prod-img {
-            height: 100px;
+        .prod-card-h-img {
+            width: 70px;
+            height: 70px;
             flex-shrink: 0;
-            background: #F8FAFC;
+            background: #1A1F2E;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            padding: 4px;
         }
 
-        .prod-card .prod-img img {
+        .prod-card-h-img img {
             max-height: 100%;
             max-width: 100%;
             object-fit: contain;
         }
 
-        .prod-card .prod-img .prod-emoji {
-            font-size: 2.5rem;
+        .prod-card-h-img .prod-emoji {
+            font-size: 2rem;
+            color: #9CA3AF;
         }
 
-        .prod-card .prod-body {
-            padding: .65rem .7rem .55rem;
+        .prod-card-h-body {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            gap: .2rem;
-            flex: 1;
+            justify-content: center;
+            overflow: hidden;
         }
 
-        .prod-card .prod-name {
-            font-size: .78rem;
+        .prod-name {
+            font-size: .85rem;
             font-weight: 700;
-            color: #1A1A2E;
-            line-height: 1.3;
+            color: #fff;
+            margin-bottom: 4px;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            line-height: 1.3;
         }
 
-        .prod-card .prod-sku {
-            font-size: .68rem;
+        .prod-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .badge-variants {
+            background: rgba(13, 148, 136, 0.15);
+            color: #14B8A6;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .prod-stock {
+            font-size: .7rem;
             color: #9CA3AF;
         }
 
-        .prod-card .prod-price {
-            font-size: .9rem;
-            font-weight: 800;
-            color: var(--pos-accent);
-            margin-top: .15rem;
-        }
-
-        .prod-card .prod-price-sale {
-            font-size: .78rem;
-            font-weight: 800;
-            color: #e53e3e;
-        }
-
-        .prod-card .prod-stock {
-            font-size: .7rem;
-            color: #6B7280;
-            font-weight: 600;
-        }
-
-        .prod-card .prod-stock span {
-            font-weight: 800;
+        .prod-stock span {
             color: var(--pos-green);
+            font-weight: 700;
         }
 
-        .prod-card .btn-add {
-            margin: 0 .7rem .65rem;
+        .prod-price-from {
+            font-size: .85rem;
+            font-weight: 800;
+            color: #3B82F6;
+            text-align: left;
+        }
+
+        .btn-add-group {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
             border: none;
-            border-radius: 9px;
             background: var(--pos-accent);
             color: #fff;
-            font-size: .78rem;
-            font-weight: 700;
-            padding: .38rem .5rem;
-            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
             cursor: pointer;
-            transition: background .2s, transform .1s;
-            text-align: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            margin-right: 4px;
         }
 
-        .prod-card .btn-add:hover {
-            background: #0D47A1;
+        .btn-add-group:hover {
+            background: #1D4ED8;
+            transform: scale(1.05);
         }
 
-        .prod-card .btn-add:active {
-            transform: scale(.97);
+        .btn-add-group:active {
+            transform: scale(0.95);
         }
 
-        .prod-card.out-of-stock {
-            opacity: .45;
+        .prod-card-h.out-of-stock {
+            opacity: 0.5;
             pointer-events: none;
         }
 
@@ -387,23 +399,30 @@
             background: #1A1F2E;
         }
 
-        /* Cart items */
-        #cart-items-wrap {
+        /* Scroll area for customer and items */
+        .cart-scroll-area {
             flex: 1;
             overflow-y: auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cart-scroll-area::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .cart-scroll-area::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, .15);
+            border-radius: 4px;
+        }
+
+        /* Cart items */
+        #cart-items-wrap {
             padding: .6rem .9rem;
             display: flex;
             flex-direction: column;
             gap: .65rem;
-        }
-
-        #cart-items-wrap::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        #cart-items-wrap::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, .15);
-            border-radius: 4px;
         }
 
         #cart-empty-msg {
@@ -1268,11 +1287,16 @@
             ══════════════════════════════════════════ -->
                 <section id="col-products">
 
-                    <!-- Search bar -->
-                    <div class="pos-search-bar">
-                        <i class="fa fa-search"></i>
-                        <input type="text" id="inputSearch" placeholder="Tìm theo tên sản phẩm hoặc mã SKU..."
-                            autocomplete="off">
+                    <!-- Search bar + IMEI scan button -->
+                    <div class="pos-search-bar" style="display:flex; gap:8px; align-items:center;">
+                        <div style="position:relative; flex:1;">
+                            <i class="fa fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#9CA3AF;"></i>
+                            <input type="text" id="inputSearch" placeholder="Tìm theo tên sản phẩm..."
+                                autocomplete="off" style="width:100%; padding:8px 12px 8px 36px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:#232840; color:#fff;">
+                        </div>
+                        <button id="btnScanImeiPos" title="Quét IMEI" style="width: 40px; height: 40px; border-radius: 8px; border: none; background: #3B82F6; color: #fff; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                            <i class="fa fa-barcode"></i>
+                        </button>
                     </div>
 
                     <!-- Status (loading / empty) -->
@@ -1304,9 +1328,13 @@
                     </div>
 
                     <!-- ══════════════════════════════════════
-                         KHÁCH HÀNG — 3 TAB (CellphoneS style)
+                         SCROLL AREA CHO FORM KHÁCH & GIỎ HÀNG
                     ══════════════════════════════════════ -->
-                    <div class="cart-customer">
+                    <div class="cart-scroll-area">
+                        <!-- ══════════════════════════════════════
+                             KHÁCH HÀNG — 3 TAB (CellphoneS style)
+                        ══════════════════════════════════════ -->
+                        <div class="cart-customer">
                         <label><i class="fa fa-user-circle me-1"></i>Khách hàng</label>
 
                         <!-- Tab bar -->
@@ -1394,7 +1422,7 @@
                             <select id="selectKhachHang"
                                 style="width:100%;border-radius:10px;border:1px solid rgba(255,255,255,.12);
                                        background:rgba(255,255,255,.06);color:#fff;padding:.45rem .8rem;font-size:.85rem;cursor:pointer;">
-                                <option value="">👤 Khách lẻ (mặc định)</option>
+                                <option value="">-- Chọn khách hàng --</option>
                                 <!-- Các khách hàng sẽ được load thêm bởi JS -->
                             </select>
                         </div>
@@ -1408,6 +1436,7 @@
                             <span style="font-size:.78rem;opacity:.6;">Bấm "Thêm vào giỏ" để bắt đầu.</span>
                         </div>
                     </div>
+                    </div> <!-- End of .cart-scroll-area -->
 
                     <!-- Tổng kết -->
                     <div class="cart-summary">
@@ -1533,6 +1562,9 @@
     POS JavaScript — toàn bộ logic nằm ở /static/js/pos.js
     Modules: state management, auto-promo, IMEI validate, checkout, bill printing
 -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="/js/barcode-scanner.js"></script>
+    <script src="/js/imei-picker.js"></script>
     <script src="/js/pos.js?v=2.2"></script>
 
 </body>

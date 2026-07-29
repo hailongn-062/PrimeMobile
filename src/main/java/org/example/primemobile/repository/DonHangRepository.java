@@ -61,4 +61,11 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
   java.util.List<org.example.primemobile.entity.DonHang> findByKhachHangIdOrderByNgayDatDesc(Integer khachHangId);
   
   java.util.List<DonHang> findByKenhBanAndTrangThaiOrderByNgayDatDesc(String kenhBan, String trangThai);
+
+  long countByNgayDatBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
+
+  long countByTrangThai(String trangThai);
+
+  @Query("SELECT SUM(d.tongThanhToan) FROM DonHang d WHERE d.trangThai = :trangThai AND d.ngayDat >= :startDate AND d.ngayDat <= :endDate")
+  java.math.BigDecimal sumDoanhThu(@Param("trangThai") String trangThai, @Param("startDate") java.time.LocalDateTime startDate, @Param("endDate") java.time.LocalDateTime endDate);
 }

@@ -22,4 +22,18 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, Integer> {
     boolean existsByEmail(String email);
 
     Optional<NguoiDung> findBySoDienThoai(String soDienThoai);
+
+    @org.springframework.data.jpa.repository.Query("SELECT n FROM NguoiDung n WHERE n.vaiTro = :vaiTro " +
+            "AND (:trangThai IS NULL OR n.trangThai = :trangThai) " +
+            "AND (:tuKhoa IS NULL OR " +
+            "LOWER(n.hoTen) LIKE LOWER(CONCAT('%', :tuKhoa, '%')) OR " +
+            "LOWER(n.email) LIKE LOWER(CONCAT('%', :tuKhoa, '%')) OR " +
+            "LOWER(n.soDienThoai) LIKE LOWER(CONCAT('%', :tuKhoa, '%')) " +
+            ") " +
+            "ORDER BY n.ngayTao DESC")
+    java.util.List<NguoiDung> timKiemVaLocNhanVien(
+            @org.springframework.data.repository.query.Param("vaiTro") String vaiTro,
+            @org.springframework.data.repository.query.Param("tuKhoa") String tuKhoa,
+            @org.springframework.data.repository.query.Param("trangThai") String trangThai
+    );
 }

@@ -1,160 +1,170 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
 <head th:replace="~{layout/admin-layout :: adminHead}">
     <title>Quản lý Biến thể | PrimeMobile Admin</title>
 </head>
 
 <body>
 
-<!-- Sidebar -->
-<div th:replace="~{layout/admin-layout :: sidebar}"></div>
+    <!-- Sidebar -->
+    <div th:replace="~{layout/admin-layout :: sidebar}"></div>
 
-<!-- Topbar -->
-<div th:replace="~{layout/admin-layout :: topbar}"></div>
+    <!-- Topbar -->
+    <div th:replace="~{layout/admin-layout :: topbar}"></div>
 
-<!-- MAIN CONTENT -->
-<main id="pmContent">
+    <!-- MAIN CONTENT -->
+    <main id="pmContent">
 
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb mb-0" style="font-size:.82rem;">
-            <li class="breadcrumb-item"><a href="/admin/dashboard" class="text-decoration-none">PrimeMobile</a></li>
-            <li class="breadcrumb-item"><a href="/admin/san-pham" class="text-decoration-none">Sản phẩm</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Biến thể sản phẩm</li>
-        </ol>
-    </nav>
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb mb-0" style="font-size:.82rem;">
+                <li class="breadcrumb-item"><a href="/admin/dashboard" class="text-decoration-none">PrimeMobile</a></li>
+                <li class="breadcrumb-item"><a href="/admin/san-pham" class="text-decoration-none">Sản phẩm</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Biến thể sản phẩm</li>
+            </ol>
+        </nav>
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="fw-bold mb-1" style="font-size:1.4rem;">Quản lý Biến thể</h1>
-            <p class="text-muted mb-0" style="font-size:.85rem;">Quản lý các phiên bản (màu sắc, RAM, ROM) của sản phẩm.</p>
-        </div>
-        <a href="/admin/san-pham" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold">
-            <i class="fa fa-arrow-left me-1"></i> Quay lại Sản phẩm
-        </a>
-    </div>
-
-    <!-- MAIN CARD -->
-    <div class="pm-card">
-        <div class="pm-card-header">
-            <span><i class="fa fa-boxes me-2 text-primary"></i>Danh sách Biến thể (SKU)</span>
-            <button class="btn btn-sm btn-success rounded-pill px-3 fw-semibold shadow-sm" onclick="showAddModal()">
-                <i class="fa fa-plus me-1"></i> Thêm mới
-            </button>
-        </div>
-
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" style="font-size: .88rem;">
-                <thead class="table-light">
-                <tr>
-                    <th class="ps-4">Mã SKU</th>
-                    <th>Hình ảnh</th>
-                    <th>Màu sắc</th>
-                    <th>Cấu hình</th>
-                    <!-- Đã ẩn cột Giá nhập -->
-                    <th>Giá bán</th>
-                    <th>Trạng thái</th>
-                    <th class="text-end pe-4">Thao tác</th>
-                </tr>
-                </thead>
-                <tbody id="dataTableBody">
-                <tr><td colspan="8" class="text-center py-4 text-muted">Đang tải dữ liệu...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-</main>
-
-<!-- MODAL THÊM/SỬA BIẾN THỂ -->
-<div class="modal fade" id="bienTheModal" tabindex="-1" aria-labelledby="bienTheModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-bottom-0 bg-light">
-                <h5 class="modal-title fw-bold text-primary" id="bienTheModalLabel">Thêm Biến thể mới</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="fw-bold mb-1" style="font-size:1.4rem;">Quản lý Biến thể</h1>
+                <p class="text-muted mb-0" style="font-size:.85rem;">Quản lý các phiên bản (màu sắc, RAM, ROM) của sản
+                    phẩm.</p>
             </div>
-            <div class="modal-body">
-                <form id="bienTheForm">
-                    <input type="hidden" id="btId">
-                    <input type="hidden" id="spId" th:value="${sanPhamId}">
+            <a href="/admin/san-pham" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold">
+                <i class="fa fa-arrow-left me-1"></i> Quay lại Sản phẩm
+            </a>
+        </div>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold small">Mã SKU <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="btSku" required placeholder="Vd: IP16PM-TIT-8-256">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold small">Màu sắc <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="btMau" required placeholder="Vd: Titan Đen">
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold small">RAM (GB)</label>
-                            <input type="number" class="form-control" id="btRam" placeholder="Vd: 8">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold small">ROM (GB)</label>
-                            <input type="number" class="form-control" id="btRom" placeholder="Vd: 256">
-                        </div>
-                    </div>
-
-                    <!-- Đã ẩn trường Giá nhập -->
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold small">Giá bán (VNĐ) <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="btGiaBan" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold small">Giá khuyến mãi (VNĐ)</label>
-                            <input type="number" class="form-control" id="btGiaKm">
-                        </div>
-                    </div>
-                </form>
+        <!-- MAIN CARD -->
+        <div class="pm-card">
+            <div class="pm-card-header">
+                <span><i class="fa fa-boxes me-2 text-primary"></i>Danh sách Biến thể (SKU)</span>
+                <button class="btn btn-sm btn-success rounded-pill px-3 fw-semibold shadow-sm" onclick="showAddModal()">
+                    <i class="fa fa-plus me-1"></i> Thêm mới
+                </button>
             </div>
-            <div class="modal-footer border-top-0 bg-light">
-                <button type="button" class="btn btn-light border px-4 rounded-pill" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-primary px-4 rounded-pill" onclick="saveData()">Lưu dữ liệu</button>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: .88rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Mã SKU</th>
+                            <th>Hình ảnh</th>
+                            <th>Màu sắc</th>
+                            <th>Cấu hình</th>
+                            <!-- Đã ẩn cột Giá nhập -->
+                            <th>Giá bán</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end pe-4">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted">Đang tải dữ liệu...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
+
+    </main>
+
+    <!-- MODAL THÊM/SỬA BIẾN THỂ -->
+    <div class="modal fade" id="bienTheModal" tabindex="-1" aria-labelledby="bienTheModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-bottom-0 bg-light">
+                    <h5 class="modal-title fw-bold text-primary" id="bienTheModalLabel">Thêm Biến thể mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="bienTheForm">
+                        <input type="hidden" id="btId">
+                        <input type="hidden" id="spId" th:value="${sanPhamId}">
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small">Mã SKU <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="btSku" required
+                                    placeholder="Vd: IP16PM-TIT-8-256">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small">Màu sắc <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="btMau" required placeholder="Vd: Titan Đen">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small">RAM (GB)</label>
+                                <input type="number" class="form-control" id="btRam" placeholder="Vd: 8">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small">ROM (GB)</label>
+                                <input type="number" class="form-control" id="btRom" placeholder="Vd: 256">
+                            </div>
+                        </div>
+
+                        <!-- Đã ẩn trường Giá nhập -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small">Giá bán (VNĐ) <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="btGiaBan" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small">Giá khuyến mãi (VNĐ)</label>
+                                <input type="number" class="form-control" id="btGiaKm">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-top-0 bg-light">
+                    <button type="button" class="btn btn-light border px-4 rounded-pill"
+                        data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary px-4 rounded-pill" onclick="saveData()">Lưu dữ
+                        liệu</button>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
 
-<div th:replace="~{layout/admin-layout :: adminScripts}"></div>
+    <div th:replace="~{layout/admin-layout :: adminScripts}"></div>
 
-<script th:inline="javascript">
-    const sanPhamId = /*[[${sanPhamId}]]*/ 0;
-    const API_URL = '/api/admin/bien-the';
-    const bienTheModal = new bootstrap.Modal(document.getElementById('bienTheModal'));
+    <script th:inline="javascript">
+        const sanPhamId = /*[[${sanPhamId}]]*/ 0;
+        const API_URL = '/api/admin/bien-the';
+        const bienTheModal = new bootstrap.Modal(document.getElementById('bienTheModal'));
 
-    document.addEventListener('DOMContentLoaded', () => {
-        loadData();
-    });
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+        });
 
-    async function loadData() {
-        const tbody = document.getElementById('dataTableBody');
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4"><div class="spinner-border text-primary spinner-border-sm me-2"></div> Đang tải...</td></tr>';
+        async function loadData() {
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4"><div class="spinner-border text-primary spinner-border-sm me-2"></div> Đang tải...</td></tr>';
 
-        try {
-            const response = await fetch(`${API_URL}/san-pham/${sanPhamId}`);
-            if (!response.ok) throw new Error("Lỗi API");
-            const data = await response.json(); // List<BienTheSanPham>
+            try {
+                const response = await fetch(`${API_URL}/san-pham/${sanPhamId}`);
+                if (!response.ok) throw new Error("Lỗi API");
+                const data = await response.json(); // List<BienTheSanPham>
 
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Chưa có biến thể nào. Hãy thêm mới!</td></tr>';
-            } else {
-                tbody.innerHTML = data.map(bt => {
-                    let statusBadge = bt.trangThai === 'con_hang'
-                        ? '<span class="badge bg-success-subtle text-success px-2 py-1 rounded-pill">Còn hàng</span>'
-                        : bt.trangThai === 'het_hang'
-                            ? '<span class="badge bg-danger-subtle text-danger px-2 py-1 rounded-pill">Hết hàng</span>'
-                            : '<span class="badge bg-secondary-subtle text-secondary px-2 py-1 rounded-pill">Ngừng kinh doanh</span>';
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Chưa có biến thể nào. Hãy thêm mới!</td></tr>';
+                } else {
+                    tbody.innerHTML = data.map(bt => {
+                        let statusBadge = bt.trangThai === 'con_hang'
+                            ? '<span class="badge bg-success-subtle text-success px-2 py-1 rounded-pill">Còn hàng</span>'
+                            : bt.trangThai === 'het_hang'
+                                ? '<span class="badge bg-danger-subtle text-danger px-2 py-1 rounded-pill">Hết hàng</span>'
+                                : '<span class="badge bg-secondary-subtle text-secondary px-2 py-1 rounded-pill">Ngừng kinh doanh</span>';
 
-                    let formatCurrency = (val) => new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(val);
+                        let formatCurrency = (val) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
 
-                    return `
+                        return `
                         <tr>
                             <td class="ps-4 fw-bold text-primary">${bt.maSku}</td>
                             <td><img src="${bt.hinhAnh || '/images/placeholder.jpg'}" width="40" class="rounded"></td>
@@ -169,94 +179,95 @@
                             </td>
                         </tr>
                     `;
-                }).join('');
+                    }).join('');
+                }
+            } catch (error) {
+                console.error(error);
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">Đã xảy ra lỗi khi tải dữ liệu!</td></tr>`;
             }
-        } catch (error) {
-            console.error(error);
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">Đã xảy ra lỗi khi tải dữ liệu!</td></tr>`;
-        }
-    }
-
-    function showAddModal() {
-        document.getElementById('bienTheForm').reset();
-        document.getElementById('btId').value = '';
-        document.getElementById('bienTheModalLabel').innerText = 'Thêm Biến thể mới';
-        bienTheModal.show();
-    }
-
-    function showEditModal(bt) {
-        document.getElementById('btId').value = bt.id;
-        document.getElementById('btSku').value = bt.maSku;
-        document.getElementById('btMau').value = bt.mauSac;
-        document.getElementById('btRam').value = bt.ramGb || '';
-        document.getElementById('btRom').value = bt.luuTruGb || '';
-        // Không gán giá nhập nữa
-        document.getElementById('btGiaBan').value = bt.giaBan;
-        document.getElementById('btGiaKm').value = bt.giaKhuyenMai || '';
-
-        document.getElementById('bienTheModalLabel').innerText = 'Cập nhật Biến thể';
-        bienTheModal.show();
-    }
-
-    async function saveData() {
-        const id = document.getElementById('btId').value;
-        const payload = {
-            maSku: document.getElementById('btSku').value,
-            mauSac: document.getElementById('btMau').value,
-            ramGb: parseInt(document.getElementById('btRam').value) || null,
-            luuTruGb: parseInt(document.getElementById('btRom').value) || null,
-            // Không gửi giaNhap nữa (hoặc gửi null nếu API yêu cầu)
-            giaNhap: null,
-            giaBan: parseInt(document.getElementById('btGiaBan').value),
-            giaKhuyenMai: parseInt(document.getElementById('btGiaKm').value) || null
-        };
-
-        // Chỉ validate các trường bắt buộc: maSku, mauSac, giaBan
-        if(!payload.maSku || !payload.mauSac || !payload.giaBan) {
-            alert('Vui lòng điền đủ các trường bắt buộc (Mã SKU, Màu sắc, Giá bán)!');
-            return;
         }
 
-        try {
-            const url = id ? `${API_URL}/${id}` : `${API_URL}/san-pham/${sanPhamId}`;
-            const method = id ? 'PUT' : 'POST';
+        function showAddModal() {
+            document.getElementById('bienTheForm').reset();
+            document.getElementById('btId').value = '';
+            document.getElementById('bienTheModalLabel').innerText = 'Thêm Biến thể mới';
+            bienTheModal.show();
+        }
 
-            const res = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+        function showEditModal(bt) {
+            document.getElementById('btId').value = bt.id;
+            document.getElementById('btSku').value = bt.maSku;
+            document.getElementById('btMau').value = bt.mauSac;
+            document.getElementById('btRam').value = bt.ramGb || '';
+            document.getElementById('btRom').value = bt.luuTruGb || '';
+            // Không gán giá nhập nữa
+            document.getElementById('btGiaBan').value = bt.giaBan;
+            document.getElementById('btGiaKm').value = bt.giaKhuyenMai || '';
 
-            if (res.ok) {
-                alert('Lưu thành công!');
-                bienTheModal.hide();
-                loadData();
-            } else {
-                const err = await res.text();
-                alert('Lỗi: ' + err);
+            document.getElementById('bienTheModalLabel').innerText = 'Cập nhật Biến thể';
+            bienTheModal.show();
+        }
+
+        async function saveData() {
+            const id = document.getElementById('btId').value;
+            const payload = {
+                maSku: document.getElementById('btSku').value,
+                mauSac: document.getElementById('btMau').value,
+                ramGb: parseInt(document.getElementById('btRam').value) || null,
+                luuTruGb: parseInt(document.getElementById('btRom').value) || null,
+                // Không gửi giaNhap nữa (hoặc gửi null nếu API yêu cầu)
+                giaNhap: null,
+                giaBan: parseInt(document.getElementById('btGiaBan').value),
+                giaKhuyenMai: parseInt(document.getElementById('btGiaKm').value) || null
+            };
+
+            // Chỉ validate các trường bắt buộc: maSku, mauSac, giaBan
+            if (!payload.maSku || !payload.mauSac || !payload.giaBan) {
+                alert('Vui lòng điền đủ các trường bắt buộc (Mã SKU, Màu sắc, Giá bán)!');
+                return;
             }
-        } catch (e) {
-            console.error(e);
-            alert('Đã xảy ra lỗi hệ thống!');
-        }
-    }
 
-    async function toggleStatus(id, newStatus) {
-        if(!confirm('Bạn có chắc chắn muốn ngừng kinh doanh biến thể này?')) return;
+            try {
+                const url = id ? `${API_URL}/${id}` : `${API_URL}/san-pham/${sanPhamId}`;
+                const method = id ? 'PUT' : 'POST';
 
-        try {
-            const res = await fetch(`${API_URL}/${id}/trang-thai?trangThai=${newStatus}`, { method: 'PATCH' });
-            if (res.ok) {
-                loadData();
-            } else {
-                const err = await res.text();
-                alert('Lỗi: ' + err);
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    alert('Lưu thành công!');
+                    bienTheModal.hide();
+                    loadData();
+                } else {
+                    const err = await res.text();
+                    alert('Lỗi: ' + err);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Đã xảy ra lỗi hệ thống!');
             }
-        } catch (e) {
-            alert('Đã xảy ra lỗi!');
         }
-    }
-</script>
+
+        async function toggleStatus(id, newStatus) {
+            if (!confirm('Bạn có chắc chắn muốn ngừng kinh doanh biến thể này?')) return;
+
+            try {
+                const res = await fetch(`${API_URL}/${id}/trang-thai?trangThai=${newStatus}`, { method: 'PATCH' });
+                if (res.ok) {
+                    loadData();
+                } else {
+                    const err = await res.text();
+                    alert('Lỗi: ' + err);
+                }
+            } catch (e) {
+                alert('Đã xảy ra lỗi!');
+            }
+        }
+    </script>
 
 </body>
+
 </html>

@@ -64,7 +64,7 @@ public class SanPhamController {
 
         // Parse sort parameter (format: "field,direction")
         Pageable pageable = buildPageable(page, size, sort);
-        Page<SanPham> result = sanPhamService.layDanhSach(danhMucId, hangSanXuatId, pageable);
+        Page<SanPham> result = sanPhamService.layDanhSach(null, danhMucId, hangSanXuatId, pageable);
         return ResponseEntity.ok(result);
     }
 

@@ -9,7 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entity mapping báº£ng bien_the_san_pham (Module 2: Sáº£n pháº©m & Biáº¿n thá»ƒ).
+ * Entity mapping báº£ng bien_the_san_pham (Module 2: Sáº£n pháº©m & Biáº¿n
+ * thá»ƒ).
  * <p>
  * Má»—i biáº¿n thá»ƒ = 1 SKU cá»¥ thá»ƒ (mÃ u sáº¯c + RAM + ROM).
  * VÃ­ dá»¥: iPhone 15 Pro Max â€“ Titan Äen â€“ 8GB RAM â€“ 256GB.
@@ -35,7 +36,7 @@ import java.util.List;
 @Builder
 @ToString(exclude = { "mayDienThoais", "hinhAnhSanPhams" })
 @EqualsAndHashCode(exclude = { "mayDienThoais", "hinhAnhSanPhams" })
-@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class BienTheSanPham {
 
         @Id
@@ -50,7 +51,10 @@ public class BienTheSanPham {
         @JoinColumn(name = "san_pham_id", nullable = false, foreignKey = @ForeignKey(name = "fk_bt_sp"))
         private SanPham sanPham;
 
-        /** MÃ£ SKU â€“ duy nháº¥t trong toÃ n há»‡ thá»‘ng (vÃ­ dá»¥: "IP15PM-TIT-8-256"). */
+        /**
+         * MÃ£ SKU â€“ duy nháº¥t trong toÃ n há»‡ thá»‘ng (vÃ­ dá»¥:
+         * "IP15PM-TIT-8-256").
+         */
         @Column(name = "ma_sku", nullable = false, length = 100, unique = true)
         private String maSku;
 
@@ -80,7 +84,6 @@ public class BienTheSanPham {
         @Column(name = "loai_luu_tru", nullable = false, length = 20)
         @Builder.Default
         private String loaiLuuTru = "UFS";
-
 
         /** GiÃ¡ bÃ¡n láº» niÃªm yáº¿t. */
         @Column(name = "gia_ban", nullable = false, precision = 15, scale = 2)
@@ -124,7 +127,8 @@ public class BienTheSanPham {
         private List<MayDienThoai> mayDienThoais = new ArrayList<>();
 
         // -------------------------------------------------------------------------
-        // Quan há»‡ 1-N: 1 BienTheSanPham â†’ nhiá»u HinhAnhSanPham (ON DELETE CASCADE)
+        // Quan há»‡ 1-N: 1 BienTheSanPham â†’ nhiá»u HinhAnhSanPham (ON DELETE
+        // CASCADE)
         // -------------------------------------------------------------------------
         @OneToMany(mappedBy = "bienTheSanPham", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
         @Builder.Default

@@ -10,8 +10,10 @@ import org.example.primemobile.entity.ThongSoKyThuat;
 import org.example.primemobile.service.IBienTheSanPhamService;
 import org.example.primemobile.service.IDanhMucService;
 import org.example.primemobile.service.IHangSanXuatService;
+import org.example.primemobile.service.IKhuyenMaiService;
 import org.example.primemobile.service.ISanPhamService;
 import org.example.primemobile.service.IThongSoKyThuatService;
+import org.example.primemobile.repository.BienTheSanPhamRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -24,7 +26,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -39,6 +43,8 @@ public class CatalogPublicController {
     private final IThongSoKyThuatService thongSoKyThuatService;
     private final IDanhMucService danhMucService;
     private final IHangSanXuatService hangSanXuatService;
+    private final BienTheSanPhamRepository bienTheSanPhamRepository;
+    private final IKhuyenMaiService khuyenMaiService;
 
     @GetMapping("/san-pham")
     public ResponseEntity<?> layDanhSachSanPham(
@@ -53,7 +59,7 @@ public class CatalogPublicController {
 
         Pageable pageable = buildPageable(page, size, sort);
         return ResponseEntity.ok(sanPhamService
-                .layDanhSachCongKhai(danhMucId, hangSanXuatId, pageable)
+                .layDanhSachCongKhai(null, danhMucId, hangSanXuatId, pageable)
                 .map(this::productDto));
     }
 
@@ -123,6 +129,28 @@ public class CatalogPublicController {
         return ResponseEntity.ok(hangSanXuatService.layTatCa().stream()
                 .map(this::brandDto)
                 .toList());
+    }
+
+    @GetMapping("/tim-kiem-nhanh")
+    public ResponseEntity<?> timKiemNhanh(@RequestParam String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+        List<BienTheSanPham> results = bienTheSanPhamRepository.searchBienTheSanPham(keyword, PageRequest.of(0, 8));
+        List<Map<String, Object>> dto = results.stream().map(b -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", b.getSanPham().getId());
+            map.put("tenSanPham", b.getSanPham().getTenSanPham() + " " + b.getRamGb() + "GB " + b.getLuuTruGb() + "GB");
+            map.put("giaBan", b.getGiaBan());
+            map.put("giaSauKhuyenMai", khuyenMaiService.tinhGiaSauKhuyenMai(b.getId(), null));
+            if (b.getHinhAnhSanPhams() != null && !b.getHinhAnhSanPhams().isEmpty()) {
+                map.put("hinhAnh", b.getHinhAnhSanPhams().get(0).getDuongDan());
+            } else {
+                map.put("hinhAnh", "/images/no-image.png");
+            }
+            return map;
+        }).toList();
+        return ResponseEntity.ok(dto);
     }
 
     private Pageable buildPageable(int page, int size, String sort) {

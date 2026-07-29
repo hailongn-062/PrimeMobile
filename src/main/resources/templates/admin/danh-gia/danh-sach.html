@@ -17,6 +17,36 @@
             <div class="pm-card-header">
                 Danh sách đánh giá
             </div>
+            
+            <div class="card-body p-3 bg-light border-bottom">
+                <form id="filterForm" class="row g-2 align-items-center" onsubmit="event.preventDefault(); loadReviews(0);">
+                    <div class="col-md-3">
+                        <input type="text" id="tuKhoa" name="tuKhoa" class="form-control form-control-sm" placeholder="Tìm KH, SP, Nội dung..." />
+                    </div>
+                    <div class="col-md-2">
+                        <select id="trangThai" name="trangThai" class="form-select form-select-sm">
+                            <option value="">-- Trạng thái --</option>
+                            <option value="cho_duyet">Chờ duyệt</option>
+                            <option value="da_duyet">Đã duyệt</option>
+                            <option value="an">Đã ẩn</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select id="sao" name="sao" class="form-select form-select-sm">
+                            <option value="">-- Số sao --</option>
+                            <option value="5">5 sao</option>
+                            <option value="4">4 sao</option>
+                            <option value="3">3 sao</option>
+                            <option value="2">2 sao</option>
+                            <option value="1">1 sao</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-sm btn-secondary w-100">Lọc</button>
+                    </div>
+                </form>
+            </div>
+
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
@@ -41,21 +71,54 @@
                     </table>
                 </div>
             </div>
+            
+            <div class="card-footer bg-white border-top">
+                <nav>
+                    <ul class="pagination pagination-sm justify-content-end mb-0" id="pagination-container">
+                    </ul>
+                </nav>
+            </div>
         </div>
     </main>
 
     <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
 
     <script th:inline="javascript">
-        async function loadReviews() {
+        let currentPage = 0;
+        let searchTimeout = null;
+
+        document.getElementById('tuKhoa').addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => loadReviews(0), 400);
+        });
+
+        ['trangThai', 'sao'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => loadReviews(0));
+        });
+
+        async function loadReviews(page = 0) {
+            currentPage = page;
+            const tuKhoa = document.getElementById('tuKhoa').value;
+            const trangThai = document.getElementById('trangThai').value;
+            const sao = document.getElementById('sao').value;
+
+            const params = new URLSearchParams({
+                page: page,
+                size: 10
+            });
+            if (tuKhoa) params.append('tuKhoa', tuKhoa);
+            if (trangThai) params.append('trangThai', trangThai);
+            if (sao) params.append('sao', sao);
+
             try {
-                const res = await fetch('/api/admin/danh-gia?size=100');
+                const res = await fetch(`/api/admin/danh-gia?${params.toString()}`);
                 if (!res.ok) throw new Error('Không thể tải danh sách đánh giá');
                 const data = await res.json();
                 
                 const tbody = document.getElementById('review-table-body');
                 if (!data.content || data.content.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Chưa có đánh giá nào.</td></tr>';
+                    document.getElementById('pagination-container').innerHTML = '';
                     return;
                 }
 
@@ -70,7 +133,7 @@
                     let statusBadge = '';
                     if (review.trangThai === 'cho_duyet') statusBadge = '<span class="badge bg-warning text-dark">Chờ duyệt</span>';
                     else if (review.trangThai === 'da_duyet') statusBadge = '<span class="badge bg-success">Đã duyệt</span>';
-                    else if (review.trangThai === 'da_an') statusBadge = '<span class="badge bg-secondary">Đã ẩn</span>';
+                    else if (review.trangThai === 'an') statusBadge = '<span class="badge bg-secondary">Đã ẩn</span>';
 
                     html += `
                         <tr>
@@ -87,7 +150,7 @@
                             <td>${date}</td>
                             <td>${statusBadge}</td>
                             <td class="text-end">
-                                ${review.trangThai === 'cho_duyet' || review.trangThai === 'da_an' ? 
+                                ${review.trangThai === 'cho_duyet' || review.trangThai === 'an' ? 
                                     `<button class="btn btn-sm btn-success me-1" onclick="approveReview(${review.id})"><i class="fa fa-check"></i> Duyệt</button>` : ''}
                                 ${review.trangThai === 'da_duyet' || review.trangThai === 'cho_duyet' ? 
                                     `<button class="btn btn-sm btn-secondary" onclick="hideReview(${review.id})"><i class="fa fa-eye-slash"></i> Ẩn</button>` : ''}
@@ -96,10 +159,40 @@
                     `;
                 });
                 tbody.innerHTML = html;
+                renderPagination(data);
             } catch (err) {
                 console.error(err);
                 document.getElementById('review-table-body').innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Lỗi tải dữ liệu.</td></tr>';
             }
+        }
+
+        function renderPagination(data) {
+            const container = document.getElementById('pagination-container');
+            if (data.totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            
+            // Prev
+            html += `<li class="page-item ${data.first ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="event.preventDefault(); loadReviews(${data.number - 1})">Trước</a>
+            </li>`;
+
+            // Pages
+            for (let i = 0; i < data.totalPages; i++) {
+                html += `<li class="page-item ${i === data.number ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="event.preventDefault(); loadReviews(${i})">${i + 1}</a>
+                </li>`;
+            }
+
+            // Next
+            html += `<li class="page-item ${data.last ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="event.preventDefault(); loadReviews(${data.number + 1})">Sau</a>
+            </li>`;
+
+            container.innerHTML = html;
         }
 
         async function approveReview(id) {
@@ -107,7 +200,7 @@
             try {
                 const res = await fetch(`/api/admin/danh-gia/${id}/duyet`, { method: 'PUT' });
                 if (!res.ok) throw new Error('Lỗi khi duyệt');
-                loadReviews();
+                loadReviews(currentPage);
             } catch (err) {
                 alert(err.message);
             }
@@ -118,13 +211,13 @@
             try {
                 const res = await fetch(`/api/admin/danh-gia/${id}/an`, { method: 'PUT' });
                 if (!res.ok) throw new Error('Lỗi khi ẩn');
-                loadReviews();
+                loadReviews(currentPage);
             } catch (err) {
                 alert(err.message);
             }
         }
 
-        document.addEventListener('DOMContentLoaded', loadReviews);
+        document.addEventListener('DOMContentLoaded', () => loadReviews(0));
     </script>
 </body>
 </html>

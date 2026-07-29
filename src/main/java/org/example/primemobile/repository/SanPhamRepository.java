@@ -24,8 +24,10 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
      */
     @Query("SELECT s FROM SanPham s WHERE " +
            "(:danhMucId IS NULL OR s.danhMuc.id = :danhMucId) AND " +
-           "(:hangSanXuatId IS NULL OR s.hangSanXuat.id = :hangSanXuatId)")
+           "(:hangSanXuatId IS NULL OR s.hangSanXuat.id = :hangSanXuatId) AND " +
+           "(:tuKhoa IS NULL OR LOWER(s.tenSanPham) LIKE LOWER(CONCAT('%', :tuKhoa, '%')) OR LOWER(s.maSanPham) LIKE LOWER(CONCAT('%', :tuKhoa, '%')))")
     Page<SanPham> timKiemVaLocSanPham(
+            @Param("tuKhoa") String tuKhoa,
             @Param("danhMucId")      Integer danhMucId,
             @Param("hangSanXuatId") Integer hangSanXuatId,
             Pageable pageable);
@@ -37,9 +39,13 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
     @Query("SELECT s FROM SanPham s WHERE " +
            "s.trangThai = 'dang_ban' AND " +
            "(:danhMucId IS NULL OR s.danhMuc.id = :danhMucId) AND " +
-           "(:hangSanXuatId IS NULL OR s.hangSanXuat.id = :hangSanXuatId)")
+           "(:hangSanXuatId IS NULL OR s.hangSanXuat.id = :hangSanXuatId) AND " +
+           "(:tuKhoa IS NULL OR LOWER(s.tenSanPham) LIKE LOWER(CONCAT('%', :tuKhoa, '%')) OR LOWER(s.maSanPham) LIKE LOWER(CONCAT('%', :tuKhoa, '%')))")
     Page<SanPham> timKiemSanPhamPublic(
+            @Param("tuKhoa") String tuKhoa,
             @Param("danhMucId")      Integer danhMucId,
             @Param("hangSanXuatId") Integer hangSanXuatId,
             Pageable pageable);
+
+    long countByTrangThai(String trangThai);
 }

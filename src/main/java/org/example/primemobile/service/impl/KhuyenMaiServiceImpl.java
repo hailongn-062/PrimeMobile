@@ -39,6 +39,12 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<ChuongTrinhKhuyenMai> timKiemVaLoc(String tuKhoa, String trangThai, String loai, java.time.LocalDateTime tuNgay, java.time.LocalDateTime denNgay) {
+        return ctkmRepo.timKiemVaLocCtkm(tuKhoa, trangThai, loai, tuNgay, denNgay);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public ChuongTrinhKhuyenMai layTheoId(Integer id) {
         return ctkmRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy chương trình KM ID: " + id));
@@ -67,6 +73,7 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
             entity.setNgayKetThuc(ctkm.getNgayKetThuc());
             // Chỉ cập nhật các trường thuộc loại tương ứng
             entity.setDonHangToiThieu(ctkm.getDonHangToiThieu());
+            entity.setGiamToiDa(ctkm.getGiamToiDa());
 
             if (ctkm.getTrangThai() != null && !ctkm.getTrangThai().isBlank()) {
                 entity.setTrangThai(ctkm.getTrangThai());
@@ -184,6 +191,10 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
         BigDecimal tienGiam = tongTienHang
                 .multiply(ctkm.getGiaTriUuDai())
                 .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+                
+        if (ctkm.getGiamToiDa() != null && tienGiam.compareTo(ctkm.getGiamToiDa()) > 0) {
+            tienGiam = ctkm.getGiamToiDa();
+        }
 
         log.info("[KhuyenMai] Chủ động chọn CTKM: id={}, ten='{}', giảm {}%, tiền giảm={}",
                 ctkm.getId(), ctkm.getTenCtkm(), ctkm.getGiaTriUuDai(), tienGiam);
@@ -286,8 +297,13 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
         if (!pvList.isEmpty()) {
             PhamViKhuyenMai pv = pvList.get(0);
             BigDecimal phanTram = pv.getChuongTrinhKhuyenMai().getGiaTriUuDai();
-            giaSauKM = giaGoc.multiply(
-                    BigDecimal.ONE.subtract(phanTram.divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP)));
+            BigDecimal tienGiam = giaGoc.multiply(phanTram.divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP));
+            
+            if (pv.getChuongTrinhKhuyenMai().getGiamToiDa() != null && tienGiam.compareTo(pv.getChuongTrinhKhuyenMai().getGiamToiDa()) > 0) {
+                tienGiam = pv.getChuongTrinhKhuyenMai().getGiamToiDa();
+            }
+            giaSauKM = giaGoc.subtract(tienGiam);
+            
             log.debug("[KhuyenMai] Theo sản phẩm: biếnTheId={}, giá gốc={}, giảm {}%, giá giảm={}",
                     bienTheId, giaGoc, phanTram, giaSauKM);
         }
@@ -324,6 +340,10 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
         BigDecimal tienGiam = tongTienHang
                 .multiply(best.getGiaTriUuDai())
                 .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+                
+        if (best.getGiamToiDa() != null && tienGiam.compareTo(best.getGiamToiDa()) > 0) {
+            tienGiam = best.getGiamToiDa();
+        }
 
         log.info("[KhuyenMai] Áp dụng CTKM cho đơn hàng: id={}, ten='{}', giảm {}%, tiền giảm={}, tổng sau giảm={}",
                 best.getId(), best.getTenCtkm(), best.getGiaTriUuDai(), tienGiam, tongTienHang.subtract(tienGiam));
@@ -358,6 +378,9 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
                 || req.getGiaTriUuDai().compareTo(new BigDecimal("100")) > 0) {
             throw new IllegalArgumentException("Giá trị ưu đãi (%) phải từ 0.01 đến 100.");
         }
+        if (req.getGiamToiDa() != null && req.getGiamToiDa().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Giảm tối đa phải lớn hơn 0 nếu được thiết lập.");
+        }
 
         switch (req.getLoai()) {
             case "theo_don_hang" -> {
@@ -377,8 +400,12 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
         if (ctkm.getGiaTriUuDai() == null) {
             return BigDecimal.ZERO;
         }
-        return tongTienHang
+        BigDecimal tienGiam = tongTienHang
                 .multiply(ctkm.getGiaTriUuDai())
                 .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+        if (ctkm.getGiamToiDa() != null && tienGiam.compareTo(ctkm.getGiamToiDa()) > 0) {
+            tienGiam = ctkm.getGiamToiDa();
+        }
+        return tienGiam;
     }
 }

@@ -34,6 +34,11 @@ public interface IDanhGiaService {
     Page<DanhGiaSanPham> layTatCaDanhGia(Pageable pageable);
 
     /**
+     * Admin/Nhân viên tìm kiếm, lọc và phân trang đánh giá.
+     */
+    Page<DanhGiaSanPham> timKiemVaLocDanhGia(String tuKhoa, String trangThai, Integer sao, java.time.LocalDateTime tuNgay, java.time.LocalDateTime denNgay, Pageable pageable);
+
+    /**
      * Admin/Nhân viên duyệt đánh giá.
      */
     DanhGiaSanPham duyetDanhGia(Integer danhGiaId);

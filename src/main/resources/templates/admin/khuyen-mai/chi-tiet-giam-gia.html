@@ -52,7 +52,10 @@
                     <div class="col-md-3">
                         <p class="mb-1 text-muted small">Giảm</p>
                         <strong class="text-danger fs-5" th:text="${ctkm.giaTriUuDai + '%'}"></strong>
-
+                    </div>
+                    <div class="col-md-3" th:if="${ctkm.giamToiDa != null}">
+                        <p class="mb-1 text-muted small">Giảm tối đa</p>
+                        <strong class="text-warning" th:text="${#numbers.formatDecimal(ctkm.giamToiDa, 0, 'COMMA', 0, 'POINT')} + 'đ'"></strong>
                     </div>
                     <div class="col-md-3">
                         <p class="mb-1 text-muted small">Bắt đầu</p>

@@ -45,16 +45,14 @@ public class KhoController {
      * @return Danh sách TonKho đã được map sang DTO
      */
     @GetMapping("/ton-kho")
-    public List<TonKhoResponse> getTonKho(@RequestParam(required = false) Integer khoId) {
-        List<TonKho> list;
+    public List<TonKhoResponse> getTonKho(@RequestParam(required = false) Integer khoId,
+                                          @RequestParam(required = false) String maSku,
+                                          @RequestParam(required = false) String tenSanPham) {
+        Integer finalKhoId = (khoId != null && khoId > 0) ? khoId : null;
+        String finalMaSku = (maSku != null && !maSku.trim().isEmpty()) ? maSku.trim() : null;
+        String finalTenSanPham = (tenSanPham != null && !tenSanPham.trim().isEmpty()) ? tenSanPham.trim() : null;
 
-        if (khoId != null && khoId > 0) {
-            // Sử dụng IKhoService đã có sẵn để lấy tồn kho của 1 kho (eager fetch)
-            list = khoService.getTonKhoByKho(khoId);
-        } else {
-            // Lấy toàn bộ tồn kho nếu không truyền khoId
-            list = tonKhoRepository.findAll();
-        }
+        List<TonKho> list = tonKhoRepository.timKiemTonKho(finalKhoId, finalMaSku, finalTenSanPham);
 
         return list.stream().map(tk -> new TonKhoResponse(
                 tk.getKho() != null ? tk.getKho().getTenKho() : "N/A",

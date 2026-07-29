@@ -25,12 +25,20 @@ public interface IBaoHanhService {
     
     YeuCauBaoHanh capNhatTrangThaiYeuCau(Integer yeuCauId, String trangThaiMoi, String ketQua);
     
+    List<String> goiYSoDienThoai(String sdt);
+
+    List<String> goiYImei(String imei);
+    
     Page<YeuCauBaoHanh> layDanhSachYeuCau(Pageable pageable);
 
     /**
      * Trả về danh sách DTO an toàn (không có circular reference) cho trang quản lý bảo hành.
      */
     List<org.example.primemobile.dto.baohanh.YeuCauBaoHanhResponse> layDanhSachYeuCauDtos();
+
+    List<org.example.primemobile.dto.baohanh.YeuCauBaoHanhResponse> timKiemVaLoc(
+        String tuKhoa, String trangThai, Integer trungTamBhId, java.time.LocalDateTime tuNgay, java.time.LocalDateTime denNgay
+    );
     
     List<YeuCauBaoHanh> layLichSuBaoHanhKhachHang(Integer khachHangId);
 }

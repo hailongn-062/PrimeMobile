@@ -185,9 +185,23 @@ public class QuanLyDonHangUIController {
                 .phiShip(donHang.getPhiShip())
                 .tongThanhToan(donHang.getTongThanhToan())
                 .ghiChu(donHang.getGhiChu())
+                .tenKhuyenMai(donHang.getChuongTrinhKhuyenMai() != null ? donHang.getChuongTrinhKhuyenMai().getTenCtkm() : null)
+                .phuongThucThanhToan(resolvePhuongThuc(donHang))
                 .imeiList(imeiList)
                 .chiTietDonHangs(chiTietDtos)
                 .build();
+    }
+
+    private String resolvePhuongThuc(DonHang donHang) {
+        if (donHang.getThanhToans() == null || donHang.getThanhToans().isEmpty()) {
+            return null;
+        }
+        for (org.example.primemobile.entity.ThanhToan tt : donHang.getThanhToans()) {
+            if ("thanh_cong".equals(tt.getTrangThai())) {
+                return tt.getPhuongThucThanhToan().getTenPttt();
+            }
+        }
+        return donHang.getThanhToans().get(donHang.getThanhToans().size() - 1).getPhuongThucThanhToan().getTenPttt();
     }
 
     /**

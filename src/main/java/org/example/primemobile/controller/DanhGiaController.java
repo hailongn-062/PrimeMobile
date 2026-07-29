@@ -109,8 +109,19 @@ public class DanhGiaController {
      * nên interceptor /api/admin/** sẽ đảm bảo bảo mật.
      */
     @GetMapping("/api/admin/danh-gia")
-    public ResponseEntity<Page<DanhGiaSanPham>> layTatCaDanhGia(Pageable pageable) {
-        return ResponseEntity.ok(danhGiaService.layTatCaDanhGia(pageable));
+    public ResponseEntity<Page<DanhGiaSanPham>> layTatCaDanhGia(
+            @RequestParam(required = false) String tuKhoa,
+            @RequestParam(required = false) String trangThai,
+            @RequestParam(required = false) Integer sao,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime tuNgay,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime denNgay,
+            Pageable pageable) {
+        
+        // Trim tuKhoa if exists
+        String finalTuKhoa = (tuKhoa != null && !tuKhoa.trim().isEmpty()) ? tuKhoa.trim() : null;
+        String finalTrangThai = (trangThai != null && !trangThai.trim().isEmpty()) ? trangThai.trim() : null;
+        
+        return ResponseEntity.ok(danhGiaService.timKiemVaLocDanhGia(finalTuKhoa, finalTrangThai, sao, tuNgay, denNgay, pageable));
     }
 
     /**

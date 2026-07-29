@@ -28,6 +28,20 @@ public interface ChuongTrinhKhuyenMaiRepository extends JpaRepository<ChuongTrin
     /** Lấy tất cả chương trình, sắp xếp mới nhất lên đầu. */
     List<ChuongTrinhKhuyenMai> findAllByOrderByIdDesc();
 
+    @Query("SELECT c FROM ChuongTrinhKhuyenMai c WHERE " +
+           "(:tuKhoa IS NULL OR LOWER(c.tenCtkm) LIKE LOWER(CONCAT('%', :tuKhoa, '%'))) AND " +
+           "(:trangThai IS NULL OR c.trangThai = :trangThai) AND " +
+           "(:loai IS NULL OR c.loai = :loai) AND " +
+           "(CAST(:tuNgay AS timestamp) IS NULL OR c.ngayKetThuc >= :tuNgay) AND " +
+           "(CAST(:denNgay AS timestamp) IS NULL OR c.ngayBatDau <= :denNgay) " +
+           "ORDER BY c.id DESC")
+    List<ChuongTrinhKhuyenMai> timKiemVaLocCtkm(
+            @Param("tuKhoa") String tuKhoa,
+            @Param("trangThai") String trangThai,
+            @Param("loai") String loai,
+            @Param("tuNgay") java.time.LocalDateTime tuNgay,
+            @Param("denNgay") java.time.LocalDateTime denNgay);
+
     /**
      * Kích hoạt các chương trình khuyến mãi đã đến ngày bắt đầu.
      * Cập nhật {@code trangThai = 'dang_dien_ra'} cho những bản ghi

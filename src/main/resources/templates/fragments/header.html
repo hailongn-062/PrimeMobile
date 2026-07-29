@@ -21,17 +21,23 @@
                 <a href="/san-pham?danhMuc=vivo" class="text-decoration-none pm-brand-link">Vivo</a>
             </div>
 
-            <form class="d-flex pm-search-bar my-2 my-lg-0 ms-lg-4 flex-grow-1" style="max-width:380px;" action="/san-pham" method="get">
-                <input class="form-control form-control-sm rounded-start-pill border-0 px-3 py-2"
+            <form class="d-flex pm-search-bar my-2 my-lg-0 ms-lg-4 flex-grow-1 position-relative" style="max-width:380px;" action="/san-pham" method="get">
+                <input id="searchInput" class="form-control form-control-sm rounded-start-pill border-0 px-3 py-2"
                        type="search" name="tuKhoa"
                        placeholder="Bạn cần tìm điện thoại gì hôm nay?"
                        aria-label="Tìm kiếm sản phẩm"
-                       style="box-shadow:none;font-size:.88rem;">
+                       style="box-shadow:none;font-size:.88rem;" autocomplete="off">
                 <button class="btn btn-sm btn-light rounded-end-pill px-3 py-2" type="submit"
                         title="Tìm kiếm"
                         style="background:#fff;border:0;font-weight:800;color:#0d9488!important;">
                     <i class="fa fa-search"></i>
                 </button>
+                
+                <!-- Hộp thoại gợi ý tìm kiếm -->
+                <div id="searchSuggestions" class="search-suggestions-box d-none position-absolute bg-white rounded shadow text-dark w-100" style="top: 100%; left: 0; max-height: 400px; overflow-y: auto; z-index: 1050; margin-top: 8px;">
+                    <div id="searchSuggestionsList" class="list-group list-group-flush">
+                    </div>
+                </div>
             </form>
 
             <ul class="navbar-nav ms-auto align-items-center gap-3 flex-row my-2 my-lg-0">
@@ -91,7 +97,87 @@
         .pm-navbar .nav-link:hover { color:#ffc107!important; }
         .navbar-brand { transition:transform .2s; }
         .navbar-brand:hover { transform:scale(1.03); }
+        .search-suggestions-box { border: 1px solid #ddd; }
+        .search-suggestion-item { transition: background 0.2s; border-bottom: 1px solid #f1f1f1; display: flex; align-items: center; padding: 10px; text-decoration: none; color: #333; }
+        .search-suggestion-item:last-child { border-bottom: none; }
+        .search-suggestion-item:hover { background-color: #f8f9fa; }
+        .search-suggestion-img { width: 40px; height: 40px; object-fit: contain; margin-right: 10px; }
+        .search-suggestion-info { flex-grow: 1; }
+        .search-suggestion-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 2px; }
+        .search-suggestion-price { font-size: 0.8rem; color: #dc3545; font-weight: bold; margin-right: 5px; }
+        .search-suggestion-old-price { font-size: 0.75rem; color: #999; text-decoration: line-through; }
     </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const searchSuggestions = document.getElementById('searchSuggestions');
+            const searchSuggestionsList = document.getElementById('searchSuggestionsList');
+            let searchTimeout;
+
+            if (!searchInput || !searchSuggestions || !searchSuggestionsList) return;
+
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const keyword = this.value.trim();
+                if (keyword.length === 0) {
+                    searchSuggestions.classList.add('d-none');
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    fetch(`/api/public/catalog/tim-kiem-nhanh?keyword=${encodeURIComponent(keyword)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            searchSuggestionsList.innerHTML = '';
+                            if (data && data.length > 0) {
+                                data.forEach(item => {
+                                    const formattedPrice = new Intl.NumberFormat('vi-VN').format(item.giaSauKhuyenMai) + 'đ';
+                                    let oldPriceHtml = '';
+                                    if (item.giaSauKhuyenMai < item.giaBan) {
+                                        oldPriceHtml = `<span class="search-suggestion-old-price">${new Intl.NumberFormat('vi-VN').format(item.giaBan)}đ</span>`;
+                                    }
+                                    
+                                    const a = document.createElement('a');
+                                    a.href = `/san-pham/${item.id}`;
+                                    a.className = 'search-suggestion-item';
+                                    a.innerHTML = `
+                                        <img src="${item.hinhAnh}" class="search-suggestion-img" alt="${item.tenSanPham}">
+                                        <div class="search-suggestion-info">
+                                            <div class="search-suggestion-title">${item.tenSanPham}</div>
+                                            <div>
+                                                <span class="search-suggestion-price">${formattedPrice}</span>
+                                                ${oldPriceHtml}
+                                            </div>
+                                        </div>
+                                    `;
+                                    searchSuggestionsList.appendChild(a);
+                                });
+                                searchSuggestions.classList.remove('d-none');
+                            } else {
+                                searchSuggestionsList.innerHTML = '<div class="p-3 text-center text-muted small">Không tìm thấy sản phẩm nào</div>';
+                                searchSuggestions.classList.remove('d-none');
+                            }
+                        })
+                        .catch(err => console.error('Search error:', err));
+                }, 300);
+            });
+
+            // Hide when click outside
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
+                    searchSuggestions.classList.add('d-none');
+                }
+            });
+            
+            // Show again when focus if it has value
+            searchInput.addEventListener('focus', function() {
+                if (this.value.trim().length > 0 && searchSuggestionsList.innerHTML.trim().length > 0) {
+                    searchSuggestions.classList.remove('d-none');
+                }
+            });
+        });
+    </script>
 </nav>
 </body>
 </html>

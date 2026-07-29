@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -45,6 +46,16 @@ public class BaoHanhController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
+    }
+
+    @GetMapping("/goi-y")
+    public ResponseEntity<List<String>> goiY(@RequestParam String loai, @RequestParam String tuKhoa) {
+        if ("sdt".equals(loai)) {
+            return ResponseEntity.ok(baoHanhService.goiYSoDienThoai(tuKhoa));
+        } else if ("imei".equals(loai)) {
+            return ResponseEntity.ok(baoHanhService.goiYImei(tuKhoa));
+        }
+        return ResponseEntity.ok(List.of());
     }
 
     @PostMapping("/yeu-cau")
@@ -110,10 +121,21 @@ public class BaoHanhController {
     @GetMapping("/yeu-cau")
     public ResponseEntity<?> layDanhSach(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String tuKhoa,
+            @RequestParam(required = false) String trangThai,
+            @RequestParam(required = false) Integer trungTamBhId,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate tuNgay,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate denNgay) {
         try {
+            java.time.LocalDateTime startDateTime = tuNgay != null ? tuNgay.atStartOfDay() : null;
+            java.time.LocalDateTime endDateTime = denNgay != null ? denNgay.atTime(23, 59, 59) : null;
+            String finalTuKhoa = (tuKhoa != null && !tuKhoa.trim().isEmpty()) ? tuKhoa.trim() : null;
+            String finalTrangThai = (trangThai != null && !trangThai.trim().isEmpty()) ? trangThai.trim() : null;
+            Integer finalTrungTamBhId = (trungTamBhId != null && trungTamBhId > 0) ? trungTamBhId : null;
+
             // Lấy toàn bộ với JOIN FETCH để tránh circular JSON, rồi phân trang thủ công
-            var allList = baoHanhService.layDanhSachYeuCauDtos();
+            var allList = baoHanhService.timKiemVaLoc(finalTuKhoa, finalTrangThai, finalTrungTamBhId, startDateTime, endDateTime);
             int total = allList.size();
             int from = page * size;
             int to = Math.min(from + size, total);

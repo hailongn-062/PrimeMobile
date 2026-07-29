@@ -61,6 +61,40 @@ public class KhuyenMaiPublicController {
     // PRIVATE HELPERS
     // =========================================================================
 
+    /**
+     * Tính toán số tiền được giảm cho khách hàng khi chọn mã.
+     * <p>
+     * @param tongTien Tổng tiền đơn hàng
+     * @param ctkmId ID chương trình khuyến mãi do khách chọn
+     * @return Kết quả tính toán
+     */
+    @GetMapping("/khuyen-mai/tinh-toan")
+    public ResponseEntity<?> tinhToanKhuyenMai(
+            @org.springframework.web.bind.annotation.RequestParam java.math.BigDecimal tongTien,
+            @org.springframework.web.bind.annotation.RequestParam Integer ctkmId) {
+        log.info("[KhuyenMaiPublicController] GET /api/public/khuyen-mai/tinh-toan?tongTien={}&ctkmId={}", tongTien, ctkmId);
+        
+        try {
+            org.example.primemobile.dto.KhuyenMaiResult result = khuyenMaiService.apDungCtkmTheoId(ctkmId, tongTien);
+            // Dùng Map để trả về dữ liệu dễ dùng cho frontend
+            Map<String, Object> data = new LinkedHashMap<>();
+            data.put("ctkmId", result.getCtkmId());
+            data.put("tenCtkm", result.getTenCtkm());
+            data.put("giaTriUuDai", result.getGiaTriUuDai());
+            data.put("tienGiam", result.getTienGiam());
+            
+            return ResponseEntity.ok(buildSuccessResponse("Tính toán thành công", data));
+        } catch (IllegalArgumentException e) {
+            log.warn("[KhuyenMaiPublicController] Khách hàng chọn mã không hợp lệ (ctkmId={}): {}", ctkmId, e.getMessage());
+            // Trả về lỗi kèm message để frontend hiển thị alert
+            Map<String, Object> r = new LinkedHashMap<>();
+            r.put("success", false);
+            r.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(r);
+        }
+    }
+    // =========================================================================
+
     private Map<String, Object> buildSuccessResponse(String msg, Object data) {
         Map<String, Object> r = new LinkedHashMap<>();
         r.put("success", true);

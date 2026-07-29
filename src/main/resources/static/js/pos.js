@@ -256,7 +256,37 @@ function showProductStatus(state, msg = '') {
     }
 }
 
-/** Render danh sách sản phẩm ra grid */
+/** Gom nhóm sản phẩm theo sanPhamId */
+function groupProducts(list) {
+    const groupsMap = new Map();
+    list.forEach(p => {
+        const id = p.sanPhamId || p.tenSanPham; // Fallback to name if sanPhamId is null somehow
+        if (!groupsMap.has(id)) {
+            groupsMap.set(id, {
+                sanPhamId: p.sanPhamId,
+                tenSanPham: p.tenSanPham,
+                anhDaiDien: p.anhDaiDien,
+                variants: [],
+                tonKhoTotal: 0,
+                giaTuBao: p.giaBan ?? p.giaGoc,
+                giaGocToiThieu: p.giaGoc ?? p.giaBan // Thêm để lưu giá gốc của biến thể rẻ nhất
+            });
+        }
+        const g = groupsMap.get(id);
+        g.variants.push(p);
+        g.tonKhoTotal += (p.tonKho ?? 0);
+        
+        const giaBan = p.giaBan ?? p.giaGoc;
+        const giaGoc = p.giaGoc ?? p.giaBan;
+        if (giaBan < g.giaTuBao) {
+            g.giaTuBao = giaBan;
+            g.giaGocToiThieu = giaGoc; // Cập nhật lại giá gốc tương ứng khi tìm thấy giá bán rẻ hơn
+        }
+    });
+    return Array.from(groupsMap.values());
+}
+
+/** Render danh sách sản phẩm ra grid (sau khi gom nhóm) */
 function renderProducts(list) {
     if (!DOM.productGrid) return;
 
@@ -269,54 +299,261 @@ function renderProducts(list) {
         return;
     }
 
-    DOM.productGrid.innerHTML = list.map(p => buildProductCardHtml(p)).join('');
+    const grouped = groupProducts(list);
+    DOM.productGrid.innerHTML = grouped.map(g => buildGroupCardHtml(g)).join('');
 }
 
-/** Tạo HTML cho 1 product card – hiển thị cả giá gốc và giá sau khuyến mãi */
-function buildProductCardHtml(p) {
-    // Lấy giá gốc và giá sau khuyến mãi
-    const giaGoc = p.giaGoc ?? p.giaBan;
-    const giaBan = p.giaBan ?? giaGoc;
-    const isOnSale = giaGoc !== giaBan; // Nếu khác nhau thì có khuyến mãi
-    const donGia = isOnSale ? giaBan : giaGoc;
-    const isOutOfStock = (p.tonKho ?? 0) <= 0;
+/** Tạo HTML cho 1 group card (Layout ngang) */
+function buildGroupCardHtml(g) {
+    const isOutOfStock = g.tonKhoTotal <= 0;
 
-    const imgFallbackHtml = `<span style="display:inline-flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:2.5rem;color:#9CA3AF;">
+    const imgFallbackHtml = `<span class="prod-emoji">
             <i class="fa fa-mobile-alt"></i>
         </span>`;
-    const imgHtml = p.anhDaiDien
-        ? `<img src="${escHtml(p.anhDaiDien)}" alt="${escHtml(p.tenSanPham)}" loading="lazy" referrerpolicy="no-referrer"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex';"
-               style="max-height:100%;max-width:100%;object-fit:contain;">${imgFallbackHtml.replace('display:inline-flex', 'display:none')}`
+    const imgHtml = g.anhDaiDien
+        ? `<img src="${escHtml(g.anhDaiDien)}" alt="${escHtml(g.tenSanPham)}" loading="lazy" referrerpolicy="no-referrer"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex';">${imgFallbackHtml.replace('class="prod-emoji"', 'class="prod-emoji" style="display:none"')}`
         : imgFallbackHtml;
 
-    // Hiển thị giá gốc (gạch ngang) và giá bán hiện tại
-    const priceHtml = isOnSale
-        ? `
-            <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-                <div style="font-size:.75rem;color:#9CA3AF;text-decoration:line-through;">${fmt(giaGoc)}</div>
-                <div class="prod-price prod-price-sale">${fmt(giaBan)}</div>
-            </div>`
-        : `<div class="prod-price">${fmt(giaGoc)}</div>`;
-
-    const stockLabel = isOutOfStock
-        ? `<div class="prod-stock">Hết hàng</div>`
-        : `<div class="prod-stock">Tồn: <span>${p.tonKho}</span> máy</div>`;
+    // Hiển thị giá gốc gạch ngang nếu có khuyến mãi
+    const hasDiscount = g.giaGocToiThieu > g.giaTuBao;
+    const priceDisplay = hasDiscount 
+        ? `<div style="font-size: .75rem; color: #9CA3AF; text-decoration: line-through; margin-bottom: -2px;">Từ ${fmt(g.giaGocToiThieu)}</div>
+           <div class="prod-price-from">Từ ${fmt(g.giaTuBao)}</div>`
+        : `<div class="prod-price-from">Từ ${fmt(g.giaTuBao)}</div>`;
 
     return `
-    <div class="prod-card${isOutOfStock ? ' out-of-stock' : ''}" data-id="${p.bienTheId}" title="${escHtml(p.tenSanPham)}">
-        <div class="prod-img">${imgHtml}</div>
-        <div class="prod-body">
-            <div class="prod-name">${escHtml(p.tenSanPham)}</div>
-            <div class="prod-sku">${escHtml(p.maSku)} · ${p.ramGb}GB · ${p.luuTruGb}GB</div>
-            ${priceHtml}
-            ${stockLabel}
+    <div class="prod-card-h${isOutOfStock ? ' out-of-stock' : ''}" data-sp-id="${g.sanPhamId}" title="${escHtml(g.tenSanPham)}">
+        <div class="prod-card-h-img">${imgHtml}</div>
+        <div class="prod-card-h-body">
+            <div class="prod-name">${escHtml(g.tenSanPham)}</div>
+            <div class="prod-meta">
+                <span class="badge-variants">${g.variants.length} biến thể</span>
+                <span class="prod-stock">Tồn: <span>${g.tonKhoTotal}</span> máy</span>
+            </div>
+            ${priceDisplay}
         </div>
-        <button class="btn-add" onclick="addToCart(${p.bienTheId})"
+        <button class="btn-add-group" onclick='openVariantDialog(${JSON.stringify(g).replace(/'/g, "&#39;")})'
                 ${isOutOfStock ? 'disabled' : ''}>
-            <i class="fa fa-plus me-1"></i>Thêm vào giỏ
+            <i class="fa fa-plus"></i>
         </button>
     </div>`;
+}
+
+/** Popup chọn cấu hình (biến thể) */
+async function openVariantDialog(group) {
+    // 1. Phân loại biến thể theo dung lượng và màu sắc
+    const capacities = [...new Set(group.variants.map(v => v.luuTruGb))].sort((a,b) => a-b);
+    
+    // Giao diện cấu hình
+    const containerId = `variant-picker-${group.sanPhamId || Date.now()}`;
+    
+    const html = `
+        <div id="${containerId}" class="variant-picker-container" style="text-align: left; padding: 0 10px;">
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight: 700; color: #E5E7EB; margin-bottom: 8px; display: block;">Dung lượng</label>
+                <div class="capacity-chips" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    ${capacities.map(cap => `
+                        <button type="button" class="chip-btn chip-cap" data-cap="${cap}">
+                            ${cap}GB
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight: 700; color: #E5E7EB; margin-bottom: 8px; display: block;">Màu sắc</label>
+                <div class="color-chips" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <!-- Sẽ được fill bằng JS khi chọn dung lượng -->
+                </div>
+            </div>
+
+            <div class="price-display" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <div style="font-size: 0.85rem; color: #9CA3AF;">Giá sản phẩm</div>
+                <div class="price-val" style="font-size: 1.2rem; font-weight: bold; color: #3B82F6;">Vui lòng chọn cấu hình</div>
+                <div class="stock-val" style="font-size: 0.8rem; color: #10B981; margin-top: 2px;"></div>
+                <input type="hidden" id="selectedVariantId" value="">
+            </div>
+        </div>
+        
+        <style>
+            .chip-btn {
+                background: #232840;
+                border: 2px solid rgba(255,255,255,0.1);
+                color: #fff;
+                padding: 6px 12px;
+                border-radius: 20px;
+                cursor: pointer;
+                font-size: 0.85rem;
+                font-weight: 600;
+                transition: all 0.2s;
+            }
+            .chip-btn:hover:not(:disabled) {
+                background: #2A3047;
+                border-color: rgba(255,255,255,0.3);
+            }
+            .chip-btn.selected {
+                background: rgba(59, 130, 246, 0.15);
+                border-color: #3B82F6;
+                color: #60A5FA;
+            }
+            .chip-btn:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+            .color-dot {
+                display: inline-block;
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                margin-right: 6px;
+                vertical-align: middle;
+                border: 1px solid rgba(255,255,255,0.2);
+            }
+        </style>
+    `;
+
+    const { value: selectedBienTheId } = await Swal.fire({
+        title: `Cấu hình ${escHtml(group.tenSanPham)}`,
+        html: html,
+        width: 500,
+        showCancelButton: true,
+        cancelButtonText: 'Hủy',
+        confirmButtonText: 'Tiếp theo &rarr;',
+        customClass: {
+            confirmButton: 'btn btn-primary',
+            cancelButton: 'btn btn-secondary'
+        },
+        didOpen: () => {
+            const container = document.getElementById(containerId);
+            const capChips = container.querySelectorAll('.chip-cap');
+            const colorContainer = container.querySelector('.color-chips');
+            const priceVal = container.querySelector('.price-val');
+            const stockVal = container.querySelector('.stock-val');
+            const selectedVariantIdInput = container.querySelector('#selectedVariantId');
+            
+            let selectedCap = null;
+            let selectedColor = null;
+
+            // Hàm cập nhật màu sắc khả dụng
+            const updateColors = () => {
+                if (!selectedCap) return;
+                
+                // Lọc biến thể theo dung lượng
+                const availableVariants = group.variants.filter(v => v.luuTruGb === selectedCap);
+                const colors = [...new Set(availableVariants.map(v => v.mauSac))];
+                
+                // Render chips màu
+                colorContainer.innerHTML = colors.map(color => {
+                    const variant = availableVariants.find(v => v.mauSac === color);
+                    const isOutOfStock = (variant.tonKho ?? 0) <= 0;
+                    
+                    // Simple color mapping for dot
+                    let dotColor = '#9CA3AF';
+                    const cLow = color.toLowerCase();
+                    if(cLow.includes('đen') || cLow.includes('black')) dotColor = '#000000';
+                    else if(cLow.includes('trắng') || cLow.includes('white')) dotColor = '#FFFFFF';
+                    else if(cLow.includes('xanh') || cLow.includes('blue')) dotColor = '#3B82F6';
+                    else if(cLow.includes('vàng') || cLow.includes('gold')) dotColor = '#F59E0B';
+                    else if(cLow.includes('đỏ') || cLow.includes('red')) dotColor = '#EF4444';
+                    else if(cLow.includes('tím') || cLow.includes('purple')) dotColor = '#8B5CF6';
+                    else if(cLow.includes('hồng') || cLow.includes('pink')) dotColor = '#EC4899';
+                    else if(cLow.includes('xám') || cLow.includes('grey') || cLow.includes('gray') || cLow.includes('titan')) dotColor = '#6B7280';
+                    
+                    return `
+                        <button type="button" class="chip-btn chip-color" data-color="${escHtml(color)}" ${isOutOfStock ? 'disabled' : ''}>
+                            <span class="color-dot" style="background-color: ${dotColor};"></span>${escHtml(color)}
+                        </button>
+                    `;
+                }).join('');
+                
+                // Gán event cho các chip màu mới
+                container.querySelectorAll('.chip-color').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        if (btn.disabled) return;
+                        
+                        // Cập nhật UI màu
+                        container.querySelectorAll('.chip-color').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        
+                        selectedColor = btn.getAttribute('data-color');
+                        updatePrice();
+                    });
+                });
+                
+                // Reset chọn màu nếu màu đang chọn không có trong dung lượng mới
+                if (selectedColor && !colors.includes(selectedColor)) {
+                    selectedColor = null;
+                }
+                
+                // Nếu chọn màu khả dụng thì re-select
+                if (selectedColor) {
+                    const btn = container.querySelector(`.chip-color[data-color="${selectedColor}"]`);
+                    if (btn && !btn.disabled) {
+                        btn.classList.add('selected');
+                    } else {
+                        selectedColor = null; // Màu này hết hàng ở dung lượng mới
+                    }
+                }
+                
+                updatePrice();
+            };
+
+            // Hàm cập nhật giá và ID
+            const updatePrice = () => {
+                if (selectedCap && selectedColor) {
+                    const variant = group.variants.find(v => v.luuTruGb === selectedCap && v.mauSac === selectedColor);
+                    if (variant) {
+                        const giaGoc = variant.giaGoc ?? variant.giaBan;
+                        const giaBan = variant.giaBan ?? giaGoc;
+                        
+                        if (giaBan < giaGoc) {
+                            priceVal.innerHTML = `<span style="font-size: 0.9rem; color: #9CA3AF; text-decoration: line-through; margin-right: 8px; font-weight: normal;">${fmt(giaGoc)}</span>${fmt(giaBan)}`;
+                        } else {
+                            priceVal.textContent = fmt(giaBan);
+                        }
+                        
+                        stockVal.textContent = `Còn ${variant.tonKho} máy trong kho`;
+                        selectedVariantIdInput.value = variant.bienTheId;
+                    }
+                } else {
+                    priceVal.textContent = 'Vui lòng chọn cấu hình';
+                    stockVal.textContent = '';
+                    selectedVariantIdInput.value = '';
+                }
+            };
+
+            // Event chọn dung lượng
+            capChips.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    // Update UI dung lượng
+                    capChips.forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    
+                    selectedCap = parseInt(btn.getAttribute('data-cap'), 10);
+                    updateColors();
+                });
+            });
+            
+            // Tự động click dung lượng đầu tiên (nếu có) để mồi
+            if (capChips.length > 0) {
+                capChips[0].click();
+            }
+        },
+        preConfirm: () => {
+            const val = document.getElementById('selectedVariantId')?.value;
+            if (!val) {
+                Swal.showValidationMessage('Vui lòng chọn đầy đủ dung lượng và màu sắc');
+                return false;
+            }
+            return parseInt(val, 10);
+        }
+    });
+
+    if (selectedBienTheId) {
+        // Proceed to next step: add to cart
+        addToCart(selectedBienTheId);
+    }
 }
 
 /** Escape HTML để tránh XSS trong innerHTML */
@@ -324,6 +561,177 @@ function escHtml(str) {
     const d = document.createElement('div');
     d.textContent = str ?? '';
     return d.innerHTML;
+}
+
+/* ── Scan IMEI To Cart ──────────────────────────────────────── */
+async function scanImeiToCart() {
+    // ID dùng cho vùng scanner
+    const scannerId = `scanner-inline-${Date.now()}`;
+    let isCameraActive = false;
+
+    const html = `
+        <div style="text-align:left; margin-bottom:15px;">
+            <label style="font-weight:600; color:#E5E7EB; margin-bottom:8px; display:block;">Nhập hoặc quét IMEI</label>
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="manualImeiInput" class="form-control" placeholder="Ví dụ: 351234567890123" style="flex:1; background:#1A1F2E; color:#fff; border:1px solid rgba(255,255,255,0.1);">
+                <button type="button" id="btnManualSearchImei" class="btn btn-primary"><i class="fa fa-search"></i></button>
+            </div>
+            
+            <div style="text-align:center; margin:15px 0;">
+                <span style="color:#9CA3AF; font-size:0.85rem;">Hoặc</span>
+            </div>
+
+            <div style="text-align:center;">
+                <button type="button" id="btnToggleCamera" class="btn btn-outline-primary w-100">
+                    <i class="fa fa-camera me-1"></i> Bật Camera Quét Mã
+                </button>
+            </div>
+            
+            <div id="${scannerId}" style="width:100%; max-width:400px; margin: 15px auto 0; border-radius:8px; overflow:hidden;"></div>
+        </div>
+    `;
+
+    let isProcessing = false;
+
+    const handleImei = async (imei) => {
+        if (!imei) return false;
+        imei = imei.trim();
+        
+        // Hiện loading trên Swal
+        Swal.showLoading();
+        
+        try {
+            // Tra cứu IMEI
+            const result = await (typeof BarcodeScanner !== 'undefined' ? BarcodeScanner.lookup(imei) : fetch(`/api/admin/imei/tra-cuu?imei1=${encodeURIComponent(imei)}`).then(r => r.json()));
+            
+            if (!result.success) {
+                Swal.showValidationMessage(result.message || 'Không tìm thấy IMEI.');
+                Swal.hideLoading();
+                return false;
+            }
+            if (result.tinhTrang !== 'trong_kho') {
+                Swal.showValidationMessage(`IMEI đang ở trạng thái: ${result.tinhTrang}`);
+                Swal.hideLoading();
+                return false;
+            }
+
+            // Kiểm tra xem sản phẩm có trong danh sách đang bán không
+            const p = allProducts.find(x => x.bienTheId === result.bienTheSanPhamId);
+            if (!p) {
+                Swal.showValidationMessage(`Không tìm thấy sản phẩm đang bán khớp với IMEI này.`);
+                Swal.hideLoading();
+                return false;
+            }
+
+            // Kiểm tra xem IMEI đã có trong giỏ hàng chưa
+            for (const item of cart) {
+                if (item.imeis) {
+                    const list = parseImeis(item.imeis);
+                    if (list.includes(imei)) {
+                        Swal.showValidationMessage(`IMEI ${imei} đã có trong giỏ hàng.`);
+                        Swal.hideLoading();
+                        return false;
+                    }
+                }
+            }
+
+            // Gọi API giữ IMEI
+            const res = await fetch(`/api/admin/pos/giu-imei?imei=${imei}`, { method: 'POST' });
+            if (!res.ok) {
+                const err = await res.text();
+                Swal.showValidationMessage(`Lỗi giữ IMEI: ${err}`);
+                Swal.hideLoading();
+                return false;
+            }
+
+            // Thêm vào giỏ hàng
+            let existing = cart.find(x => x.bienTheId === p.bienTheId);
+            if (existing) {
+                existing.soLuong += 1;
+                const list = parseImeis(existing.imeis);
+                list.push(imei);
+                existing.imeis = list.join(', ');
+            } else {
+                cart.push({
+                    bienTheId: p.bienTheId,
+                    tenSanPham: p.tenSanPham,
+                    maSku: p.maSku,
+                    mauSac: p.mauSac,
+                    ramGb: p.ramGb,
+                    luuTruGb: p.luuTruGb,
+                    soLuong: 1,
+                    donGia: p.giaBan ?? p.giaGoc,
+                    imeis: imei,
+                });
+            }
+
+            onCartChanged();
+            
+            // Dừng camera nếu đang chạy vì đã thành công
+            if (isCameraActive && typeof BarcodeScanner !== 'undefined') {
+                BarcodeScanner.stop();
+                isCameraActive = false;
+            }
+            
+            // Đóng popup và thông báo
+            Swal.close();
+            
+            toastSuccess(`Đã thêm ${escHtml(p.tenSanPham)} (Màu ${escHtml(p.mauSac)}, ${p.luuTruGb}GB)<br><small>IMEI: ${imei}</small>`);
+            return true;
+
+        } catch (error) {
+            Swal.showValidationMessage('Lỗi hệ thống: ' + error.message);
+            Swal.hideLoading();
+            return false;
+        }
+    };
+
+    await Swal.fire({
+        title: 'Quét IMEI',
+        html: html,
+        showConfirmButton: false,
+        showCancelButton: true,
+        cancelButtonText: 'Đóng',
+        didOpen: () => {
+            const btnManual = document.getElementById('btnManualSearchImei');
+            const inputManual = document.getElementById('manualImeiInput');
+            const btnCamera = document.getElementById('btnToggleCamera');
+            
+            btnManual.addEventListener('click', () => handleImei(inputManual.value));
+            inputManual.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') handleImei(inputManual.value);
+            });
+
+            if (typeof BarcodeScanner !== 'undefined') {
+                btnCamera.addEventListener('click', () => {
+                    if (isCameraActive) {
+                        BarcodeScanner.stop();
+                        isCameraActive = false;
+                        btnCamera.innerHTML = '<i class="fa fa-camera me-1"></i> Bật Camera Quét Mã';
+                        btnCamera.classList.replace('btn-danger', 'btn-outline-primary');
+                    } else {
+                        isCameraActive = true;
+                        btnCamera.innerHTML = '<i class="fa fa-stop me-1"></i> Dừng Camera';
+                        btnCamera.classList.replace('btn-outline-primary', 'btn-danger');
+                        BarcodeScanner.openInline(scannerId, async (decodedText) => {
+                            if (isCameraActive && !isProcessing) {
+                                isProcessing = true;
+                                await handleImei(decodedText);
+                                setTimeout(() => { isProcessing = false; }, 1500); // Đợi 1.5s trước khi cho phép quét lại để tránh spam lỗi
+                            }
+                        });
+                    }
+                });
+            } else {
+                btnCamera.style.display = 'none'; // Không có module BarcodeScanner
+            }
+        },
+        willClose: () => {
+            if (isCameraActive && typeof BarcodeScanner !== 'undefined') {
+                BarcodeScanner.stop();
+            }
+        }
+    });
 }
 
 /* ── Search realtime ──────────────────────────────────────── */
@@ -335,9 +743,7 @@ function initSearch() {
             filteredProducts = [...allProducts];
         } else {
             filteredProducts = allProducts.filter(p =>
-                p.tenSanPham.toLowerCase().includes(q) ||
-                p.maSku.toLowerCase().includes(q) ||
-                (p.mauSac ?? '').toLowerCase().includes(q)
+                p.tenSanPham.toLowerCase().includes(q)
             );
         }
 
@@ -403,25 +809,19 @@ async function openImeiSelector(item) {
         const selectedImeis = getSelectedImeis();
         const available = imeiList.filter(imei => !selectedImeis.includes(imei.imei1));
 
-        if (available.length < item.soLuong) {
-            toastWarn(`Không đủ IMEI khả dụng. Cần ${item.soLuong}, chỉ còn ${available.length}.`);
-            return false;
-        }
-
-        const soLuong = item.soLuong;
-        let html = `<div style="max-height:300px;overflow-y:auto;padding:0.5rem 0;">`;
-        for (let i = 0; i < soLuong; i++) {
-            html += `
-                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
-                    <span style="font-weight:bold;min-width:80px;">IMEI #${i + 1}:</span>
-                    <select class="imei-select-${item.bienTheId}" data-index="${i}" style="flex:1;padding:0.4rem;border-radius:6px;border:1px solid #ccc;">
-                        <option value="">-- Chọn IMEI --</option>
-                        ${available.map(imei => `<option value="${imei.imei1}">${imei.imei1}${imei.imei2 ? ' (SIM2: ' + imei.imei2 + ')' : ''}</option>`).join('')}
-                    </select>
-                </div>
-            `;
-        }
-        html += `</div>`;
+        const soLuong = 0; // 0 = unlimited
+        let html = `
+            <div style="margin-bottom:1rem; text-align: left; display: flex; gap: 0.5rem; justify-content: center;">
+                <button type="button" class="btn btn-sm btn-primary btn-scan-imei-pos">
+                    <i class="fa fa-barcode me-1"></i> Quét IMEI
+                </button>
+                <button type="button" class="btn btn-sm btn-danger btn-stop-scan-pos" style="display:none;">
+                    <i class="fa fa-times me-1"></i> Dừng quét
+                </button>
+            </div>
+            <div id="scanner-area-inline-${item.bienTheId}" style="width:100%; display:none; margin-bottom: 1rem;"></div>
+        `;
+        html += ImeiPickerUI.buildHtml(item.bienTheId, soLuong, available);
 
         const { value: imeis } = await Swal.fire({
             title: `Chọn IMEI cho ${item.tenSanPham}`,
@@ -430,18 +830,79 @@ async function openImeiSelector(item) {
             confirmButtonText: 'Xác nhận',
             cancelButtonText: 'Hủy',
             showCancelButton: true,
+            didDestroy: () => {
+                if (typeof BarcodeScanner !== 'undefined') BarcodeScanner.stop();
+            },
+            didOpen: () => {
+                const pickerContainer = document.getElementById(`imei-picker-container-${item.bienTheId}`);
+                if (pickerContainer && typeof ImeiPickerUI !== 'undefined') {
+                    ImeiPickerUI.init(pickerContainer);
+                }
+
+                const btnScan = document.querySelector('.btn-scan-imei-pos');
+                const btnStop = document.querySelector('.btn-stop-scan-pos');
+                const scannerAreaId = `scanner-area-inline-${item.bienTheId}`;
+                
+                if (btnStop) {
+                    btnStop.addEventListener('click', () => {
+                        if (typeof BarcodeScanner !== 'undefined') BarcodeScanner.stop();
+                        btnScan.style.display = 'inline-block';
+                        btnStop.style.display = 'none';
+                    });
+                }
+
+                if (btnScan && typeof BarcodeScanner !== 'undefined') {
+                    btnScan.addEventListener('click', () => {
+                        btnScan.style.display = 'none';
+                        btnStop.style.display = 'inline-block';
+                        BarcodeScanner.openInline(scannerAreaId, async (decodedText) => {
+                            try {
+                                const result = await BarcodeScanner.lookup(decodedText);
+                                if (!result.success) {
+                                    Swal.showValidationMessage(result.message);
+                                    return;
+                                }
+                                if (result.tinhTrang !== 'trong_kho') {
+                                    Swal.showValidationMessage(`IMEI ${decodedText} đang ở trạng thái: ${result.tinhTrang}`);
+                                    return;
+                                }
+                                if (result.bienTheSanPhamId !== item.bienTheId) {
+                                    Swal.showValidationMessage(`IMEI ${decodedText} thuộc sản phẩm ${result.tenSanPham || 'khác'}, không khớp.`);
+                                    return;
+                                }
+                                
+                                if (pickerContainer) {
+                                    const addResult = pickerContainer.addImei(decodedText);
+                                    if (addResult === 'invalid') {
+                                        Swal.showValidationMessage(`IMEI ${decodedText} không khả dụng (hoặc đã được chọn trước đó).`);
+                                    } else if (addResult === 'exists') {
+                                        Swal.showValidationMessage(`IMEI ${decodedText} đã được chọn.`);
+                                    } else if (addResult === 'full') {
+                                        Swal.showValidationMessage(`Đã chọn đủ số lượng IMEI cần thiết.`);
+                                        BarcodeScanner.stop();
+                                        btnScan.style.display = 'inline-block';
+                                        btnStop.style.display = 'none';
+                                    } else if (addResult === 'added') {
+                                        Swal.resetValidationMessage();
+                                    }
+                                }
+
+                            } catch (e) {
+                                console.error(e);
+                                Swal.showValidationMessage("Lỗi xử lý mã quét.");
+                            }
+                        });
+                    });
+                }
+            },
             preConfirm: async () => {
-                const selects = document.querySelectorAll(`.imei-select-${item.bienTheId}`);
-                const imeisSelected = [];
-                let valid = true;
-                selects.forEach(sel => {
-                    if (!sel.value) {
-                        valid = false;
-                    }
-                    imeisSelected.push(sel.value);
-                });
-                if (!valid) {
-                    Swal.showValidationMessage('Vui lòng chọn đủ IMEI cho tất cả các vị trí.');
+                const pickerContainer = document.getElementById(`imei-picker-container-${item.bienTheId}`);
+                if (!pickerContainer) return false;
+                
+                const imeisSelected = pickerContainer.getSelected();
+                
+                if (imeisSelected.length === 0) {
+                    Swal.showValidationMessage('Vui lòng chọn ít nhất 1 IMEI.');
                     return false;
                 }
                 const unique = new Set(imeisSelected);
@@ -476,6 +937,7 @@ async function openImeiSelector(item) {
 
         if (imeis) {
             item.imeis = imeis.join(', ');
+            item.soLuong = imeis.length;
             return true;
         }
         return false;
@@ -502,24 +964,23 @@ async function selectAdditionalImeis(item, count) {
         const selectedImeis = getSelectedImeis();
         const available = imeiList.filter(imei => !selectedImeis.includes(imei.imei1));
 
-        if (available.length < count) {
-            toastWarn(`Không đủ IMEI khả dụng. Cần ${count}, chỉ còn ${available.length}.`);
+        if (available.length === 0) {
+            toastWarn(`Không có IMEI khả dụng nào khác.`);
             return false;
         }
 
-        let html = `<div style="max-height:300px;overflow-y:auto;padding:0.5rem 0;">`;
-        for (let i = 0; i < count; i++) {
-            html += `
-                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
-                    <span style="font-weight:bold;min-width:80px;">IMEI #${i + 1}:</span>
-                    <select class="imei-select-${item.bienTheId}" data-index="${i}" style="flex:1;padding:0.4rem;border-radius:6px;border:1px solid #ccc;">
-                        <option value="">-- Chọn IMEI --</option>
-                        ${available.map(imei => `<option value="${imei.imei1}">${imei.imei1}${imei.imei2 ? ' (SIM2: ' + imei.imei2 + ')' : ''}</option>`).join('')}
-                    </select>
-                </div>
-            `;
-        }
-        html += `</div>`;
+        let html = `
+            <div style="margin-bottom:1rem; text-align: left; display: flex; gap: 0.5rem; justify-content: center;">
+                <button type="button" class="btn btn-sm btn-primary btn-scan-imei-pos">
+                    <i class="fa fa-barcode me-1"></i> Quét IMEI
+                </button>
+                <button type="button" class="btn btn-sm btn-danger btn-stop-scan-pos" style="display:none;">
+                    <i class="fa fa-times me-1"></i> Dừng quét
+                </button>
+            </div>
+            <div id="scanner-area-inline-${item.bienTheId}" style="width:100%; display:none; margin-bottom: 1rem;"></div>
+        `;
+        html += ImeiPickerUI.buildHtml(item.bienTheId, 0, available);
 
         const { value: newImeis } = await Swal.fire({
             title: `Chọn thêm IMEI cho ${item.tenSanPham}`,
@@ -528,18 +989,79 @@ async function selectAdditionalImeis(item, count) {
             confirmButtonText: 'Xác nhận',
             cancelButtonText: 'Hủy',
             showCancelButton: true,
+            didDestroy: () => {
+                if (typeof BarcodeScanner !== 'undefined') BarcodeScanner.stop();
+            },
+            didOpen: () => {
+                const pickerContainer = document.getElementById(`imei-picker-container-${item.bienTheId}`);
+                if (pickerContainer && typeof ImeiPickerUI !== 'undefined') {
+                    ImeiPickerUI.init(pickerContainer);
+                }
+
+                const btnScan = document.querySelector('.btn-scan-imei-pos');
+                const btnStop = document.querySelector('.btn-stop-scan-pos');
+                const scannerAreaId = `scanner-area-inline-${item.bienTheId}`;
+                
+                if (btnStop) {
+                    btnStop.addEventListener('click', () => {
+                        if (typeof BarcodeScanner !== 'undefined') BarcodeScanner.stop();
+                        btnScan.style.display = 'inline-block';
+                        btnStop.style.display = 'none';
+                    });
+                }
+
+                if (btnScan && typeof BarcodeScanner !== 'undefined') {
+                    btnScan.addEventListener('click', () => {
+                        btnScan.style.display = 'none';
+                        btnStop.style.display = 'inline-block';
+                        BarcodeScanner.openInline(scannerAreaId, async (decodedText) => {
+                            try {
+                                const result = await BarcodeScanner.lookup(decodedText);
+                                if (!result.success) {
+                                    Swal.showValidationMessage(result.message);
+                                    return;
+                                }
+                                if (result.tinhTrang !== 'trong_kho') {
+                                    Swal.showValidationMessage(`IMEI ${decodedText} đang ở trạng thái: ${result.tinhTrang}`);
+                                    return;
+                                }
+                                if (result.bienTheSanPhamId !== item.bienTheId) {
+                                    Swal.showValidationMessage(`IMEI ${decodedText} thuộc sản phẩm ${result.tenSanPham || 'khác'}, không khớp.`);
+                                    return;
+                                }
+                                
+                                if (pickerContainer) {
+                                    const addResult = pickerContainer.addImei(decodedText);
+                                    if (addResult === 'invalid') {
+                                        Swal.showValidationMessage(`IMEI ${decodedText} không khả dụng (hoặc đã được chọn trước đó).`);
+                                    } else if (addResult === 'exists') {
+                                        Swal.showValidationMessage(`IMEI ${decodedText} đã được chọn.`);
+                                    } else if (addResult === 'full') {
+                                        Swal.showValidationMessage(`Đã chọn đủ số lượng IMEI cần thiết.`);
+                                        BarcodeScanner.stop();
+                                        btnScan.style.display = 'inline-block';
+                                        btnStop.style.display = 'none';
+                                    } else if (addResult === 'added') {
+                                        Swal.resetValidationMessage();
+                                    }
+                                }
+
+                            } catch (e) {
+                                console.error(e);
+                                Swal.showValidationMessage("Lỗi xử lý mã quét.");
+                            }
+                        });
+                    });
+                }
+            },
             preConfirm: async () => {
-                const selects = document.querySelectorAll(`.imei-select-${item.bienTheId}`);
-                const selected = [];
-                let valid = true;
-                selects.forEach(sel => {
-                    if (!sel.value) {
-                        valid = false;
-                    }
-                    selected.push(sel.value);
-                });
-                if (!valid) {
-                    Swal.showValidationMessage('Vui lòng chọn đủ IMEI.');
+                const pickerContainer = document.getElementById(`imei-picker-container-${item.bienTheId}`);
+                if (!pickerContainer) return false;
+                
+                const selected = pickerContainer.getSelected();
+                
+                if (selected.length === 0) {
+                    Swal.showValidationMessage('Vui lòng chọn ít nhất 1 IMEI.');
                     return false;
                 }
                 const unique = new Set(selected);
@@ -576,7 +1098,7 @@ async function selectAdditionalImeis(item, count) {
             const current = parseImeis(item.imeis);
             const allImeis = [...current, ...newImeis];
             item.imeis = allImeis.join(', ');
-            return true;
+            return newImeis.length;
         }
         return false;
 
@@ -601,15 +1123,11 @@ async function addToCart(bienTheId) {
             toastWarn(`Tồn kho Kho Tổng cho sản phẩm này chỉ còn ${p.tonKho} máy.`);
             return;
         }
-        existing.soLuong++;
-        const success = await selectAdditionalImeis(existing, 1);
-        if (!success) {
-            existing.soLuong--;
-            if (existing.soLuong === 0) {
-                removeFromCart(bienTheId);
-            }
+        const addedCount = await selectAdditionalImeis(existing, 1);
+        if (addedCount !== false && addedCount > 0) {
+            existing.soLuong += addedCount;
+            onCartChanged();
         }
-        onCartChanged();
         return;
     }
 
@@ -696,22 +1214,114 @@ async function changeQty(bienTheId, delta) {
                 onCartChanged();
             } else {
                 // Hiện popup cho phép người dùng chọn IMEI để nhả
-                const inputOptions = {};
-                imeiList.forEach(imei => {
-                    inputOptions[imei] = imei;
-                });
-                
+                let cardsHtml = imeiList.map(imei => `
+                    <label class="imei-return-card">
+                        <input type="radio" name="returnImeiRadio" value="${imei}">
+                        <span class="imei-text">${imei}</span>
+                    </label>
+                `).join('');
+
                 const result = await Swal.fire({
-                    title: 'Chọn IMEI để hoàn kho',
-                    text: 'Vui lòng chọn 1 mã IMEI để bỏ khỏi giỏ hàng',
-                    input: 'radio',
-                    inputOptions: inputOptions,
-                    inputValidator: (value) => {
-                        if (!value) return 'Bạn cần chọn 1 mã IMEI';
-                    },
+                    title: '<span style="color:white; font-size: 1.25rem;"><i class="fa fa-trash text-danger me-2"></i>Bỏ IMEI khỏi giỏ hàng</span>',
+                    html: `
+                        <style>
+                            .swal2-popup.dark-imei-popup {
+                                border-radius: 16px;
+                                padding: 24px 20px 20px;
+                            }
+                            .dark-imei-popup .swal2-title {
+                                margin-bottom: 5px;
+                            }
+                            .dark-imei-popup .swal2-html-container {
+                                margin: 0;
+                            }
+                            .imei-return-subtitle {
+                                color: #9CA3AF;
+                                font-size: 0.9rem;
+                                margin-bottom: 24px;
+                            }
+                            .imei-cards-container {
+                                text-align: left;
+                                display: flex;
+                                flex-direction: column;
+                                gap: 12px;
+                                margin-bottom: 10px;
+                            }
+                            .imei-return-card {
+                                display: flex;
+                                align-items: center;
+                                gap: 14px;
+                                background: #232840;
+                                padding: 16px;
+                                border-radius: 12px;
+                                border: 1px solid rgba(255,255,255,0.08);
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                                margin: 0;
+                            }
+                            .imei-return-card:has(input:checked) {
+                                border-color: #1565C0;
+                                box-shadow: 0 0 0 1px #1565C0;
+                                background: rgba(21, 101, 192, 0.15);
+                            }
+                            .imei-return-card input[type="radio"] {
+                                accent-color: #1565C0;
+                                transform: scale(1.3);
+                                margin: 0;
+                                cursor: pointer;
+                            }
+                            .imei-return-card .imei-text {
+                                color: white;
+                                font-family: monospace;
+                                font-size: 1.05rem;
+                            }
+                            .dark-imei-popup .swal2-actions {
+                                gap: 12px;
+                                width: 100%;
+                                margin-top: 24px;
+                            }
+                            .dark-imei-popup .btn-confirm {
+                                flex: 1;
+                                background: linear-gradient(135deg, #1565C0 0%, #1976D2 100%);
+                                color: white;
+                                border: none;
+                                padding: 12px 0;
+                                border-radius: 10px;
+                                font-weight: 600;
+                            }
+                            .dark-imei-popup .btn-cancel {
+                                flex: 1;
+                                background: #374151;
+                                color: #D1D5DB;
+                                border: none;
+                                padding: 12px 0;
+                                border-radius: 10px;
+                                font-weight: 600;
+                            }
+                        </style>
+                        <div class="imei-return-subtitle">Chọn thiết bị cần bỏ ra (còn lại sẽ giữ nguyên)</div>
+                        <div class="imei-cards-container">
+                            ${cardsHtml}
+                        </div>
+                    `,
+                    background: '#1A1F2E',
                     showCancelButton: true,
                     confirmButtonText: 'Xác nhận',
-                    cancelButtonText: 'Huỷ'
+                    cancelButtonText: 'Huỷ',
+                    customClass: {
+                        popup: 'dark-imei-popup',
+                        confirmButton: 'btn-confirm',
+                        cancelButton: 'btn-cancel'
+                    },
+                    buttonsStyling: false,
+                    preConfirm: () => {
+                        const selected = document.querySelector('input[name="returnImeiRadio"]:checked');
+                        if (!selected) {
+                            Swal.showValidationMessage('Bạn cần chọn 1 mã IMEI');
+                            return false;
+                        }
+                        return selected.value;
+                    }
                 });
                 
                 if (result.isConfirmed && result.value) {
@@ -729,18 +1339,16 @@ async function changeQty(bienTheId, delta) {
         }
     }
 
-    // Cập nhật số lượng
-    item.soLuong = newQty;
-
     if (delta > 0) {
-        const success = await selectAdditionalImeis(item, 1);
-        if (!success) {
-            item.soLuong = newQty - 1;
-            toastWarn('Không thể tăng số lượng vì thiếu IMEI.');
+        const addedCount = await selectAdditionalImeis(item, delta);
+        if (addedCount !== false && addedCount > 0) {
+            item.soLuong += addedCount;
+            onCartChanged();
         }
+    } else {
+        item.soLuong = newQty;
+        onCartChanged();
     }
-
-    onCartChanged();
 }
 
 /** Xoá toàn bộ giỏ hàng (dùng sau khi confirm) */
@@ -868,7 +1476,18 @@ function flashProductCard(bienTheId, type = 'success') {
 async function reopenImeiSelector(bienTheId) {
     const item = cart.find(x => x.bienTheId === bienTheId);
     if (!item) return;
+    
+    // Nhả các IMEI cũ trước khi chọn lại
+    if (item.imeis) {
+        const oldImeis = parseImeis(item.imeis);
+        for (const imei of oldImeis) {
+            try {
+                await fetch(`/api/admin/pos/nha-imei?imei=${imei}`, { method: 'POST' });
+            } catch (e) { console.error('Lỗi nhả IMEI', e); }
+        }
+    }
     item.imeis = '';
+    
     const success = await openImeiSelector(item);
     if (!success) {
         removeFromCart(bienTheId);
@@ -897,7 +1516,10 @@ async function loadKhuyenMaiPos() {
             if(sel) {
                 const html = ['<option value="">-- Tự động chọn mã --</option>'];
                 posKhuyenMais.forEach(km => {
-                    html.push(`<option value="${km.id}">[Giảm ${km.giaTriUuDai}%] ${escHtml(km.tenCtkm)} (Từ ${fmt(km.donHangToiThieu)})</option>`);
+                    let label = `[Giảm ${km.giaTriUuDai}%`;
+                    if (km.giamToiDa) label += ` - Tối đa ${fmt(km.giamToiDa)}`;
+                    label += `] ${escHtml(km.tenCtkm)} (Từ ${fmt(km.donHangToiThieu)})`;
+                    html.push(`<option value="${km.id}">${label}</option>`);
                 });
                 sel.innerHTML = html.join('');
             }
@@ -924,33 +1546,20 @@ async function fetchPromo() {
 
     const manualCtkmId = DOM.posCtkmSelect ? Number(DOM.posCtkmSelect.value) : null;
     
-    if (manualCtkmId) {
-        const km = posKhuyenMais.find(k => k.id === manualCtkmId);
-        if (km) {
-            if (tongTien >= (km.donHangToiThieu || 0)) {
-                promoState = {
-                    ctkmId: km.id,
-                    tenCtkm: km.tenCtkm,
-                    giaTriUuDai: km.giaTriUuDai,
-                    tienGiam: (tongTien * km.giaTriUuDai / 100)
-                };
-                updateSummaryUI();
-                return;
-            } else {
-                toastWarn(`Đơn hàng chưa đạt tối thiểu ${fmt(km.donHangToiThieu)} để dùng mã này.`);
-                DOM.posCtkmSelect.value = '';
-                // fallthrough to auto
-            }
-        }
-    }
-
     isFetchingPromo = true;
 
     try {
-        const url = `${API.TINH_KM}?tongTien=${encodeURIComponent(tongTien)}`;
+        let url = `${API.TINH_KM}?tongTien=${encodeURIComponent(tongTien)}`;
+        if (manualCtkmId) {
+            url += `&ctkmId=${encodeURIComponent(manualCtkmId)}`;
+        }
+        
         const res = await fetch(url, { credentials: 'include' });
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+            const errData = await res.json().catch(() => null);
+            throw new Error(errData?.message || `HTTP ${res.status}`);
+        }
 
         const data = await res.json();
 
@@ -962,7 +1571,12 @@ async function fetchPromo() {
         };
 
     } catch (err) {
-        console.warn('[POS] fetchPromo error (silent):', err.message);
+        if (manualCtkmId) {
+            toastWarn(err.message);
+            if (DOM.posCtkmSelect) DOM.posCtkmSelect.value = '';
+        } else {
+            console.warn('[POS] fetchPromo error (silent):', err.message);
+        }
         promoState = { ctkmId: null, tenCtkm: null, giaTriUuDai: 0, tienGiam: 0 };
     } finally {
         isFetchingPromo = false;
@@ -1196,8 +1810,11 @@ function validateAllImeis() {
 
 let _lastPayload = null;
 
+let _billJustPaid = false;
+
 function showBillModal(apiResult, payload) {
     _lastPayload = payload;
+    _billJustPaid = true;
 
     const now = new Date().toLocaleString('vi-VN');
     const tongTien = payload.tongTien;
@@ -1308,9 +1925,15 @@ function initBillModal() {
 
     DOM.btnNewOrder?.addEventListener('click', () => {
         bootstrap.Modal.getInstance(el('modalBill'))?.hide();
-        clearCart();
-        loadProducts();
         toastSuccess('Sẵn sàng tạo đơn mới!');
+    });
+
+    el('modalBill')?.addEventListener('hidden.bs.modal', () => {
+        if (_billJustPaid) {
+            clearCart();
+            loadProducts();
+            _billJustPaid = false;
+        }
     });
 }
 
@@ -1482,7 +2105,7 @@ async function loadCustomers(keyword = '') {
 function populateCustomerDropdown(customers) {
     const select = DOM.selectKhachHang;
     if (!select) return;
-    select.innerHTML = '<option value="">👤 Khách lẻ (mặc định)</option>';
+    select.innerHTML = '<option value="">-- Chọn khách hàng --</option>';
     if (Array.isArray(customers)) {
         customers.forEach(c => {
             const opt = document.createElement('option');
@@ -1869,6 +2492,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProducts();
     loadCustomers();          // Load danh sách khách hàng mặc định
     loadKhuyenMaiPos();
+
+    document.getElementById('btnScanImeiPos')?.addEventListener('click', scanImeiToCart);
 });
 
 /* Expose tới onclick="" attributes trong HTML */

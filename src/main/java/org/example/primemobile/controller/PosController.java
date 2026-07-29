@@ -52,7 +52,7 @@ public class PosController {
     private static final int    KHO_ID          = 1; // Kho duy nhất trong hệ thống
     private static final String SDT_KHACH_LE = "0000000000";
     private static final String TRANG_THAI_DA_BAN = "da_ban";
-    private static final DateTimeFormatter MA_DON_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final DateTimeFormatter MA_DON_FMT = DateTimeFormatter.ofPattern("yyMMdd");
 
     // ──────────────────────────────────────────────────────────────────────────
     // Dependencies
@@ -116,13 +116,23 @@ public class PosController {
      */
     @GetMapping("/tinh-khuyen-mai")
     @Transactional(readOnly = true)
-    public ResponseEntity<KhuyenMaiPosDto> tinhKhuyenMai(
-            @RequestParam BigDecimal tongTien) {
+    public ResponseEntity<?> tinhKhuyenMai(
+            @RequestParam BigDecimal tongTien,
+            @RequestParam(required = false) Integer ctkmId) {
 
-        log.debug("[POS] GET /tinh-khuyen-mai — tongTien={}", tongTien);
+        log.debug("[POS] GET /tinh-khuyen-mai — tongTien={}, ctkmId={}", tongTien, ctkmId);
 
-        // Sử dụng method thống nhất để tính khuyến mãi
-        KhuyenMaiResult result = khuyenMaiService.tinhKhuyenMaiChoDonHang(tongTien);
+        KhuyenMaiResult result;
+        if (ctkmId != null) {
+            try {
+                result = khuyenMaiService.apDungCtkmTheoId(ctkmId, tongTien);
+            } catch (IllegalArgumentException e) {
+                log.warn("[POS] Lỗi áp dụng CTKM {}: {}", ctkmId, e.getMessage());
+                return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+            }
+        } else {
+            result = khuyenMaiService.tinhKhuyenMaiChoDonHang(tongTien);
+        }
 
         KhuyenMaiPosDto dto = KhuyenMaiPosDto.builder()
                 .ctkmId(result.getCtkmId())
@@ -303,6 +313,7 @@ public class PosController {
         BigDecimal giaSauKM = khuyenMaiService.tinhGiaSauKhuyenMai(bt.getId(), BigDecimal.ZERO);
 
         return BienThePosDto.builder()
+                .sanPhamId(sp.getId())
                 .bienTheId(bt.getId())
                 .tenSanPham(sp.getTenSanPham())
                 .maSku(bt.getMaSku())
@@ -323,7 +334,7 @@ public class PosController {
      */
     private String sinhMaDonHang() {
         String datePart = LocalDateTime.now().format(MA_DON_FMT);
-        String randPart = String.format("%06d", System.currentTimeMillis() % 1_000_000L);
-        return "POS-" + datePart + "-" + randPart;
+        String randPart = String.format("%04d", System.currentTimeMillis() % 10_000L);
+        return "POS" + datePart + randPart;
     }
 }

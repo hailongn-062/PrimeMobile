@@ -158,24 +158,45 @@ public class ChatbotServiceImpl implements IChatbotService {
             HttpEntity<String> request = new HttpEntity<>(requestBody.toString(), headers);
             String url = geminiApiUrl.trim() + "?key=" + geminiApiKey.trim();
 
-            ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
-            
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                JsonNode rootNode = objectMapper.readTree(response.getBody());
-                JsonNode candidates = rootNode.path("candidates");
-                if (candidates.isArray() && candidates.size() > 0) {
-                    JsonNode textNode = candidates.get(0).path("content").path("parts").get(0).path("text");
-                    return textNode.asText();
+            int maxRetries = 3;
+            for (int attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+                    
+                    if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                        JsonNode rootNode = objectMapper.readTree(response.getBody());
+                        JsonNode candidates = rootNode.path("candidates");
+                        if (candidates.isArray() && candidates.size() > 0) {
+                            JsonNode textNode = candidates.get(0).path("content").path("parts").get(0).path("text");
+                            return textNode.asText();
+                        }
+                    }
+                    return "Xin lỗi, hiện tại tôi đang gặp chút vấn đề kết nối. Bạn vui lòng thử lại sau nhé!";
+                } catch (org.springframework.web.client.HttpStatusCodeException e) {
+                    boolean shouldRetry = e.getStatusCode().is5xxServerError() || e.getStatusCode().value() == 429;
+                    if (shouldRetry && attempt < maxRetries) {
+                        System.err.println("[Chatbot] Lỗi " + e.getStatusCode() + " từ Gemini API. Thử lại lần " + attempt + "/" + maxRetries + " sau 2s...");
+                        try {
+                            Thread.sleep(2000);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                        }
+                    } else {
+                        System.err.println("[Chatbot] Gemini API Error (" + e.getStatusCode() + "): " + e.getResponseBodyAsString());
+                        if (shouldRetry) {
+                            return "Xin lỗi, AI đang quá tải sau nhiều lần thử. Vui lòng quay lại sau vài phút nhé!";
+                        }
+                        return "Lỗi kết nối AI (" + e.getStatusCode() + "). Vui lòng thử lại sau.";
+                    }
+                } catch (Exception e) {
+                    System.err.println("[Chatbot] Lỗi không xác định: " + e.getMessage());
+                    return "Xin lỗi, hệ thống AI đang bảo trì. Vui lòng thử lại sau.";
                 }
             }
-            return "Xin lỗi, hiện tại tôi đang gặp chút vấn đề kết nối. Bạn vui lòng thử lại sau nhé!";
-        } catch (org.springframework.web.client.HttpClientErrorException e) {
-            e.printStackTrace();
-            System.err.println("Gemini API Error: " + e.getResponseBodyAsString());
-            return "Lỗi API (" + e.getStatusCode() + ") URL: " + geminiApiUrl + " - Body: " + e.getResponseBodyAsString();
+            return "Xin lỗi, hệ thống AI hiện không phản hồi. Vui lòng thử lại sau.";
         } catch (Exception e) {
-            e.printStackTrace();
-            return "Xin lỗi, hệ thống AI đang bảo trì. Vui lòng thử lại sau.";
+            System.err.println("[Chatbot] Lỗi xử lý JSON hoặc Dữ liệu: " + e.getMessage());
+            return "Xin lỗi, hệ thống AI đang bảo trì nội bộ. Vui lòng thử lại sau.";
         }
     }
 }

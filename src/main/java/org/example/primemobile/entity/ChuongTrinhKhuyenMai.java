@@ -58,23 +58,31 @@ public class ChuongTrinhKhuyenMai {
 
     /**
      * GiÃ¡ trá»‹ Æ°u Ä‘Ã£i (sá»‘ tiá»n hoáº·c %).
+     * GiÃ¡ trá»‹ Æ°u Ä‘Ã£i (sá»‘ tiá» n hoáº·c %).
      * NOT NULL.
      */
     @Column(name = "gia_tri_uu_dai", nullable = false, precision = 15, scale = 2)
     private BigDecimal giaTriUuDai;
 
     /**
-     * ÄÆ¡n hÃ ng tá»‘i thiá»ƒu Ä‘á»ƒ Ã¡p dá»¥ng khuyáº¿n mÃ£i.
-     * NULL = khÃ´ng cÃ³ Ä‘iá»u kiá»‡n tá»‘i thiá»ƒu.
+     * Đơn hàng tối thiểu để áp dụng khuyến mãi.
+     * NULL = không có điều kiện tối thiểu.
      */
     @Column(name = "don_hang_toi_thieu", precision = 15, scale = 2)
     private BigDecimal donHangToiThieu;
 
-    /** NgÃ y giá» báº¯t Ä‘áº§u chÆ°Æ¡ng trÃ¬nh. */
+    /**
+     * Giới hạn mức giảm tối đa (VNĐ).
+     * NULL = Không giới hạn.
+     */
+    @Column(name = "giam_toi_da", precision = 15, scale = 2)
+    private BigDecimal giamToiDa;
+
+    /** NgÃ y giá»  báº¯t Ä‘áº§u chÆ°Æ¡ng trÃ¬nh. */
     @Column(name = "ngay_bat_dau", nullable = false)
     private LocalDateTime ngayBatDau;
 
-    /** NgÃ y giá» káº¿t thÃºc chÆ°Æ¡ng trÃ¬nh. */
+    /** NgÃ y giá»  káº¿t thÃºc chÆ°Æ¡ng trÃ¬nh. */
     @Column(name = "ngay_ket_thuc", nullable = false)
     private LocalDateTime ngayKetThuc;
 

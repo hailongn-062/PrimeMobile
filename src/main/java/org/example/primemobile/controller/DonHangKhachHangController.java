@@ -359,6 +359,8 @@ public class DonHangKhachHangController {
         r.put("diaChiNhan", buildAddress(donHang));
         r.put("ghiChu", donHang.getGhiChu());
         r.put("coTheHuy", "cho_xac_nhan".equals(donHang.getTrangThai()));
+        r.put("tenKhuyenMai", donHang.getChuongTrinhKhuyenMai() != null ? donHang.getChuongTrinhKhuyenMai().getTenCtkm() : null);
+        r.put("phuongThucThanhToan", resolvePhuongThuc(donHang));
         
         // Add chiTiet directly to summary so UI can render products outside modal
         List<Map<String, Object>> items = donHang.getChiTietDonHangs().stream()
@@ -367,6 +369,18 @@ public class DonHangKhachHangController {
         r.put("chiTiet", items);
         
         return r;
+    }
+
+    private String resolvePhuongThuc(DonHang donHang) {
+        if (donHang.getThanhToans() == null || donHang.getThanhToans().isEmpty()) {
+            return null;
+        }
+        for (org.example.primemobile.entity.ThanhToan tt : donHang.getThanhToans()) {
+            if ("thanh_cong".equals(tt.getTrangThai())) {
+                return tt.getPhuongThucThanhToan().getTenPttt();
+            }
+        }
+        return donHang.getThanhToans().get(donHang.getThanhToans().size() - 1).getPhuongThucThanhToan().getTenPttt();
     }
 
     private Map<String, Object> buildOrderItemSimplified(ChiTietDonHang chiTiet) {

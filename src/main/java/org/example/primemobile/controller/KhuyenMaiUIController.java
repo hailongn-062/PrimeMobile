@@ -27,8 +27,30 @@ public class KhuyenMaiUIController {
     // ══════════════════════════════════════════════════════════════════════
 
     @GetMapping
-    public String index(Model model) {
-        model.addAttribute("ctkmList", khuyenMaiService.layDanhSach());
+    public String index(
+            @RequestParam(required = false) String tuKhoa,
+            @RequestParam(required = false) String trangThai,
+            @RequestParam(required = false) String loai,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate tuNgay,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate denNgay,
+            Model model) {
+        
+        String finalTuKhoa = (tuKhoa != null && !tuKhoa.trim().isEmpty()) ? tuKhoa.trim() : null;
+        String finalTrangThai = (trangThai != null && !trangThai.trim().isEmpty()) ? trangThai.trim() : null;
+        String finalLoai = (loai != null && !loai.trim().isEmpty()) ? loai.trim() : null;
+
+        java.time.LocalDateTime fromDateTime = tuNgay != null ? tuNgay.atStartOfDay() : null;
+        java.time.LocalDateTime toDateTime = denNgay != null ? denNgay.atTime(23, 59, 59) : null;
+
+        model.addAttribute("ctkmList", khuyenMaiService.timKiemVaLoc(finalTuKhoa, finalTrangThai, finalLoai, fromDateTime, toDateTime));
+        
+        // Pass filter values back to view
+        model.addAttribute("tuKhoa", tuKhoa);
+        model.addAttribute("trangThai", trangThai);
+        model.addAttribute("loai", loai);
+        model.addAttribute("tuNgay", tuNgay);
+        model.addAttribute("denNgay", denNgay);
+        
         model.addAttribute("pageTitle", "Quản lý Khuyến Mãi");
         model.addAttribute("activePage", "khuyen-mai");
         return "admin/khuyen-mai/danh-sach";
@@ -110,7 +132,7 @@ public class KhuyenMaiUIController {
         model.addAttribute("ctkm", ctkm);
         model.addAttribute("phamViList", khuyenMaiService.layPhamVi(id));
         model.addAttribute("danhSachSanPham",
-                sanPhamService.layDanhSach(null, null, PageRequest.of(0, 500, Sort.by("tenSanPham"))).getContent());
+                sanPhamService.layDanhSach(null, null, null, PageRequest.of(0, 500, Sort.by("tenSanPham"))).getContent());
         model.addAttribute("formUrl", "/admin/khuyen-mai/form/theo-san-pham?id=" + id);
         model.addAttribute("pageTitle", "Chi tiết: " + ctkm.getTenCtkm());
         model.addAttribute("activePage", "khuyen-mai");

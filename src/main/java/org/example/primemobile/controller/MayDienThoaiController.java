@@ -49,6 +49,7 @@ public class MayDienThoaiController {
     private static final Logger log = LoggerFactory.getLogger(MayDienThoaiController.class);
 
     private final IMayDienThoaiService mayDienThoaiService;
+    private final org.example.primemobile.repository.MayDienThoaiRepository mayDienThoaiRepository;
 
     // =========================================================================
     // POST /api/admin/imei/nhap — Nhập danh sách IMEI cho 1 SKU tại 1 kho
@@ -231,6 +232,48 @@ public class MayDienThoaiController {
             log.error("[IMEI] ❌ Lỗi khi lấy danh sách IMEI: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError()
                     .body(buildErrorResponse("Lỗi hệ thống khi lấy danh sách IMEI."));
+        }
+    }
+
+    // =========================================================================
+    // GET /api/admin/imei/tra-cuu — Tra cứu IMEI bằng quét barcode
+    // =========================================================================
+
+    @GetMapping("/tra-cuu")
+    public ResponseEntity<?> traCuuImei(@RequestParam String imei1) {
+        log.info("[IMEI] Tra cứu mã IMEI: {}", imei1);
+        try {
+            java.util.Optional<MayDienThoai> optMay = mayDienThoaiRepository.findByImei1(imei1);
+            if (optMay.isEmpty()) {
+                return ResponseEntity.ok(Map.of(
+                        "success", false,
+                        "message", "Không tìm thấy IMEI " + imei1 + " trong hệ thống."
+                ));
+            }
+            
+            MayDienThoai m = optMay.get();
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("success", true);
+            response.put("id", m.getId());
+            response.put("imei1", m.getImei1());
+            response.put("imei2", m.getImei2());
+            response.put("tinhTrang", m.getTinhTrang());
+            
+            if (m.getBienTheSanPham() != null) {
+                response.put("bienTheSanPhamId", m.getBienTheSanPham().getId());
+                response.put("maSku", m.getBienTheSanPham().getMaSku());
+                response.put("tenSanPham", m.getBienTheSanPham().getSanPham() != null ? m.getBienTheSanPham().getSanPham().getTenSanPham() : null);
+                response.put("mauSac", m.getBienTheSanPham().getMauSac());
+            }
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("[IMEI] ❌ Lỗi tra cứu IMEI {}: {}", imei1, e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "message", "Lỗi máy chủ khi tra cứu IMEI."
+            ));
         }
     }
 

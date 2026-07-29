@@ -18,6 +18,9 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class BienThePosDto {
 
+    /** ID sản phẩm cha — dùng để gom nhóm biến thể ở frontend. */
+    private Integer sanPhamId;
+
     /** ID biến thể sản phẩm. */
     private Integer bienTheId;
 

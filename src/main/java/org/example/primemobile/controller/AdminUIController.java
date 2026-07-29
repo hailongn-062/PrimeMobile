@@ -3,11 +3,24 @@ package org.example.primemobile.controller;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.example.primemobile.dto.auth.SessionUser;
+import org.example.primemobile.entity.DonHang;
+import org.example.primemobile.repository.DonHangRepository;
+import org.example.primemobile.repository.SanPhamRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.YearMonth;
 
 /**
  * Controller UI cho khu vực Quản trị (Admin Dashboard).
@@ -26,6 +39,12 @@ public class AdminUIController {
 
     private static final String SESSION_KEY = "CURRENT_ADMIN";
 
+    @Autowired
+    private DonHangRepository donHangRepository;
+
+    @Autowired
+    private SanPhamRepository sanPhamRepository;
+
     /**
      * Trang tổng quan Admin Dashboard.
      *
@@ -37,6 +56,29 @@ public class AdminUIController {
     public String dashboard(Model model, HttpSession session) {
         model.addAttribute("pageTitle", "Tổng quan");
         model.addAttribute("activePage", "dashboard");
+        
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfDay = now.with(LocalTime.MIN);
+        LocalDateTime endOfDay = now.with(LocalTime.MAX);
+        LocalDateTime startOfMonth = YearMonth.now().atDay(1).atStartOfDay();
+        LocalDateTime endOfMonth = YearMonth.now().atEndOfMonth().atTime(23, 59, 59);
+
+        long donHangHomNay = donHangRepository.countByNgayDatBetween(startOfDay, endOfDay);
+        BigDecimal doanhThuThangNay = donHangRepository.sumDoanhThu("da_hoan_thanh", startOfMonth, endOfMonth);
+        if (doanhThuThangNay == null) {
+            doanhThuThangNay = BigDecimal.ZERO;
+        }
+        long sanPhamDangBan = sanPhamRepository.countByTrangThai("dang_ban");
+        long donHangChoXacNhan = donHangRepository.countByTrangThai("cho_xac_nhan");
+        
+        Page<DonHang> donHangGanDayPage = donHangRepository.timKiemDonHang(null, null, null, PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "ngayDat")));
+
+        model.addAttribute("donHangHomNay", donHangHomNay);
+        model.addAttribute("doanhThuThangNay", doanhThuThangNay);
+        model.addAttribute("sanPhamDangBan", sanPhamDangBan);
+        model.addAttribute("donHangChoXacNhan", donHangChoXacNhan);
+        model.addAttribute("donHangGanDay", donHangGanDayPage.getContent());
+
         log.info("[AdminUI] Dashboard — user={}", session.getAttribute(SESSION_KEY) != null ? ((SessionUser) session.getAttribute(SESSION_KEY)).getEmail() : "unknown");
         return "admin/dashboard";
     }
@@ -82,6 +124,9 @@ public class AdminUIController {
         return "admin/bao-hanh/tiep-nhan";
     }
 
+    @Autowired
+    private org.example.primemobile.repository.TrungTamBaoHanhRepository trungTamBaoHanhRepository;
+
     /**
      * Trang Danh sách yêu cầu bảo hành
      */
@@ -89,6 +134,7 @@ public class AdminUIController {
     public String danhSachBaoHanh(Model model, HttpSession session) {
         model.addAttribute("pageTitle", "Danh sách bảo hành");
         model.addAttribute("activePage", "bao-hanh");
+        model.addAttribute("trungTamBaoHanhs", trungTamBaoHanhRepository.findAll());
         return "admin/bao-hanh/danh-sach";
     }
 

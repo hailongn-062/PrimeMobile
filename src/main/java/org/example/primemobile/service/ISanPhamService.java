@@ -31,7 +31,7 @@ public interface ISanPhamService {
      * @param pageable       Thông tin phân trang và sắp xếp.
      * @return Trang {@link SanPham} phù hợp với điều kiện lọc.
      */
-    Page<SanPham> layDanhSach(Integer danhMucId, Integer hangSanXuatId, Pageable pageable);
+    Page<SanPham> layDanhSach(String tuKhoa, Integer danhMucId, Integer hangSanXuatId, Pageable pageable);
 
     /**
      * Lấy danh sách sản phẩm <b>công khai</b> dành cho Frontend (Khách vãng lai / KhachHang).
@@ -39,12 +39,13 @@ public interface ISanPhamService {
      * Chỉ trả về sản phẩm có {@code trangThai = 'dang_ban'}.
      * Sản phẩm {@code ngung_ban} và {@code sap_ra_mat} được ẩn khỏi kết quả.
      *
+     * @param tuKhoa         Từ khóa tìm kiếm (theo tên hoặc mã). Null = bỏ qua.
      * @param danhMucId      ID danh mục để lọc. Null = tất cả danh mục.
      * @param hangSanXuatId  ID hãng sản xuất để lọc. Null = tất cả hãng.
      * @param pageable       Thông tin phân trang và sắp xếp.
      * @return Trang {@link SanPham} chỉ chứa sản phẩm đang bán.
      */
-    Page<SanPham> layDanhSachCongKhai(Integer danhMucId, Integer hangSanXuatId, Pageable pageable);
+    Page<SanPham> layDanhSachCongKhai(String tuKhoa, Integer danhMucId, Integer hangSanXuatId, Pageable pageable);
 
     /**
      * Lấy thông tin chi tiết một sản phẩm theo ID.

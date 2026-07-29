@@ -49,7 +49,7 @@
             <div class="pm-stat-card">
                 <div class="pm-stat-icon" style="background:#EEF2FF;">📦</div>
                 <div>
-                    <div class="pm-stat-value text-primary">—</div>
+                    <div class="pm-stat-value text-primary" th:text="${donHangHomNay}">—</div>
                     <div class="pm-stat-label">Đơn hàng mới</div>
                     <div class="pm-stat-change text-muted">Hôm nay</div>
                 </div>
@@ -61,7 +61,7 @@
             <div class="pm-stat-card">
                 <div class="pm-stat-icon" style="background:#F0FDF4;">💰</div>
                 <div>
-                    <div class="pm-stat-value text-success">—</div>
+                    <div class="pm-stat-value text-success" th:text="${#numbers.formatDecimal(doanhThuThangNay, 0, 'COMMA', 0, 'POINT')} + 'đ'">—</div>
                     <div class="pm-stat-label">Doanh thu</div>
                     <div class="pm-stat-change text-muted">Tháng này</div>
                 </div>
@@ -73,7 +73,7 @@
             <div class="pm-stat-card">
                 <div class="pm-stat-icon" style="background:#FFF7ED;">📱</div>
                 <div>
-                    <div class="pm-stat-value text-warning">—</div>
+                    <div class="pm-stat-value text-warning" th:text="${sanPhamDangBan}">—</div>
                     <div class="pm-stat-label">Sản phẩm</div>
                     <div class="pm-stat-change text-muted">Đang bán</div>
                 </div>
@@ -85,7 +85,7 @@
             <div class="pm-stat-card">
                 <div class="pm-stat-icon" style="background:#FFF0F0;">⚠️</div>
                 <div>
-                    <div class="pm-stat-value text-danger">—</div>
+                    <div class="pm-stat-value text-danger" th:text="${donHangChoXacNhan}">—</div>
                     <div class="pm-stat-label">Chờ xác nhận</div>
                     <div class="pm-stat-change text-muted">Cần xử lý</div>
                 </div>
@@ -130,10 +130,39 @@
                         Xem tất cả
                     </a>
                 </div>
-                <div class="p-4 text-center text-muted">
-                    <i class="fa fa-clock fa-3x mb-3 d-block opacity-25"></i>
-                    <p class="mb-1 fw-semibold">Dữ liệu sẽ được hiển thị ở đây</p>
-                    <p class="small">Kết nối module Quản lý Đơn hàng để xem danh sách đơn hàng gần đây.</p>
+                <div class="p-0 table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="font-size: .85rem;">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Mã đơn</th>
+                                <th>Khách hàng</th>
+                                <th>Tổng tiền</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end pe-3">Ngày đặt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${donHangGanDay == null or donHangGanDay.isEmpty()}">
+                                <td colspan="5" class="text-center py-4 text-muted">Không có đơn hàng nào gần đây</td>
+                            </tr>
+                            <tr th:each="dh : ${donHangGanDay}">
+                                <td class="ps-3"><a th:href="@{/admin/don-hang/{id}(id=${dh.id})}" class="fw-bold text-decoration-none" th:text="${dh.maDonHang}"></a></td>
+                                <td>
+                                    <div class="fw-semibold" th:text="${dh.khachHang.hoTen}"></div>
+                                    <div class="text-muted" style="font-size: .75rem;" th:text="${dh.khachHang.soDienThoai}"></div>
+                                </td>
+                                <td class="fw-bold text-danger" th:text="${#numbers.formatDecimal(dh.tongThanhToan, 0, 'COMMA', 0, 'POINT')} + 'đ'"></td>
+                                <td>
+                                    <span class="badge bg-warning text-dark" th:if="${dh.trangThai == 'cho_xac_nhan'}">Chờ xác nhận</span>
+                                    <span class="badge bg-info text-dark" th:if="${dh.trangThai == 'da_xac_nhan'}">Đã xác nhận</span>
+                                    <span class="badge bg-primary" th:if="${dh.trangThai == 'dang_giao'}">Đang giao</span>
+                                    <span class="badge bg-success" th:if="${dh.trangThai == 'da_hoan_thanh'}">Hoàn thành</span>
+                                    <span class="badge bg-danger" th:if="${dh.trangThai == 'da_huy'}">Đã hủy</span>
+                                </td>
+                                <td class="text-end pe-3 text-muted" th:text="${#temporals.format(dh.ngayDat, 'dd/MM/yyyy HH:mm')}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

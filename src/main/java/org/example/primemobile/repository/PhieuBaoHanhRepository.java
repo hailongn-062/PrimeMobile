@@ -21,4 +21,10 @@ public interface PhieuBaoHanhRepository extends JpaRepository<PhieuBaoHanh, Inte
         + "JOIN FETCH p.khachHang kh "
         + "WHERE kh.soDienThoai = :sdt AND p.trangThai = :trangThai")
     List<PhieuBaoHanh> findBySdtWithDetails(@Param("sdt") String sdt, @Param("trangThai") String trangThai);
+
+    @Query("SELECT DISTINCT kh.soDienThoai FROM PhieuBaoHanh p JOIN p.khachHang kh WHERE p.trangThai = 'con_hieu_luc' AND kh.soDienThoai LIKE %:sdt%")
+    List<String> suggestSdt(@Param("sdt") String sdt);
+
+    @Query("SELECT DISTINCT m.imei1 FROM PhieuBaoHanh p JOIN p.mayDienThoai m WHERE p.trangThai = 'con_hieu_luc' AND m.imei1 LIKE %:imei%")
+    List<String> suggestImei(@Param("imei") String imei);
 }

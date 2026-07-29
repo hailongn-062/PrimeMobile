@@ -21,6 +21,9 @@ public interface IKhuyenMaiService {
     /** Lấy toàn bộ danh sách chương trình (sắp xếp theo id DESC). */
     List<ChuongTrinhKhuyenMai> layDanhSach();
 
+    /** Lấy danh sách chương trình có lọc và tìm kiếm. */
+    List<ChuongTrinhKhuyenMai> timKiemVaLoc(String tuKhoa, String trangThai, String loai, java.time.LocalDateTime tuNgay, java.time.LocalDateTime denNgay);
+
     /** Lấy chi tiết 1 chương trình theo ID. */
     ChuongTrinhKhuyenMai layTheoId(Integer id);
 
