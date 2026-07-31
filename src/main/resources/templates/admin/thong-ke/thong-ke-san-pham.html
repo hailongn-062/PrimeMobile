@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin-layout :: adminHead}">
+    <title>Thống kê Sản phẩm - PrimeMobile</title>
+</head>
+<body th:with="activePage='thong-ke-san-pham'">
+
+<!-- Sidebar -->
+<div th:replace="~{layout/admin-layout :: sidebar}"></div>
+
+<!-- Topbar -->
+<div th:replace="~{layout/admin-layout :: topbar}"></div>
+
+<main id="pmContent">
+    <div class="container-fluid py-4">
+        <!-- Header & Date Picker -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="h3 mb-0 text-gray-800 fw-bold">Thống kê Sản phẩm</h2>
+            <div class="d-flex align-items-center gap-3">
+                <div class="input-group" style="width: 300px;">
+                    <span class="input-group-text bg-white"><i class="bi bi-calendar3"></i></span>
+                    <input type="text" id="dateRangePicker" class="form-control bg-white cursor-pointer" readonly>
+                </div>
+                <button class="btn btn-outline-secondary" id="btnExport">
+                    <i class="bi bi-download me-1"></i> Xuất báo cáo
+                </button>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="row g-4 mb-4" id="kpiContainer">
+            <!-- Loading Skeleton -->
+            <div class="col-xl-3 col-md-6 kpi-skeleton">
+                <div class="card border-0 shadow-sm h-100 placeholder-glow">
+                    <div class="card-body">
+                        <div class="placeholder col-8 mb-2"></div>
+                        <div class="placeholder col-6 h2 mb-0"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 kpi-skeleton">
+                <div class="card border-0 shadow-sm h-100 placeholder-glow">
+                    <div class="card-body">
+                        <div class="placeholder col-8 mb-2"></div>
+                        <div class="placeholder col-6 h2 mb-0"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 kpi-skeleton">
+                <div class="card border-0 shadow-sm h-100 placeholder-glow">
+                    <div class="card-body">
+                        <div class="placeholder col-8 mb-2"></div>
+                        <div class="placeholder col-6 h2 mb-0"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 kpi-skeleton">
+                <div class="card border-0 shadow-sm h-100 placeholder-glow">
+                    <div class="card-body">
+                        <div class="placeholder col-8 mb-2"></div>
+                        <div class="placeholder col-6 h2 mb-0"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Real KPIs (Hidden initially) -->
+            <div class="col-xl-3 col-md-6 kpi-real d-none">
+                <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+                    <div class="card-body">
+                        <div class="text-xs fw-bold text-primary text-uppercase mb-1">Tổng SP Đang Bán</div>
+                        <div class="h3 mb-0 fw-bold text-gray-800 pm-stat-value" id="kpiTongSp">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 kpi-real d-none">
+                <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+                    <div class="card-body">
+                        <div class="text-xs fw-bold text-success text-uppercase mb-1">Số SP Đã Bán (Kỳ Này)</div>
+                        <div class="h3 mb-0 fw-bold text-gray-800 pm-stat-value" id="kpiSpDaBan">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 kpi-real d-none">
+                <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
+                    <div class="card-body">
+                        <div class="text-xs fw-bold text-warning text-uppercase mb-1">Sắp Hết Hàng (< 5)</div>
+                        <div class="h3 mb-0 fw-bold text-gray-800 pm-stat-value" id="kpiSapHetHang">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 kpi-real d-none">
+                <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
+                    <div class="card-body">
+                        <div class="text-xs fw-bold text-danger text-uppercase mb-1">Tồn Kho Lâu (> 30 Ngày)</div>
+                        <div class="h3 mb-0 fw-bold text-gray-800 pm-stat-value" id="kpiTonKhoLau">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <!-- Top Selling Table -->
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0">Top Sản Phẩm Bán Chạy</h5>
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="btnradioTop" id="sortByQty" autocomplete="off" value="soLuong" checked>
+                            <label class="btn btn-outline-primary btn-sm" for="sortByQty">Số lượng</label>
+
+                            <input type="radio" class="btn-check" name="btnradioTop" id="sortByRev" autocomplete="off" value="doanhThu">
+                            <label class="btn btn-outline-primary btn-sm" for="sortByRev">Doanh thu</label>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Skeleton -->
+                        <div id="topSpSkeleton">
+                            <div class="placeholder-glow mb-3"><span class="placeholder col-12 py-3"></span></div>
+                            <div class="placeholder-glow mb-3"><span class="placeholder col-12 py-3"></span></div>
+                            <div class="placeholder-glow mb-3"><span class="placeholder col-12 py-3"></span></div>
+                        </div>
+                        
+                        <!-- Content -->
+                        <div class="table-responsive d-none" id="topSpContent">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Sản phẩm</th>
+                                        <th class="text-end">Đã bán</th>
+                                        <th class="text-end">Doanh thu</th>
+                                        <th style="width: 150px">Tỷ trọng</th>
+                                        <th class="text-center">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="topSpTableBody">
+                                    <!-- JS will render here -->
+                                </tbody>
+                            </table>
+                            <div class="text-center mt-3">
+                                <button class="btn btn-sm btn-link text-decoration-none" id="btnLoadMoreTopSp" data-page="1">
+                                    Xem thêm...
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Donut Chart -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                        <h5 class="fw-bold mb-0">Phân bổ theo Danh mục</h5>
+                    </div>
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                        <div id="catChartSkeleton" class="placeholder-glow w-100 text-center">
+                            <div class="placeholder rounded-circle" style="width: 200px; height: 200px;"></div>
+                        </div>
+                        <div class="chart-container w-100 d-none" id="catChartContent" style="position: relative; height:250px;">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                        <div id="catLegend" class="w-100 mt-3 d-none">
+                            <!-- JS will render category legend -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Variant Analysis -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <h5 class="fw-bold mb-0">Phân tích theo Biến thể</h5>
+                        <div style="width: 350px;">
+                            <select id="selectSanPham" class="form-select">
+                                <option value="">Đang tải danh sách...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="variantPlaceholder" class="text-center py-5 text-muted">
+                            <i class="bi bi-box-seam display-4"></i>
+                            <p class="mt-3">Chọn 1 sản phẩm để xem chi tiết biến thể</p>
+                        </div>
+                        
+                        <div id="variantSkeleton" class="d-none">
+                            <div class="placeholder-glow mb-2"><span class="placeholder col-12 py-2"></span></div>
+                            <div class="placeholder-glow mb-2"><span class="placeholder col-12 py-2"></span></div>
+                        </div>
+
+                        <div class="table-responsive d-none" id="variantContent">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Biến thể (Màu - Dung lượng)</th>
+                                        <th class="text-end">Đã bán (Trong kỳ)</th>
+                                        <th class="text-end">Doanh thu (Trong kỳ)</th>
+                                        <th class="text-end">Tồn kho hiện tại</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="variantTableBody">
+                                    <!-- JS will render here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Warnings -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                        <h5 class="fw-bold mb-3">Cảnh báo Tồn kho</h5>
+                        <ul class="nav nav-tabs border-bottom-0" id="inventoryWarningTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active fw-semibold" id="low-stock-tab" data-bs-toggle="tab" data-bs-target="#low-stock" type="button" role="tab">
+                                    <i class="bi bi-exclamation-triangle text-warning me-1"></i> Sắp hết hàng
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link fw-semibold" id="old-stock-tab" data-bs-toggle="tab" data-bs-target="#old-stock" type="button" role="tab">
+                                    <i class="bi bi-clock-history text-danger me-1"></i> Tồn kho lâu
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body border-top">
+                        <div class="tab-content" id="inventoryWarningTabsContent">
+                            <!-- Sắp hết hàng -->
+                            <div class="tab-pane fade show active" id="low-stock" role="tabpanel">
+                                <div id="lowStockSkeleton" class="placeholder-glow">
+                                    <div class="placeholder col-12 py-3 mb-2"></div>
+                                    <div class="placeholder col-12 py-3 mb-2"></div>
+                                </div>
+                                <div class="table-responsive d-none" id="lowStockContent">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Sản phẩm</th>
+                                                <th class="text-center">Tồn kho</th>
+                                                <th class="text-center">Tốc độ bán (máy/ngày)</th>
+                                                <th class="text-center">Dự kiến hết (ngày)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="lowStockTableBody">
+                                            <!-- JS render -->
+                                        </tbody>
+                                    </table>
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <span class="text-muted small" id="lowStockTotal"></span>
+                                        <nav><ul class="pagination pagination-sm mb-0" id="lowStockPagination"></ul></nav>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Tồn kho lâu -->
+                            <div class="tab-pane fade" id="old-stock" role="tabpanel">
+                                <div id="oldStockSkeleton" class="placeholder-glow">
+                                    <div class="placeholder col-12 py-3 mb-2"></div>
+                                    <div class="placeholder col-12 py-3 mb-2"></div>
+                                </div>
+                                <div class="table-responsive d-none" id="oldStockContent">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Sản phẩm</th>
+                                                <th class="text-center">Tồn kho</th>
+                                                <th class="text-center">Số ngày k bán</th>
+                                                <th class="text-end">Ước tính vốn tồn đọng</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="oldStockTableBody">
+                                            <!-- JS render -->
+                                        </tbody>
+                                    </table>
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <span class="text-muted small" id="oldStockTotal"></span>
+                                        <nav><ul class="pagination pagination-sm mb-0" id="oldStockPagination"></ul></nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div th:replace="~{layout/admin-layout :: adminScripts}"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script th:src="@{/js/admin/thong-ke-san-pham.js}"></script>
+    <style>
+        .progress-bar-thin { height: 6px; border-radius: 3px; }
+        .pm-stat-value { font-size: 1.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    </style>
+</body>
+</html>

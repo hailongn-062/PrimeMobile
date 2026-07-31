@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin-layout :: adminHead}">
+    <title>Thống kê Doanh thu | PrimeMobile Admin</title>
+</head>
+<body th:with="activePage='thong-ke-doanh-thu'">
+
+<!-- Sidebar -->
+<div th:replace="~{layout/admin-layout :: sidebar}"></div>
+
+<!-- Topbar -->
+<div th:replace="~{layout/admin-layout :: topbar}"></div>
+
+<main id="pmContent">
+    <div class="container-fluid">
+        <!-- Header trang -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="fw-bold mb-1" style="font-size:1.4rem;">Thống kê Doanh thu</h1>
+            <p class="text-muted mb-0" style="font-size:.85rem;">Phân tích tổng quan và chi tiết doanh thu theo thời gian</p>
+        </div>
+        <div class="d-flex gap-2">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa fa-calendar-alt"></i></span>
+                <input type="date" class="form-control" id="startDate" title="Từ ngày">
+                <span class="input-group-text">-</span>
+                <input type="date" class="form-control" id="endDate" title="Đến ngày">
+                <button class="btn btn-primary" onclick="loadAllData()">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
+            <button class="btn btn-outline-secondary">
+                <i class="fa fa-file-export me-1"></i> Xuất báo cáo
+            </button>
+        </div>
+    </div>
+
+    <!-- Hàng thẻ KPI tổng quan -->
+    <div class="row g-3 mb-4" id="kpiContainer">
+        <!-- Skeleton Loading -->
+        <div class="col-6 col-md-3 skeleton-card" th:each="i : ${#numbers.sequence(1, 4)}">
+            <div class="pm-stat-card placeholder-glow">
+                <div class="pm-stat-icon placeholder col-12 rounded"></div>
+                <div class="w-100">
+                    <span class="placeholder col-8"></span>
+                    <span class="placeholder col-5"></span>
+                    <span class="placeholder col-4"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Biểu đồ -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-8">
+            <div class="pm-card h-100">
+                <div class="pm-card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fa fa-chart-line me-2"></i>Biểu đồ doanh thu & đơn hàng</span>
+                    <div class="btn-group btn-group-sm">
+                        <input type="radio" class="btn-check" name="chartType" id="chartTypeRevenue" value="revenue" checked autocomplete="off" onchange="updateLineChartType()">
+                        <label class="btn btn-outline-primary" for="chartTypeRevenue">Doanh thu</label>
+
+                        <input type="radio" class="btn-check" name="chartType" id="chartTypeOrders" value="orders" autocomplete="off" onchange="updateLineChartType()">
+                        <label class="btn btn-outline-primary" for="chartTypeOrders">Số đơn</label>
+                    </div>
+                </div>
+                <div class="p-3">
+                    <!-- Skeleton -->
+                    <div id="lineChartSkeleton">
+                        <div class="placeholder-glow w-100 d-flex align-items-end gap-2 pb-2" style="height: 350px;">
+                            <span class="placeholder col-1 h-25"></span><span class="placeholder col-1 h-50"></span><span class="placeholder col-1 h-75"></span><span class="placeholder col-1 h-50"></span><span class="placeholder col-1 h-100"></span><span class="placeholder col-1 h-75"></span><span class="placeholder col-1 h-25"></span><span class="placeholder col-1 h-50"></span><span class="placeholder col-1 h-100"></span>
+                        </div>
+                    </div>
+                    <div id="lineChartWrapper" style="display: none; position: relative; height: 350px; width: 100%;">
+                        <canvas id="lineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="pm-card h-100">
+                <div class="pm-card-header">
+                    <span><i class="fa fa-chart-pie me-2"></i>Tỷ trọng Kênh bán</span>
+                </div>
+                <div class="p-3 d-flex flex-column align-items-center justify-content-center" style="height: 350px;">
+                    <div id="pieChartSkeleton" class="placeholder-glow rounded-circle placeholder" style="width: 200px; height: 200px;"></div>
+                    <div id="pieChartWrapper" style="display: none; position: relative; height: 220px; width: 100%;">
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                    <div id="pieChartLegend" class="w-100 mt-3" style="display: none;">
+                        <table class="table table-sm table-borderless text-center mb-0" style="font-size: 0.85rem;">
+                            <tr>
+                                <td><span class="badge bg-primary">Online</span></td>
+                                <td class="fw-bold" id="lblTyLeOnline">-</td>
+                                <td id="lblDoanhThuOnline">-</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-info text-dark">Offline</span></td>
+                                <td class="fw-bold" id="lblTyLeOffline">-</td>
+                                <td id="lblDoanhThuOffline">-</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Bảng chi tiết -->
+    <div class="pm-card">
+        <div class="pm-card-header">
+            <span><i class="fa fa-list me-2"></i>Chi tiết doanh thu theo ngày</span>
+        </div>
+        <div class="table-responsive p-0">
+            <table class="table table-hover align-middle mb-0" style="font-size: .85rem;">
+                <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Ngày</th>
+                    <th>Số đơn</th>
+                    <th>Tổng doanh thu</th>
+                    <th>Online</th>
+                    <th>Offline</th>
+                    <th class="text-end pe-3">Đơn hủy</th>
+                </tr>
+                </thead>
+                <tbody id="detailTableBody">
+                    <tr><td colspan="6" class="text-center placeholder-glow"><span class="placeholder col-12"></span></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    </div>
+</main>
+
+<style>
+    .trend-up { color: #10B981; }
+    .trend-down { color: #EF4444; }
+</style>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Init date inputs to current month
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    document.getElementById('startDate').value = firstDay.toISOString().split('T')[0];
+    document.getElementById('endDate').value = today.toISOString().split('T')[0];
+
+    // Global variables for charts to update later
+    let myLineChart = null;
+    let myPieChart = null;
+    let lineChartDataResult = null; // Store data to switch between Revenue and Orders
+
+    const formatMoney = (amount) => {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    };
+
+    const loadAllData = () => {
+        const start = document.getElementById('startDate').value;
+        const end = document.getElementById('endDate').value;
+        if(!start || !end) {
+            alert('Vui lòng chọn khoảng thời gian');
+            return;
+        }
+
+        // Show skeletons
+        showSkeletons();
+
+        // Fetch data parallel
+        const query = `?startDate=${start}&endDate=${end}`;
+        
+        fetchKPI(query);
+        fetchChart(query);
+        fetchChannels(query);
+
+        fetchDetails(query);
+    };
+
+    const showSkeletons = () => {
+        // Simple skeleton logic
+        document.querySelectorAll('.skeleton-card').forEach(el => el.style.display = 'block');
+        const kpiCards = document.querySelectorAll('.real-kpi-card');
+        kpiCards.forEach(el => el.remove());
+
+        document.getElementById('lineChartSkeleton').style.display = 'block';
+        document.getElementById('lineChartWrapper').style.display = 'none';
+
+        document.getElementById('pieChartSkeleton').style.display = 'block';
+        document.getElementById('pieChartWrapper').style.display = 'none';
+        document.getElementById('pieChartLegend').style.display = 'none';
+        
+
+        document.getElementById('detailTableBody').innerHTML = '<tr><td colspan="6" class="placeholder-glow"><span class="placeholder col-12"></span></td></tr>';
+    }
+
+    const fetchKPI = (query) => {
+        fetch('/api/admin/thong-ke/kpi' + query)
+            .then(res => res.json())
+            .then(data => {
+                document.querySelectorAll('.skeleton-card').forEach(el => el.style.display = 'none');
+                
+                const container = document.getElementById('kpiContainer');
+                
+                const getTrendHtml = (pt, isPositiveGood) => {
+                    if (pt == null) return '';
+                    let color = (pt > 0) ? (isPositiveGood ? 'trend-up' : 'trend-down') : (pt < 0 ? (isPositiveGood ? 'trend-down' : 'trend-up') : 'text-muted');
+                    let icon = pt > 0 ? 'fa-arrow-up' : (pt < 0 ? 'fa-arrow-down' : 'fa-minus');
+                    return `<span class="${color}"><i class="fa ${icon}"></i> ${Math.abs(pt).toFixed(1)}%</span> vs kỳ trước`;
+                };
+
+                const html = `
+                    <div class="col-6 col-md-3 real-kpi-card">
+                        <div class="pm-stat-card">
+                            <div class="pm-stat-icon" style="background:#F0FDF4;">💰</div>
+                            <div>
+                                <div class="pm-stat-value text-success">${formatMoney(data.tongDoanhThu)}</div>
+                                <div class="pm-stat-label">Tổng doanh thu</div>
+                                <div class="pm-stat-change">${getTrendHtml(data.ptChangeDoanhThu, true)}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 real-kpi-card">
+                        <div class="pm-stat-card">
+                            <div class="pm-stat-icon" style="background:#EEF2FF;">📦</div>
+                            <div>
+                                <div class="pm-stat-value text-primary">${data.soDonHang}</div>
+                                <div class="pm-stat-label">Số đơn hàng</div>
+                                <div class="pm-stat-change">${getTrendHtml(data.ptChangeSoDonHang, true)}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 real-kpi-card">
+                        <div class="pm-stat-card">
+                            <div class="pm-stat-icon" style="background:#FFF7ED;">💳</div>
+                            <div>
+                                <div class="pm-stat-value text-warning">${formatMoney(data.aov)}</div>
+                                <div class="pm-stat-label">Giá trị ĐH TB (AOV)</div>
+                                <div class="pm-stat-change">${getTrendHtml(data.ptChangeAov, true)}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 real-kpi-card">
+                        <div class="pm-stat-card">
+                            <div class="pm-stat-icon" style="background:#FFF0F0;">⚠️</div>
+                            <div>
+                                <div class="pm-stat-value text-danger">${data.tyLeHuy.toFixed(1)}%</div>
+                                <div class="pm-stat-label">Tỷ lệ hủy</div>
+                                <div class="pm-stat-change">${getTrendHtml(data.ptChangeTyLeHuy, false)}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+    }
+
+    const fetchChart = (query) => {
+        fetch('/api/admin/thong-ke/bieu-do' + query)
+            .then(res => res.json())
+            .then(data => {
+                lineChartDataResult = data;
+                document.getElementById('lineChartSkeleton').style.display = 'none';
+                document.getElementById('lineChartWrapper').style.display = 'block';
+                updateLineChartType();
+            });
+    }
+    
+    const updateLineChartType = () => {
+        if(!lineChartDataResult) return;
+        const type = document.querySelector('input[name="chartType"]:checked').value;
+        const labels = lineChartDataResult.map(item => item.ngay);
+        
+        let datasetCurrent, datasetPrev;
+        let yAxisConfig = { beginAtZero: true };
+        
+        if(type === 'revenue') {
+            datasetCurrent = {
+                label: 'Doanh thu hiện tại',
+                data: lineChartDataResult.map(item => item.doanhThuHienTai),
+                borderColor: '#1565C0',
+                backgroundColor: 'rgba(21, 101, 192, 0.1)',
+                fill: true,
+                tension: 0.3
+            };
+            datasetPrev = {
+                label: 'Doanh thu kỳ trước',
+                data: lineChartDataResult.map(item => item.doanhThuKyTruoc),
+                borderColor: '#9CA3AF',
+                borderDash: [5, 5],
+                fill: false,
+                tension: 0.3
+            };
+        } else {
+            datasetCurrent = {
+                label: 'Số đơn hiện tại',
+                data: lineChartDataResult.map(item => item.soDonHienTai),
+                borderColor: '#FF6F00',
+                backgroundColor: 'rgba(255, 111, 0, 0.1)',
+                fill: true,
+                tension: 0.3
+            };
+            datasetPrev = {
+                label: 'Số đơn kỳ trước',
+                data: lineChartDataResult.map(item => item.soDonKyTruoc),
+                borderColor: '#9CA3AF',
+                borderDash: [5, 5],
+                fill: false,
+                tension: 0.3
+            };
+        }
+
+        const ctx = document.getElementById('lineChart').getContext('2d');
+        if(myLineChart) myLineChart.destroy();
+        
+        myLineChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [datasetCurrent, datasetPrev]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: yAxisConfig
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    if(type === 'revenue') {
+                                        label += new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(context.parsed.y);
+                                    } else {
+                                        label += context.parsed.y;
+                                    }
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    const fetchChannels = (query) => {
+        fetch('/api/admin/thong-ke/kenh' + query)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('pieChartSkeleton').style.display = 'none';
+                document.getElementById('pieChartWrapper').style.display = 'block';
+                document.getElementById('pieChartLegend').style.display = 'block';
+
+                document.getElementById('lblTyLeOnline').innerText = data.tyLeOnline.toFixed(1) + '%';
+                document.getElementById('lblDoanhThuOnline').innerText = formatMoney(data.doanhThuOnline);
+                document.getElementById('lblTyLeOffline').innerText = data.tyLeOffline.toFixed(1) + '%';
+                document.getElementById('lblDoanhThuOffline').innerText = formatMoney(data.doanhThuOffline);
+
+                const ctx = document.getElementById('pieChart').getContext('2d');
+                if(myPieChart) myPieChart.destroy();
+
+                myPieChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Online', 'Offline'],
+                        datasets: [{
+                            data: [data.doanhThuOnline, data.doanhThuOffline],
+                            backgroundColor: ['#1565C0', '#38BDF8'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        cutout: '70%'
+                    }
+                });
+            });
+    }
+
+
+
+    const fetchDetails = (query) => {
+        fetch('/api/admin/thong-ke/chi-tiet-ngay' + query)
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('detailTableBody');
+                tbody.innerHTML = '';
+                if(data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Không có dữ liệu</td></tr>';
+                    return;
+                }
+                
+                data.forEach(item => {
+                    const cancelBadge = item.soDonHuy > 0 
+                        ? `<span class="badge bg-danger rounded-pill">${item.soDonHuy}</span>`
+                        : `<span class="badge bg-light text-dark rounded-pill">0</span>`;
+                        
+                    const tr = `
+                        <tr>
+                            <td class="ps-3 fw-semibold">${item.ngay}</td>
+                            <td>${item.soDonHang}</td>
+                            <td class="fw-bold">${formatMoney(item.tongDoanhThu)}</td>
+                            <td>${formatMoney(item.doanhThuOnline)}</td>
+                            <td>${formatMoney(item.doanhThuOffline)}</td>
+                            <td class="text-end pe-3">${cancelBadge}</td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML('beforeend', tr);
+                });
+            });
+    }
+
+    // Load initial data
+    window.addEventListener('DOMContentLoaded', () => {
+        loadAllData();
+    });
+</script>
+
+</body>
+</html>
