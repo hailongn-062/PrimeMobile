@@ -460,21 +460,23 @@
                 </th:block>
             </ul>
 
-            <div class="sidebar-section-label">Thống kê</div>
-            <ul class="nav flex-column">
-                <li class="nav-item">
-                    <a href="/admin/thong-ke/doanh-thu" th:class="${activePage == 'thong-ke-doanh-thu'} ? 'nav-link active' : 'nav-link'">
-                        <span class="nav-icon"><i class="fa fa-chart-line"></i></span>
-                        Thống kê Doanh thu
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="/admin/thong-ke/san-pham" th:class="${activePage == 'thong-ke-san-pham'} ? 'nav-link active' : 'nav-link'">
-                        <span class="nav-icon"><i class="fa fa-box-open"></i></span>
-                        Thống kê Sản phẩm
-                    </a>
-                </li>
-            </ul>
+            <th:block th:if="${currentUser != null and currentUser.role == 'Admin'}">
+                <div class="sidebar-section-label">Thống kê</div>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a href="/admin/thong-ke/doanh-thu" th:class="${activePage == 'thong-ke-doanh-thu'} ? 'nav-link active' : 'nav-link'">
+                            <span class="nav-icon"><i class="fa fa-chart-line"></i></span>
+                            Thống kê Doanh thu
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/admin/thong-ke/san-pham" th:class="${activePage == 'thong-ke-san-pham'} ? 'nav-link active' : 'nav-link'">
+                            <span class="nav-icon"><i class="fa fa-box-open"></i></span>
+                            Thống kê Sản phẩm
+                        </a>
+                    </li>
+                </ul>
+            </th:block>
 
             <div class="sidebar-section-label">Kho & Nhập hàng</div>
             <ul class="nav flex-column">

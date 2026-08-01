@@ -97,8 +97,15 @@ public class AuthUIController {
             HttpServletRequest request) {
 
         HttpSession existingSession = request.getSession(false);
+        // Kiểm tra Admin
+        if (existingSession != null && existingSession.getAttribute(SESSION_KEY) instanceof SessionUser) {
+            log.info("[AuthUI] Admin already logged in, redirect to dashboard from register page");
+            return "redirect:/admin/dashboard";
+        }
+        // Kiểm tra Khách hàng
         if (existingSession != null
                 && existingSession.getAttribute(SessionKhachHang.SESSION_KEY) instanceof SessionKhachHang) {
+            log.info("[AuthUI] Customer already logged in, redirect to home from register page");
             return "redirect:/";
         }
 

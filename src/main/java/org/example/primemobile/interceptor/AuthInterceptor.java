@@ -172,7 +172,11 @@ public class AuthInterceptor implements HandlerInterceptor {
     private boolean isAdminOnlyRoute(String uri) {
         return uri.startsWith("/admin/nhan-vien")           // UI module nhân viên
             || uri.startsWith("/api/admin/nhan-vien")       // API module nhân viên
-            || uri.startsWith("/api/admin/khuyen-mai")      // Quản lý khuyến mãi
-            || uri.startsWith("/api/admin/nha-cung-cap");    // Quản lý nhà cung cấp
+            || uri.startsWith("/admin/khuyen-mai")          // UI module khuyến mãi
+            || uri.startsWith("/api/admin/khuyen-mai")      // API module khuyến mãi
+            || uri.startsWith("/admin/nha-cung-cap")        // UI Quản lý nhà cung cấp
+            || uri.startsWith("/api/admin/nha-cung-cap")    // API Quản lý nhà cung cấp
+            || uri.startsWith("/admin/thong-ke")            // UI Thống kê
+            || uri.startsWith("/api/admin/thong-ke");       // API Thống kê
     }
 }
