@@ -26,6 +26,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
  *       <ul>
  *         <li>{@code /admin/nhan-vien/**} và {@code /api/admin/nhan-vien/**}</li>
  *         <li>{@code /api/admin/khuyen-mai/**} (tạo/sửa KM)</li>
+ *         <li>{@code /admin/danh-gia/**} và {@code /api/admin/danh-gia/**} (quản lý đánh giá)</li>
  *         <li>{@code /api/admin/nha-cung-cap/**} (quản lý NCC)</li>
  *       </ul>
  *   </li>
@@ -122,6 +123,8 @@ public class AuthInterceptor implements HandlerInterceptor {
         //   /admin/nhan-vien/**              — Quản lý Nhân viên
         //   /api/admin/nhan-vien/**           — API Nhân viên
         //   /api/admin/khuyen-mai/**          — Tạo/sửa Chương trình KM
+        //   /admin/danh-gia/**                — UI Quản lý Đánh giá
+        //   /api/admin/danh-gia/**            — API Quản lý Đánh giá
         //   /api/admin/nha-cung-cap/**        — Quản lý NCC
         // ------------------------------------------------------------------
         if (ROLE_NHAN_VIEN.equals(role) && isAdminOnlyRoute(requestUri)) {
@@ -174,6 +177,8 @@ public class AuthInterceptor implements HandlerInterceptor {
             || uri.startsWith("/api/admin/nhan-vien")       // API module nhân viên
             || uri.startsWith("/admin/khuyen-mai")          // UI module khuyến mãi
             || uri.startsWith("/api/admin/khuyen-mai")      // API module khuyến mãi
+            || uri.startsWith("/admin/danh-gia")            // UI module đánh giá
+            || uri.startsWith("/api/admin/danh-gia")        // API module đánh giá
             || uri.startsWith("/admin/nha-cung-cap")        // UI Quản lý nhà cung cấp
             || uri.startsWith("/api/admin/nha-cung-cap")    // API Quản lý nhà cung cấp
             || uri.startsWith("/admin/thong-ke")            // UI Thống kê

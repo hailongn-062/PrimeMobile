@@ -3,62 +3,214 @@
 <head>
     <title>Quản lý Khách Hàng - PrimeMobile</title>
     <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
+    <style>
+        .kh-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1565C0, #FF6F00);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #fff;
+            font-size: .85rem;
+            flex-shrink: 0;
+        }
+        .stat-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: .78rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+        .stat-chip.orders  { background: #EFF6FF; color: #1D4ED8; }
+        .stat-chip.money   { background: #F0FDF4; color: #15803D; }
+        .badge-hoat-dong   { background: #DCFCE7; color: #15803D; font-size: .75rem; padding: 3px 10px; border-radius: 12px; font-weight: 600; }
+        .badge-khoa        { background: #FEE2E2; color: #B91C1C; font-size: .75rem; padding: 3px 10px; border-radius: 12px; font-weight: 600; }
+        .badge-vang-lai    { background: #F3F4F6; color: #6B7280; font-size: .75rem; padding: 3px 10px; border-radius: 12px; font-weight: 600; }
+        .table th          { font-size: .78rem; text-transform: uppercase; letter-spacing: .5px; color: #6B7280; font-weight: 600; }
+        .table td          { vertical-align: middle; }
+        .btn-toggle-lock   { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border: none; cursor: pointer; transition: all .2s; }
+        .btn-toggle-lock.lock   { background: #FEF3C7; color: #D97706; }
+        .btn-toggle-lock.lock:hover   { background: #D97706; color: #fff; }
+        .btn-toggle-lock.unlock { background: #D1FAE5; color: #059669; }
+        .btn-toggle-lock.unlock:hover { background: #059669; color: #fff; }
+        .filter-bar        { background: #F8FAFC; border-bottom: 1px solid #E2E8F0; }
+    </style>
 </head>
 <body>
     <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
     <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
 
     <main id="pmContent">
+
+        <!-- Flash messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fa fa-check-circle me-1"></i> <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa fa-exclamation-circle me-1"></i> <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
         <div class="pm-card">
-            <div class="pm-card-header">
-                Danh sách Khách hàng
+
+            <!-- Card Header -->
+            <div class="pm-card-header d-flex justify-content-between align-items-center">
+                <span><i class="fa fa-users me-2 text-primary"></i>Danh sách Khách hàng</span>
+                <span class="badge bg-primary rounded-pill" th:text="${#lists.size(danhSachKhachHang)} + ' khách hàng'">0 khách hàng</span>
             </div>
-            
-            <div class="card-body p-3 bg-light border-bottom">
-                <!-- Phần A: Bộ lọc tìm kiếm (Form GET) -->
-                <form id="searchForm" method="get" action="/admin/khach-hang" class="row g-3 align-items-center mb-0">
-                    <div class="col-md-6">
-                        <input id="searchInput" type="text" name="tuKhoa" th:value="${tuKhoa}" class="form-control form-control-sm" placeholder="Tìm theo Tên, SĐT, Email..." autocomplete="off" />
+
+            <!-- Bộ lọc tìm kiếm -->
+            <div class="filter-bar p-3">
+                <form id="searchForm" method="get" action="/admin/khach-hang" class="row g-2 align-items-center">
+                    <div class="col-md-5">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="fa fa-search text-muted"></i></span>
+                            <input id="searchInput" type="text" name="tuKhoa"
+                                   th:value="${tuKhoa}"
+                                   class="form-control form-control-sm border-start-0"
+                                   placeholder="Tìm theo Tên, SĐT, Email..."
+                                   autocomplete="off" />
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <button type="submit" class="btn btn-sm btn-primary">
-                            <i class="fa fa-search"></i> Tìm kiếm
+                    <div class="col-md-3">
+                        <select name="trangThai" class="form-select form-select-sm">
+                            <option value="">— Tất cả trạng thái —</option>
+                            <option value="hoat_dong" th:selected="${trangThai == 'hoat_dong'}">Hoạt động</option>
+                            <option value="khoa"      th:selected="${trangThai == 'khoa'}">Bị khóa</option>
+                            <option value="vang_lai"  th:selected="${trangThai == 'vang_lai'}">Vãng lai (chưa đăng ký)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm text-nowrap">
+                            <i class="fa fa-filter me-1"></i>Lọc
                         </button>
+                        <a href="/admin/khach-hang" class="btn btn-outline-secondary btn-sm text-nowrap">
+                            <i class="fa fa-refresh me-1"></i>Làm mới
+                        </a>
                     </div>
                 </form>
             </div>
 
+            <!-- Bảng dữ liệu -->
             <div class="card-body p-0">
-                <!-- Phần B: Bảng dữ liệu Khách hàng -->
-                <table class="table table-hover mb-0 align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>ID & Họ Tên</th>
-                            <th>Số điện thoại</th>
-                            <th>Email</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:each="kh : ${khachHangs}">
-                            <td>
-                                <span class="text-muted small">#[[${kh.id}]]</span><br>
-                                <span class="fw-bold" th:text="${kh.hoTen}"></span>
-                            </td>
-                            <td>
-                                <div><i class="fa fa-phone text-muted small"></i> <span th:text="${kh.soDienThoai}"></span></div>
-                            </td>
-                            <td>
-                                <span class="text-muted" th:text="${kh.email != null and !kh.email.isEmpty() ? kh.email : '—'}"></span>
-                            </td>
-                        </tr>
-                        <tr th:if="${#lists.isEmpty(khachHangs)}">
-                            <td colspan="3" class="text-center py-4 text-muted">
-                                Không tìm thấy khách hàng nào phù hợp.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Khách hàng</th>
+                                <th>Liên hệ</th>
+                                <th>Ngày tham gia</th>
+                                <th class="text-end">Tổng chi tiêu</th>
+                                <th class="text-center">Trạng thái</th>
+                                <th class="text-center pe-3">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="kh : ${danhSachKhachHang}">
+                                <!-- Khách hàng -->
+                                <td class="ps-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="kh-avatar"
+                                             th:text="${kh.hoTen != null and #strings.length(kh.hoTen) > 0 ? #strings.substring(kh.hoTen, 0, 1).toUpperCase() : '?'}">
+                                            ?
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold text-dark" style="font-size:.9rem" th:text="${kh.hoTen}">Tên KH</div>
+                                            <div class="text-muted" style="font-size:.75rem">#<span th:text="${kh.id}"></span></div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- Liên hệ -->
+                                <td>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span style="font-size:.85rem">
+                                            <i class="fa fa-phone text-muted me-1" style="font-size:.75rem"></i>
+                                            <span th:text="${kh.soDienThoai ?: '—'}"></span>
+                                        </span>
+                                        <span class="text-muted" style="font-size:.8rem">
+                                            <i class="fa fa-envelope me-1" style="font-size:.75rem"></i>
+                                            <span th:text="${kh.email != null and !kh.email.isEmpty() ? kh.email : '—'}"></span>
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <!-- Ngày tham gia -->
+                                <td>
+                                    <span th:if="${kh.ngayThamGia != null}"
+                                          class="text-dark" style="font-size:.85rem"
+                                          th:text="${#temporals.format(kh.ngayThamGia, 'dd/MM/yyyy')}">
+                                    </span>
+                                    <span th:if="${kh.ngayThamGia == null}" class="text-muted" style="font-size:.8rem">
+                                        <i class="fa fa-user-slash me-1"></i>Vãng lai
+                                    </span>
+                                </td>
+
+                                <!-- Tổng chi tiêu -->
+                                <td class="text-end">
+                                    <span class="stat-chip money"
+                                          th:text="${kh.tongChiTieu != null and kh.tongChiTieu.compareTo(0) > 0 ?
+                                              #numbers.formatDecimal(kh.tongChiTieu, 0, 'COMMA', 0, 'POINT') + ' ₫' : '0 ₫'}">
+                                        0 ₫
+                                    </span>
+                                </td>
+
+                                <!-- Trạng thái -->
+                                <td class="text-center">
+                                    <!-- Khách có tài khoản -->
+                                    <span th:if="${kh.nguoiDungId != null and kh.trangThai == 'hoat_dong'}"
+                                          class="badge-hoat-dong">
+                                        <i class="fa fa-check-circle me-1"></i>Hoạt động
+                                    </span>
+                                    <span th:if="${kh.nguoiDungId != null and kh.trangThai == 'khoa'}"
+                                          class="badge-khoa">
+                                        <i class="fa fa-lock me-1"></i>Bị khóa
+                                    </span>
+                                    <!-- Khách vãng lai -->
+                                    <span th:if="${kh.nguoiDungId == null}"
+                                          class="badge-vang-lai">
+                                        <i class="fa fa-user me-1"></i>Vãng lai
+                                    </span>
+                                </td>
+
+                                <!-- Thao tác -->
+                                <td class="text-center pe-3">
+                                    <!-- Nút Khóa / Mở — chỉ hiện với khách có tài khoản -->
+                                    <th:block th:if="${kh.nguoiDungId != null}">
+                                        <a th:href="@{/admin/khach-hang/toggle-status/{id}(id=${kh.id})}"
+                                           th:class="${kh.trangThai == 'hoat_dong' ? 'btn-toggle-lock lock' : 'btn-toggle-lock unlock'}"
+                                           th:title="${kh.trangThai == 'hoat_dong' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}"
+                                           th:id="'btn-toggle-' + ${kh.id}"
+                                           onclick="return confirm(this.title + ' khách hàng này?')">
+                                            <i th:class="${kh.trangThai == 'hoat_dong' ? 'fa fa-lock' : 'fa fa-unlock'}"></i>
+                                        </a>
+                                    </th:block>
+                                    <!-- Khách vãng lai: không có nút khóa -->
+                                    <span th:if="${kh.nguoiDungId == null}"
+                                          class="text-muted" style="font-size:.8rem" title="Khách chưa đăng ký tài khoản">
+                                        <i class="fa fa-minus-circle"></i>
+                                    </span>
+                                </td>
+                            </tr>
+
+                            <!-- Empty state -->
+                            <tr th:if="${#lists.isEmpty(danhSachKhachHang)}">
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="fa fa-users fa-2x mb-2 d-block opacity-25"></i>
+                                    Không tìm thấy khách hàng nào phù hợp.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
+
         </div>
     </main>
 

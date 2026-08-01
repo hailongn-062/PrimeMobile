@@ -3,6 +3,7 @@ package org.example.primemobile.service.impl;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.primemobile.dto.KhachHangRowDto;
 import org.example.primemobile.entity.KhachHang;
 import org.example.primemobile.repository.KhachHangRepository;
 import org.example.primemobile.service.IKhachHangService;
@@ -10,7 +11,9 @@ import org.example.primemobile.util.ValidationUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -178,5 +181,100 @@ public class KhachHangServiceImpl implements IKhachHangService {
         log.info("[KhachHang] Đã tạo khách vãng lai — id={}, hoTen='{}', sdt='{}'",
                 khachMoi.getId(), khachMoi.getHoTen(), khachMoi.getSoDienThoai());
         return khachMoi;
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Ánh xạ Native Query (Object[]) sang {@link KhachHangRowDto}.
+     * Thứ tự cột: id, hoTen, email, soDienThoai, nguoiDungId,
+     *               ngayThamGia, trangThai, soDonDaMua, tongChiTieu.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<KhachHangRowDto> timKiemVoiThongKe(String tuKhoa, String trangThai) {
+        String keyword    = (tuKhoa    != null && !tuKhoa.isBlank())    ? tuKhoa.trim()    : null;
+        String filterTt   = (trangThai != null && !trangThai.isBlank()) ? trangThai.trim() : null;
+
+        List<Object[]> rows = khachHangRepository.layDanhSachTongHop(keyword, filterTt);
+        List<KhachHangRowDto> result = new ArrayList<>(rows.size());
+
+        for (Object[] r : rows) {
+            KhachHangRowDto dto = KhachHangRowDto.builder()
+                    .id(          toInt(r[0])          )
+                    .hoTen(       toStr(r[1])          )
+                    .email(       toStr(r[2])          )
+                    .soDienThoai( toStr(r[3])          )
+                    .nguoiDungId( toInt(r[4])          )
+                    .ngayThamGia( toLocalDT(r[5])      )
+                    .trangThai(   toStr(r[6])          )
+                    .tongChiTieu( toBigDecimal(r[7])   )
+                    .build();
+            result.add(dto);
+        }
+        return result;
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Toggle trạng thái: hoat_dong → khoa và ngược lại.
+     * Chỉ thực hiện được với khách hàng đã đăng ký tài khoản.
+     */
+    @Override
+    @Transactional
+    public void doiTrangThaiTaiKhoan(Integer khachHangId) {
+        // Dùng native query để tránh LazyInitializationException khi load LAZY nguoiDung
+        List<Object[]> rows = khachHangRepository.layTrangThaiTaiKhoan(khachHangId);
+
+        if (rows == null || rows.isEmpty() || rows.get(0) == null) {
+            throw new IllegalStateException(
+                    "Khách hàng #" + khachHangId + " là khách vãng lai, không có tài khoản để khóa/mở.");
+        }
+        
+        Object[] row = rows.get(0);
+
+        Integer nguoiDungId     = toInt(row[0]);
+        String  trangThaiHienTai = toStr(row[1]);
+        String  trangThaiMoi    = "hoat_dong".equals(trangThaiHienTai) ? "khoa" : "hoat_dong";
+
+        khachHangRepository.capNhatTrangThaiTaiKhoan(nguoiDungId, trangThaiMoi);
+        log.info("[KhachHang] Đổi trạng thái tài khoản khách hàng id={} (nguoiDungId={}) : {} → {}",
+                khachHangId, nguoiDungId, trangThaiHienTai, trangThaiMoi);
+    }
+
+    // =========================================================================
+    // PRIVATE HELPERS: ánh xạ kiểu dữ liệu từ Object[] Native Query
+    // =========================================================================
+
+    private static Integer toInt(Object o) {
+        if (o == null) return null;
+        if (o instanceof Number n) return n.intValue();
+        return Integer.valueOf(o.toString());
+    }
+
+    private static Long toLong(Object o) {
+        if (o == null) return 0L;
+        if (o instanceof Number n) return n.longValue();
+        return Long.valueOf(o.toString());
+    }
+
+    private static String toStr(Object o) {
+        return o == null ? null : o.toString();
+    }
+
+    private static BigDecimal toBigDecimal(Object o) {
+        if (o == null) return BigDecimal.ZERO;
+        if (o instanceof BigDecimal bd) return bd;
+        if (o instanceof Number n) return BigDecimal.valueOf(n.doubleValue());
+        return new BigDecimal(o.toString());
+    }
+
+    private static LocalDateTime toLocalDT(Object o) {
+        if (o == null) return null;
+        if (o instanceof LocalDateTime ldt) return ldt;
+        // SQL Server DATETIME2 có thể trả về java.sql.Timestamp
+        if (o instanceof java.sql.Timestamp ts) return ts.toLocalDateTime();
+        return null;
     }
 }

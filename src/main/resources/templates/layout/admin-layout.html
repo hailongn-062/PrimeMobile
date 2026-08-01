@@ -441,15 +441,14 @@
                         Sản phẩm & Biến thể
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a href="/admin/danh-gia" th:class="${activePage == 'danh-gia'} ? 'nav-link active' : 'nav-link'">
-                        <span class="nav-icon"><i class="fa fa-star"></i></span>
-                        Quản lý đánh giá
-                    </a>
-                </li>
-
                 <!-- Độc quyền Admin -->
                 <th:block th:if="${currentUser != null and currentUser.role == 'Admin'}">
+                    <li class="nav-item">
+                        <a href="/admin/danh-gia" th:class="${activePage == 'danh-gia'} ? 'nav-link active' : 'nav-link'">
+                            <span class="nav-icon"><i class="fa fa-star"></i></span>
+                            Quản lý đánh giá
+                        </a>
+                    </li>
                     <li class="nav-item">
                         <a href="/admin/khuyen-mai"
                             th:class="${activePage == 'khuyen-mai'} ? 'nav-link active' : 'nav-link'">
