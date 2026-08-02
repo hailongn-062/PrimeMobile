@@ -12,11 +12,11 @@
            diện tích tối đa cho giao diện bán hàng.
         ══════════════════════════════════════════════ */
         :root {
-            --pos-left-bg: #F0F4F8;
-            --pos-right-bg: #1A1F2E;
-            --pos-cart-bg: #232840;
-            --pos-accent: #1565C0;
-            --pos-green: #16a34a;
+            --pos-left-bg: #f8fafc;
+            --pos-right-bg: #134e4a; /* Teal 900 - Đậm hơn #115e59 */
+            --pos-cart-bg: #0d423e;  /* Đậm hơn #0d6b5e */
+            --pos-accent: #0d9488;
+            --pos-green: #059669;
             --pos-border: rgba(255, 255, 255, .08);
             --pos-text-dim: rgba(255, 255, 255, .55);
             --card-radius: 14px;
@@ -163,7 +163,7 @@
 
         /* Product card - Horizontal Layout */
         .prod-card-h {
-            background: #232840;
+            background: var(--pos-cart-bg);
             border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
             display: flex;
@@ -184,7 +184,7 @@
             width: 70px;
             height: 70px;
             flex-shrink: 0;
-            background: #1A1F2E;
+            background: var(--pos-right-bg);
             border-radius: 8px;
             display: flex;
             align-items: center;
@@ -396,7 +396,7 @@
         }
 
         .cart-customer select option {
-            background: #1A1F2E;
+            background: var(--pos-right-bg);
         }
 
         /* Scroll area for customer and items */
@@ -659,12 +659,12 @@
             font-weight: 800;
             border-radius: 14px;
             border: none;
-            background: linear-gradient(135deg, #1565C0, #1E88E5);
+            background: linear-gradient(135deg, #0d9488, #115e59);
             color: #fff;
             cursor: pointer;
             letter-spacing: .3px;
             transition: all .2s;
-            box-shadow: 0 4px 18px rgba(21, 101, 192, .45);
+            box-shadow: 0 4px 18px rgba(13, 148, 136, .45);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -673,9 +673,9 @@
         }
 
         .btn-checkout:hover {
-            background: linear-gradient(135deg, #0D47A1, #1565C0);
+            background: linear-gradient(135deg, #115e59, #0d9488);
             transform: translateY(-1px);
-            box-shadow: 0 6px 24px rgba(21, 101, 192, .55);
+            box-shadow: 0 6px 24px rgba(13, 148, 136, .55);
         }
 
         .btn-checkout:active {
@@ -714,19 +714,14 @@
             align-items: center;
             gap: .5rem;
             font-weight: 800;
-            color: #1A1A2E;
+            color: #0f172a;
             font-size: .95rem;
         }
 
         .pos-topbar-brand .brand-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #1565C0, #FF6F00);
-            border-radius: 9px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
+            height: 36px;
+            width: auto;
+            object-fit: contain;
         }
 
         /* Responsive: collapse sidebar always on POS */
@@ -830,7 +825,7 @@
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--pos-accent), #1E88E5);
+            background: linear-gradient(135deg, var(--pos-accent), #115e59);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -873,7 +868,7 @@
             width: 30px;
             height: 30px;
             border-radius: 9px;
-            background: linear-gradient(135deg, var(--pos-accent), #1E88E5);
+            background: linear-gradient(135deg, var(--pos-accent), #115e59);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1079,7 +1074,7 @@
         }
 
         .vl-select option {
-            background: #1A1F2E;
+            background: var(--pos-right-bg);
             color: #fff;
         }
 
@@ -1108,7 +1103,7 @@
             padding: .5rem .8rem;
             border: none;
             border-radius: 10px;
-            background: linear-gradient(135deg, var(--pos-accent), #1E88E5);
+            background: linear-gradient(135deg, var(--pos-accent), #115e59);
             color: #fff;
             font-size: .78rem;
             font-weight: 700;
@@ -1119,14 +1114,14 @@
             justify-content: center;
             gap: .4rem;
             margin-top: .5rem;
-            box-shadow: 0 3px 12px rgba(21, 101, 192, .35);
+            box-shadow: 0 3px 12px rgba(13, 148, 136, .35);
             letter-spacing: .2px;
         }
 
         .vl-btn-save:hover {
-            background: linear-gradient(135deg, #0D47A1, #1565C0);
+            background: linear-gradient(135deg, #115e59, #0d9488);
             transform: translateY(-1px);
-            box-shadow: 0 5px 18px rgba(21, 101, 192, .5);
+            box-shadow: 0 5px 18px rgba(13, 148, 136, .5);
         }
 
         .vl-btn-save:active {
@@ -1245,7 +1240,6 @@
                 </button>
 
                 <div class="pos-topbar-brand">
-                    <img src="/images/PrimeMobile_logo.png" alt="PrimeMobile" class="brand-icon" style="object-fit:cover;">
                     <span>POS — Bán hàng tại quầy</span>
                     <span style="background:#E8F5E9;color:#2e7d32;border-radius:20px;
                              padding:2px 10px;font-size:.68rem;font-weight:700;
@@ -1255,7 +1249,7 @@
                 <!-- Clock -->
                 <div style="margin-left:auto;font-size:.85rem;color:#6B7280;font-weight:600;
                         display:flex;align-items:center;gap:.6rem;">
-                    <i class="fa fa-clock" style="color:#1565C0;"></i>
+                    <i class="fa fa-clock" style="color:#0d9488;"></i>
                     <span id="pos-clock">--:--:--</span>
                 </div>
 
@@ -1292,7 +1286,7 @@
                         <div style="position:relative; flex:1;">
                             <i class="fa fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#9CA3AF;"></i>
                             <input type="text" id="inputSearch" placeholder="Tìm theo tên sản phẩm..."
-                                autocomplete="off" style="width:100%; padding:8px 12px 8px 36px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:#232840; color:#fff;">
+                                autocomplete="off" style="width:100%; padding:8px 12px 8px 36px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:var(--pos-cart-bg); color:#fff;">
                         </div>
                         <button id="btnScanImeiPos" title="Quét IMEI" style="width: 40px; height: 40px; border-radius: 8px; border: none; background: #3B82F6; color: #fff; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
                             <i class="fa fa-barcode"></i>
@@ -1351,7 +1345,7 @@
                                 <!-- Card header strip -->
                                 <div class="vl-card-header">
                                     <div class="vl-header-icon"
-                                         style="background:linear-gradient(135deg,#1565C0,#FF6F00);border-radius:10px;">
+                                         style="background:linear-gradient(135deg,#0d9488,#ea580c);border-radius:10px;">
                                         📱
                                     </div>
                                     <div class="vl-header-text">
@@ -1493,7 +1487,7 @@
         <div class="modal-dialog modal-dialog-centered" style="max-width:520px;">
             <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
                 <div class="modal-header"
-                    style="background:linear-gradient(135deg,#1565C0,#1E88E5);color:#fff;border:none;">
+                    style="background:linear-gradient(135deg,#0d9488,#115e59);color:#fff;border:none;">
                     <h5 class="modal-title fw-bold">
                         <i class="fa fa-receipt me-2"></i>Hóa đơn bán hàng
                     </h5>
@@ -1570,3 +1564,4 @@
 </body>
 
 </html>
+

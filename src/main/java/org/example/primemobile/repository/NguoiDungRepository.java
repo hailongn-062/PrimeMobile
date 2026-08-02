@@ -36,4 +36,11 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, Integer> {
             @org.springframework.data.repository.query.Param("tuKhoa") String tuKhoa,
             @org.springframework.data.repository.query.Param("trangThai") String trangThai
     );
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("UPDATE NguoiDung n SET n.matKhau = :matKhau, n.updatedAt = :now WHERE n.email = :email")
+    void capNhatMatKhau(
+            @org.springframework.data.repository.query.Param("email") String email,
+            @org.springframework.data.repository.query.Param("matKhau") String matKhau,
+            @org.springframework.data.repository.query.Param("now") java.time.LocalDateTime now
+    );
 }

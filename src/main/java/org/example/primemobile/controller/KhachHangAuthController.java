@@ -167,6 +167,33 @@ public class KhachHangAuthController {
     }
 
     // =========================================================================
+    // POST /api/auth/khach-hang/quen-mat-khau
+    // =======================================================================
+
+    /**
+     * Quên mật khẩu — Cập nhật mật khẩu mới nếu email & SĐT khớp.
+     *
+     * @param body JSON chứa {@code email}, {@code soDienThoai}, {@code matKhauMoi}
+     * @return HTTP 200 nếu thành công; HTTP 400 nếu thông tin sai.
+     */
+    @PostMapping("/quen-mat-khau")
+    public ResponseEntity<?> quenMatKhau(@RequestBody Map<String, String> body) {
+        String email       = body.get("email");
+        String soDienThoai = body.get("soDienThoai");
+        String matKhauMoi  = body.get("matKhauMoi");
+
+        log.info("[KhachHangAuth] Yêu cầu quên mật khẩu — email={}, sdt={}", email, soDienThoai);
+
+        try {
+            khachHangAuthService.doiMatKhau(email, soDienThoai, matKhauMoi);
+            return ResponseEntity.ok(buildSuccessResponse("Đổi mật khẩu thành công. Bạn có thể đăng nhập bằng mật khẩu mới.", null));
+        } catch (IllegalArgumentException e) {
+            log.warn("[KhachHangAuth] Quên mật khẩu thất bại — email={}, lý do={}", email, e.getMessage());
+            return ResponseEntity.badRequest().body(buildErrorResponse(e.getMessage()));
+        }
+    }
+
+    // =========================================================================
     // GET /api/auth/khach-hang/toi
     // =========================================================================
 

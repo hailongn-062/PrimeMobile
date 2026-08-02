@@ -136,8 +136,8 @@ const ThongKeSanPham = (function() {
                 const values = data.map(d => d.doanhThu);
                 
                 const backgroundColors = [
-                    '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', 
-                    '#858796', '#5a5c69', '#2e59d9', '#17a673', '#2c9faf'
+                    '#0d9488', '#059669', '#0891b2', '#ea580c', '#d97706', 
+                    '#8b5cf6', '#db2777', '#2563eb', '#65a30d', '#475569'
                 ];
 
                 if (chartInstance) {

@@ -59,4 +59,21 @@ public interface IKhachHangAuthService {
      * @throws IllegalArgumentException nếu email hoặc SĐT đã tồn tại.
      */
     SessionKhachHang dangKy(String hoTen, String email, String soDienThoai, String matKhau);
+    /**
+     * Đổi mật khẩu cho khách hàng (Quên mật khẩu).
+     * <p>
+     * Luồng nghiệp vụ:
+     * <ol>
+     *   <li>Tìm {@code NguoiDung} theo email.</li>
+     *   <li>Kiểm tra {@code vaiTro = 'KhachHang'}.</li>
+     *   <li>Kiểm tra {@code soDienThoai} khớp với bản ghi NguoiDung.</li>
+     *   <li>Cập nhật mật khẩu mới (plain-text).</li>
+     * </ol>
+     *
+     * @param email       Email đã đăng ký.
+     * @param soDienThoai Số điện thoại đã đăng ký.
+     * @param matKhauMoi  Mật khẩu mới (plain-text).
+     * @throws IllegalArgumentException nếu email không tồn tại, sai SĐT, hoặc không phải KhachHang.
+     */
+    void doiMatKhau(String email, String soDienThoai, String matKhauMoi);
 }

@@ -370,7 +370,7 @@ async function openVariantDialog(group) {
 
             <div class="price-display" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
                 <div style="font-size: 0.85rem; color: #9CA3AF;">Giá sản phẩm</div>
-                <div class="price-val" style="font-size: 1.2rem; font-weight: bold; color: #3B82F6;">Vui lòng chọn cấu hình</div>
+                <div class="price-val" style="font-size: 1.2rem; font-weight: bold; color: #0d9488;">Vui lòng chọn cấu hình</div>
                 <div class="stock-val" style="font-size: 0.8rem; color: #10B981; margin-top: 2px;"></div>
                 <input type="hidden" id="selectedVariantId" value="">
             </div>
@@ -378,7 +378,7 @@ async function openVariantDialog(group) {
         
         <style>
             .chip-btn {
-                background: #232840;
+                background: #0d6b5e;
                 border: 2px solid rgba(255,255,255,0.1);
                 color: #fff;
                 padding: 6px 12px;
@@ -389,12 +389,12 @@ async function openVariantDialog(group) {
                 transition: all 0.2s;
             }
             .chip-btn:hover:not(:disabled) {
-                background: #2A3047;
+                background: #0a5a4e;
                 border-color: rgba(255,255,255,0.3);
             }
             .chip-btn.selected {
                 background: rgba(59, 130, 246, 0.15);
-                border-color: #3B82F6;
+                border-color: #0d9488;
                 color: #60A5FA;
             }
             .chip-btn:disabled {
@@ -453,7 +453,7 @@ async function openVariantDialog(group) {
                     const cLow = color.toLowerCase();
                     if(cLow.includes('đen') || cLow.includes('black')) dotColor = '#000000';
                     else if(cLow.includes('trắng') || cLow.includes('white')) dotColor = '#FFFFFF';
-                    else if(cLow.includes('xanh') || cLow.includes('blue')) dotColor = '#3B82F6';
+                    else if(cLow.includes('xanh') || cLow.includes('blue')) dotColor = '#0d9488';
                     else if(cLow.includes('vàng') || cLow.includes('gold')) dotColor = '#F59E0B';
                     else if(cLow.includes('đỏ') || cLow.includes('red')) dotColor = '#EF4444';
                     else if(cLow.includes('tím') || cLow.includes('purple')) dotColor = '#8B5CF6';
@@ -573,7 +573,7 @@ async function scanImeiToCart() {
         <div style="text-align:left; margin-bottom:15px;">
             <label style="font-weight:600; color:#E5E7EB; margin-bottom:8px; display:block;">Nhập hoặc quét IMEI</label>
             <div style="display:flex; gap:8px;">
-                <input type="text" id="manualImeiInput" class="form-control" placeholder="Ví dụ: 351234567890123" style="flex:1; background:#1A1F2E; color:#fff; border:1px solid rgba(255,255,255,0.1);">
+                <input type="text" id="manualImeiInput" class="form-control" placeholder="Ví dụ: 351234567890123" style="flex:1; background:#115e59; color:#fff; border:1px solid rgba(255,255,255,0.1);">
                 <button type="button" id="btnManualSearchImei" class="btn btn-primary"><i class="fa fa-search"></i></button>
             </div>
             
@@ -1251,7 +1251,7 @@ async function changeQty(bienTheId, delta) {
                                 display: flex;
                                 align-items: center;
                                 gap: 14px;
-                                background: #232840;
+                                background: #0d6b5e;
                                 padding: 16px;
                                 border-radius: 12px;
                                 border: 1px solid rgba(255,255,255,0.08);
@@ -1260,12 +1260,12 @@ async function changeQty(bienTheId, delta) {
                                 margin: 0;
                             }
                             .imei-return-card:has(input:checked) {
-                                border-color: #1565C0;
-                                box-shadow: 0 0 0 1px #1565C0;
+                                border-color: #0d9488;
+                                box-shadow: 0 0 0 1px #0d9488;
                                 background: rgba(21, 101, 192, 0.15);
                             }
                             .imei-return-card input[type="radio"] {
-                                accent-color: #1565C0;
+                                accent-color: #0d9488;
                                 transform: scale(1.3);
                                 margin: 0;
                                 cursor: pointer;
@@ -1282,7 +1282,7 @@ async function changeQty(bienTheId, delta) {
                             }
                             .dark-imei-popup .btn-confirm {
                                 flex: 1;
-                                background: linear-gradient(135deg, #1565C0 0%, #1976D2 100%);
+                                background: linear-gradient(135deg, #0d9488 0%, #115e59 100%);
                                 color: white;
                                 border: none;
                                 padding: 12px 0;
@@ -1304,7 +1304,7 @@ async function changeQty(bienTheId, delta) {
                             ${cardsHtml}
                         </div>
                     `,
-                    background: '#1A1F2E',
+                    background: '#115e59',
                     showCancelButton: true,
                     confirmButtonText: 'Xác nhận',
                     cancelButtonText: 'Huỷ',
@@ -1655,7 +1655,7 @@ async function handleCheckout() {
                                 Các sản phẩm chưa đủ IMEI sẽ hiển thị dấu ⚠️.
                                 </small>`,
             confirmButtonText: 'Kiểm tra lại',
-            confirmButtonColor: '#1565C0',
+            confirmButtonColor: '#0d9488',
         });
         return;
     }
@@ -1683,13 +1683,13 @@ async function handleCheckout() {
                 <hr style="margin:.4rem 0;border-color:#E8EDF5;">
                 <div style="display:flex;justify-content:space-between;font-size:1rem;">
                     <strong>Khách cần trả:</strong>
-                    <strong style="color:#1565C0;font-size:1.05rem;">${fmt(canTra)}</strong>
+                    <strong style="color:#0d9488;font-size:1.05rem;">${fmt(canTra)}</strong>
                 </div>
             </div>`,
         showCancelButton: true,
         confirmButtonText: '<i class="fa fa-check me-1"></i>Xác nhận thanh toán',
         cancelButtonText: 'Huỷ',
-        confirmButtonColor: '#1565C0',
+        confirmButtonColor: '#0d9488',
         width: '440px',
         focusConfirm: true,
     });
@@ -1764,7 +1764,7 @@ async function handleCheckout() {
             icon: 'error',
             title: 'Thanh toán thất bại',
             html: `<div style="font-size:.88rem;text-align:left;">${escHtml(err.message)}</div>`,
-            confirmButtonColor: '#1565C0',
+            confirmButtonColor: '#0d9488',
         });
     } finally {
         setCheckoutLoading(false);
@@ -1859,11 +1859,11 @@ function showBillModal(apiResult, payload) {
         DOM.billContent.innerHTML = `
             <div style="text-align:center;margin-bottom:1rem;padding-bottom:.75rem;
                         border-bottom:2px dashed #E8EDF5;">
-                <div style="font-size:1.2rem;font-weight:800;color:#1565C0;">📱 PrimeMobile</div>
+                <div style="font-size:1.2rem;font-weight:800;color:#0d9488;">📱 PrimeMobile</div>
                 <div style="font-size:.72rem;color:#9CA3AF;text-transform:uppercase;
                             letter-spacing:1px;margin:.2rem 0;">Hóa đơn bán hàng tại quầy</div>
                 <div style="font-size:.7rem;color:#9CA3AF;">${now}</div>
-                <div style="font-size:.75rem;font-weight:700;color:#1565C0;margin-top:.25rem;">
+                <div style="font-size:.75rem;font-weight:700;color:#0d9488;margin-top:.25rem;">
                     Mã ĐH: ${escHtml(apiResult.maDonHang ?? '')}
                 </div>
             </div>
@@ -1875,7 +1875,7 @@ function showBillModal(apiResult, payload) {
 
             ${linesHtml}
 
-            <hr style="margin:.6rem 0;border-top:2px solid #1565C0;">
+            <hr style="margin:.6rem 0;border-top:2px solid #0d9488;">
 
             <div style="font-size:.83rem;">
                 <div style="display:flex;justify-content:space-between;margin:.2rem 0;">
@@ -1883,7 +1883,7 @@ function showBillModal(apiResult, payload) {
                 </div>
                 ${promoLine}
                 <div style="display:flex;justify-content:space-between;margin:.4rem 0;
-                            font-size:1rem;font-weight:800;color:#1565C0;
+                            font-size:1rem;font-weight:800;color:#0d9488;
                             padding-top:.3rem;border-top:1px solid #E8EDF5;">
                     <span>Khách thanh toán:</span><span>${fmt(canTra)}</span>
                 </div>
@@ -1998,7 +1998,7 @@ function validateVangLaiForm() {
             icon: 'warning',
             title: 'Thiếu thông tin khách hàng',
             text: 'Vui lòng nhập Họ tên và Số điện thoại cho khách vãng lai.',
-            confirmButtonColor: '#1565C0',
+            confirmButtonColor: '#0d9488',
         });
     }
 
@@ -2050,7 +2050,7 @@ async function createOrGetVangLai() {
             icon: 'error',
             title: 'Lỗi tạo khách hàng',
             html: `<div style="font-size:.88rem;text-align:left;">${escHtml(err.message)}</div>`,
-            confirmButtonColor: '#1565C0',
+            confirmButtonColor: '#0d9488',
         });
         return null;
     }
@@ -2502,3 +2502,5 @@ window.removeFromCart = removeFromCart;
 window.changeQty = changeQty;
 window.loadProducts = loadProducts;
 window.addEventListener('beforeunload', () => { if (cart.length > 0) navigator.sendBeacon('/api/admin/pos/nha-tat-ca-imei'); });
+
+

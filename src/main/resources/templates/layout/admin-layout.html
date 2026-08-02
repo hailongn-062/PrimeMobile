@@ -33,18 +33,40 @@
     <style>
         /* ── Design System ─────────────────────────────────────── */
         :root {
-            --pm-primary: #1565C0;
-            --pm-primary-dark: #0D47A1;
-            --pm-accent: #FF6F00;
-            --pm-sidebar-bg: #1A1F2E;
-            --pm-sidebar-hover: rgba(255, 255, 255, .07);
-            --pm-sidebar-active: rgba(21, 101, 192, .55);
+            --pm-primary: #0d9488;
+            --pm-primary-dark: #115e59;
+            --pm-accent: #ea580c;
+            /* Sidebar — White theme */
+            --pm-sidebar-bg: #ffffff;
+            --pm-sidebar-border: #e2e8f0;
+            --pm-sidebar-hover: rgba(13, 148, 136, .07);
+            --pm-sidebar-active-bg: rgba(13, 148, 136, .10);
+            --pm-sidebar-active-text: #0d9488;
+            --pm-sidebar-text: #475569;
+            --pm-sidebar-text-muted: #94a3b8;
+            --pm-sidebar-section-label: #94a3b8;
             --pm-sidebar-width: 260px;
             --pm-topbar-h: 60px;
-            --pm-bg: #F0F4F8;
-            --pm-radius: 12px;
-            --pm-shadow: 0 2px 12px rgba(0, 0, 0, .08);
+            --pm-bg: #f8fafc;
+            --pm-radius: 8px;
+            --pm-shadow: 0 10px 28px rgba(15,23,42,.07);
+
+            /* Override Bootstrap Theme Colors globally */
+            --bs-primary: #0d9488;
+            --bs-primary-rgb: 13, 148, 136;
+            --bs-success: #059669;
+            --bs-success-rgb: 5, 150, 105;
+            --bs-warning: #d97706;
+            --bs-warning-rgb: 217, 119, 6;
+            --bs-danger: #dc2626;
+            --bs-danger-rgb: 220, 38, 38;
+            --bs-info: #0891b2;
+            --bs-info-rgb: 8, 145, 178;
         }
+
+        /* Override SweetAlert2 colors globally */
+        .swal2-styled.swal2-confirm { background-color: var(--pm-primary) !important; }
+        .swal2-styled.swal2-cancel { background-color: var(--pm-muted, #64748b) !important; }
 
         * {
             box-sizing: border-box;
@@ -76,32 +98,38 @@
         }
 
         #pmSidebar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, .15);
+            background: #e2e8f0;
             border-radius: 4px;
+        }
+
+        /* Sidebar right border separator */
+        #pmSidebar {
+            border-right: 1px solid var(--pm-sidebar-border);
+            box-shadow: 2px 0 12px rgba(15,23,42,.05);
         }
 
         .sidebar-brand {
             padding: 1.25rem 1.25rem 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, .08);
+            border-bottom: 1px solid var(--pm-sidebar-border);
         }
 
         .sidebar-brand .brand-name {
             font-weight: 800;
             font-size: 1.15rem;
-            color: #fff;
+            color: #0f172a;
             letter-spacing: -.3px;
         }
 
         .sidebar-brand .brand-sub {
             font-size: .7rem;
-            color: rgba(255, 255, 255, .4);
+            color: #94a3b8;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
         .sidebar-user {
             padding: .9rem 1.25rem;
-            border-bottom: 1px solid rgba(255, 255, 255, .08);
+            border-bottom: 1px solid var(--pm-sidebar-border);
             display: flex;
             align-items: center;
             gap: .75rem;
@@ -123,24 +151,26 @@
 
         .sidebar-user .user-name {
             font-weight: 600;
-            color: #fff;
+            color: #0f172a;
             font-size: .88rem;
         }
 
         .sidebar-user .user-role {
             font-size: .7rem;
-            color: rgba(255, 255, 255, .45);
-            background: rgba(255, 255, 255, .08);
+            color: #64748b;
+            background: rgba(13, 148, 136, .10);
+            color: #0d9488;
             border-radius: 10px;
             padding: 1px 8px;
             display: inline-block;
             margin-top: 2px;
+            font-weight: 600;
         }
 
         .sidebar-section-label {
             font-size: .65rem;
             font-weight: 700;
-            color: rgba(255, 255, 255, .3);
+            color: var(--pm-sidebar-section-label);
             text-transform: uppercase;
             letter-spacing: 1.5px;
             padding: 1rem 1.25rem .4rem;
@@ -160,40 +190,45 @@
             align-items: center;
             gap: .75rem;
             padding: .6rem .8rem;
-            border-radius: 10px;
-            color: rgba(255, 255, 255, .65);
+            border-radius: 8px;
+            color: var(--pm-sidebar-text);
             font-size: .88rem;
             font-weight: 500;
             text-decoration: none;
             transition: all .2s;
+            position: relative;
         }
 
         .sidebar-nav .nav-link:hover {
             background: var(--pm-sidebar-hover);
-            color: #fff;
+            color: var(--pm-primary);
         }
 
         .sidebar-nav .nav-link.active {
-            background: var(--pm-sidebar-active);
-            color: #fff;
-            font-weight: 600;
-            box-shadow: 0 2px 8px rgba(21, 101, 192, .3);
+            background: var(--pm-sidebar-active-bg);
+            color: var(--pm-sidebar-active-text);
+            font-weight: 700;
+            border-left: 3px solid var(--pm-primary);
+            padding-left: calc(.8rem - 3px);
         }
 
         .sidebar-nav .nav-link .nav-icon {
             width: 20px;
             text-align: center;
             font-size: .95rem;
-            opacity: .75;
+            color: var(--pm-sidebar-text-muted);
+            transition: color .2s;
         }
 
-        .sidebar-nav .nav-link.active .nav-icon {
-            opacity: 1;
+        .sidebar-nav .nav-link.active .nav-icon,
+        .sidebar-nav .nav-link:hover .nav-icon {
+            color: var(--pm-primary);
         }
 
         .sidebar-badge {
             margin-left: auto;
-            background: var(--pm-accent);
+            background: var(--pm-primary);
+            color: #fff;
             border-radius: 20px;
             padding: 1px 8px;
             font-size: .65rem;
@@ -233,19 +268,19 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #6B7280;
+            color: #64748b;
             cursor: pointer;
             transition: all .2s;
         }
 
         .btn-toggle-sidebar:hover {
-            background: #F0F4F8;
-            color: #1A1A2E;
+            background: #f8fafc;
+            color: #0f172a;
         }
 
         .topbar-title {
             font-weight: 700;
-            color: #1A1A2E;
+            color: #0f172a;
             font-size: 1rem;
         }
 
@@ -261,9 +296,9 @@
             gap: .5rem;
             padding: .4rem .9rem;
             border-radius: 8px;
-            background: #FFF0F0;
-            color: #C0392B;
-            border: 1px solid #FECDD3;
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
             font-size: .82rem;
             font-weight: 600;
             text-decoration: none;
@@ -271,9 +306,9 @@
         }
 
         .btn-logout:hover {
-            background: #C0392B;
+            background: #dc2626;
             color: #fff;
-            border-color: #C0392B;
+            border-color: #dc2626;
         }
 
         /* ── MAIN CONTENT ────────────────────────────────────── */
@@ -330,7 +365,7 @@
         .pm-stat-value {
             font-size: 1.15rem;
             font-weight: 800;
-            color: #1A1A2E;
+            color: #0f172a;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -338,7 +373,7 @@
 
         .pm-stat-label {
             font-size: .8rem;
-            color: #6B7280;
+            color: #64748b;
             font-weight: 500;
         }
 
@@ -359,7 +394,7 @@
             padding: 1rem 1.25rem;
             border-bottom: 1px solid #F0F4F8;
             font-weight: 700;
-            color: #1A1A2E;
+            color: #0f172a;
             font-size: .95rem;
             display: flex;
             align-items: center;
@@ -377,15 +412,9 @@
     <aside id="pmSidebar" th:fragment="sidebar">
 
         <!-- Brand -->
-        <div class="sidebar-brand">
-            <div class="d-flex align-items-center gap-2">
-                <img src="/images/PrimeMobile_logo.png" alt="PrimeMobile"
-                     style="width:34px;height:34px;border-radius:10px;object-fit:cover;">
-                <div>
-                    <div class="brand-name">PrimeMobile</div>
-                    <div class="brand-sub">Admin Panel</div>
-                </div>
-            </div>
+        <div class="sidebar-brand" style="display:flex;justify-content:center;padding:1rem 1rem;">
+            <img src="/images/logo_den.png" alt="PrimeMobile"
+                 style="width:150px;height:auto;object-fit:contain;">
         </div>
 
         <!-- Thông tin nhân viên -->

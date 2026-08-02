@@ -58,6 +58,10 @@ public class DiaChiKhachHang {
     @Builder.Default
     private String loaiDiaChi = "nha_rieng";
 
+    /** Tên gợi nhớ của địa chỉ (ví dụ: Nhà, Công ty) */
+    @Column(name = "ten_goi_nho", length = 255)
+    private String tenGoiNho;
+
     /** TÃªn ngÆ°á»i nháº­n hÃ ng táº¡i Ä‘á»‹a chá»‰ nÃ y. */
     @Column(name = "ho_ten_nguoi_nhan", length = 100)
     private String hoTenNguoiNhan;

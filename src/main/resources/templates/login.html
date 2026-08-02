@@ -8,6 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     <style>
         :root { --pm-primary:#0d9488; --pm-primary-dark:#115e59; --pm-accent:#dc2626; --pm-bg:#f5f7fb; --pm-text:#0f172a; --pm-muted:#64748b; --pm-line:#e2e8f0; }
         * { box-sizing:border-box; }
@@ -97,6 +98,10 @@
                     <button type="submit" class="btn btn-pm mt-2" id="btnLogin">
                         <i class="fa fa-right-to-bracket me-2"></i>Đăng nhập
                     </button>
+                    
+                    <div class="mt-3 text-end">
+                        <a href="javascript:void(0)" onclick="toggleForms()" class="pm-link" style="font-size: .85rem;">Quên mật khẩu?</a>
+                    </div>
                 </form>
 
                 <div class="mt-4 pt-3 border-top text-center">
@@ -104,11 +109,71 @@
                     <a href="/dang-ky" class="pm-link ms-1">Đăng ký ngay</a>
                 </div>
             </section>
+
+            <!-- Form Quên Mật Khẩu -->
+            <section class="pm-auth-form" id="forgotPasswordSection" style="display: none;">
+                <span class="pm-eyebrow"><i class="fa fa-key"></i> Quên mật khẩu</span>
+                <h2 class="pm-form-title h3">Khôi phục mật khẩu</h2>
+                <p class="text-muted mb-4">Nhập email và số điện thoại đã đăng ký để đặt lại mật khẩu.</p>
+
+                <form id="forgotPasswordForm" onsubmit="event.preventDefault(); submitForgotPassword();">
+                    <div class="pm-field">
+                        <label for="fpEmail">Email đã đăng ký</label>
+                        <div class="pm-input">
+                            <i class="fa fa-envelope"></i>
+                            <input type="email" id="fpEmail" name="email" placeholder="Nhập email" required>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <div class="pm-field">
+                        <label for="fpPhone">Số điện thoại đã đăng ký</label>
+                        <div class="pm-input">
+                            <i class="fa fa-phone"></i>
+                            <input type="text" id="fpPhone" name="soDienThoai" placeholder="Nhập số điện thoại" required>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <div class="pm-field">
+                        <label for="fpNewPassword">Mật khẩu mới</label>
+                        <div class="pm-input">
+                            <i class="fa fa-lock"></i>
+                            <input type="password" id="fpNewPassword" name="matKhauMoi" placeholder="Nhập mật khẩu mới" minlength="6" required>
+                            <button type="button" class="pm-icon-btn toggle-pw-btn" onclick="toggleFpPassword('fpNewPassword', 'fpNewPwIcon')">
+                                <i class="fa fa-eye-slash" id="fpNewPwIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="pm-field">
+                        <label for="fpConfirmPassword">Xác nhận mật khẩu mới</label>
+                        <div class="pm-input">
+                            <i class="fa fa-lock"></i>
+                            <input type="password" id="fpConfirmPassword" placeholder="Nhập lại mật khẩu mới" minlength="6" required>
+                            <button type="button" class="pm-icon-btn toggle-pw-btn" onclick="toggleFpPassword('fpConfirmPassword', 'fpConfirmPwIcon')">
+                                <i class="fa fa-eye-slash" id="fpConfirmPwIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-pm mt-2" id="btnSubmitFp">
+                        <i class="fa fa-check me-2"></i>Xác nhận & Đổi mật khẩu
+                    </button>
+                    
+                    <div class="mt-3 text-center">
+                        <a href="javascript:void(0)" onclick="toggleForms()" class="pm-link" style="font-size: .85rem;">
+                            <i class="fa fa-arrow-left me-1"></i> Quay lại đăng nhập
+                        </a>
+                    </div>
+                </form>
+            </section>
         </div>
     </div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     const toggleBtn = document.getElementById('togglePw');
     const pwInput = document.getElementById('matKhau');
@@ -119,11 +184,96 @@
         pwIcon.className = show ? 'fa fa-eye' : 'fa fa-eye-slash';
     });
 
+    function toggleFpPassword(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        icon.className = show ? 'fa fa-eye' : 'fa fa-eye-slash';
+    }
+
     document.getElementById('loginForm')?.addEventListener('submit', () => {
         const btn = document.getElementById('btnLogin');
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang đăng nhập';
         btn.disabled = true;
     });
+
+    function toggleForms() {
+        const loginSection = document.querySelector('.pm-auth-form:not(#forgotPasswordSection)');
+        const fpSection = document.getElementById('forgotPasswordSection');
+        if (fpSection.style.display === 'none') {
+            loginSection.style.display = 'none';
+            fpSection.style.display = 'block';
+        } else {
+            fpSection.style.display = 'none';
+            loginSection.style.display = 'block';
+        }
+    }
+
+    async function submitForgotPassword() {
+        const email = document.getElementById('fpEmail').value.trim();
+        const phone = document.getElementById('fpPhone').value.trim();
+        const newPassword = document.getElementById('fpNewPassword').value;
+        const confirmPassword = document.getElementById('fpConfirmPassword').value;
+
+        if (newPassword !== confirmPassword) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: 'Mật khẩu xác nhận không khớp!',
+                confirmButtonColor: '#dc2626'
+            });
+            return;
+        }
+
+        const btn = document.getElementById('btnSubmitFp');
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xử lý...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/api/auth/khach-hang/quen-mat-khau', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, soDienThoai: phone, matKhauMoi: newPassword })
+            });
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Thành công!',
+                    text: data.message,
+                    confirmButtonColor: '#0d9488'
+                }).then(() => {
+                    // Reset form and go back to login
+                    document.getElementById('forgotPasswordForm').reset();
+                    toggleForms();
+                    // Optional: prefill email
+                    document.getElementById('email').value = email;
+                    document.getElementById('matKhau').focus();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: data.message || 'Có lỗi xảy ra',
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi hệ thống',
+                text: 'Vui lòng thử lại sau',
+                confirmButtonColor: '#dc2626'
+            });
+        } finally {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        }
+    }
 </script>
 </body>
 </html>

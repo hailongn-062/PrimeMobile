@@ -4,10 +4,17 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.example.primemobile.dto.auth.SessionKhachHang;
+import org.example.primemobile.entity.KhachHang;
 import org.example.primemobile.repository.DiaChiKhachHangRepository;
+import org.example.primemobile.repository.KhachHangRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.time.LocalDateTime;
 
 @Controller
 @RequiredArgsConstructor
@@ -15,6 +22,7 @@ public class TaiKhoanKhachHangUIController {
 
     private final DiaChiKhachHangRepository diaChiKhachHangRepository;
     private final org.example.primemobile.service.IYeuThichService yeuThichService;
+    private final KhachHangRepository khachHangRepository;
 
     @GetMapping({"/toi", "/dia-chi"})
     public String taiKhoan(HttpServletRequest request, Model model) {
@@ -43,5 +51,38 @@ public class TaiKhoanKhachHangUIController {
         model.addAttribute("currentCustomer", currentCustomer);
         model.addAttribute("danhSachYeuThich", yeuThichService.layDanhSach(currentCustomer.getKhachHangId()));
         return "tai-khoan/yeu-thich";
+    }
+
+    @PostMapping("/toi/cap-nhat")
+    public String capNhatThongTin(HttpServletRequest request,
+                                  @RequestParam("hoTen") String hoTen,
+                                  RedirectAttributes redirectAttributes) {
+        HttpSession session = request.getSession(false);
+        Object customer = session == null ? null : session.getAttribute(SessionKhachHang.SESSION_KEY);
+        if (!(customer instanceof SessionKhachHang currentCustomer)) {
+            return "redirect:/dang-nhap";
+        }
+
+        if (hoTen == null || hoTen.trim().isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Họ tên không được để trống.");
+            return "redirect:/toi";
+        }
+
+        KhachHang khachHang = khachHangRepository.findById(currentCustomer.getKhachHangId()).orElse(null);
+        if (khachHang != null) {
+            khachHang.setHoTen(hoTen.trim());
+            khachHang.setUpdatedAt(LocalDateTime.now());
+            khachHangRepository.save(khachHang);
+
+            // Cập nhật lại session
+            currentCustomer.setHoTen(hoTen.trim());
+            session.setAttribute(SessionKhachHang.SESSION_KEY, currentCustomer);
+
+            redirectAttributes.addFlashAttribute("success", "Cập nhật thông tin thành công!");
+        } else {
+            redirectAttributes.addFlashAttribute("error", "Không tìm thấy thông tin khách hàng.");
+        }
+
+        return "redirect:/toi";
     }
 }

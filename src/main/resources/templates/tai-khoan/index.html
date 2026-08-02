@@ -73,6 +73,9 @@
                 <div class="pm-panel">
                     <div class="pm-panel-header">
                         <span><i class="fa fa-id-card me-2 text-success"></i>Thông tin cá nhân</span>
+                        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#updateInfoModal">
+                            <i class="fa fa-pen-to-square me-1"></i> Cập nhật
+                        </button>
                     </div>
                     <div class="pm-panel-body">
                         <div class="pm-info-row">
@@ -93,7 +96,9 @@
                 <div class="pm-panel">
                     <div class="pm-panel-header">
                         <span><i class="fa fa-location-dot me-2 text-success"></i>Sổ địa chỉ</span>
-                        <span class="text-muted small"><span th:text="${diaChis != null ? diaChis.size() : 0}">0</span> địa chỉ</span>
+                        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#addressModal" onclick="openAddressModal()">
+                            <i class="fa fa-plus me-1"></i> Thêm địa chỉ
+                        </button>
                     </div>
                     <div class="pm-panel-body">
                         <div th:if="${#lists.isEmpty(diaChis)}" class="alert alert-warning mb-0">
@@ -101,15 +106,31 @@
                         </div>
                         <div class="pm-address" th:each="dc : ${diaChis}" th:classappend="${dc.macDinh} ? ' default' : ''">
                             <div class="d-flex justify-content-between gap-2 flex-wrap mb-1">
-                                <strong th:text="${dc.hoTenNguoiNhan}">Người nhận</strong>
+                                <strong th:text="${dc.tenGoiNho}">Tên gợi nhớ</strong>
                                 <span class="pm-badge" th:if="${dc.macDinh}"><i class="fa fa-check"></i>Mặc định</span>
                             </div>
-                            <div class="pm-muted small mb-2" th:text="${dc.soDienThoaiNguoiNhan}">Số điện thoại</div>
-                            <div>
-                                <span th:text="${dc.diaChiChiTiet}">Địa chỉ</span>,
-                                <span th:text="${dc.phuongXaTen}">Phường</span>,
-                                <span th:text="${dc.quanHuyenTen}">Quận</span>,
-                                <span th:text="${dc.tinhThanhTen}">Tỉnh</span>
+                            <div class="mb-2 small">
+                                <span th:text="${currentCustomer.hoTen}">Tên</span> | <span th:text="${currentCustomer.soDienThoai}">SĐT</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="pm-muted small pe-3">
+                                    <span th:text="${dc.diaChiChiTiet}">Địa chỉ</span>,
+                                    <span th:text="${dc.phuongXaTen}">Phường</span>,
+                                    <span th:text="${dc.quanHuyenTen}">Quận</span>,
+                                    <span th:text="${dc.tinhThanhTen}">Tỉnh</span>
+                                </div>
+                                <div class="text-end text-nowrap mt-1">
+                                    <a href="javascript:void(0)" class="text-danger small fw-bold me-3 text-decoration-none" th:onclick="'deleteAddress(' + ${dc.id} + ')'">Xóa</a>
+                                    <a href="javascript:void(0)" class="text-success small fw-bold text-decoration-none" 
+                                       th:data-id="${dc.id}" 
+                                       th:data-ten="${dc.tenGoiNho}" 
+                                       th:data-diachi="${dc.diaChiChiTiet}" 
+                                       th:data-tinh="${dc.tinhThanhId}" 
+                                       th:data-huyen="${dc.quanHuyenId}" 
+                                       th:data-xa="${dc.phuongXaCode}" 
+                                       th:data-macdinh="${dc.macDinh}"
+                                       onclick="editAddress(this)">Cập nhật</a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -119,7 +140,301 @@
     </div>
 </main>
 
+<!-- Modal cập nhật thông tin -->
+<div class="modal fade" id="updateInfoModal" tabindex="-1" aria-labelledby="updateInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="updateInfoModalLabel">Cập nhật thông tin cá nhân</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/toi/cap-nhat" method="post" id="updateInfoForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="hoTen" class="form-label text-muted small fw-bold mb-1">Họ và tên</label>
+                        <input type="text" class="form-control" id="hoTen" name="hoTen" th:value="${currentCustomer.hoTen}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="soDienThoai" class="form-label text-muted small fw-bold mb-1">Số điện thoại</label>
+                        <input type="text" class="form-control bg-light" id="soDienThoai" th:value="${currentCustomer.soDienThoai}" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label text-muted small fw-bold mb-1">Email</label>
+                        <input type="email" class="form-control bg-light" id="email" th:value="${currentCustomer.email}" readonly>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 pb-4 px-4 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary m-0" data-bs-dismiss="modal" onclick="document.getElementById('updateInfoForm').reset()">Thiết lập lại</button>
+                    <button type="submit" class="btn btn-success m-0">Cập nhật thông tin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Address -->
+<div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="addressModalLabel">Thêm địa chỉ mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addressForm">
+                <div class="modal-body">
+                    <input type="hidden" id="addressId">
+                    <div class="mb-3">
+                        <label for="tenGoiNho" class="form-label text-muted small fw-bold mb-1">Đặt tên gợi nhớ</label>
+                        <input type="text" class="form-control" id="tenGoiNho" placeholder="Ví dụ: Nhà, Công ty..." required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="provinceSelect" class="form-label text-muted small fw-bold mb-1">Tỉnh / Thành phố <span class="text-danger">*</span></label>
+                            <select id="provinceSelect" class="form-select" required>
+                                <option value="">-- Chọn tỉnh/thành --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="districtSelect" class="form-label text-muted small fw-bold mb-1">Quận / Huyện <span class="text-danger">*</span></label>
+                            <select id="districtSelect" class="form-select" required disabled>
+                                <option value="">-- Chọn quận/huyện --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="wardSelect" class="form-label text-muted small fw-bold mb-1">Phường / Xã <span class="text-danger">*</span></label>
+                        <select id="wardSelect" class="form-select" required disabled>
+                            <option value="">-- Chọn phường/xã --</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="diaChiChiTiet" class="form-label text-muted small fw-bold mb-1">Nhập địa chỉ nhà <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="diaChiChiTiet" placeholder="Số nhà, tên đường..." required>
+                    </div>
+                    <div class="form-check form-switch mt-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="macDinh">
+                        <label class="form-check-label text-muted small fw-bold" for="macDinh">Đặt làm địa chỉ mặc định</label>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 pb-4 px-4 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary m-0" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-success m-0" id="btnSaveAddress">Lưu địa chỉ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div th:replace="~{fragments/footer :: footer}"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    const currentCustomerId = [[${currentCustomer.khachHangId}]];
+    let isEditing = false;
+    let editingId = null;
+
+    // Helper fetch data
+    async function fetchMasterData(url) {
+        try {
+            const res = await fetch(url, { credentials: 'include' });
+            if (!res.ok) throw new Error('Lỗi API');
+            const data = await res.json();
+            return data.data || [];
+        } catch (e) {
+            console.error(e);
+            return [];
+        }
+    }
+
+    async function loadProvinces(selectedId = null) {
+        const provinceSelect = document.getElementById('provinceSelect');
+        provinceSelect.innerHTML = '<option value="">-- Đang tải... --</option>';
+        const data = await fetchMasterData('/api/public/giao-hang-nhanh/provinces');
+        provinceSelect.innerHTML = '<option value="">-- Chọn tỉnh/thành --</option>';
+        data.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.ProvinceID;
+            opt.textContent = p.ProvinceName;
+            provinceSelect.appendChild(opt);
+        });
+        if (selectedId) {
+            provinceSelect.value = selectedId;
+        }
+    }
+
+    async function loadDistricts(provinceId, selectedId = null) {
+        const districtSelect = document.getElementById('districtSelect');
+        const wardSelect = document.getElementById('wardSelect');
+        if (!provinceId) {
+            districtSelect.innerHTML = '<option value="">-- Chọn quận/huyện --</option>';
+            districtSelect.disabled = true;
+            wardSelect.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+            wardSelect.disabled = true;
+            return;
+        }
+        districtSelect.innerHTML = '<option value="">-- Đang tải... --</option>';
+        districtSelect.disabled = false;
+        const data = await fetchMasterData(`/api/public/giao-hang-nhanh/districts?provinceId=${provinceId}`);
+        districtSelect.innerHTML = '<option value="">-- Chọn quận/huyện --</option>';
+        data.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.DistrictID;
+            opt.textContent = d.DistrictName;
+            districtSelect.appendChild(opt);
+        });
+        if (selectedId) {
+            districtSelect.value = selectedId;
+        }
+    }
+
+    async function loadWards(districtId, selectedId = null) {
+        const wardSelect = document.getElementById('wardSelect');
+        if (!districtId) {
+            wardSelect.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+            wardSelect.disabled = true;
+            return;
+        }
+        wardSelect.innerHTML = '<option value="">-- Đang tải... --</option>';
+        wardSelect.disabled = false;
+        const data = await fetchMasterData(`/api/public/giao-hang-nhanh/wards?districtId=${districtId}`);
+        wardSelect.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+        data.forEach(w => {
+            const opt = document.createElement('option');
+            opt.value = w.WardCode;
+            opt.textContent = w.WardName;
+            wardSelect.appendChild(opt);
+        });
+        if (selectedId) {
+            wardSelect.value = selectedId;
+        }
+    }
+
+    document.getElementById('provinceSelect').addEventListener('change', function() {
+        loadDistricts(this.value);
+        document.getElementById('wardSelect').innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+        document.getElementById('wardSelect').disabled = true;
+    });
+
+    document.getElementById('districtSelect').addEventListener('change', function() {
+        loadWards(this.value);
+    });
+
+    function openAddressModal() {
+        isEditing = false;
+        editingId = null;
+        document.getElementById('addressModalLabel').innerText = 'Thêm địa chỉ mới';
+        document.getElementById('addressForm').reset();
+        document.getElementById('districtSelect').innerHTML = '<option value="">-- Chọn quận/huyện --</option>';
+        document.getElementById('districtSelect').disabled = true;
+        document.getElementById('wardSelect').innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+        document.getElementById('wardSelect').disabled = true;
+        loadProvinces();
+    }
+
+    async function editAddress(btn) {
+        try {
+            const id = btn.getAttribute('data-id');
+            isEditing = true;
+            editingId = id;
+            document.getElementById('addressModalLabel').innerText = 'Cập nhật địa chỉ';
+            document.getElementById('addressId').value = id;
+            document.getElementById('tenGoiNho').value = btn.getAttribute('data-ten') || '';
+            document.getElementById('diaChiChiTiet').value = btn.getAttribute('data-diachi') || '';
+            document.getElementById('macDinh').checked = btn.getAttribute('data-macdinh') === 'true';
+
+            const tinhId = btn.getAttribute('data-tinh');
+            const huyenId = btn.getAttribute('data-huyen');
+            const xaCode = btn.getAttribute('data-xa');
+
+            await loadProvinces(tinhId);
+            await loadDistricts(tinhId, huyenId);
+            await loadWards(huyenId, xaCode);
+
+            const modal = new bootstrap.Modal(document.getElementById('addressModal'));
+            modal.show();
+        } catch (e) {
+            Swal.fire('Lỗi', e.message, 'error');
+        }
+    }
+
+    async function deleteAddress(id) {
+        const result = await Swal.fire({
+            title: 'Xóa địa chỉ?',
+            text: "Bạn có chắc chắn muốn xóa địa chỉ này không?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Đồng ý',
+            cancelButtonText: 'Hủy'
+        });
+        
+        if (result.isConfirmed) {
+            try {
+                const res = await fetch(`/api/public/dia-chi/${currentCustomerId}/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    location.reload();
+                } else {
+                    const err = await res.text();
+                    Swal.fire('Lỗi', err || 'Không thể xóa', 'error');
+                }
+            } catch (e) {
+                Swal.fire('Lỗi', e.message, 'error');
+            }
+        }
+    }
+
+    document.getElementById('addressForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const prov = document.getElementById('provinceSelect');
+        const dist = document.getElementById('districtSelect');
+        const ward = document.getElementById('wardSelect');
+        
+        const payload = {
+            tenGoiNho: document.getElementById('tenGoiNho').value.trim(),
+            diaChiChiTiet: document.getElementById('diaChiChiTiet').value.trim(),
+            tinhThanhId: prov.value ? parseInt(prov.value) : null,
+            quanHuyenId: dist.value ? parseInt(dist.value) : null,
+            phuongXaCode: ward.value,
+            tinhThanhTen: prov.options[prov.selectedIndex]?.text || '',
+            quanHuyenTen: dist.options[dist.selectedIndex]?.text || '',
+            phuongXaTen: ward.options[ward.selectedIndex]?.text || '',
+            macDinh: document.getElementById('macDinh').checked,
+            loaiDiaChi: 'nha_rieng'
+        };
+
+        const url = isEditing 
+            ? `/api/public/dia-chi/${currentCustomerId}/${editingId}`
+            : `/api/public/dia-chi/${currentCustomerId}`;
+        
+        const method = isEditing ? 'PUT' : 'POST';
+        
+        const btn = document.getElementById('btnSaveAddress');
+        const oldText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Đang lưu...';
+
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                location.reload();
+            } else {
+                const err = await res.text();
+                Swal.fire('Lỗi', err || 'Có lỗi xảy ra', 'error');
+                btn.disabled = false;
+                btn.innerHTML = oldText;
+            }
+        } catch (e) {
+            Swal.fire('Lỗi', e.message, 'error');
+            btn.disabled = false;
+            btn.innerHTML = oldText;
+        }
+    });
+</script>
 </body>
 </html>

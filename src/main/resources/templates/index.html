@@ -43,7 +43,7 @@
         .pm-cat-pill:hover { background:#ccfbf1; color:#115e59; }
         .pm-product-card { border:1px solid var(--pm-line); border-radius:8px; overflow:hidden; background:#fff; box-shadow:var(--pm-shadow); transition:transform .2s ease, box-shadow .2s ease; }
         .pm-product-card:hover { transform:translateY(-3px); box-shadow:0 14px 34px rgba(15,23,42,.12); }
-        .pm-img-wrap { height:200px; display:flex; align-items:center; justify-content:center; padding:12px; background:#fafbff; }
+        .pm-img-wrap { height:200px; display:flex; align-items:center; justify-content:center; padding:12px; background:#fff; }
         .pm-img-wrap img { max-width:100%; max-height:176px; object-fit:contain; }
         .pm-image-fallback {
             width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -118,32 +118,7 @@
             </div>
         </section>
 
-        <section class="row g-3 mb-5">
-            <div class="col-6 col-lg-3">
-                <div class="pm-usp">
-                    <i class="fa fa-shipping-fast"></i>
-                    <div><div class="fw-bold small">Giao hàng nhanh</div><div class="text-muted small">2-4 giờ nội thành</div></div>
-                </div>
-            </div>
-            <div class="col-6 col-lg-3">
-                <div class="pm-usp">
-                    <i class="fa fa-shield-alt"></i>
-                    <div><div class="fw-bold small">Chính hãng 100%</div><div class="text-muted small">Bảo hành 12-24 tháng</div></div>
-                </div>
-            </div>
-            <div class="col-6 col-lg-3">
-                <div class="pm-usp">
-                    <i class="fa fa-undo"></i>
-                    <div><div class="fw-bold small">Đổi trả 15 ngày</div><div class="text-muted small">Miễn phí theo chính sách</div></div>
-                </div>
-            </div>
-            <div class="col-6 col-lg-3">
-                <div class="pm-usp">
-                    <i class="fa fa-credit-card"></i>
-                    <div><div class="fw-bold small">Trả góp 0%</div><div class="text-muted small">Duyệt nhanh trong ngày</div></div>
-                </div>
-            </div>
-        </section>
+
 
         <section class="mb-5" th:if="${danhSachDanhMuc != null and !#lists.isEmpty(danhSachDanhMuc)}">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -243,30 +218,7 @@
             </div>
         </section>
 
-        <section class="mb-5">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <div class="pm-promo" style="background:linear-gradient(135deg,#ea580c,#b91c1c);">
-                        <i class="fa fa-tag"></i>
-                        <div>
-                            <div class="fw-bold fs-5">Khuyến Mãi Đặc Biệt</div>
-                            <div class="opacity-85 small">Ưu đãi hấp dẫn theo đơn hàng và sản phẩm.</div>
-                            <a href="/khuyen-mai" class="btn btn-light btn-sm mt-2 fw-bold">Xem ngay</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="pm-promo" style="background:linear-gradient(135deg,#2563eb,#0f766e);">
-                        <i class="fa fa-credit-card"></i>
-                        <div>
-                            <div class="fw-bold fs-5">Trả góp 0% lãi suất</div>
-                            <div class="opacity-85 small">Duyệt nhanh, nhận máy sớm tại cửa hàng hoặc giao tận nơi.</div>
-                            <a href="/huong-dan-mua-hang" class="btn btn-light btn-sm mt-2 fw-bold">Tìm hiểu</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+
     </div>
 </main>
 

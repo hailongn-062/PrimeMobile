@@ -44,14 +44,17 @@ public class DiaChiServiceImpl implements IDiaChiService {
 
         validateDiaChiRequest(request);
 
+        boolean isMacDinh = Boolean.TRUE.equals(request.getMacDinh());
+
         // Nếu đây là địa chỉ đầu tiên, tự động set làm mặc định
         boolean laDiaDauTien = soLuongHienTai == 0;
         if (laDiaDauTien) {
             request = DiaChiKhachHang.builder()
                     .khachHang(khachHang)
                     .loaiDiaChi(request.getLoaiDiaChi() != null ? request.getLoaiDiaChi() : "nha_rieng")
-                    .hoTenNguoiNhan(request.getHoTenNguoiNhan())
-                    .soDienThoaiNguoiNhan(request.getSoDienThoaiNguoiNhan())
+                    .hoTenNguoiNhan(khachHang.getHoTen())
+                    .soDienThoaiNguoiNhan(khachHang.getSoDienThoai())
+                    .tenGoiNho(request.getTenGoiNho())
                     .diaChiChiTiet(request.getDiaChiChiTiet())
                     .tinhThanhId(request.getTinhThanhId())
                     .quanHuyenId(request.getQuanHuyenId())
@@ -64,9 +67,16 @@ public class DiaChiServiceImpl implements IDiaChiService {
         } else {
             request.setKhachHang(khachHang);
             request.setMacDinh(false);
+            if (request.getHoTenNguoiNhan() == null) request.setHoTenNguoiNhan(khachHang.getHoTen());
+            if (request.getSoDienThoaiNguoiNhan() == null) request.setSoDienThoaiNguoiNhan(khachHang.getSoDienThoai());
         }
 
         DiaChiKhachHang saved = diaChiRepo.save(request);
+        
+        if (!laDiaDauTien && isMacDinh) {
+            saved = setMacDinh(saved.getId(), khachHangId);
+        }
+
         log.info("[DiaChi] Thêm thành công — khachHangId={}, diaChiId={}, macDinh={}",
                 khachHangId, saved.getId(), saved.getMacDinh());
         return saved;
@@ -76,6 +86,7 @@ public class DiaChiServiceImpl implements IDiaChiService {
     @Transactional
     public DiaChiKhachHang sua(Integer diaChiId, Integer khachHangId, DiaChiKhachHang request) {
         DiaChiKhachHang entity = layDiaChiCuaKhach(diaChiId, khachHangId);
+        boolean isMacDinh = Boolean.TRUE.equals(request.getMacDinh());
 
         // Chỉ cập nhật field nào được gửi lên
         if (request.getLoaiDiaChi()           != null) entity.setLoaiDiaChi(request.getLoaiDiaChi());
@@ -86,6 +97,7 @@ public class DiaChiServiceImpl implements IDiaChiService {
             }
             entity.setSoDienThoaiNguoiNhan(request.getSoDienThoaiNguoiNhan());
         }
+        if (request.getTenGoiNho()            != null) entity.setTenGoiNho(request.getTenGoiNho());
         if (request.getDiaChiChiTiet()        != null) entity.setDiaChiChiTiet(request.getDiaChiChiTiet());
         if (request.getTinhThanhId()          != null) entity.setTinhThanhId(request.getTinhThanhId());
         if (request.getQuanHuyenId()          != null) entity.setQuanHuyenId(request.getQuanHuyenId());
@@ -95,7 +107,12 @@ public class DiaChiServiceImpl implements IDiaChiService {
         if (request.getPhuongXaTen()          != null) entity.setPhuongXaTen(request.getPhuongXaTen());
 
         log.info("[DiaChi] Sửa thành công — diaChiId={}", diaChiId);
-        return diaChiRepo.save(entity);
+        DiaChiKhachHang saved = diaChiRepo.save(entity);
+        
+        if (isMacDinh && !Boolean.TRUE.equals(entity.getMacDinh())) {
+            saved = setMacDinh(saved.getId(), khachHangId);
+        }
+        return saved;
     }
 
     @Override

@@ -181,6 +181,41 @@ public class KhachHangAuthServiceImpl implements IKhachHangAuthService {
     }
 
     // =======================================================================
+    // QUÊN MẬT KHẨU
+    // =======================================================================
+
+    @Override
+    @Transactional
+    public void doiMatKhau(String email, String soDienThoai, String matKhauMoi) {
+        String normalizedEmail = email == null ? "" : email.trim().toLowerCase();
+        String normalizedPhone = soDienThoai == null ? "" : soDienThoai.trim();
+
+        log.info("[KhachHangAuth] Yêu cầu đổi mật khẩu — email={}, sdt={}", normalizedEmail, normalizedPhone);
+
+        if (normalizedEmail.isBlank() || normalizedPhone.isBlank() || matKhauMoi == null || matKhauMoi.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng điền đầy đủ thông tin.");
+        }
+
+        if (matKhauMoi.length() < 6) {
+            throw new IllegalArgumentException("Mật khẩu mới phải có ít nhất 6 ký tự.");
+        }
+
+        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Thông tin không chính xác."));
+
+        if (!ROLE_KHACH_HANG.equals(nguoiDung.getVaiTro())) {
+            throw new IllegalArgumentException("Thông tin không chính xác.");
+        }
+
+        if (nguoiDung.getSoDienThoai() == null || !nguoiDung.getSoDienThoai().equals(normalizedPhone)) {
+            throw new IllegalArgumentException("Thông tin không chính xác.");
+        }
+
+        nguoiDungRepository.capNhatMatKhau(normalizedEmail, matKhauMoi, LocalDateTime.now());
+        log.info("[KhachHangAuth] Đổi mật khẩu thành công — email={}", normalizedEmail);
+    }
+
+    // =======================================================================
     // PRIVATE HELPERS
     // =======================================================================
 

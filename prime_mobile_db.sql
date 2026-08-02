@@ -932,3 +932,6 @@ ALTER TABLE don_hang DROP CONSTRAINT chk_dh_trang_thai;
 ALTER TABLE don_hang ADD CONSTRAINT chk_dh_trang_thai CHECK (
     trang_thai IN ('cho_xac_nhan', 'cho_hoan_tien', 'da_xac_nhan', 'dang_giao', 'da_hoan_thanh', 'da_huy', 'don_hang_cho', 'giao_that_bai')
 );
+
+
+ALTER TABLE dia_chi_khach_hang ADD ten_goi_nho NVARCHAR(255);

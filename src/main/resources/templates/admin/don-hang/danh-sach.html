@@ -349,7 +349,7 @@
     }
 
     function showError(msg) {
-        Swal.fire({ icon: 'error', title: 'Lỗi!', text: msg || 'Đã xảy ra lỗi.', confirmButtonColor: '#C0392B' });
+        Swal.fire({ icon: 'error', title: 'Lỗi!', text: msg || 'Đã xảy ra lỗi.', confirmButtonColor: '#dc2626' });
     }
 
     function showLoading(title = 'Đang xử lý...') {
@@ -621,7 +621,7 @@
                 showCancelButton: true,
                 confirmButtonText: '<i class="fa fa-truck me-1"></i>Chuyển',
                 cancelButtonText: 'Hủy',
-                confirmButtonColor: '#1565C0'
+                confirmButtonColor: '#0d9488'
             });
             if (!result.isConfirmed) return;
 
@@ -654,7 +654,7 @@
                 showCancelButton: true,
                 confirmButtonText: '<i class="fa fa-check-double me-1"></i>Hoàn thành',
                 cancelButtonText: 'Hủy',
-                confirmButtonColor: '#2E7D32'
+                confirmButtonColor: '#059669'
             });
             if (!result.isConfirmed) return;
 
@@ -687,7 +687,7 @@
                 showCancelButton: true,
                 confirmButtonText: '<i class="fa fa-check me-1"></i>Xác nhận',
                 cancelButtonText: 'Hủy',
-                confirmButtonColor: '#F59E0B'
+                confirmButtonColor: '#d97706'
             });
             if (!result.isConfirmed) return;
 
@@ -721,7 +721,7 @@
                 showCancelButton: true,
                 confirmButtonText: '<i class="fa fa-times me-1"></i>Xác nhận hủy',
                 cancelButtonText: 'Quay lại',
-                confirmButtonColor: '#C0392B',
+                confirmButtonColor: '#dc2626',
                 preConfirm: () => {
                     const lyDo = document.getElementById('ly-do-huy')?.value?.trim();
                     return { lyDoHuy: lyDo || 'Nhân viên hủy đơn' };
@@ -775,7 +775,7 @@
                 showCancelButton: true,
                 confirmButtonText: '<i class="fa fa-times me-1"></i>Xác nhận',
                 cancelButtonText: 'Quay lại',
-                confirmButtonColor: '#C0392B',
+                confirmButtonColor: '#dc2626',
                 didOpen: () => {
                     const radios = document.querySelectorAll('input[name="lyDoRadio"]');
                     const otherInput = document.getElementById(`ly-do-other_${id}`);
