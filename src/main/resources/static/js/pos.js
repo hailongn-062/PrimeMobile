@@ -342,8 +342,11 @@ function buildGroupCardHtml(g) {
 
 /** Popup chọn cấu hình (biến thể) */
 async function openVariantDialog(group) {
-    // 1. Phân loại biến thể theo dung lượng và màu sắc
-    const capacities = [...new Set(group.variants.map(v => v.luuTruGb))].sort((a,b) => a-b);
+    // 1. Phân loại biến thể theo dung lượng RAM và ROM
+    const capacities = [...new Set(group.variants.map(v => `${v.ramGb || 0}GB - ${v.luuTruGb || 0}GB`))].sort((a,b) => {
+        // Có thể thêm logic sort nếu cần, tạm thời sort string
+        return a.localeCompare(b);
+    });
     
     // Giao diện cấu hình
     const containerId = `variant-picker-${group.sanPhamId || Date.now()}`;
@@ -351,11 +354,11 @@ async function openVariantDialog(group) {
     const html = `
         <div id="${containerId}" class="variant-picker-container" style="text-align: left; padding: 0 10px;">
             <div style="margin-bottom: 15px;">
-                <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block;">Dung lượng</label>
+                <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block;">Cấu hình (RAM - ROM)</label>
                 <div class="capacity-chips" style="display: flex; gap: 8px; flex-wrap: wrap;">
                     ${capacities.map(cap => `
                         <button type="button" class="chip-btn chip-cap" data-cap="${cap}">
-                            ${cap}GB
+                            ${cap}
                         </button>
                     `).join('')}
                 </div>
@@ -439,8 +442,8 @@ async function openVariantDialog(group) {
             const updateColors = () => {
                 if (!selectedCap) return;
                 
-                // Lọc biến thể theo dung lượng
-                const availableVariants = group.variants.filter(v => v.luuTruGb === selectedCap);
+                // Lọc biến thể theo cấu hình RAM-ROM
+                const availableVariants = group.variants.filter(v => `${v.ramGb || 0}GB - ${v.luuTruGb || 0}GB` === selectedCap);
                 const colors = [...new Set(availableVariants.map(v => v.mauSac))];
                 
                 // Render chips màu
@@ -510,7 +513,7 @@ async function openVariantDialog(group) {
             // Hàm cập nhật giá và ID
             const updatePrice = () => {
                 if (selectedCap && selectedColor) {
-                    const variant = group.variants.find(v => v.luuTruGb === selectedCap && v.mauSac === selectedColor);
+                    const variant = group.variants.find(v => `${v.ramGb || 0}GB - ${v.luuTruGb || 0}GB` === selectedCap && v.mauSac === selectedColor);
                     if (variant) {
                         const giaGoc = variant.giaGoc ?? variant.giaBan;
                         const giaBan = variant.giaBan ?? giaGoc;
@@ -538,7 +541,7 @@ async function openVariantDialog(group) {
                     capChips.forEach(b => b.classList.remove('selected'));
                     btn.classList.add('selected');
                     
-                    selectedCap = parseInt(btn.getAttribute('data-cap'), 10);
+                    selectedCap = btn.getAttribute('data-cap');
                     updateColors();
                 });
             });

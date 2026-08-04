@@ -261,10 +261,24 @@
 <script th:inline="javascript">
     const sanPhamId = /*[[${sanPham.id}]]*/ 0;
     
+    // Tạo danh sách biến thể hiện có (tránh serialize toàn bộ object gây lỗi đệ quy vòng)
+    const existingVariants = [];
+    /*[# th:each="bt : ${bienTheSanPhams}"]*/
+    existingVariants.push({
+        mauSac: /*[[${bt.mauSac}]]*/ '',
+        ramGb: /*[[${bt.ramGb}]]*/ 0,
+        luuTruGb: /*[[${bt.luuTruGb}]]*/ 0
+    });
+    /*[/]*/
+    
     function generateVariants() {
         const ram = document.getElementById('genRam').value;
         const romCheckboxes = document.querySelectorAll('.gen-rom:checked');
         const colorText = document.getElementById('genColor').value.trim();
+        
+        // Remove previous warning
+        const warningDiv = document.getElementById('bulkGenWarning');
+        if (warningDiv) warningDiv.remove();
         
         if (romCheckboxes.length === 0) {
             alert('Vui lòng chọn ít nhất 1 dung lượng ROM!');
@@ -279,10 +293,32 @@
         const colors = colorText.split(',').map(c => c.trim()).filter(c => c);
         
         const tbody = document.getElementById('genTbody');
+        let addedCount = 0;
+        let skippedCount = 0;
         
         // Render rows
         roms.forEach(rom => {
             colors.forEach(color => {
+                const isDuplicate = existingVariants.some(v => {
+                    const mauCu = (v.mauSac || "").trim().toLowerCase();
+                    const ramCu = v.ramGb || 0;
+                    const romCu = v.luuTruGb || 0;
+                    return mauCu === color.toLowerCase() && ramCu == parseInt(ram) && romCu == parseInt(rom);
+                });
+                
+                // Cũng kiểm tra xem đã được render vào bảng chưa
+                const alreadyInTable = Array.from(tbody.querySelectorAll('tr')).some(tr => {
+                    const cRam = tr.querySelector('.v-ram').value;
+                    const cRom = tr.querySelector('.v-rom').value;
+                    const cColor = tr.querySelector('.v-color').value.trim().toLowerCase();
+                    return cColor === color.toLowerCase() && cRam == ram && cRom == rom;
+                });
+                
+                if (isDuplicate || alreadyInTable) {
+                    skippedCount++;
+                    return; // Bỏ qua nếu bị trùng
+                }
+                
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="align-middle text-center"><input type="hidden" class="v-ram" value="${ram}">${ram}GB</td>
@@ -295,10 +331,18 @@
                     </td>
                 `;
                 tbody.appendChild(tr);
+                addedCount++;
             });
         });
         
-        document.getElementById('genResultContainer').classList.remove('d-none');
+        if (addedCount > 0) {
+            document.getElementById('genResultContainer').classList.remove('d-none');
+        }
+        
+        if (skippedCount > 0) {
+            const warningHtml = `<div id="bulkGenWarning" class="alert alert-warning py-2 mt-2 mb-0 small"><i class="fa fa-exclamation-triangle"></i> Đã bỏ qua ${skippedCount} tổ hợp vì bị trùng với biến thể đang có (hoặc đã thêm trước đó).</div>`;
+            document.getElementById('genResultContainer').insertAdjacentHTML('beforebegin', warningHtml);
+        }
     }
     
     function saveGeneratedVariants() {

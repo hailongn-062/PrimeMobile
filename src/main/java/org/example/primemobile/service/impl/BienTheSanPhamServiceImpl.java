@@ -92,8 +92,9 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Không tìm thấy sản phẩm có ID: " + sanPhamId));
 
-        // Bước 2: Validate mã SKU
+        // Bước 2: Validate mã SKU và Validate trùng thuộc tính
         validateMaSku(bienTheSanPham.getMaSku(), null);
+        validateThuocTinhTrungLap(sanPhamId, bienTheSanPham, null);
 
         // Bước 4: Gán sản phẩm cha và giá trị mặc định, lưu biến thể
         bienTheSanPham.setSanPham(sanPham);
@@ -158,6 +159,9 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
         validateMaSku(bienTheMoi.getMaSku(), id);
         existing.setMaSku(bienTheMoi.getMaSku().trim().toUpperCase());
 
+        // Validate thuộc tính trùng lặp với biến thể khác của cùng sản phẩm
+        validateThuocTinhTrungLap(existing.getSanPham().getId(), bienTheMoi, id);
+
         // Ghi đè các trường thông tin biến thể
         if (bienTheMoi.getMauSac() != null && !bienTheMoi.getMauSac().isBlank()) {
             existing.setMauSac(bienTheMoi.getMauSac().trim());
@@ -216,6 +220,31 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
         if (trung) {
             throw new IllegalArgumentException(
                     "Mã SKU \"" + maSkuTrim + "\" đã tồn tại. Vui lòng dùng mã SKU khác.");
+        }
+    }
+
+    /**
+     * Validate không cho phép tạo 2 biến thể có cùng RAM, ROM và Màu sắc trong cùng 1 sản phẩm.
+     */
+    private void validateThuocTinhTrungLap(Integer sanPhamId, BienTheSanPham bienTheMoi, Integer excludeId) {
+        String mauSacMoi = bienTheMoi.getMauSac() != null ? bienTheMoi.getMauSac().trim().toLowerCase() : "";
+        Integer ramMoi = bienTheMoi.getRamGb() != null ? bienTheMoi.getRamGb() : 0;
+        Integer romMoi = bienTheMoi.getLuuTruGb() != null ? bienTheMoi.getLuuTruGb() : 0;
+
+        List<BienTheSanPham> existingVariants = bienTheSanPhamRepository.findBySanPhamId(sanPhamId);
+        for (BienTheSanPham v : existingVariants) {
+            if (excludeId != null && v.getId().equals(excludeId)) {
+                continue;
+            }
+            
+            String mauSacCu = v.getMauSac() != null ? v.getMauSac().trim().toLowerCase() : "";
+            Integer ramCu = v.getRamGb() != null ? v.getRamGb() : 0;
+            Integer romCu = v.getLuuTruGb() != null ? v.getLuuTruGb() : 0;
+
+            if (mauSacMoi.equals(mauSacCu) && ramMoi.equals(ramCu) && romMoi.equals(romCu)) {
+                throw new IllegalArgumentException("Biến thể với cấu hình " + (ramMoi > 0 ? ramMoi + "GB RAM - " : "") 
+                    + (romMoi > 0 ? romMoi + "GB ROM" : "") + " và màu sắc '" + v.getMauSac() + "' đã tồn tại.");
+            }
         }
     }
 }

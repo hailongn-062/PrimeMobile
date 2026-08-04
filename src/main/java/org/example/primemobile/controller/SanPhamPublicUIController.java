@@ -284,7 +284,9 @@ public class SanPhamPublicUIController {
             map.put("sku", bt.getMaSku());
             map.put("ramGb", bt.getRamGb());
             map.put("luuTruGb", bt.getLuuTruGb());
-            map.put("versionKey", formatDungLuong(bt.getLuuTruGb()));
+            String ramStr = bt.getRamGb() != null ? bt.getRamGb() + "GB" : "0GB";
+            String romStr = formatDungLuong(bt.getLuuTruGb());
+            map.put("versionKey", ramStr + " - " + romStr);
             map.put("mauSac", bt.getMauSac());
             map.put("maMauHex", bt.getMaMauHex() != null ? bt.getMaMauHex() : "#e5e7eb");
             map.put("giaBan", bt.getGiaBan());

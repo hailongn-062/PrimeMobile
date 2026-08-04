@@ -120,12 +120,15 @@
                                 <input type="number" class="form-control" id="btGiaKm">
                             </div>
                         </div>
+                        <div id="duplicateWarning" class="text-danger small mt-3 d-none">
+                            <i class="fa fa-exclamation-triangle"></i> Cấu hình và màu sắc này đã tồn tại, vui lòng điều chỉnh!
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer border-top-0 bg-light">
                     <button type="button" class="btn btn-light border px-4 rounded-pill"
                         data-bs-dismiss="modal">Hủy</button>
-                    <button type="button" class="btn btn-primary px-4 rounded-pill" onclick="saveData()">Lưu dữ
+                    <button type="button" id="btnSaveVariant" class="btn btn-primary px-4 rounded-pill" onclick="saveData()">Lưu dữ
                         liệu</button>
                 </div>
             </div>
@@ -151,6 +154,7 @@
                 const response = await fetch(`${API_URL}/san-pham/${sanPhamId}`);
                 if (!response.ok) throw new Error("Lỗi API");
                 const data = await response.json(); // List<BienTheSanPham>
+                window.currentVariants = data;
 
                 if (data.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Chưa có biến thể nào. Hãy thêm mới!</td></tr>';
@@ -191,6 +195,7 @@
             document.getElementById('bienTheForm').reset();
             document.getElementById('btId').value = '';
             document.getElementById('bienTheModalLabel').innerText = 'Thêm Biến thể mới';
+            validateDuplicate();
             bienTheModal.show();
         }
 
@@ -205,8 +210,44 @@
             document.getElementById('btGiaKm').value = bt.giaKhuyenMai || '';
 
             document.getElementById('bienTheModalLabel').innerText = 'Cập nhật Biến thể';
+            validateDuplicate();
             bienTheModal.show();
         }
+
+        function validateDuplicate() {
+            const btId = document.getElementById('btId').value;
+            const mauSacMoi = document.getElementById('btMau').value.trim().toLowerCase();
+            const ramMoi = parseInt(document.getElementById('btRam').value) || 0;
+            const romMoi = parseInt(document.getElementById('btRom').value) || 0;
+            const warning = document.getElementById('duplicateWarning');
+            const btnSave = document.getElementById('btnSaveVariant');
+
+            if (!window.currentVariants) return;
+
+            const isDuplicate = window.currentVariants.some(v => {
+                // Bỏ qua chính nó khi đang sửa
+                if (btId && v.id.toString() === btId.toString()) return false;
+                
+                const mauSacCu = (v.mauSac || "").trim().toLowerCase();
+                const ramCu = v.ramGb || 0;
+                const romCu = v.luuTruGb || 0;
+
+                return mauSacMoi === mauSacCu && ramMoi === ramCu && romMoi === romCu;
+            });
+
+            if (isDuplicate && mauSacMoi !== "") {
+                warning.classList.remove('d-none');
+                btnSave.disabled = true;
+            } else {
+                warning.classList.add('d-none');
+                btnSave.disabled = false;
+            }
+        }
+
+        // Gắn sự kiện để kiểm tra realtime
+        document.getElementById('btMau').addEventListener('input', validateDuplicate);
+        document.getElementById('btRam').addEventListener('input', validateDuplicate);
+        document.getElementById('btRom').addEventListener('input', validateDuplicate);
 
         async function saveData() {
             const id = document.getElementById('btId').value;
