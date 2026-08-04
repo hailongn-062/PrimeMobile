@@ -389,6 +389,10 @@
             const isAvailable = variantForColor && variantForColor.trangThai === 'con_hang' && variantForColor.coTheBan > 0;
             const doesNotExist = !variantForColor; // Màu này không sx cho version này
 
+            if (doesNotExist) {
+                return; // Ẩn hoàn toàn nút màu nếu không tồn tại cho phiên bản này
+            }
+
             const btn = document.createElement('div');
             btn.className = `pm-option-btn ${selectedColor === color.name ? 'active' : ''} ${(!isAvailable || doesNotExist) ? 'disabled' : ''}`;
             
