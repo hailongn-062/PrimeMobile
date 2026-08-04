@@ -37,6 +37,34 @@
         .status-dang_giao { background:#ecfeff; color:#0e7490; }
         .status-da_hoan_thanh { background:#ecfdf5; color:#047857; }
         .status-da_huy { background:#f1f5f9; color:#475569; }
+        .status-giao_that_bai { background:#fef2f2; color:#dc2626; border: 1px solid #fecaca; }
+        .status-cho_hoan_tien { background:#fff7ed; color:#c2410c; border: 1px solid #fed7aa; }
+        
+        /* Tabs */
+        .status-tabs { display:flex; gap:0; overflow-x:auto; border-bottom:1px solid var(--pm-line); margin-bottom: 24px; padding-bottom: 0; }
+        .status-tabs::-webkit-scrollbar { height: 4px; }
+        .status-tabs::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .tab-btn { background:none; border:none; border-bottom: 3px solid transparent; padding: 12px 16px; font-weight: 600; color: var(--pm-muted); cursor: pointer; white-space: nowrap; transition: 0.2s; }
+        .tab-btn:hover { color: var(--pm-text); }
+        .tab-btn.active { color: #dc2626; border-bottom-color: #dc2626; }
+        .tab-btn span { display: inline-block; background: #e2e8f0; color: #475569; border-radius: 12px; padding: 2px 8px; font-size: 0.75rem; margin-left: 6px; }
+        .tab-btn.active span { background: #fee2e2; color: #dc2626; }
+
+        /* Stepper */
+        .order-stepper { display: flex; justify-content: space-between; align-items: center; position: relative; margin: 10px 0 40px; padding: 0 30px; }
+        .step-line-track { position: absolute; top: 15px; left: 60px; right: 60px; height: 3px; background: #e2e8f0; z-index: 0; }
+        .step-line-fill { height: 100%; background: #10b981; transition: 0.3s; }
+        .step-line-fill.failed-line { background: #ef4444; }
+        .step { position: relative; z-index: 1; text-align: center; width: 60px; }
+        .step-icon { width: 34px; height: 34px; background: #fff; border: 3px solid #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; color: #94a3b8; background-color: #f8fafc; font-size: 0.9rem; transition: 0.3s; }
+        .step-label { font-size: 0.75rem; font-weight: 600; color: #64748b; white-space: nowrap; position: absolute; left: 50%; transform: translateX(-50%); }
+        .step.completed .step-icon { background-color: #10b981; border-color: #10b981; color: #fff; }
+        .step.completed .step-label { color: #10b981; }
+        .step.active .step-icon { border-color: #10b981; color: #10b981; box-shadow: 0 0 0 4px #d1fae5; background-color: #fff; }
+        .step.active .step-label { color: #10b981; }
+        .step.failed .step-icon { background-color: #ef4444; border-color: #ef4444; color: #fff; }
+        .step.failed .step-label { color: #ef4444; }
+        
         @media (max-width: 768px) {
             .pm-toolbar { align-items:flex-start; flex-direction:column; }
             .pm-order { grid-template-columns:1fr; }
@@ -63,13 +91,22 @@
         </div>
 
         <div class="alert alert-danger d-none" id="order-error"></div>
+        
+        <div class="status-tabs" id="status-tabs">
+            <button class="tab-btn active" data-status="all">Tất cả <span id="count-all">0</span></button>
+            <button class="tab-btn" data-status="cho_xac_nhan">Chờ xác nhận <span id="count-cho_xac_nhan">0</span></button>
+            <button class="tab-btn" data-status="da_xac_nhan">Đã xác nhận <span id="count-da_xac_nhan">0</span></button>
+            <button class="tab-btn" data-status="dang_giao">Đang vận chuyển <span id="count-dang_giao">0</span></button>
+            <button class="tab-btn" data-status="da_hoan_thanh">Đã nhận hàng <span id="count-da_hoan_thanh">0</span></button>
+            <button class="tab-btn" data-status="da_huy">Đã hủy <span id="count-da_huy">0</span></button>
+        </div>
 
-        <section class="pm-panel" id="orders-panel">
-            <div class="p-4 text-center text-muted" id="orders-loading">
+        <section id="orders-panel">
+            <div class="pm-panel p-4 text-center text-muted" id="orders-loading">
                 <i class="fa fa-spinner fa-spin me-1"></i>Đang tải đơn hàng
             </div>
             <div id="orders-list"></div>
-            <div class="pm-empty d-none" id="orders-empty">
+            <div class="pm-panel pm-empty d-none" id="orders-empty">
                 <i class="fa fa-receipt fa-2x mb-3"></i>
                 <div class="fw-bold mb-1">Bạn chưa có đơn hàng nào</div>
                 <a href="/san-pham" class="btn btn-pm mt-3">Mua sắm ngay</a>
@@ -230,7 +267,9 @@
         let nhanVien = order.nhanVienXuLy || 'Hệ thống';
         
         els.detailContent.innerHTML = `
-            <div class="row g-4 mb-4">
+            ${renderStepper(order)}
+            
+            <div class="row g-4 mb-4 mt-3">
                 <div class="col-md-6">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body">
@@ -316,17 +355,100 @@
         `;
     }
 
+    let allOrders = [];
+    let currentTab = 'all';
+
+    function updateTabCounts() {
+        const counts = { all: allOrders.length, cho_xac_nhan: 0, da_xac_nhan: 0, dang_giao: 0, da_hoan_thanh: 0, da_huy: 0 };
+        allOrders.forEach(o => {
+            if (counts[o.trangThai] !== undefined) counts[o.trangThai]++;
+        });
+        Object.keys(counts).forEach(k => {
+            const el = document.getElementById(`count-${k}`);
+            if (el) el.textContent = counts[k];
+        });
+    }
+
+    function filterAndRenderOrders() {
+        const filtered = currentTab === 'all' ? allOrders : allOrders.filter(o => o.trangThai === currentTab);
+        renderOrders(filtered);
+    }
+
     async function loadOrders() {
         try {
             const data = await fetchJson('/api/public/don-hang-cua-toi');
-            const orders = data?.danhSachDonHang || [];
-            renderOrders(orders);
+            allOrders = data?.danhSachDonHang || [];
+            updateTabCounts();
+            filterAndRenderOrders();
             
         } catch (error) {
             els.loading.classList.add('d-none');
             els.error.textContent = error.message;
             els.error.classList.remove('d-none');
         }
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentTab = btn.dataset.status;
+            filterAndRenderOrders();
+        });
+    });
+
+    function renderStepper(order) {
+        const t = order.trangThai;
+        
+        const steps = [
+            { id: 'dat_hang', icon: '<i class="fa fa-shopping-bag"></i>', label: 'Đặt hàng' },
+            { id: 'xac_nhan', icon: '<i class="fa fa-file-invoice"></i>', label: 'Xác nhận' },
+            { id: 'dang_giao', icon: '<i class="fa fa-truck"></i>', label: 'Đang giao' },
+            { id: 'da_nhan', icon: '<i class="fa fa-check"></i>', label: 'Đã nhận' }
+        ];
+
+        let currentStepIndex = 0;
+        let isFailed = false;
+
+        if (t === 'cho_xac_nhan') currentStepIndex = 0;
+        else if (t === 'da_xac_nhan') currentStepIndex = 1;
+        else if (t === 'dang_giao') currentStepIndex = 2;
+        else if (t === 'da_hoan_thanh') currentStepIndex = 3;
+        else if (t === 'da_huy') { currentStepIndex = 1; isFailed = true; }
+        else if (t === 'giao_that_bai' || t === 'cho_hoan_tien') { currentStepIndex = 3; isFailed = true; }
+
+        let html = '<div class="order-stepper mt-4">';
+        let fillWidth = currentStepIndex * 33.333;
+        html += `<div class="step-line-track">`;
+        html += `<div class="step-line-fill ${isFailed ? 'failed-line' : ''}" style="width: ${fillWidth}%"></div>`;
+        html += `</div>`;
+
+        steps.forEach((step, i) => {
+            let className = 'step';
+            if (i < currentStepIndex) className += ' completed';
+            else if (i === currentStepIndex) {
+                if (isFailed) className += ' failed';
+                else className += ' active';
+            }
+            
+            let iconHtml = step.icon;
+            if (i === currentStepIndex && isFailed) {
+                iconHtml = '<i class="fa fa-times"></i>';
+                if (t === 'da_huy') step.label = 'Đã hủy';
+                if (t === 'giao_that_bai') step.label = 'Giao thất bại';
+                if (t === 'cho_hoan_tien') step.label = 'Chờ hoàn tiền';
+            }
+
+            html += `
+                <div class="${className}">
+                    <div class="step-icon">${iconHtml}</div>
+                    <div class="step-label">${step.label}</div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        return html;
     }
 
     async function showDetail(id) {

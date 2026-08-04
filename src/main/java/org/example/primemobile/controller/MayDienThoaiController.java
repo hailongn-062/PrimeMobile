@@ -197,7 +197,7 @@ public class MayDienThoaiController {
      */
     @GetMapping("/danh-sach")
     public ResponseEntity<?> layDanhSachImei(
-            @RequestParam Integer bienTheSanPhamId,
+            @RequestParam(required = false) Integer bienTheSanPhamId,
             @RequestParam(required = false) String tinhTrang,
             @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
 
@@ -215,11 +215,17 @@ public class MayDienThoaiController {
 
             // Map entity sang DTO để tránh lỗi serialize Hibernate proxy
             List<ImeiDto> danhSachDto = danhSachEntity.stream()
-                    .map(m -> new ImeiDto(
-                            m.getId(),
-                            m.getImei1(),
-                            m.getImei2(),
-                            m.getTinhTrang()))
+                    .map(m -> {
+                        ImeiDto dto = new ImeiDto(m.getId(), m.getImei1(), m.getImei2(), m.getTinhTrang());
+                        if (m.getBienTheSanPham() != null) {
+                            if (m.getBienTheSanPham().getSanPham() != null) {
+                                dto.setTenSanPham(m.getBienTheSanPham().getSanPham().getTenSanPham());
+                            }
+                            dto.setMauSac(m.getBienTheSanPham().getMauSac());
+                            dto.setLuuTruGb(m.getBienTheSanPham().getLuuTruGb());
+                        }
+                        return dto;
+                    })
                     .collect(Collectors.toList());
 
             return ResponseEntity.ok(danhSachDto);
@@ -264,6 +270,17 @@ public class MayDienThoaiController {
                 response.put("maSku", m.getBienTheSanPham().getMaSku());
                 response.put("tenSanPham", m.getBienTheSanPham().getSanPham() != null ? m.getBienTheSanPham().getSanPham().getTenSanPham() : null);
                 response.put("mauSac", m.getBienTheSanPham().getMauSac());
+                response.put("luuTruGb", m.getBienTheSanPham().getLuuTruGb());
+                response.put("ramGb", m.getBienTheSanPham().getRamGb());
+                response.put("giaBan", m.getBienTheSanPham().getGiaBan());
+                
+                String anh = m.getBienTheSanPham().getHinhAnhSanPhams().stream()
+                        .filter(h -> Boolean.TRUE.equals(h.getLaAnhChinh()))
+                        .findFirst()
+                        .or(() -> m.getBienTheSanPham().getHinhAnhSanPhams().stream().findFirst())
+                        .map(org.example.primemobile.entity.HinhAnhSanPham::getDuongDan)
+                        .orElse(null);
+                response.put("anhDaiDien", anh);
             }
             
             return ResponseEntity.ok(response);

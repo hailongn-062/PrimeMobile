@@ -158,16 +158,24 @@ public class MayDienThoaiServiceImpl implements IMayDienThoaiService {
         log.debug("[MayDienThoaiService] layDanhSachTheoBienTheVaTrangThai — bienTheId={}, tinhTrang={}",
                 bienTheSanPhamId, tinhTrang);
 
-        if (!bienTheSanPhamRepository.existsById(bienTheSanPhamId)) {
+        if (bienTheSanPhamId != null && !bienTheSanPhamRepository.existsById(bienTheSanPhamId)) {
             throw new EntityNotFoundException(
                     "Không tìm thấy biến thể sản phẩm có ID: " + bienTheSanPhamId);
         }
 
         List<MayDienThoai> danhSach;
-        if (tinhTrang == null || tinhTrang.isBlank()) {
-            danhSach = mayDienThoaiRepository.findByBienTheSanPhamId(bienTheSanPhamId);
+        if (bienTheSanPhamId != null) {
+            if (tinhTrang == null || tinhTrang.isBlank()) {
+                danhSach = mayDienThoaiRepository.findByBienTheSanPhamId(bienTheSanPhamId);
+            } else {
+                danhSach = mayDienThoaiRepository.findByBienTheSanPhamIdAndTinhTrang(bienTheSanPhamId, tinhTrang);
+            }
         } else {
-            danhSach = mayDienThoaiRepository.findByBienTheSanPhamIdAndTinhTrang(bienTheSanPhamId, tinhTrang);
+            if (tinhTrang == null || tinhTrang.isBlank()) {
+                danhSach = mayDienThoaiRepository.findAll();
+            } else {
+                danhSach = mayDienThoaiRepository.findByTinhTrang(tinhTrang);
+            }
         }
 
         log.debug("[MayDienThoaiService] layDanhSachTheoBienTheVaTrangThai — tìm thấy {} bản ghi",

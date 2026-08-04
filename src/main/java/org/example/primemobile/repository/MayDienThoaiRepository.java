@@ -108,4 +108,6 @@ public interface MayDienThoaiRepository extends JpaRepository<MayDienThoai, Inte
             WHERE m.donHang.id = :donHangId
             """)
     List<MayDienThoai> findByDonHangId(@Param("donHangId") Integer donHangId);
+
+    List<MayDienThoai> findByTinhTrang(String tinhTrang);
 }

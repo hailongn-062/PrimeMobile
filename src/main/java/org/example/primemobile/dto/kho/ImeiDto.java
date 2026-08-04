@@ -52,4 +52,16 @@ public class ImeiDto {
      * Các giá trị hợp lệ: 'trong_kho', 'da_ban', 'bao_hanh', 'loi_hong'
      */
     private String tinhTrang;
+
+    // Các trường thêm cho dropdown gợi ý ở POS
+    private String tenSanPham;
+    private String mauSac;
+    private Integer luuTruGb;
+
+    public ImeiDto(Integer id, String imei1, String imei2, String tinhTrang) {
+        this.id = id;
+        this.imei1 = imei1;
+        this.imei2 = imei2;
+        this.tinhTrang = tinhTrang;
+    }
 }

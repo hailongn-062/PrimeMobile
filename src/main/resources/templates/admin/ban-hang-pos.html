@@ -111,7 +111,7 @@
             left: 14px;
             top: 50%;
             transform: translateY(-50%);
-            color: #9CA3AF;
+            color: #64748B;
             font-size: .9rem;
             pointer-events: none;
         }
@@ -163,28 +163,28 @@
 
         /* Product card - Horizontal Layout */
         .prod-card-h {
-            background: var(--pos-cart-bg);
+            background: #FFFFFF;
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
             display: flex;
             align-items: center;
             padding: 10px;
             gap: 12px;
             transition: transform .18s, box-shadow .18s;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid #E8EDF5;
         }
 
         .prod-card-h:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, .4);
-            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 6px 16px rgba(13, 148, 136, .15);
+            border-color: #CBD5E1;
         }
 
         .prod-card-h-img {
             width: 70px;
             height: 70px;
             flex-shrink: 0;
-            background: var(--pos-right-bg);
+            background: #F1F5F9;
             border-radius: 8px;
             display: flex;
             align-items: center;
@@ -201,7 +201,7 @@
 
         .prod-card-h-img .prod-emoji {
             font-size: 2rem;
-            color: #9CA3AF;
+            color: #64748B;
         }
 
         .prod-card-h-body {
@@ -215,7 +215,7 @@
         .prod-name {
             font-size: .85rem;
             font-weight: 700;
-            color: #fff;
+            color: #0f172a;
             margin-bottom: 4px;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -232,8 +232,8 @@
         }
 
         .badge-variants {
-            background: rgba(13, 148, 136, 0.15);
-            color: #14B8A6;
+            background: rgba(13, 148, 136, 0.1);
+            color: #0d9488;
             font-size: 0.65rem;
             padding: 2px 6px;
             border-radius: 4px;
@@ -243,7 +243,7 @@
 
         .prod-stock {
             font-size: .7rem;
-            color: #9CA3AF;
+            color: #64748B;
         }
 
         .prod-stock span {
@@ -1284,9 +1284,9 @@
                     <!-- Search bar + IMEI scan button -->
                     <div class="pos-search-bar" style="display:flex; gap:8px; align-items:center;">
                         <div style="position:relative; flex:1;">
-                            <i class="fa fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#9CA3AF;"></i>
+                            <i class="fa fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#64748B;"></i>
                             <input type="text" id="inputSearch" placeholder="Tìm theo tên sản phẩm..."
-                                autocomplete="off" style="width:100%; padding:8px 12px 8px 36px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:var(--pos-cart-bg); color:#fff;">
+                                autocomplete="off" style="width:100%; padding:8px 12px 8px 36px; border-radius:8px; border:1.5px solid #E2E8F0; background:#fff; color:#0f172a;">
                         </div>
                         <button id="btnScanImeiPos" title="Quét IMEI" style="width: 40px; height: 40px; border-radius: 8px; border: none; background: #3B82F6; color: #fff; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
                             <i class="fa fa-barcode"></i>

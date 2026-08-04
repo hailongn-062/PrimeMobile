@@ -68,14 +68,22 @@ public class QuanLySanPhamUIController {
     }
 
     @PostMapping("/save")
-    public String save(@ModelAttribute("sanPham") SanPham sanPham) {
-        SanPham savedSanPham;
-        if (sanPham.getId() != null) {
-            savedSanPham = sanPhamService.capNhat(sanPham.getId(), sanPham);
-        } else {
-            savedSanPham = sanPhamService.them(sanPham);
+    public String save(@ModelAttribute("sanPham") SanPham sanPham, org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+        try {
+            SanPham savedSanPham;
+            if (sanPham.getId() != null) {
+                savedSanPham = sanPhamService.capNhat(sanPham.getId(), sanPham);
+            } else {
+                savedSanPham = sanPhamService.them(sanPham);
+            }
+            return "redirect:/admin/san-pham/" + savedSanPham.getId() + "/chi-tiet";
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("maSanPhamError", e.getMessage());
+            if (sanPham.getId() != null) {
+                return "redirect:/admin/san-pham/form?id=" + sanPham.getId();
+            }
+            return "redirect:/admin/san-pham/form";
         }
-        return "redirect:/admin/san-pham/" + savedSanPham.getId() + "/chi-tiet";
     }
 
     @GetMapping("/{id}/chi-tiet")

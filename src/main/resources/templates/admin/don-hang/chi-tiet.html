@@ -117,6 +117,84 @@
         <!-- ══ CỘT TRÁI: Thông tin đơn ══ -->
         <div class="col-12 col-lg-8">
 
+            <!-- Theo dõi đơn hàng (Stepper) -->
+            <div class="pm-card mb-4" th:with="t=${donHang.trangThai}">
+                <div class="pm-card-header">
+                    <span><i class="fa fa-route me-2"></i>Theo dõi đơn hàng</span>
+                </div>
+                <div class="p-4">
+                    <style>
+                        .order-stepper { display: flex; justify-content: space-between; align-items: center; position: relative; padding: 0 40px; }
+                        .step-line-track { position: absolute; top: 20px; left: 80px; right: 80px; height: 3px; background: #e2e8f0; z-index: 0; }
+                        .step-line-fill { height: 100%; background: #10b981; transition: 0.3s; }
+                        .step-line-fill.failed-line { background: #ef4444; }
+                        .step { position: relative; z-index: 1; text-align: center; width: 80px; }
+                        .step-icon { width: 44px; height: 44px; background: #fff; border: 3px solid #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; color: #94a3b8; background-color: #f8fafc; font-size: 1.1rem; transition: 0.3s; }
+                        .step-label { font-size: 0.85rem; font-weight: 600; color: #64748b; white-space: nowrap; position: absolute; left: 50%; transform: translateX(-50%); }
+                        
+                        .step.completed .step-icon { background-color: #10b981; border-color: #10b981; color: #fff; }
+                        .step.completed .step-label { color: #10b981; }
+                        .step.active .step-icon { border-color: #10b981; color: #10b981; box-shadow: 0 0 0 5px #d1fae5; background-color: #fff; }
+                        .step.active .step-label { color: #10b981; }
+                        .step.failed .step-icon { background-color: #ef4444; border-color: #ef4444; color: #fff; }
+                        .step.failed .step-label { color: #ef4444; }
+                        
+                        .step-time { font-size: 0.75rem; color: #94a3b8; position: absolute; top: 75px; left: 50%; transform: translateX(-50%); white-space: nowrap; }
+                        @media (max-width: 576px) {
+                            .order-stepper { padding: 0 10px; }
+                            .step-line-track { left: 40px; right: 40px; }
+                            .step { width: 60px; }
+                            .step-icon { width: 34px; height: 34px; font-size: 0.9rem; }
+                            .step-label { font-size: 0.7rem; }
+                            .step-time { top: 65px; font-size: 0.65rem; }
+                        }
+                    </style>
+                    <div class="order-stepper" th:with="
+                        idx = ${t == 'cho_xac_nhan' ? 0 : 
+                               t == 'da_xac_nhan' or t == 'da_huy' ? 1 : 
+                               t == 'dang_giao' ? 2 : 3},
+                        isFailed = ${t == 'da_huy' or t == 'giao_that_bai' or t == 'cho_hoan_tien'}">
+                        
+                        <div class="step-line-track">
+                            <div th:class="'step-line-fill ' + (${isFailed ? 'failed-line' : ''})" th:style="'width: ' + (${idx * 33.333}) + '%'"></div>
+                        </div>
+                        
+                        <!-- Bước 1: Đặt hàng -->
+                        <div th:class="'step ' + (${idx > 0 ? 'completed' : (idx == 0 and !isFailed ? 'active' : (idx == 0 and isFailed ? 'failed' : ''))})">
+                            <div class="step-icon"><i class="fa fa-shopping-bag"></i></div>
+                            <div class="step-label">Đặt hàng</div>
+                            <div class="step-time" th:text="${#temporals.format(donHang.ngayDat, 'dd/MM HH:mm')}"></div>
+                        </div>
+
+                        <!-- Bước 2: Xác nhận -->
+                        <div th:class="'step ' + (${idx > 1 ? 'completed' : (idx == 1 and !isFailed ? 'active' : (idx == 1 and isFailed ? 'failed' : ''))})">
+                            <div class="step-icon">
+                                <i th:if="${idx == 1 and isFailed}" class="fa fa-times"></i>
+                                <i th:unless="${idx == 1 and isFailed}" class="fa fa-file-invoice"></i>
+                            </div>
+                            <div class="step-label" th:text="${idx == 1 and isFailed ? 'Đã hủy' : 'Xác nhận'}">Xác nhận</div>
+                        </div>
+
+                        <!-- Bước 3: Đang giao -->
+                        <div th:class="'step ' + (${idx > 2 ? 'completed' : (idx == 2 and !isFailed ? 'active' : (idx == 2 and isFailed ? 'failed' : ''))})">
+                            <div class="step-icon"><i class="fa fa-truck"></i></div>
+                            <div class="step-label">Đang giao</div>
+                        </div>
+
+                        <!-- Bước 4: Hoàn thành / Thất bại -->
+                        <div th:class="'step ' + (${idx == 3 and !isFailed ? 'active completed' : (idx == 3 and isFailed ? 'failed' : '')})">
+                            <div class="step-icon">
+                                <i th:if="${idx == 3 and isFailed}" class="fa fa-times"></i>
+                                <i th:unless="${idx == 3 and isFailed}" class="fa fa-check"></i>
+                            </div>
+                            <div class="step-label" th:text="${idx == 3 and isFailed ? (t == 'giao_that_bai' ? 'Giao thất bại' : 'Chờ hoàn tiền') : 'Đã nhận'}">Đã nhận</div>
+                            <div class="step-time" th:if="${donHang.ngayGiaoThucTe != null}" th:text="${#temporals.format(donHang.ngayGiaoThucTe, 'dd/MM HH:mm')}"></div>
+                        </div>
+                    </div>
+                    <div style="height: 35px;"></div>
+                </div>
+            </div>
+
             <!-- Danh sách sản phẩm -->
             <div class="pm-card mb-4">
                 <div class="pm-card-header">

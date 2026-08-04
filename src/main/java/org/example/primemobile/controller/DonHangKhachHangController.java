@@ -508,6 +508,8 @@ public class DonHangKhachHangController {
             case "dang_giao" -> "Đang giao";
             case "da_hoan_thanh" -> "Đã hoàn thành";
             case "da_huy" -> "Đã hủy";
+            case "giao_that_bai" -> "Giao thất bại";
+            case "cho_hoan_tien" -> "Chờ hoàn tiền";
             default -> status;
         };
     }
