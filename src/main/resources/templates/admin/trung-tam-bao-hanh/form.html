@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${pageTitle} + ' - PrimeMobile'">Thêm Sửa Trung tâm bảo hành</title>
+    <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
+</head>
+<body>
+    <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
+    <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
+
+    <main id="pmContent">
+        <div class="pm-card" style="max-width: 600px; margin: 0 auto;">
+            <div class="pm-card-header" th:text="${pageTitle}">
+                Thêm/Sửa Trung tâm bảo hành
+            </div>
+            <div class="card-body p-4">
+                <form th:action="@{/admin/trung-tam-bao-hanh/save}" th:object="${trungTamBaoHanh}" method="post">
+                    <!-- ID (hidden) -->
+                    <input type="hidden" th:field="*{id}" />
+
+                    <!-- Tên TTBH -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tên Trung tâm bảo hành <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" th:field="*{tenTrungTam}" required placeholder="VD: Trung tâm bảo hành Apple Service" />
+                    </div>
+
+                    <!-- Người liên hệ -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Người liên hệ</label>
+                        <input type="text" class="form-control" th:field="*{nguoiLienHe}" placeholder="Tên đầu mối liên hệ" />
+                    </div>
+                    
+                    <!-- Số điện thoại -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Số điện thoại</label>
+                        <input type="text" class="form-control" th:field="*{soDienThoai}" placeholder="VD: 0912345678" pattern="^(03|05|07|08|09)\d{8}$" title="Số điện thoại phải có 10 chữ số và bắt đầu bằng 03, 05, 07, 08 hoặc 09" />
+                    </div>
+
+                    <!-- Địa chỉ -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Địa chỉ</label>
+                        <textarea class="form-control" th:field="*{diaChi}" rows="3" placeholder="Số nhà, đường, quận, thành phố..."></textarea>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a th:href="@{/admin/trung-tam-bao-hanh/danh-sach}" class="btn btn-light">Hủy bỏ</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-save"></i> Lưu dữ liệu
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+</body>
+</html>

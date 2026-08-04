@@ -624,7 +624,11 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
                 LocalDateTime now = LocalDateTime.now();
 
                 // 1. Cập nhật trạng thái
-                donHang.setTrangThai("da_huy");
+                if (donHang.getGhiChu() != null && donHang.getGhiChu().contains("[GIAO THẤT BẠI")) {
+                        donHang.setTrangThai("giao_that_bai");
+                } else {
+                        donHang.setTrangThai("da_huy");
+                }
                 donHang.setTrangThaiThanhToan("da_hoan_tien");
                 donHang.setUpdatedAt(now);
 

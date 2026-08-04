@@ -114,6 +114,9 @@ public class AdminUIController {
         return "admin/error-403";
     }
 
+    @Autowired
+    private org.example.primemobile.service.ITrungTamBaoHanhService trungTamBaoHanhService;
+
     /**
      * Trang Tiếp nhận bảo hành
      */
@@ -121,11 +124,9 @@ public class AdminUIController {
     public String tiepNhanBaoHanh(Model model, HttpSession session) {
         model.addAttribute("pageTitle", "Tiếp nhận bảo hành");
         model.addAttribute("activePage", "bao-hanh");
+        model.addAttribute("trungTamBaoHanhs", trungTamBaoHanhService.layDanhSachHoatDong());
         return "admin/bao-hanh/tiep-nhan";
     }
-
-    @Autowired
-    private org.example.primemobile.repository.TrungTamBaoHanhRepository trungTamBaoHanhRepository;
 
     /**
      * Trang Danh sách yêu cầu bảo hành
@@ -134,7 +135,7 @@ public class AdminUIController {
     public String danhSachBaoHanh(Model model, HttpSession session) {
         model.addAttribute("pageTitle", "Danh sách bảo hành");
         model.addAttribute("activePage", "bao-hanh");
-        model.addAttribute("trungTamBaoHanhs", trungTamBaoHanhRepository.findAll());
+        model.addAttribute("trungTamBaoHanhs", trungTamBaoHanhService.layDanhSachHoatDong());
         return "admin/bao-hanh/danh-sach";
     }
 

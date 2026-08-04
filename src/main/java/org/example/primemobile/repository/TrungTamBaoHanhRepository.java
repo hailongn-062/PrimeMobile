@@ -1,7 +1,11 @@
 package org.example.primemobile.repository;
 
 import org.example.primemobile.entity.TrungTamBaoHanh;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -9,6 +13,19 @@ import java.util.Optional;
 
 @Repository
 public interface TrungTamBaoHanhRepository extends JpaRepository<TrungTamBaoHanh, Integer> {
+
+    @Query("""
+            SELECT t FROM TrungTamBaoHanh t
+            WHERE (:trangThai IS NULL OR t.trangThai = :trangThai)
+              AND (:tuKhoa IS NULL OR t.tenTrungTam LIKE CONCAT('%', :tuKhoa, '%')
+                                   OR t.soDienThoai LIKE CONCAT('%', :tuKhoa, '%')
+                                   OR t.nguoiLienHe LIKE CONCAT('%', :tuKhoa, '%'))
+            """)
+    Page<TrungTamBaoHanh> timKiem(
+            @Param("trangThai") String trangThai,
+            @Param("tuKhoa")    String tuKhoa,
+            Pageable pageable
+    );
 
     /**
      * Tìm trung tâm bảo hành theo tên chính xác.
