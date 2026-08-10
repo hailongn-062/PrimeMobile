@@ -173,7 +173,7 @@ public class CatalogPublicController {
         dto.put("moTaNgan", sanPham.getMoTaNgan());
         dto.put("moTaChiTiet", sanPham.getMoTaChiTiet());
         dto.put("namRaMat", sanPham.getNamRaMat());
-        dto.put("baoHanhThang", sanPham.getBaoHanhThang());
+
         dto.put("trangThai", sanPham.getTrangThai());
         dto.put("luotXem", sanPham.getLuotXem());
         dto.put("ngayTao", sanPham.getNgayTao());

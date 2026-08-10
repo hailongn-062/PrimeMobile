@@ -114,31 +114,6 @@ public class AdminUIController {
         return "admin/error-403";
     }
 
-    @Autowired
-    private org.example.primemobile.service.ITrungTamBaoHanhService trungTamBaoHanhService;
-
-    /**
-     * Trang Tiếp nhận bảo hành
-     */
-    @GetMapping("/bao-hanh/tiep-nhan")
-    public String tiepNhanBaoHanh(Model model, HttpSession session) {
-        model.addAttribute("pageTitle", "Tiếp nhận bảo hành");
-        model.addAttribute("activePage", "bao-hanh");
-        model.addAttribute("trungTamBaoHanhs", trungTamBaoHanhService.layDanhSachHoatDong());
-        return "admin/bao-hanh/tiep-nhan";
-    }
-
-    /**
-     * Trang Danh sách yêu cầu bảo hành
-     */
-    @GetMapping("/bao-hanh/danh-sach")
-    public String danhSachBaoHanh(Model model, HttpSession session) {
-        model.addAttribute("pageTitle", "Danh sách bảo hành");
-        model.addAttribute("activePage", "bao-hanh");
-        model.addAttribute("trungTamBaoHanhs", trungTamBaoHanhService.layDanhSachHoatDong());
-        return "admin/bao-hanh/danh-sach";
-    }
-
     /**
      * Trang Quản lý Sản phẩm
      */

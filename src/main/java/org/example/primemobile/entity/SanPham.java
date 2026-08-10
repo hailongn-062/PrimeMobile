@@ -94,11 +94,6 @@ public class SanPham {
     @Column(name = "nam_ra_mat")
     private Short namRaMat;
 
-    /** Sá»‘ thÃ¡ng báº£o hÃ nh theo chÃ­nh sÃ¡ch cá»­a hÃ ng (DEFAULT 12). */
-    @Column(name = "bao_hanh_thang", nullable = false)
-    @Builder.Default
-    private Integer baoHanhThang = 12;
-
     /**
      * Tráº¡ng thÃ¡i kinh doanh cá»§a sáº£n pháº©m (DEFAULT 'dang_ban').
      * GiÃ¡ trá»‹ há»£p lá»‡: "dang_ban" | "ngung_ban" | "sap_ra_mat"

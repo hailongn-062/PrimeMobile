@@ -82,7 +82,6 @@ CREATE TABLE san_pham (
                           mo_ta_ngan       NVARCHAR(500),
                           mo_ta_chi_tiet   NVARCHAR(MAX),
                           nam_ra_mat       SMALLINT,
-                          bao_hanh_thang   INT           NOT NULL DEFAULT 12,
                           trang_thai       VARCHAR(15)   NOT NULL DEFAULT 'dang_ban',
                           luot_xem         INT           NOT NULL DEFAULT 0,
                           ngay_tao         DATETIME2     NOT NULL DEFAULT GETDATE(),
@@ -138,7 +137,7 @@ CREATE TABLE may_dien_thoai (
                                 nguoi_giu_id         INT           NULL, -- CẬP NHẬT: Thêm người giữ ID
                                 thoi_gian_giu        DATETIME2     NULL, -- CẬP NHẬT: Thêm thời gian giữ
                                 CONSTRAINT uq_may_imei1             UNIQUE (imei1),
-                                CONSTRAINT chk_may_tinh_trang       CHECK (tinh_trang IN ('trong_kho','dang_giu','da_ban','bao_hanh','loi_hong')), -- CẬP NHẬT: Thêm 'dang_giu'
+                                CONSTRAINT chk_may_tinh_trang       CHECK (tinh_trang IN ('trong_kho','dang_giu','da_ban','loi_hong')), -- CẬP NHẬT: Thêm 'dang_giu'
                                 CONSTRAINT fk_may_bt                FOREIGN KEY (bien_the_san_pham_id) REFERENCES bien_the_san_pham(id),
                                 CONSTRAINT fk_may_dien_thoai_nguoi_giu FOREIGN KEY (nguoi_giu_id) REFERENCES nguoi_dung(id) ON DELETE SET NULL -- CẬP NHẬT: Thêm khóa ngoại người giữ
 );
@@ -466,68 +465,6 @@ CREATE INDEX idx_tt_het_han       ON thanh_toan (thoi_gian_tao)      WHERE trang
 GO
 
 -- =====================================================
--- MODULE 8: BẢO HÀNH
--- =====================================================
-
-CREATE TABLE trung_tam_bao_hanh (
-                                    id            INT           IDENTITY(1,1) PRIMARY KEY,
-                                    ten_trung_tam NVARCHAR(200) NOT NULL,
-                                    so_dien_thoai VARCHAR(20),
-                                    dia_chi       NVARCHAR(255),
-                                    nguoi_lien_he NVARCHAR(100),
-                                    trang_thai    VARCHAR(20)   NOT NULL DEFAULT 'hoat_dong',
-                                    CONSTRAINT chk_ttbh_trang_thai CHECK (trang_thai IN ('hoat_dong','ngung_hoat_dong'))
-);
-GO
-
-CREATE TABLE phieu_bao_hanh (
-                                id                 INT         IDENTITY(1,1) PRIMARY KEY,
-                                ma_phieu           VARCHAR(50) NOT NULL,
-                                may_dien_thoai_id  INT         NOT NULL,
-                                khach_hang_id      INT         NOT NULL,
-                                don_hang_id        INT         NOT NULL,
-                                so_thang_bao_hanh  INT         NOT NULL,
-                                ngay_bat_dau       DATE        NOT NULL,
-                                ngay_het_han       DATE        NOT NULL,
-                                trang_thai         VARCHAR(15) NOT NULL DEFAULT 'con_hieu_luc',
-                                CONSTRAINT uq_pbh_ma          UNIQUE (ma_phieu),
-                                CONSTRAINT uq_pbh_may         UNIQUE (may_dien_thoai_id),
-                                CONSTRAINT chk_pbh_trang_thai CHECK (trang_thai IN ('con_hieu_luc','het_han','da_su_dung','void')),
-                                CONSTRAINT fk_pbh_may         FOREIGN KEY (may_dien_thoai_id) REFERENCES may_dien_thoai(id),
-                                CONSTRAINT fk_pbh_kh          FOREIGN KEY (khach_hang_id)     REFERENCES khach_hang(id),
-                                CONSTRAINT fk_pbh_dh          FOREIGN KEY (don_hang_id)       REFERENCES don_hang(id)
-);
-GO
-
-CREATE TABLE yeu_cau_bao_hanh (
-                                  id                    INT           IDENTITY(1,1) PRIMARY KEY,
-                                  ma_yeu_cau            VARCHAR(50)   NOT NULL,
-                                  phieu_bao_hanh_id     INT           NOT NULL,
-                                  nguoi_tiep_nhan_id    INT           NULL,
-                                  ngay_tiep_nhan        DATETIME2     NOT NULL DEFAULT GETDATE(),
-                                  mo_ta_loi             NVARCHAR(MAX),
-                                  hinh_thuc             VARCHAR(15)   NOT NULL DEFAULT 'sua_chua',
-                                  trang_thai            VARCHAR(20)   NOT NULL DEFAULT 'tiep_nhan',
-                                  trung_tam_bao_hanh_id INT           NULL,
-                                  ngay_gui_ttbh         DATETIME2     NULL,
-                                  ngay_du_kien_nhan     DATE          NULL,
-                                  ngay_nhan_lai_ttbh    DATETIME2     NULL,
-                                  ket_qua_ttbh          NVARCHAR(MAX) NULL,
-                                  ngay_tra_khach        DATETIME2     NULL,
-                                  ghi_chu               NVARCHAR(MAX),
-                                  CONSTRAINT uq_ycbh_ma          UNIQUE (ma_yeu_cau),
-                                  CONSTRAINT chk_ycbh_hinh_thuc  CHECK (hinh_thuc = 'sua_chua'),
-                                  CONSTRAINT chk_ycbh_trang_thai CHECK (trang_thai IN ('tiep_nhan','dang_kiem_tra','da_gui_ttbh','ttbh_dang_xu_ly','da_nhan_lai_ttbh','cho_tra_khach','da_tra_khach','tu_choi')),
-                                  CONSTRAINT fk_ycbh_pbh         FOREIGN KEY (phieu_bao_hanh_id)     REFERENCES phieu_bao_hanh(id),
-                                  CONSTRAINT fk_ycbh_nd          FOREIGN KEY (nguoi_tiep_nhan_id)    REFERENCES nguoi_dung(id) ON DELETE SET NULL,
-                                  CONSTRAINT fk_ycbh_ttbh        FOREIGN KEY (trung_tam_bao_hanh_id) REFERENCES trung_tam_bao_hanh(id)
-);
-GO
-
-CREATE INDEX idx_ycbh_pbh ON yeu_cau_bao_hanh (phieu_bao_hanh_id);
-GO
-
--- =====================================================
 -- MODULE 11: CHATBOT AI
 -- =====================================================
 
@@ -557,7 +494,7 @@ CREATE TABLE tin_nhan_chat (
                                san_pham_id_ref   INT           NULL,
                                thoi_gian         DATETIME2     NOT NULL DEFAULT GETDATE(),
                                CONSTRAINT chk_tnc_vai    CHECK (vai    IN ('user','model','system')),
-                               CONSTRAINT chk_tnc_intent CHECK (intent IN ('tu_van_sp','tra_cuu_dh','bao_hanh','khuyen_mai','chinh_sach','khac') OR intent IS NULL),
+                               CONSTRAINT chk_tnc_intent CHECK (intent IN ('tu_van_sp','tra_cuu_dh','khuyen_mai','chinh_sach','khac') OR intent IS NULL),
                                CONSTRAINT fk_tnc_cht     FOREIGN KEY (cuoc_hoi_thoai_id) REFERENCES cuoc_hoi_thoai(id) ON DELETE CASCADE
 );
 GO
@@ -752,15 +689,15 @@ GO
 -- =====================================================
 -- 4. SẢN PHẨM & THÔNG SỐ (8 SẢN PHẨM)
 -- =====================================================
-INSERT INTO san_pham (ma_san_pham, ten_san_pham, danh_muc_id, hang_san_xuat_id, mo_ta_ngan, nam_ra_mat, bao_hanh_thang) VALUES
-('SP_IP15PM', N'iPhone 15 Pro Max', 1, 1, N'Khung Titanium siêu nhẹ, Camera 5x zoom quang học.', 2023, 12),
-('SP_IP14', N'iPhone 14', 1, 1, N'Màn hình Super Retina XDR, Pin bền bỉ.', 2022, 12),
-('SP_S24U', N'Samsung Galaxy S24 Ultra', 1, 2, N'Quyền năng Galaxy AI, bút S-Pen thông minh.', 2024, 12),
-('SP_ZFOLD5', N'Samsung Galaxy Z Fold5', 3, 2, N'Bản lề Flex mượt mà, màn hình gập đỉnh cao.', 2023, 12),
-('SP_XM14', N'Xiaomi 14', 1, 3, N'Ống kính Leica, cấu hình mạnh mẽ.', 2024, 18),
-('SP_RMN13', N'Redmi Note 13 Pro', 2, 3, N'Camera 200MP, sạc siêu tốc 67W.', 2023, 18),
-('SP_RENO11', N'OPPO Reno11 5G', 2, 4, N'Chuyên gia chân dung, thiết kế viền cong.', 2024, 12),
-('SP_A18', N'OPPO A18', 4, 4, N'Màn hình lớn 90Hz, pin 5000mAh.', 2023, 12);
+INSERT INTO san_pham (ma_san_pham, ten_san_pham, danh_muc_id, hang_san_xuat_id, mo_ta_ngan, nam_ra_mat) VALUES
+('SP_IP15PM', N'iPhone 15 Pro Max', 1, 1, N'Khung Titanium siêu nhẹ, Camera 5x zoom quang học.', 2023),
+('SP_IP14', N'iPhone 14', 1, 1, N'Màn hình Super Retina XDR, Pin bền bỉ.', 2022),
+('SP_S24U', N'Samsung Galaxy S24 Ultra', 1, 2, N'Quyền năng Galaxy AI, bút S-Pen thông minh.', 2024),
+('SP_ZFOLD5', N'Samsung Galaxy Z Fold5', 3, 2, N'Bản lề Flex mượt mà, màn hình gập đỉnh cao.', 2023),
+('SP_XM14', N'Xiaomi 14', 1, 3, N'Ống kính Leica, cấu hình mạnh mẽ.', 2024),
+('SP_RMN13', N'Redmi Note 13 Pro', 2, 3, N'Camera 200MP, sạc siêu tốc 67W.', 2023),
+('SP_RENO11', N'OPPO Reno11 5G', 2, 4, N'Chuyên gia chân dung, thiết kế viền cong.', 2024),
+('SP_A18', N'OPPO A18', 4, 4, N'Màn hình lớn 90Hz, pin 5000mAh.', 2023);
 GO
 
 -- =====================================================
@@ -897,17 +834,8 @@ INSERT INTO danh_gia_san_pham (san_pham_id, khach_hang_id, don_hang_id, sao, tie
 (1, 1, 1, 5, N'Điện thoại siêu xịn', N'Cầm rất nhẹ tay do khung titan, màu Tự Nhiên cực sang, ship siêu nhanh!', 'da_duyet');
 GO
 
--- Thêm đối tác Trung tâm bảo hành
-INSERT INTO trung_tam_bao_hanh (ten_trung_tam, so_dien_thoai, dia_chi, nguoi_lien_he, trang_thai) VALUES
-(N'Điện Thoại Vui - Cầu Giấy', '18002064', N'Thái Hà, Hà Nội', N'Mr. Nam', 'hoat_dong');
-GO
 
--- Sinh bảo hành cho máy đã bán ở Đơn 1
-DECLARE @ActualMayId INT;
-SELECT @ActualMayId = id FROM may_dien_thoai WHERE imei1 = '351111111111111';
-INSERT INTO phieu_bao_hanh (ma_phieu, may_dien_thoai_id, khach_hang_id, don_hang_id, so_thang_bao_hanh, ngay_bat_dau, ngay_het_han)
-VALUES ('BH_IP15_001', @ActualMayId, 1, 1, 12, '2026-05-12', '2027-05-12');
-GO
+
 
 INSERT INTO yeu_thich (khach_hang_id, san_pham_id) VALUES
 (1, 3), (1, 4), (2, 1);

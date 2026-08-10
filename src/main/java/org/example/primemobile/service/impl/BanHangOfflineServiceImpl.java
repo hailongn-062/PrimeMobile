@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.primemobile.entity.*;
 import org.example.primemobile.repository.*;
 import org.example.primemobile.service.IBanHangOfflineService;
-import org.example.primemobile.service.IBaoHanhService;
 import org.example.primemobile.service.IBienTheSanPhamService;
 import org.example.primemobile.service.IKhuyenMaiService;
 import org.example.primemobile.dto.KhuyenMaiResult;
@@ -89,9 +88,6 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
 
         // Service tính giá sau khuyến mãi động
         private final IKhuyenMaiService khuyenMaiService;
-
-        // Service tự động tạo phiếu bảo hành sau khi bán
-        private final IBaoHanhService baoHanhService;
 
         // =======================================================================
         // PUBLIC METHODS
@@ -403,10 +399,6 @@ public class BanHangOfflineServiceImpl implements IBanHangOfflineService {
                 }
                 donHang.setUpdatedAt(now);
                 donHangRepository.save(donHang);
-
-                // Tự động tạo Phiếu bảo hành cho các IMEI trong đơn
-                baoHanhService.taoPhieuBaoHanhChoDonHang(donHang);
-                log.info("[BanHangOffline] Đã tạo phiếu BH cho đơn [{}].", donHang.getMaDonHang());
 
                 // ------------------------------------------------------------------
                 // Bước 6: Lưu lịch sử thanh toán

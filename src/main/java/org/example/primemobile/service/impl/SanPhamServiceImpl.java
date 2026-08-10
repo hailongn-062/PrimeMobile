@@ -110,9 +110,7 @@ public class SanPhamServiceImpl implements ISanPhamService {
         if (sanPham.getTrangThai() == null || !TRANG_THAI_HOP_LE.contains(sanPham.getTrangThai())) {
             sanPham.setTrangThai("dang_ban");
         }
-        if (sanPham.getBaoHanhThang() == null) {
-            sanPham.setBaoHanhThang(12);
-        }
+
 
         SanPham saved = sanPhamRepository.save(sanPham);
         log.info("[SanPham] Đã thêm sản phẩm mới — id={}, ma={}, ten={}",
@@ -147,9 +145,7 @@ public class SanPhamServiceImpl implements ISanPhamService {
         existing.setMoTaNgan(sanPhamMoi.getMoTaNgan());
         existing.setMoTaChiTiet(sanPhamMoi.getMoTaChiTiet());
         existing.setNamRaMat(sanPhamMoi.getNamRaMat());
-        if (sanPhamMoi.getBaoHanhThang() != null) {
-            existing.setBaoHanhThang(sanPhamMoi.getBaoHanhThang());
-        }
+
 
         // Đổi danh mục nếu client truyền ID mới
         if (sanPhamMoi.getDanhMuc() != null && sanPhamMoi.getDanhMuc().getId() != null) {

@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.primemobile.entity.*;
 import org.example.primemobile.repository.*;
-import org.example.primemobile.service.IBaoHanhService;
 import org.example.primemobile.service.IQuanLyDonHangService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -64,7 +63,6 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
         private final TonKhoRepository tonKhoRepository;
         private final NguoiDungRepository nguoiDungRepository;
         private final MayDienThoaiRepository mayDienThoaiRepository; // ✅ Thêm để kiểm tra IMEI
-        private final IBaoHanhService baoHanhService; // ✅ Tự động tạo phiếu BH khi đơn hoàn thành
 
         // =========================================================================
         // 1. XEM DANH SÁCH & CHI TIẾT
@@ -476,9 +474,6 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
                         }
 
                         donHangRepository.save(donHang);
-                        // Tự động tạo Phiếu bảo hành cho các IMEI trong đơn
-                        baoHanhService.taoPhieuBaoHanhChoDonHang(donHang);
-                        log.info("[QuanLyDonHang] Đã gọi tạo phiếu BH cho đơn [{}].", donHang.getMaDonHang());
                         return donHang;
                 }
 

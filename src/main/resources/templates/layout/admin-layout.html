@@ -516,16 +516,6 @@
                 </li>
             </ul>
 
-            <div class="sidebar-section-label">Bảo hành & Hỗ trợ</div>
-            <ul class="nav flex-column">
-                <li class="nav-item">
-                    <a href="/admin/bao-hanh/danh-sach" th:class="${activePage == 'bao-hanh'} ? 'nav-link active' : 'nav-link'">
-                        <span class="nav-icon"><i class="fa fa-wrench"></i></span>
-                        Bảo hành sửa chữa
-                    </a>
-                </li>
-            </ul>
-
             <th:block th:if="${currentUser != null and currentUser.role == 'Admin'}">
                 <div class="sidebar-section-label">Hệ thống</div>
                 <ul class="nav flex-column mb-3">
@@ -534,13 +524,6 @@
                             th:class="${activePage == 'nha-cung-cap'} ? 'nav-link active' : 'nav-link'">
                             <span class="nav-icon"><i class="fa fa-truck"></i></span>
                             Nhà Cung Cấp
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/admin/trung-tam-bao-hanh/danh-sach"
-                            th:class="${activePage == 'trung-tam-bao-hanh'} ? 'nav-link active' : 'nav-link'">
-                            <span class="nav-icon"><i class="fa fa-building"></i></span>
-                            Trung tâm bảo hành
                         </a>
                     </li>
                     <li class="nav-item">

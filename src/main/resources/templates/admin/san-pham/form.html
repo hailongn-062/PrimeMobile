@@ -58,19 +58,13 @@
 
                     <div class="row">
                         <!-- Năm ra mắt -->
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Năm ra mắt</label>
                             <input type="number" class="form-control" th:field="*{namRaMat}" placeholder="VD: 2024" />
                         </div>
                         
-                        <!-- Bảo hành -->
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold">Bảo hành (Tháng) <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" th:field="*{baoHanhThang}" required min="0" value="12" />
-                        </div>
-
                         <!-- Trạng thái -->
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Trạng thái <span class="text-danger">*</span></label>
                             <select class="form-select" th:field="*{trangThai}" required>
                                 <option value="dang_ban">Đang bán</option>
