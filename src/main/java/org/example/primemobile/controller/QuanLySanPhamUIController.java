@@ -26,6 +26,7 @@ public class QuanLySanPhamUIController {
     private final IThongSoKyThuatService thongSoKyThuatService;
     private final IHinhAnhSanPhamService hinhAnhSanPhamService;
     private final IFileStorageService fileStorageService;
+    private final IMauSacService mauSacService;
 
     @GetMapping
     public String index(
@@ -97,6 +98,9 @@ public class QuanLySanPhamUIController {
         // Khởi tạo object rỗng cho các form con thêm mới
         model.addAttribute("newThongSo", new ThongSoKyThuat());
         model.addAttribute("newBienThe", new BienTheSanPham());
+        
+        // Danh sách màu sắc cho dropdown
+        model.addAttribute("mauSacs", mauSacService.layTatCa());
 
         model.addAttribute("pageTitle", "Chi tiết: " + sanPham.getTenSanPham());
         model.addAttribute("activePage", "san-pham");
@@ -135,7 +139,7 @@ public class QuanLySanPhamUIController {
         return "redirect:/admin/san-pham/" + sanPhamId + "/chi-tiet";
     }
 
-    public record BienTheDto(Integer sanPhamId, String maSku, String mauSac, Integer ramGb, Integer luuTruGb, java.math.BigDecimal giaBan) {}
+    public record BienTheDto(Integer sanPhamId, String maSku, Integer mauSacId, Integer ramGb, Integer luuTruGb, java.math.BigDecimal giaBan) {}
 
     @PostMapping("/bien-the/save-multiple")
     @ResponseBody
@@ -144,7 +148,7 @@ public class QuanLySanPhamUIController {
             for (BienTheDto dto : dtoList) {
                 BienTheSanPham bt = new BienTheSanPham();
                 bt.setMaSku(dto.maSku());
-                bt.setMauSac(dto.mauSac());
+                bt.setMauSac(mauSacService.layTheoId(dto.mauSacId()));
                 bt.setRamGb(dto.ramGb());
                 bt.setLuuTruGb(dto.luuTruGb());
                 bt.setGiaBan(dto.giaBan());

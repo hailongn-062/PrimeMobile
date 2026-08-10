@@ -188,7 +188,7 @@ public class BanHangOfflineController {
         log.info("[BanHangOfflineController] Lưu đơn chờ — donHangId={}, nhanVienId={}", donHangId, sessionUser.getId());
         try {
             DonHang donHang = banHangOfflineService.luuDonHangCho(donHangId, sessionUser.getId(), payload);
-            return ResponseEntity.ok(donHang);
+            return ResponseEntity.ok(mapDonHangToMap(donHang));
         } catch (Exception e) {
             log.error("[BanHangOfflineController] Lỗi khi lưu đơn chờ: {}", e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -269,7 +269,7 @@ public class BanHangOfflineController {
                     btMap.put("id", ct.getBienTheSanPham().getId());
                     btMap.put("sku", ct.getBienTheSanPham().getMaSku());
                     btMap.put("maSku", ct.getBienTheSanPham().getMaSku());
-                    btMap.put("mauSac", ct.getBienTheSanPham().getMauSac());
+                    btMap.put("mauSac", ct.getBienTheSanPham().getMauSacTen());
                     btMap.put("ramGb", ct.getBienTheSanPham().getRamGb());
                     btMap.put("luuTruGb", ct.getBienTheSanPham().getLuuTruGb());
 

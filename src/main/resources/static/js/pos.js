@@ -1842,37 +1842,111 @@ async function handleCheckout() {
     const tienGiam = promoState.tienGiam ?? 0;
     const canTra = tongTien - tienGiam;
 
-    const promoRow = tienGiam > 0
-        ? `<div style="display:flex;justify-content:space-between;margin:.3rem 0;color:#16a34a;">
-               <span>Giảm giá <small>(${promoState.tenCtkm ?? ''})</small>:</span>
-               <strong>− ${fmt(tienGiam)}</strong>
-           </div>`
-        : '';
+    // Xác định tên khách hàng để hiển thị
+    let tenKhachHienThi = 'Khách lẻ';
+    if (customerMode === 'vang_lai') {
+        tenKhachHienThi = DOM.vlHoTen?.value || 'Khách vãng lai';
+    } else if (customerMode === 'chon_cu' && DOM.selectKhachHang?.selectedIndex >= 0) {
+        tenKhachHienThi = DOM.selectKhachHang.options[DOM.selectKhachHang.selectedIndex].text;
+    }
 
-    const confirm = await Swal.fire({
-        icon: 'question',
-        title: 'Xác nhận thanh toán?',
-        html: `
-            <div style="text-align:left;font-size:.88rem;line-height:1.7;">
-                <div style="display:flex;justify-content:space-between;margin:.3rem 0;">
-                    <span>Tổng tiền hàng:</span><strong>${fmt(tongTien)}</strong>
-                </div>
-                ${promoRow}
-                <hr style="margin:.4rem 0;border-color:#E8EDF5;">
-                <div style="display:flex;justify-content:space-between;font-size:1rem;">
-                    <strong>Khách cần trả:</strong>
-                    <strong style="color:#0d9488;font-size:1.05rem;">${fmt(canTra)}</strong>
-                </div>
-            </div>`,
+    // ── BƯỚC 1: Chọn Phương Thức Thanh Toán ────────────────
+    const { value: paymentMethod } = await Swal.fire({
+        title: 'Chọn phương thức thanh toán',
+        input: 'radio',
+        inputOptions: {
+            '1': 'Tiền mặt',
+            '2': 'Chuyển khoản'
+        },
+        inputValidator: (value) => {
+            if (!value) return 'Vui lòng chọn phương thức thanh toán!';
+        },
         showCancelButton: true,
-        confirmButtonText: '<i class="fa fa-check me-1"></i>Xác nhận thanh toán',
-        cancelButtonText: 'Huỷ',
+        confirmButtonText: 'Tiếp tục <i class="fa fa-arrow-right ms-1"></i>',
+        cancelButtonText: 'Hủy',
         confirmButtonColor: '#0d9488',
-        width: '440px',
-        focusConfirm: true,
     });
 
-    if (!confirm.isConfirmed) return;
+    if (!paymentMethod) return;
+
+    // ── BƯỚC 2: Hiển thị Popup chi tiết theo PTTT ────────────────
+    const tplCustomerInfo = `
+        <div style="background:#f8fafc; padding:12px; border-radius:8px; margin-bottom:15px; text-align:left; font-size:0.9rem; border:1px solid #e2e8f0;">
+            <div style="margin-bottom:5px;"><strong>Khách hàng:</strong> ${escHtml(tenKhachHienThi)}</div>
+            <div style="margin-bottom:5px;"><strong>Sản phẩm:</strong> ${cart.length} món</div>
+            <div style="display:flex; justify-content:space-between; font-size:1.1rem; color:#0d9488; margin-top:10px; border-top:1px dashed #cbd5e1; padding-top:10px;">
+                <strong>Khách cần trả:</strong> <strong>${fmt(canTra)}</strong>
+            </div>
+        </div>
+    `;
+
+    if (paymentMethod === '1') { // Tiền mặt
+        const confirmCash = await Swal.fire({
+            title: 'Thanh toán Tiền mặt',
+            html: `
+                ${tplCustomerInfo}
+                <div style="text-align:left; font-size:0.9rem; margin-bottom:10px;">
+                    <label style="font-weight:bold; margin-bottom:5px; display:block;">Số tiền khách đưa (₫)</label>
+                    <input type="text" id="swal-tien-khach-dua" class="form-control" style="font-size:1.1rem; font-weight:bold; color:#0f172a;" placeholder="Nhập số tiền..." oninput="
+                        let val = this.value.replace(/\\D/g, '');
+                        if(val) this.value = new Intl.NumberFormat('vi-VN').format(val);
+                        else this.value = '';
+                        
+                        let canTra = ${canTra};
+                        let khachDua = val ? parseInt(val, 10) : 0;
+                        let tienThua = khachDua - canTra;
+                        let elThua = document.getElementById('swal-tien-thua');
+                        if (elThua) {
+                            if (tienThua < 0) {
+                                elThua.style.color = '#ef4444';
+                                elThua.innerText = 'Chưa đủ tiền';
+                            } else {
+                                elThua.style.color = '#10b981';
+                                elThua.innerText = new Intl.NumberFormat('vi-VN').format(tienThua) + ' ₫';
+                            }
+                        }
+                    ">
+                </div>
+                <div style="display:flex; justify-content:space-between; text-align:left; font-size:1rem; padding:10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;">
+                    <strong>Tiền thừa trả khách:</strong>
+                    <strong id="swal-tien-thua" style="color:#ef4444;">Chưa nhập tiền</strong>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check me-1"></i>Xác nhận thanh toán',
+            cancelButtonText: 'Huỷ',
+            confirmButtonColor: '#0d9488',
+            preConfirm: () => {
+                const inputVal = document.getElementById('swal-tien-khach-dua').value.replace(/\D/g, '');
+                const tienKhachDua = inputVal ? parseInt(inputVal, 10) : 0;
+                if (tienKhachDua < canTra) {
+                    Swal.showValidationMessage('Số tiền khách đưa không được nhỏ hơn số tiền cần trả!');
+                    return false;
+                }
+                return tienKhachDua;
+            }
+        });
+
+        if (!confirmCash.isConfirmed) return;
+
+    } else if (paymentMethod === '2') { // Chuyển khoản
+        const confirmBank = await Swal.fire({
+            title: 'Thanh toán Chuyển khoản',
+            html: `
+                ${tplCustomerInfo}
+                <div style="text-align:center; margin-top:15px; margin-bottom:15px;">
+                    <p style="font-size:0.9rem; color:#64748b; margin-bottom:10px;">Quét mã QR dưới đây để thanh toán</p>
+                    <img src="/images/qr-placeholder.png" alt="QR Code" style="width:200px; height:200px; border-radius:8px; border:1px solid #cbd5e1; object-fit:contain; background:#fff; padding:10px;" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PAYMENT_${canTra}'">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-check me-1"></i>Xác nhận đã nhận tiền',
+            cancelButtonText: 'Huỷ',
+            confirmButtonColor: '#0d9488'
+        });
+
+        if (!confirmBank.isConfirmed) return;
+    }
 
     // ── BƯỚC 3: Xử lý khách hàng theo mode ────────────────
     let khachHangId = null;
@@ -1906,6 +1980,7 @@ async function handleCheckout() {
         tongTien: tongTien,
         tienGiam: tienGiam,
         ctkmId: promoState.ctkmId,
+        phuongThucThanhToanId: parseInt(paymentMethod, 10),
         chiTiets: cart.map(item => ({
             bienTheId: item.bienTheId,
             soLuong: item.soLuong,
@@ -2002,7 +2077,7 @@ function showBillModal(apiResult, payload) {
     const linesHtml = payload.chiTiets.map(ct => {
         const p = allProducts.find(x => x.bienTheId === ct.bienTheId);
         const name = p
-            ? `${escHtml(p.tenSanPham)}<br><small style="color:#6B7280;">${escHtml(p.maSku)}</small>`
+            ? `${escHtml(p.tenSanPham)} - ${escHtml(p.mauSac)} - ${p.ramGb}GB/${p.luuTruGb}GB<br><small style="color:#6B7280;">${escHtml(p.maSku)}</small>`
             : `SKU #${ct.bienTheId}`;
         const imeiHtml = ct.imeis && ct.imeis.length > 0
             ? `<div style="font-size:.68rem;color:#6B7280;margin-top:.15rem;">
@@ -2011,16 +2086,17 @@ function showBillModal(apiResult, payload) {
             : '';
 
         return `
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;
-                        margin:.3rem 0;gap:.5rem;">
-                <div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin:.3rem 0;gap:.5rem;">
+                <div style="flex:1;">
                     <div style="font-weight:600;">${name}</div>
-                    <div style="font-size:.72rem;color:#6B7280;">
-                        SL: ${ct.soLuong} × ${fmt(ct.donGia)}
+                    <div style="font-size:.72rem;margin-top:4px;">
+                        SL: ${ct.soLuong} × 
+                        ${p && p.giaGoc && p.giaGoc > ct.donGia ? `<span style="text-decoration:line-through;color:#9CA3AF;margin-right:4px;">${fmt(p.giaGoc)}</span>` : ''}
+                        <strong style="color:#ef4444;">${fmt(ct.donGia)}</strong>
                     </div>
                     ${imeiHtml}
                 </div>
-                <div style="font-weight:700;white-space:nowrap;padding-left:.5rem;">
+                <div style="font-weight:700;white-space:nowrap;padding-left:.5rem;color:#0d9488;">
                     ${fmt(ct.donGia * ct.soLuong)}
                 </div>
             </div>`;
@@ -2035,9 +2111,10 @@ function showBillModal(apiResult, payload) {
 
     if (DOM.billContent) {
         DOM.billContent.innerHTML = `
-            <div style="text-align:center;margin-bottom:1rem;padding-bottom:.75rem;
-                        border-bottom:2px dashed #E8EDF5;">
-                <div style="font-size:1.2rem;font-weight:800;color:#0d9488;">📱 PrimeMobile</div>
+            <div style="text-align:center;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:2px dashed #E8EDF5;">
+                <div style="display:flex;align-items:center;justify-content:center;margin-bottom:8px;">
+                    <img src="/images/logo_den.png" style="height:35px;" alt="PrimeMobile"/>
+                </div>
                 <div style="font-size:.72rem;color:#9CA3AF;text-transform:uppercase;
                             letter-spacing:1px;margin:.2rem 0;">Hóa đơn bán hàng tại quầy</div>
                 <div style="font-size:.7rem;color:#9CA3AF;">${now}</div>
@@ -2047,7 +2124,9 @@ function showBillModal(apiResult, payload) {
             </div>
 
             <div style="margin-bottom:.5rem;font-size:.82rem;">
-                <strong>Khách hàng:</strong> ${escHtml(apiResult.khachHang ?? 'Khách lẻ')}
+                <div style="margin-bottom: 2px;"><strong>Khách hàng:</strong> ${escHtml(apiResult.khachHang ?? 'Khách lẻ')}</div>
+                <div style="margin-bottom: 2px;"><strong>Kênh:</strong> Tại quầy</div>
+                <div style="margin-bottom: 2px;"><strong>Trạng thái:</strong> Đã hoàn thành</div>
             </div>
             <hr style="margin:.5rem 0;border-color:#E8EDF5;">
 
@@ -2056,21 +2135,21 @@ function showBillModal(apiResult, payload) {
             <hr style="margin:.6rem 0;border-top:2px solid #0d9488;">
 
             <div style="font-size:.83rem;">
-                <div style="display:flex;justify-content:space-between;margin:.2rem 0;">
+                <div style="display:flex;justify-content:space-between;margin:.4rem 0;">
                     <span>Tổng tiền hàng:</span><strong>${fmt(tongTien)}</strong>
                 </div>
                 ${promoLine}
-                <div style="display:flex;justify-content:space-between;margin:.4rem 0;
-                            font-size:1rem;font-weight:800;color:#0d9488;
-                            padding-top:.3rem;border-top:1px solid #E8EDF5;">
-                    <span>Khách thanh toán:</span><span>${fmt(canTra)}</span>
+                <div style="display:flex;justify-content:space-between;margin:.4rem 0;">
+                    <span>Phí vận chuyển:</span><strong style="color:#0d9488;">Miễn phí</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.5rem;font-size:1rem;font-weight:800;color:#0d9488;background-color:#e0f2fe;padding:8px;border-radius:4px;">
+                    <span>Tổng thanh toán:</span><span>${fmt(canTra)}</span>
                 </div>
             </div>
 
             <hr style="margin:.65rem 0;border-color:#E8EDF5;">
             <div style="text-align:center;font-size:.7rem;color:#9CA3AF;line-height:1.7;">
-                🙏 Cảm ơn quý khách đã mua hàng tại PrimeMobile!<br>
-                Bảo hành chính hãng · Đổi trả trong 7 ngày
+                Cảm ơn quý khách đã mua hàng tại PrimeMobile!
             </div>`;
     }
 
@@ -2625,7 +2704,12 @@ async function continuePendingOrder(id) {
                 // Khách cũ
                 DOM.tabChonCu.click();
                 if (DOM.selectKhachHang) {
+                    // Cập nhật lại toàn bộ danh sách từ Database để lấy cả khách vãng lai vừa được tạo
+                    await loadCustomers();
+                    
                     DOM.selectKhachHang.value = data.khachHang.id;
+                    // Kích hoạt event change để giao diện cập nhật trạng thái mới
+                    DOM.selectKhachHang.dispatchEvent(new Event('change'));
                 }
             }
         } else {

@@ -81,6 +81,9 @@
                 <span class="badge bg-success fs-6 px-3 py-2 rounded-pill ms-2">
                     <i class="fa fa-check-double me-1"></i>Đã hoàn thành
                 </span>
+                <button class="btn btn-outline-info px-3 ms-2" onclick="printOrderBill()">
+                    <i class="fa fa-print me-1"></i>In Hóa Đơn
+                </button>
             </th:block>
 
             <!-- DA_HUY: Chỉ thông báo -->
@@ -258,8 +261,13 @@
                         </tr>
                         <tr>
                             <td colspan="4" class="text-end pe-3 fw-semibold">Phí vận chuyển:</td>
-                            <td class="text-end pe-3 fw-bold"
-                                th:text="${#numbers.formatDecimal(donHang.phiShip, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</td>
+                            <td class="text-end pe-3 fw-bold">
+                                <span th:if="${donHang.phiShip != null and donHang.phiShip.compareTo(0) == 0}" class="text-success">
+                                    Miễn phí
+                                </span>
+                                <span th:unless="${donHang.phiShip != null and donHang.phiShip.compareTo(0) == 0}"
+                                      th:text="${#numbers.formatDecimal(donHang.phiShip, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</span>
+                            </td>
                         </tr>
                         <tr class="table-primary">
                             <td colspan="4" class="text-end pe-3 fw-bold fs-6">Tổng thanh toán:</td>
@@ -391,6 +399,78 @@
         </div>
     </div>
 
+    <!-- Hidden Bill Layout for Printing -->
+    <div id="bill-content" class="d-none">
+        <div style="text-align:center;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:2px dashed #E8EDF5;">
+            <div style="display:flex;align-items:center;justify-content:center;margin-bottom:8px;">
+                <img src="/images/logo_den.png" style="height:35px;" alt="PrimeMobile"/>
+            </div>
+            <div style="font-size:.72rem;color:#9CA3AF;text-transform:uppercase;letter-spacing:1px;margin:.2rem 0;">Hóa đơn bán hàng</div>
+            <div style="font-size:.7rem;color:#9CA3AF;" th:text="${#temporals.format(donHang.ngayDat, 'HH:mm dd/MM/yyyy')}"></div>
+            <div style="font-size:.75rem;font-weight:700;color:#0d9488;margin-top:.25rem;" th:text="'Mã ĐH: ' + ${donHang.maDonHang}"></div>
+        </div>
+        <div style="margin-bottom:.5rem;font-size:.82rem;">
+            <div style="margin-bottom: 2px;"><strong>Khách hàng:</strong> <span th:text="${donHang.tenKhachHang ?: 'Khách lẻ'}"></span></div>
+            <div style="margin-bottom: 2px;"><strong>Kênh:</strong> <span th:text="${donHang.kenhBan == 'online' ? 'Online' : 'Tại quầy'}"></span></div>
+            <div style="margin-bottom: 2px;"><strong>Trạng thái:</strong> 
+                <span th:switch="${donHang.trangThai}">
+                    <span th:case="'cho_xac_nhan'">Chờ xác nhận</span>
+                    <span th:case="'da_xac_nhan'">Đã xác nhận</span>
+                    <span th:case="'dang_giao'">Đang giao</span>
+                    <span th:case="'da_hoan_thanh'">Đã hoàn thành</span>
+                    <span th:case="'da_huy'">Đã hủy</span>
+                    <span th:case="'giao_that_bai'">Giao thất bại</span>
+                    <span th:case="*">Khác</span>
+                </span>
+            </div>
+            <div style="margin-bottom: 2px;" th:if="${donHang.kenhBan == 'online'}">
+                <strong>Địa chỉ:</strong> 
+                <span th:text="${donHang.diaChiGiaoCuThe + ', ' + donHang.phuongXaGiao + ', ' + donHang.quanHuyenGiao + ', ' + donHang.tinhThanhGiao}"></span>
+            </div>
+        </div>
+        <hr style="margin:.5rem 0;border-color:#E8EDF5;">
+        
+        <div th:each="ct : ${donHang.chiTietDonHangs}">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin:.3rem 0;gap:.5rem;">
+                <div style="flex:1;">
+                    <div style="font-weight:600;" th:text="${ct.tenSanPham} + ' - ' + ${ct.mauSac} + ' - ' + ${ct.ramGb} + 'GB/' + ${ct.luuTruGb} + 'GB'"></div>
+                    <div style="font-size:.72rem;margin-top:4px;">
+                        SL: <span th:text="${ct.soLuong}"></span> × 
+                        <span th:if="${ct.giaGoc != null and ct.giaGoc > ct.donGiaBan}" style="text-decoration:line-through;color:#9CA3AF;margin-right:4px;" th:text="${#numbers.formatDecimal(ct.giaGoc, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                        <strong style="color:#ef4444;" th:text="${#numbers.formatDecimal(ct.donGiaBan, 0, 'COMMA', 0, 'POINT')} + 'đ'"></strong>
+                    </div>
+                    <div th:if="${ct.imeiList != null and !#lists.isEmpty(ct.imeiList)}" style="font-size:.68rem;color:#6B7280;margin-top:.15rem;">
+                        IMEI: <span th:each="imei, iterStat : ${ct.imeiList}" th:text="${imei.imei1} + ${!iterStat.last ? ', ' : ''}"></span>
+                    </div>
+                </div>
+                <div style="font-weight:700;white-space:nowrap;padding-left:.5rem;color:#0d9488;" th:text="${#numbers.formatDecimal(ct.thanhTien, 0, 'COMMA', 0, 'POINT')} + 'đ'"></div>
+            </div>
+            <hr style="margin:.3rem 0;border-color:#E8EDF5;border-width:1px;">
+        </div>
+
+        <hr style="margin:.6rem 0;border-top:2px solid #0d9488;">
+        <div style="font-size:.83rem;">
+            <div style="display:flex;justify-content:space-between;margin:.4rem 0;">
+                <span>Tổng tiền hàng:</span><strong th:text="${#numbers.formatDecimal(donHang.tongTienHang, 0, 'COMMA', 0, 'POINT')} + 'đ'"></strong>
+            </div>
+            <div th:if="${donHang.tienGiamGia > 0}" style="display:flex;justify-content:space-between;margin:.4rem 0;color:#16a34a;">
+                <span>Giảm giá:</span><strong th:text="'- ' + ${#numbers.formatDecimal(donHang.tienGiamGia, 0, 'COMMA', 0, 'POINT')} + 'đ'"></strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin:.4rem 0;">
+                <span>Phí vận chuyển:</span>
+                <strong th:if="${donHang.phiShip == null or donHang.phiShip == 0}" style="color:#0d9488;">Miễn phí</strong>
+                <strong th:if="${donHang.phiShip != null and donHang.phiShip > 0}" th:text="${#numbers.formatDecimal(donHang.phiShip, 0, 'COMMA', 0, 'POINT')} + 'đ'"></strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.5rem;font-size:1rem;font-weight:800;color:#0d9488;background-color:#e0f2fe;padding:8px;border-radius:4px;">
+                <span>Tổng thanh toán:</span><span th:text="${#numbers.formatDecimal(donHang.tongThanhToan, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+            </div>
+        </div>
+        <hr style="margin:.65rem 0;border-color:#E8EDF5;">
+        <div style="text-align:center;font-size:.7rem;color:#9CA3AF;line-height:1.7;">
+            Cảm ơn quý khách đã mua hàng tại PrimeMobile!
+        </div>
+    </div>
+
 </main>
 
 <!-- ════════════════════════════════════════════════════════════════
@@ -458,7 +538,8 @@
 
     // ── HIỂN THỊ SWEETALERT ──────────────────────────────────────
     function showSuccess(msg) {
-        Swal.fire({ icon: 'success', title: 'Thành công!', text: msg, timer: 2000, showConfirmButton: false });
+        Swal.fire({ icon: 'success', title: 'Thành công!', text: msg, timer: 1500, showConfirmButton: false })
+            .then(() => window.location.reload());
     }
 
     function showError(msg) {
@@ -744,20 +825,59 @@
 
     // ── 3. Hoàn thành giao hàng (PUT /trang-thai?trangThaiMoi=da_hoan_thanh)
     document.getElementById('btn-hoan-thanh')?.addEventListener('click', async function () {
-        const result = await Swal.fire({
-            icon: 'question', title: 'Hoàn thành giao hàng?',
-            text: 'Đơn hàng sẽ được đánh dấu là "Đã hoàn thành".',
+        const currentPaymentMethod = '[[${donHang.phuongThucThanhToan}]]';
+        
+        // Nếu đã thanh toán qua VNPay, bỏ qua bước chọn phương thức thanh toán
+        if (currentPaymentMethod && currentPaymentMethod.includes('VNPay')) {
+            const result = await Swal.fire({
+                icon: 'question', title: 'Hoàn thành giao hàng?',
+                text: 'Đơn hàng sẽ được đánh dấu là "Đã hoàn thành".',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-check-double"></i> Hoàn thành',
+                cancelButtonText: 'Hủy bỏ',
+                confirmButtonColor: '#059669'
+            });
+            if (!result.isConfirmed) return;
+
+            showLoading('Đang cập nhật...');
+            try {
+                const data = await callApi(
+                    `/api/admin/don-hang/${DON_HANG_ID}/trang-thai?trangThaiMoi=da_hoan_thanh`,
+                    'PUT'
+                );
+                if (data.success) showSuccess(data.message || 'Giao hàng hoàn thành!');
+                else showError(data.message);
+            } catch (e) {
+                showError('Lỗi kết nối đến server.');
+            }
+            return;
+        }
+
+        const { value: paymentMethod } = await Swal.fire({
+            title: 'Hoàn thành giao hàng',
+            html: 'Đơn hàng sẽ được đánh dấu là "Đã hoàn thành".<br><br><b>Vui lòng chọn phương thức thanh toán:</b>',
+            input: 'radio',
+            inputOptions: {
+                '1': 'Tiền mặt',
+                '2': 'Chuyển khoản'
+            },
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Bạn cần chọn phương thức thanh toán!'
+                }
+            },
             showCancelButton: true,
-            confirmButtonText: '<i class="fa fa-check-double"></i> Hoàn thành',
+            confirmButtonText: '<i class="fa fa-check-double"></i> Xác nhận hoàn thành',
             cancelButtonText: 'Hủy bỏ',
             confirmButtonColor: '#059669'
         });
-        if (!result.isConfirmed) return;
+
+        if (!paymentMethod) return;
 
         showLoading('Đang cập nhật...');
         try {
             const data = await callApi(
-                `/api/admin/don-hang/${DON_HANG_ID}/trang-thai?trangThaiMoi=da_hoan_thanh`,
+                `/api/admin/don-hang/${DON_HANG_ID}/trang-thai?trangThaiMoi=da_hoan_thanh&phuongThucThanhToanId=${paymentMethod}`,
                 'PUT'
             );
             if (data.success) showSuccess(data.message || 'Giao hàng hoàn thành!');
@@ -925,6 +1045,29 @@
             BarcodeScanner.stop();
         }
     });
+
+    // In hóa đơn
+    function printOrderBill() {
+        const content = document.getElementById('bill-content').innerHTML;
+        const win = window.open('', '_blank', 'width=540,height=720,menubar=no,toolbar=no');
+        if (!win) {
+            Swal.fire('Lỗi', 'Trình duyệt đã chặn popup. Vui lòng cho phép popup để in hóa đơn.', 'error');
+            return;
+        }
+        win.document.write(`<!DOCTYPE html>
+<html lang="vi"><head>
+<meta charset="UTF-8">
+<title>Hóa đơn PrimeMobile</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+    body { font-family:'Inter',sans-serif; padding:20px 24px; font-size:13px; color:#1A1A2E; }
+    @media print { body { margin:0; -webkit-print-color-adjust:exact; } }
+</style>
+</head><body>${content}</body></html>`);
+        win.document.close();
+        win.focus();
+        setTimeout(() => { win.print(); }, 600);
+    }
 
 </script>
 

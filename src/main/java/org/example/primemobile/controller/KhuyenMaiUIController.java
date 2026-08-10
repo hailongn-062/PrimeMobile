@@ -127,12 +127,22 @@ public class KhuyenMaiUIController {
     // ══════════════════════════════════════════════════════════════════════
 
     @GetMapping("/chi-tiet/theo-san-pham/{id}")
-    public String chiTietTheoSanPham(@PathVariable Integer id, Model model) {
+    public String chiTietTheoSanPham(@PathVariable Integer id, 
+                                     @RequestParam(required = false, defaultValue = "0") int page,
+                                     @RequestParam(required = false) String tuKhoaSanPham,
+                                     Model model) {
         ChuongTrinhKhuyenMai ctkm = khuyenMaiService.layTheoId(id);
         model.addAttribute("ctkm", ctkm);
         model.addAttribute("phamViList", khuyenMaiService.layPhamVi(id));
-        model.addAttribute("danhSachSanPham",
-                sanPhamService.layDanhSach(null, null, null, PageRequest.of(0, 500, Sort.by("tenSanPham"))).getContent());
+        
+        String finalTuKhoa = (tuKhoaSanPham != null && !tuKhoaSanPham.trim().isEmpty()) ? tuKhoaSanPham.trim() : null;
+        org.springframework.data.domain.Page<org.example.primemobile.entity.SanPham> sanPhamPage = 
+            sanPhamService.layDanhSach(finalTuKhoa, null, null, PageRequest.of(page, 10, Sort.by("tenSanPham")));
+            
+        model.addAttribute("danhSachSanPham", sanPhamPage.getContent());
+        model.addAttribute("sanPhamPage", sanPhamPage);
+        model.addAttribute("tuKhoaSanPham", tuKhoaSanPham);
+        
         model.addAttribute("formUrl", "/admin/khuyen-mai/form/theo-san-pham?id=" + id);
         model.addAttribute("pageTitle", "Chi tiết: " + ctkm.getTenCtkm());
         model.addAttribute("activePage", "khuyen-mai");
@@ -145,11 +155,29 @@ public class KhuyenMaiUIController {
 
     @PostMapping("/{id}/pham-vi/them")
     public String themPhamVi(@PathVariable Integer id,
-                             @RequestParam Integer sanPhamId,
+                             @RequestParam Integer bienTheId,
                              RedirectAttributes ra) {
         try {
-            khuyenMaiService.themPhamVi(id, sanPhamId);
-            ra.addFlashAttribute("successMessage", "Đã thêm sản phẩm vào phạm vi áp dụng.");
+            khuyenMaiService.themPhamVi(id, bienTheId);
+            ra.addFlashAttribute("successMessage", "Đã thêm biến thể vào phạm vi áp dụng.");
+        } catch (Exception e) {
+            ra.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/admin/khuyen-mai/chi-tiet/theo-san-pham/" + id;
+    }
+
+    @PostMapping("/{id}/pham-vi/them-nhieu")
+    public String themNhieuPhamVi(@PathVariable Integer id,
+                                  @RequestParam(value = "bienTheIds", required = false) java.util.List<Integer> bienTheIds,
+                                  RedirectAttributes ra) {
+        if (bienTheIds == null || bienTheIds.isEmpty()) {
+            ra.addFlashAttribute("errorMessage", "Vui lòng chọn ít nhất một biến thể.");
+            return "redirect:/admin/khuyen-mai/chi-tiet/theo-san-pham/" + id;
+        }
+        
+        try {
+            khuyenMaiService.themNhieuPhamVi(id, bienTheIds);
+            ra.addFlashAttribute("successMessage", "Đã thêm " + bienTheIds.size() + " biến thể vào phạm vi áp dụng.");
         } catch (Exception e) {
             ra.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
         }
@@ -161,7 +189,7 @@ public class KhuyenMaiUIController {
                             RedirectAttributes ra) {
         try {
             khuyenMaiService.xoaPhamVi(pvId);
-            ra.addFlashAttribute("successMessage", "Đã xóa sản phẩm khỏi phạm vi áp dụng.");
+            ra.addFlashAttribute("successMessage", "Đã xóa biến thể khỏi phạm vi áp dụng.");
         } catch (Exception e) {
             ra.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
         }

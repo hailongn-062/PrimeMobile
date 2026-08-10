@@ -221,7 +221,7 @@ public class MayDienThoaiController {
                             if (m.getBienTheSanPham().getSanPham() != null) {
                                 dto.setTenSanPham(m.getBienTheSanPham().getSanPham().getTenSanPham());
                             }
-                            dto.setMauSac(m.getBienTheSanPham().getMauSac());
+                            dto.setMauSac(m.getBienTheSanPham().getMauSacTen());
                             dto.setLuuTruGb(m.getBienTheSanPham().getLuuTruGb());
                         }
                         return dto;
@@ -269,7 +269,7 @@ public class MayDienThoaiController {
                 response.put("bienTheSanPhamId", m.getBienTheSanPham().getId());
                 response.put("maSku", m.getBienTheSanPham().getMaSku());
                 response.put("tenSanPham", m.getBienTheSanPham().getSanPham() != null ? m.getBienTheSanPham().getSanPham().getTenSanPham() : null);
-                response.put("mauSac", m.getBienTheSanPham().getMauSac());
+                response.put("mauSac", m.getBienTheSanPham().getMauSacTen());
                 response.put("luuTruGb", m.getBienTheSanPham().getLuuTruGb());
                 response.put("ramGb", m.getBienTheSanPham().getRamGb());
                 response.put("giaBan", m.getBienTheSanPham().getGiaBan());

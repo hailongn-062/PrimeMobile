@@ -460,7 +460,7 @@
                 <li class="nav-item">
                     <a href="/admin/don-hang" th:class="${activePage == 'don-hang'} ? 'nav-link active' : 'nav-link'">
                         <span class="nav-icon"><i class="fa fa-shopping-bag"></i></span>
-                        Đơn hàng Online
+                        Quản lý đơn hàng
                         <span class="sidebar-badge" id="badge-don-hang">0</span>
                     </a>
                 </li>
@@ -575,6 +575,40 @@
             if (window.innerWidth < 768) {
                 document.body.classList.add('sidebar-collapsed');
             }
+
+            // ==========================================
+            // XỬ LÝ ĐỊNH DẠNG SỐ TIỀN TOÀN CỤC (GLOBAL)
+            // ==========================================
+            document.addEventListener("DOMContentLoaded", function () {
+                // 1. Lắng nghe sự kiện gõ phím trên tất cả thẻ có data-price-input
+                document.body.addEventListener('input', function (e) {
+                    if (e.target.matches('input[data-price-input="true"]')) {
+                        let value = e.target.value;
+                        // Xóa hết ký tự không phải số
+                        value = value.replace(/[^0-9]/g, '');
+                        if (value !== '') {
+                            // Định dạng lại theo chuẩn VN (có dấu chấm)
+                            e.target.value = new Intl.NumberFormat('vi-VN').format(value);
+                        } else {
+                            e.target.value = '';
+                        }
+                    }
+                });
+
+                // 2. Chặn các form submit giá trị có dấu chấm (vì Spring/Backend chỉ hiểu số nguyên)
+                document.querySelectorAll('form').forEach(form => {
+                    form.addEventListener('submit', function (e) {
+                        // Lấy tất cả các ô nhập tiền trong form này
+                        const priceInputs = form.querySelectorAll('input[data-price-input="true"]');
+                        priceInputs.forEach(input => {
+                            if (input.value) {
+                                // Gỡ bỏ dấu chấm trước khi trình duyệt thực sự gửi đi
+                                input.value = input.value.replace(/\./g, '');
+                            }
+                        });
+                    });
+                });
+            });
         </script>
     </th:block>
 

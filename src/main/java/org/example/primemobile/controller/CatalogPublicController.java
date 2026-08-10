@@ -68,6 +68,9 @@ public class CatalogPublicController {
         log.debug("[CatalogPublic] GET /san-pham/{}", id);
         try {
             SanPham sanPham = sanPhamService.layTheoId(id);
+            if ("ngung_ban".equals(sanPham.getTrangThai())) {
+                return ResponseEntity.status(404).body(Map.of("message", "Sản phẩm đã ngừng kinh doanh"));
+            }
             Map<String, Object> dto = productDto(sanPham);
             dto.put("bienTheSanPhams", bienTheSanPhamService.layTheoSanPhamId(id).stream()
                     .map(this::variantDto)
@@ -85,6 +88,10 @@ public class CatalogPublicController {
     public ResponseEntity<?> layBienTheCuaSanPham(@PathVariable Integer sanPhamId) {
         log.debug("[CatalogPublic] GET /bien-the/san-pham/{}", sanPhamId);
         try {
+            SanPham sanPham = sanPhamService.layTheoId(sanPhamId);
+            if ("ngung_ban".equals(sanPham.getTrangThai())) {
+                return ResponseEntity.status(404).body(Map.of("message", "Sản phẩm đã ngừng kinh doanh"));
+            }
             return ResponseEntity.ok(bienTheSanPhamService.layTheoSanPhamId(sanPhamId).stream()
                     .map(this::variantDto)
                     .toList());
@@ -188,8 +195,7 @@ public class CatalogPublicController {
         dto.put("id", bienThe.getId());
         dto.put("sanPhamId", bienThe.getSanPham() != null ? bienThe.getSanPham().getId() : null);
         dto.put("maSku", bienThe.getMaSku());
-        dto.put("mauSac", bienThe.getMauSac());
-        dto.put("maMauHex", bienThe.getMaMauHex());
+        dto.put("mauSac", bienThe.getMauSacTen());
         dto.put("ramGb", bienThe.getRamGb());
         dto.put("luuTruGb", bienThe.getLuuTruGb());
         dto.put("loaiLuuTru", bienThe.getLoaiLuuTru());

@@ -117,27 +117,51 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
 
     @Override
     @Transactional
-    public void themPhamVi(Integer ctkmId, Integer sanPhamId) {
+    public void themPhamVi(Integer ctkmId, Integer bienTheId) {
         ChuongTrinhKhuyenMai ctkm = ctkmRepo.findById(ctkmId)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy CTKM ID: " + ctkmId));
-        if (sanPhamId == null) {
-            throw new IllegalArgumentException("Vui lòng chọn sản phẩm cần áp dụng.");
+        if (bienTheId == null) {
+            throw new IllegalArgumentException("Vui lòng chọn biến thể cần áp dụng.");
         }
-        SanPham sp = sanPhamRepo.findById(sanPhamId)
-                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy sản phẩm ID: " + sanPhamId));
+        BienTheSanPham bt = bienTheSanPhamRepo.findById(bienTheId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy biến thể ID: " + bienTheId));
 
         // Kiểm tra trùng
-        boolean daConan = phamViKhuyenMaiRepo.findByChuongTrinhKhuyenMaiId(ctkmId)
-                .stream().anyMatch(p -> p.getSanPham() != null && p.getSanPham().getId().equals(sanPhamId));
-        if (daConan) {
-            throw new IllegalArgumentException("Sản phẩm này đã có trong danh sách áp dụng.");
+        boolean daCo = phamViKhuyenMaiRepo.findByChuongTrinhKhuyenMaiId(ctkmId)
+                .stream().anyMatch(p -> p.getBienThe() != null && p.getBienThe().getId().equals(bienTheId));
+        if (daCo) {
+            throw new IllegalArgumentException("Biến thể này đã có trong danh sách áp dụng.");
         }
 
         PhamViKhuyenMai pv = new PhamViKhuyenMai();
         pv.setChuongTrinhKhuyenMai(ctkm);
-        pv.setSanPham(sp);
+        pv.setBienThe(bt);
         phamViKhuyenMaiRepo.save(pv);
-        log.info("[KhuyenMai] Thêm sản phẩm id={} vào phạm vi CTKM id={}", sanPhamId, ctkmId);
+        log.info("[KhuyenMai] Thêm biến thể id={} vào phạm vi CTKM id={}", bienTheId, ctkmId);
+    }
+
+    @Override
+    @Transactional
+    public void themNhieuPhamVi(Integer ctkmId, List<Integer> bienTheIds) {
+        ChuongTrinhKhuyenMai ctkm = ctkmRepo.findById(ctkmId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy CTKM ID: " + ctkmId));
+        
+        if (bienTheIds == null || bienTheIds.isEmpty()) return;
+
+        List<PhamViKhuyenMai> hienTai = phamViKhuyenMaiRepo.findByChuongTrinhKhuyenMaiId(ctkmId);
+
+        for (Integer bienTheId : bienTheIds) {
+            boolean daCo = hienTai.stream().anyMatch(p -> p.getBienThe() != null && p.getBienThe().getId().equals(bienTheId));
+            if (!daCo) {
+                BienTheSanPham bt = bienTheSanPhamRepo.findById(bienTheId).orElse(null);
+                if (bt != null) {
+                    PhamViKhuyenMai pv = new PhamViKhuyenMai();
+                    pv.setChuongTrinhKhuyenMai(ctkm);
+                    pv.setBienThe(bt);
+                    phamViKhuyenMaiRepo.save(pv);
+                }
+            }
+        }
     }
 
     @Override
@@ -291,9 +315,8 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
         BigDecimal giaGoc = bienThe.getGiaBan();
         BigDecimal giaSauKM = giaGoc;
 
-        // ── 1. Tính giá sau khuyến mãi theo sản phẩm (nếu có) ───────────────
-        SanPham sanPham = bienThe.getSanPham();
-        List<PhamViKhuyenMai> pvList = phamViKhuyenMaiRepo.findActiveGiamGiaTrucTiepBySanPhamId(sanPham.getId());
+        // ── 1. Tính giá sau khuyến mãi theo biến thể sản phẩm (nếu có) ───────────────
+        List<PhamViKhuyenMai> pvList = phamViKhuyenMaiRepo.findActiveGiamGiaTrucTiepByBienTheId(bienTheId);
         if (!pvList.isEmpty()) {
             PhamViKhuyenMai pv = pvList.get(0);
             BigDecimal phanTram = pv.getChuongTrinhKhuyenMai().getGiaTriUuDai();

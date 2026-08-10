@@ -44,12 +44,20 @@ public interface IKhuyenMaiService {
     List<PhamViKhuyenMai> layPhamVi(Integer ctkmId);
 
     /**
-     * Thêm sản phẩm vào phạm vi áp dụng.
+     * Thêm biến thể sản phẩm vào phạm vi áp dụng.
      *
      * @param ctkmId    ID chương trình.
-     * @param sanPhamId ID sản phẩm.
+     * @param bienTheId ID biến thể sản phẩm.
      */
-    void themPhamVi(Integer ctkmId, Integer sanPhamId);
+    void themPhamVi(Integer ctkmId, Integer bienTheId);
+
+    /**
+     * Thêm hàng loạt biến thể sản phẩm vào phạm vi áp dụng.
+     * 
+     * @param ctkmId      ID chương trình
+     * @param bienTheIds  Danh sách ID biến thể
+     */
+    void themNhieuPhamVi(Integer ctkmId, List<Integer> bienTheIds);
 
     /** Xóa 1 dòng phạm vi theo phamViId. */
     void xoaPhamVi(Integer phamViId);

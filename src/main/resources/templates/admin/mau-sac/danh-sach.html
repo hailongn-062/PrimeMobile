@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${pageTitle} + ' - PrimeMobile'">Quản lý Màu Sắc</title>
+    <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
+</head>
+<body>
+    <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
+    <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
+
+    <main id="pmContent">
+        <!-- Thông báo -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Toolbar tìm kiếm -->
+        <div class="pm-card mb-4 p-3">
+            <form action="/admin/mau-sac" method="get" class="row g-3 align-items-center">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="fa fa-search text-muted"></i></span>
+                        <input type="text" class="form-control" name="tuKhoa" th:value="${tuKhoa}" placeholder="Tìm theo tên màu...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Tìm kiếm</button>
+                </div>
+                <div class="col-md-2">
+                    <a href="/admin/mau-sac" class="btn btn-outline-secondary w-100">Làm mới</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="pm-card">
+            <div class="pm-card-header">
+                Danh sách Màu Sắc
+                <a href="/admin/mau-sac/form" class="btn btn-primary btn-sm">
+                    <i class="fa fa-plus"></i> Thêm mới
+                </a>
+            </div>
+            <div class="card-body p-0 table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">#</th>
+                            <th>Tên màu</th>
+                            <th>Mô tả</th>
+                            <th>Ngày tạo</th>
+                            <th class="text-end pe-4">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="ms, stat : ${mauSacPage.content}">
+                            <td class="ps-4" th:text="${stat.count + mauSacPage.number * mauSacPage.size}">1</td>
+                            <td class="fw-bold" th:text="${ms.tenMau}">Đen</td>
+                            <td th:text="${ms.moTa}">Mô tả màu</td>
+                            <td th:text="${#temporals.format(ms.ngayTao, 'dd/MM/yyyy HH:mm')}"></td>
+                            <td class="text-end pe-4">
+                                <a th:href="@{/admin/mau-sac/form(id=${ms.id})}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fa fa-edit"></i> Sửa
+                                </a>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(mauSacPage.content)}">
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                <i class="fa fa-box-open fs-3 mb-2 d-block"></i>
+                                Chưa có màu sắc nào.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Phân trang -->
+            <div class="card-footer bg-white border-top-0 pt-3 pb-3" th:if="${mauSacPage.totalPages > 1}">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-end mb-0">
+                        <li class="page-item" th:classappend="${mauSacPage.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/mau-sac(page=${mauSacPage.number - 1}, tuKhoa=${tuKhoa})}">Trước</a>
+                        </li>
+                        <li class="page-item" th:each="i : ${#numbers.sequence(0, mauSacPage.totalPages - 1)}" 
+                            th:classappend="${i == mauSacPage.number} ? 'active'">
+                            <a class="page-link" th:href="@{/admin/mau-sac(page=${i}, tuKhoa=${tuKhoa})}" th:text="${i + 1}">1</a>
+                        </li>
+                        <li class="page-item" th:classappend="${mauSacPage.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/mau-sac(page=${mauSacPage.number + 1}, tuKhoa=${tuKhoa})}">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </main>
+
+    <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+</body>
+</html>

@@ -113,11 +113,11 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold small">Giá bán (VNĐ) <span
                                         class="text-danger">*</span></label>
-                                <input type="number" class="form-control" id="btGiaBan" required>
+                                <input type="text" inputmode="numeric" data-price-input="true" class="form-control" id="btGiaBan" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold small">Giá khuyến mãi (VNĐ)</label>
-                                <input type="number" class="form-control" id="btGiaKm">
+                                <input type="text" inputmode="numeric" data-price-input="true" class="form-control" id="btGiaKm">
                             </div>
                         </div>
                         <div id="duplicateWarning" class="text-danger small mt-3 d-none">
@@ -205,9 +205,9 @@
             document.getElementById('btMau').value = bt.mauSac;
             document.getElementById('btRam').value = bt.ramGb || '';
             document.getElementById('btRom').value = bt.luuTruGb || '';
-            // Không gán giá nhập nữa
-            document.getElementById('btGiaBan').value = bt.giaBan;
-            document.getElementById('btGiaKm').value = bt.giaKhuyenMai || '';
+            // Định dạng giá trị tiền trước khi hiển thị lên input
+            document.getElementById('btGiaBan').value = bt.giaBan ? new Intl.NumberFormat('vi-VN').format(bt.giaBan) : '';
+            document.getElementById('btGiaKm').value = bt.giaKhuyenMai ? new Intl.NumberFormat('vi-VN').format(bt.giaKhuyenMai) : '';
 
             document.getElementById('bienTheModalLabel').innerText = 'Cập nhật Biến thể';
             validateDuplicate();
@@ -258,8 +258,8 @@
                 luuTruGb: parseInt(document.getElementById('btRom').value) || null,
                 // Không gửi giaNhap nữa (hoặc gửi null nếu API yêu cầu)
                 giaNhap: null,
-                giaBan: parseInt(document.getElementById('btGiaBan').value),
-                giaKhuyenMai: parseInt(document.getElementById('btGiaKm').value) || null
+                giaBan: parseInt(document.getElementById('btGiaBan').value.replace(/\./g, '')),
+                giaKhuyenMai: parseInt(document.getElementById('btGiaKm').value.replace(/\./g, '')) || null
             };
 
             // Chỉ validate các trường bắt buộc: maSku, mauSac, giaBan

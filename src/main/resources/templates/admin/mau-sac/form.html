@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${pageTitle} + ' - PrimeMobile'"></title>
+    <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
+</head>
+<body>
+    <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
+    <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
+
+    <main id="pmContent">
+        <!-- Nút Back -->
+        <div class="mb-3">
+            <a href="/admin/mau-sac" class="text-decoration-none text-muted">
+                <i class="fa fa-arrow-left me-1"></i> Quay lại danh sách
+            </a>
+        </div>
+
+        <div class="pm-card" style="max-width: 600px; margin: 0 auto;">
+            <div class="pm-card-header">
+                <i class="fa fa-palette me-2 text-primary"></i>
+                <span th:text="${pageTitle}">Thêm Màu Sắc</span>
+            </div>
+            
+            <div class="card-body p-4">
+                <form action="/admin/mau-sac/save" method="post" th:object="${mauSac}">
+                    <!-- Giữ lại ID khi sửa -->
+                    <input type="hidden" th:field="*{id}" />
+
+                    <!-- Thông báo lỗi nếu có -->
+                    <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}">
+                        Lỗi lưu dữ liệu.
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="tenMau" class="form-label fw-semibold">Tên màu <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="tenMau" th:field="*{tenMau}" required 
+                               placeholder="Ví dụ: Đen, Titan Tự Nhiên, Trắng...">
+                        <div class="form-text">Tên màu phải là duy nhất.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="moTa" class="form-label fw-semibold">Mô tả</label>
+                        <textarea class="form-control" id="moTa" th:field="*{moTa}" rows="3" 
+                                  placeholder="Mô tả thêm về màu sắc (không bắt buộc)"></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-5">
+                        <a href="/admin/mau-sac" class="btn btn-light border px-4">Hủy</a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fa fa-save me-1"></i> Lưu Màu Sắc
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+</body>
+</html>

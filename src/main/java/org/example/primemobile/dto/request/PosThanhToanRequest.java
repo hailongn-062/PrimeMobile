@@ -48,6 +48,9 @@ public class PosThanhToanRequest {
     /** ID chương trình khuyến mãi áp dụng (null nếu không có). */
     private Integer ctkmId;
 
+    /** ID phương thức thanh toán. */
+    private Integer phuongThucThanhToanId;
+
     /** Danh sách chi tiết từng dòng hàng. */
     private List<ChiTietPosRequest> chiTiets;
 

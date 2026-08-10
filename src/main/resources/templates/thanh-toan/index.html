@@ -153,7 +153,6 @@
                                 <input class="form-check-input mt-1" type="radio" name="phuongThucThanhToanId" th:value="${pt.id}" th:checked="${stat.index == 0}">
                                 <div>
                                     <div class="fw-bold" th:text="${pt.tenPttt == 'Tien mat' ? 'Thanh toán khi nhận hàng' : pt.tenPttt}">COD</div>
-                                    <div class="pm-muted small" th:text="${pt.moTa}">Mô tả</div>
                                 </div>
                             </div>
                         </label>
@@ -180,6 +179,7 @@
                     <span>Phí vận chuyển</span>
                     <strong id="summary-ship">0đ</strong>
                 </div>
+                <div id="free-ship-message-container" class="text-end mb-2 d-none"></div>
                 <div class="pm-row text-success">
                     <span>Mã giảm giá</span>
                     <select id="ctkmSelect" class="form-select form-select-sm w-auto" style="max-width: 150px;">
@@ -613,6 +613,7 @@
     let selectedCtkmId = null;
     let khuyenMais = [];
     let currentSubtotal = 0;
+    let finalShipFeeForOrder = 0;
     
     async function loadKhuyenMai() {
         try {
@@ -661,8 +662,34 @@
             }
         }
         
+        let discountedSubtotal = currentSubtotal - currentDiscountFee;
+        finalShipFeeForOrder = currentShipFee;
+        let isFreeShip = false;
+        
+        if (discountedSubtotal >= 30000000) {
+            finalShipFeeForOrder = 0;
+            isFreeShip = true;
+        }
+
         els.discount.textContent = '-' + money(currentDiscountFee);
-        els.total.textContent = money(Math.max(0, currentSubtotal + currentShipFee - currentDiscountFee));
+        
+        const freeShipContainer = document.getElementById('free-ship-message-container');
+        
+        if (isFreeShip) {
+            els.ship.innerHTML = `<del class="text-muted small me-2">${money(currentShipFee)}</del>0đ`;
+            if (freeShipContainer) {
+                freeShipContainer.innerHTML = `<span class="text-success small fw-semibold fst-italic" style="animation: fadeIn 0.5s;">🎉 Đơn trên 30 triệu được freeship!</span>`;
+                freeShipContainer.classList.remove('d-none');
+            }
+        } else {
+            els.ship.textContent = money(finalShipFeeForOrder);
+            if (freeShipContainer) {
+                freeShipContainer.classList.add('d-none');
+                freeShipContainer.innerHTML = '';
+            }
+        }
+
+        els.total.textContent = money(Math.max(0, discountedSubtotal + finalShipFeeForOrder));
     }
 
     function renderCart(cart) {
@@ -754,7 +781,7 @@
                         diaChiGiaoId: Number(diaChi.value),
                         phuongThucThanhToanId: Number(ptttRadio.value),
                         ctkmId: selectedCtkmId,
-                        phiShip: currentShipFee,
+                        phiShip: finalShipFeeForOrder,
                         ghiChu: document.getElementById('ghiChu').value.trim() || null
                     })
                 });
@@ -776,7 +803,7 @@
                         diaChiGiaoId: Number(diaChi.value),
                         phuongThucThanhToanId: Number(ptttRadio.value),
                         ctkmId: selectedCtkmId,
-                        phiShip: currentShipFee,
+                        phiShip: finalShipFeeForOrder,
                         ghiChu: document.getElementById('ghiChu').value.trim() || null
                     })
                 });

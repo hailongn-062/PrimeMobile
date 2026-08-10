@@ -73,62 +73,150 @@
         <!-- NỬA DƯỚI: Quản lý Phạm vi Sản phẩm -->
         <div class="pm-card">
             <div class="pm-card-header">
-                <i class="fa fa-boxes me-2"></i> Sản phẩm áp dụng
+                <i class="fa fa-boxes me-2"></i> Biến thể áp dụng
                 <span class="badge bg-primary ms-2" th:text="${#lists.size(phamViList)}"></span>
             </div>
             <div class="card-body">
 
-                <!-- Form thêm sản phẩm -->
-                <form th:action="@{/admin/khuyen-mai/{id}/pham-vi/them(id=${ctkm.id})}"
-                      method="post" class="bg-light border rounded p-3 mb-4">
-                    <h6 class="fw-semibold mb-3"><i class="fa fa-plus-circle text-primary me-1"></i> Thêm sản phẩm áp dụng</h6>
-                    <div class="row g-2 align-items-end">
-                        <div class="col-md-8">
-                            <label class="form-label small fw-semibold">Chọn sản phẩm <span class="text-danger">*</span></label>
-                            <select name="sanPhamId" class="form-select form-select-sm" required>
-                                <option value="">-- Chọn sản phẩm --</option>
-                                <option th:each="sp : ${danhSachSanPham}"
-                                        th:value="${sp.id}"
-                                        th:text="${sp.tenSanPham}">
-                                </option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <button type="submit" class="btn btn-sm btn-primary w-100">
-                                <i class="fa fa-plus me-1"></i> Thêm sản phẩm
-                            </button>
-                        </div>
+                <!-- Form Tìm kiếm Sản phẩm -->
+                <form th:action="@{/admin/khuyen-mai/chi-tiet/theo-san-pham/{id}(id=${ctkm.id})}" method="get" class="mb-3">
+                    <div class="input-group">
+                        <input type="text" name="tuKhoaSanPham" class="form-control" placeholder="Tìm kiếm theo tên sản phẩm..." th:value="${tuKhoaSanPham}">
+                        <button class="btn btn-outline-secondary" type="submit"><i class="fa fa-search"></i> Lọc</button>
+                        <a th:if="${tuKhoaSanPham != null and tuKhoaSanPham != ''}" th:href="@{/admin/khuyen-mai/chi-tiet/theo-san-pham/{id}(id=${ctkm.id})}" class="btn btn-outline-danger"><i class="fa fa-times"></i> Xóa lọc</a>
                     </div>
                 </form>
 
-                <!-- Bảng sản phẩm đã thêm -->
+                <!-- Form thêm biến thể (Accordion) -->
+                <form id="formThemNhieuPhamVi" th:action="@{/admin/khuyen-mai/{id}/pham-vi/them-nhieu(id=${ctkm.id})}"
+                      method="post" class="bg-light border rounded p-3 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                        <h6 class="fw-semibold mb-0"><i class="fa fa-plus-circle text-primary me-1"></i> Thêm biến thể áp dụng</h6>
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="fa fa-check-square me-1"></i> Lưu chọn hàng loạt
+                        </button>
+                    </div>
+                    
+                    <!-- SUMMARY AREA -->
+                    <div id="selectedVariantsSummary" class="mb-3 p-3 rounded d-none" style="background-color: #e0f2fe; border: 1px solid #bae6fd;">
+                        <p class="mb-2 fw-bold" style="color: #0369a1;"><i class="fa fa-info-circle me-1"></i> Đã chọn <span id="selectedCount">0</span> biến thể:</p>
+                        <div id="selectedBadges" class="d-flex flex-wrap gap-2"></div>
+                    </div>
+                    
+                    <div class="accordion" id="accordionProducts">
+                        <!-- Lặp qua từng sản phẩm -->
+                        <div class="accordion-item" th:each="sp, spStat : ${danhSachSanPham}">
+                            <h2 class="accordion-header" th:id="'heading' + ${spStat.index}">
+                                <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" 
+                                        th:data-bs-target="'#collapse' + ${spStat.index}" aria-expanded="false" 
+                                        th:aria-controls="'collapse' + ${spStat.index}">
+                                    <span th:text="${sp.tenSanPham}" class="fw-semibold">Tên SP</span>
+                                    <span class="badge bg-secondary ms-2" th:text="${#lists.size(sp.bienTheSanPhams)} + ' biến thể'"></span>
+                                </button>
+                            </h2>
+                            <div th:id="'collapse' + ${spStat.index}" class="accordion-collapse collapse" 
+                                 th:aria-labelledby="'heading' + ${spStat.index}" data-bs-parent="#accordionProducts">
+                                <div class="accordion-body bg-light pt-2 pb-3 px-3">
+                                    <div class="form-check mb-2 pb-2 border-bottom">
+                                        <input class="form-check-input check-all-variants" type="checkbox" 
+                                               th:id="'checkAll' + ${spStat.index}"
+                                               th:data-target-class="'variant-check-' + ${spStat.index}">
+                                        <label class="form-check-label fw-bold text-primary cursor-pointer" th:for="'checkAll' + ${spStat.index}">
+                                            Chọn tất cả biến thể của sản phẩm này
+                                        </label>
+                                    </div>
+                                    <div class="row g-2">
+                                        <!-- Lặp qua từng biến thể của sản phẩm -->
+                                        <div class="col-md-6" th:each="bt : ${sp.bienTheSanPhams}">
+                                            <label class="d-flex align-items-center gap-3 p-2 border rounded bg-white shadow-sm w-100" style="cursor: pointer; transition: all 0.2s;" th:for="'bt' + ${bt.id}">
+                                                <input class="form-check-input m-0 variant-checkbox" style="width: 1.25em; height: 1.25em; cursor: pointer;" type="checkbox" name="bienTheIds" 
+                                                       th:value="${bt.id}" th:id="'bt' + ${bt.id}"
+                                                       th:data-sku="${bt.maSku}"
+                                                       th:classappend="'variant-check-' + ${spStat.index}">
+                                                <div class="flex-grow-1 d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <span class="fw-semibold d-block text-dark" th:text="${bt.maSku}">SKU</span>
+                                                        <small class="text-muted" th:text="${bt.ramGb + 'GB - ' + bt.luuTruGb + 'GB - ' + bt.mauSac.tenMau}"></small>
+                                                    </div>
+                                                    <span class="text-danger fw-bold" th:text="${#numbers.formatDecimal(bt.giaBan, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                                                </div>
+                                            </label>
+                                        </div>
+                                        <div th:if="${#lists.isEmpty(sp.bienTheSanPhams)}" class="col-12 text-muted fst-italic">
+                                            Sản phẩm này chưa có biến thể nào.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div th:if="${#lists.isEmpty(danhSachSanPham)}" class="text-center py-4 text-muted border rounded bg-white">
+                            <i class="fa fa-box-open fs-2 mb-2 d-block"></i> Không tìm thấy sản phẩm nào
+                        </div>
+                    </div>
+
+                    <!-- Phân trang -->
+                    <div th:if="${sanPhamPage != null and sanPhamPage.totalPages > 1}" class="d-flex justify-content-center mt-4">
+                        <ul class="pagination pagination-sm mb-0">
+                            <!-- Nút Previous -->
+                            <li class="page-item" th:classappend="${sanPhamPage.first} ? 'disabled'">
+                                <a class="page-link" th:href="@{/admin/khuyen-mai/chi-tiet/theo-san-pham/{id}(id=${ctkm.id}, page=${sanPhamPage.number - 1}, tuKhoaSanPham=${tuKhoaSanPham})}">&laquo;</a>
+                            </li>
+
+                            <!-- Các trang -->
+                            <th:block th:each="i : ${#numbers.sequence(0, sanPhamPage.totalPages - 1)}">
+                                <li class="page-item" th:classappend="${i == sanPhamPage.number} ? 'active'">
+                                    <a class="page-link" th:href="@{/admin/khuyen-mai/chi-tiet/theo-san-pham/{id}(id=${ctkm.id}, page=${i}, tuKhoaSanPham=${tuKhoaSanPham})}" th:text="${i + 1}"></a>
+                                </li>
+                            </th:block>
+
+                            <!-- Nút Next -->
+                            <li class="page-item" th:classappend="${sanPhamPage.last} ? 'disabled'">
+                                <a class="page-link" th:href="@{/admin/khuyen-mai/chi-tiet/theo-san-pham/{id}(id=${ctkm.id}, page=${sanPhamPage.number + 1}, tuKhoaSanPham=${tuKhoaSanPham})}">&raquo;</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+
+                <!-- Bảng biến thể đã thêm -->
                 <div class="table-responsive">
                     <table class="table table-sm table-bordered table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
                                 <th style="width:40px">#</th>
-                                <th>Tên sản phẩm</th>
+                                <th>Sản phẩm</th>
+                                <th>Mã SKU</th>
+                                <th>Cấu hình / Màu</th>
+                                <th>Giá bán</th>
+                                <th>Giá sau giảm</th>
                                 <th class="text-center" style="width:80px">Xóa</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr th:each="pv, iter : ${phamViList}">
-                                <td class="text-muted small" th:text="${iter.count}"></td>
+                                <td class="text-muted small text-center" th:text="${iter.count}"></td>
                                 <td class="fw-semibold"
-                                    th:text="${pv.sanPham != null ? pv.sanPham.tenSanPham : '(Toàn bộ)'}">
+                                    th:text="${pv.bienThe != null ? pv.bienThe.sanPham.tenSanPham : ''}">
                                 </td>
+                                <td th:text="${pv.bienThe != null ? pv.bienThe.maSku : ''}"></td>
+                                <td th:text="${pv.bienThe != null ? pv.bienThe.ramGb + 'GB / ' + pv.bienThe.luuTruGb + 'GB / ' + pv.bienThe.mauSac.tenMau : ''}"></td>
+                                <td class="text-dark fw-bold" 
+                                    th:text="${pv.bienThe != null ? #numbers.formatDecimal(pv.bienThe.giaBan, 0, 'COMMA', 0, 'POINT') + 'đ' : ''}"></td>
+                                <td class="text-danger fw-bold" th:if="${pv.bienThe != null}">
+                                    <span th:text="${#numbers.formatDecimal(ctkm.tinhGiaSauKhuyenMai(pv.bienThe.giaBan), 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                                </td>
+                                <td th:unless="${pv.bienThe != null}"></td>
                                 <td class="text-center">
                                     <a th:href="@{/admin/khuyen-mai/{id}/pham-vi/xoa/{pvId}(id=${ctkm.id}, pvId=${pv.id})}"
                                        class="btn btn-sm btn-outline-danger py-0 px-2"
-                                       onclick="return confirm('Xóa sản phẩm này khỏi phạm vi áp dụng?')">
+                                       onclick="return confirm('Xóa biến thể này khỏi phạm vi áp dụng?')">
                                         <i class="fa fa-trash"></i>
                                     </a>
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(phamViList)}">
-                                <td colspan="3" class="text-center text-muted py-4">
+                                <td colspan="7" class="text-center text-muted py-4">
                                     <i class="fa fa-inbox me-1"></i>
-                                    Chưa có sản phẩm nào. Hãy thêm sản phẩm áp dụng bên trên.
+                                    Chưa có biến thể nào được áp dụng. Hãy chọn biến thể ở trên.
                                 </td>
                             </tr>
                         </tbody>
@@ -139,5 +227,102 @@
     </main>
 
     <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+    <!-- Thêm thư viện SweetAlert2 do layout mặc định chưa bao gồm -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Summary logic
+            const summaryArea = document.getElementById('selectedVariantsSummary');
+            const selectedCount = document.getElementById('selectedCount');
+            const selectedBadges = document.getElementById('selectedBadges');
+            
+            function updateSummary() {
+                const checkedBoxes = document.querySelectorAll('.variant-checkbox:checked');
+                const count = checkedBoxes.length;
+                
+                if (count > 0) {
+                    summaryArea.classList.remove('d-none');
+                    selectedCount.textContent = count;
+                    
+                    selectedBadges.innerHTML = '';
+                    checkedBoxes.forEach(cb => {
+                        const sku = cb.getAttribute('data-sku');
+                        const badge = document.createElement('span');
+                        badge.className = 'badge rounded-pill shadow-sm';
+                        badge.style.backgroundColor = '#0284c7';
+                        badge.style.color = '#ffffff';
+                        badge.style.fontSize = '0.85rem';
+                        badge.style.padding = '0.5em 0.75em';
+                        badge.textContent = sku;
+                        selectedBadges.appendChild(badge);
+                    });
+                } else {
+                    summaryArea.classList.add('d-none');
+                    selectedBadges.innerHTML = '';
+                }
+            }
+
+            // Xử lý nút "Chọn tất cả" trong mỗi accordion
+            const checkAllButtons = document.querySelectorAll('.check-all-variants');
+            checkAllButtons.forEach(btn => {
+                btn.addEventListener('change', function() {
+                    const targetClass = this.getAttribute('data-target-class');
+                    const checkboxes = document.querySelectorAll('.' + targetClass);
+                    checkboxes.forEach(cb => {
+                        cb.checked = this.checked;
+                    });
+                    updateSummary();
+                });
+            });
+
+            // Xử lý khi click vào từng checkbox nhỏ
+            const variantCheckboxes = document.querySelectorAll('.variant-checkbox');
+            variantCheckboxes.forEach(cb => {
+                cb.addEventListener('change', function() {
+                    const classList = Array.from(this.classList);
+                    const targetClass = classList.find(c => c.startsWith('variant-check-'));
+                    if (targetClass) {
+                        const allCheckboxes = document.querySelectorAll('.' + targetClass);
+                        const allChecked = Array.from(allCheckboxes).every(c => c.checked);
+                        const checkAllBtn = document.querySelector(`[data-target-class="${targetClass}"]`);
+                        if (checkAllBtn) {
+                            checkAllBtn.checked = allChecked;
+                        }
+                    }
+                    updateSummary();
+                });
+            });
+        });
+
+        const formThemNhieu = document.getElementById('formThemNhieuPhamVi');
+        if (formThemNhieu) {
+            formThemNhieu.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const checkedBoxes = document.querySelectorAll('.variant-checkbox:checked');
+                if (checkedBoxes.length === 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Chưa chọn biến thể',
+                        text: 'Vui lòng chọn ít nhất 1 biến thể trước khi lưu!'
+                    });
+                    return false;
+                }
+                
+                Swal.fire({
+                    title: 'Xác nhận lưu',
+                    text: `Bạn sắp thêm ${checkedBoxes.length} biến thể vào chương trình khuyến mãi. Bạn có chắc chắn muốn tiếp tục?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Đồng ý',
+                    cancelButtonText: 'Hủy'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        formThemNhieu.submit();
+                    }
+                });
+            });
+        }
+    </script>
 </body>
 </html>

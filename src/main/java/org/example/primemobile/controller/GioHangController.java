@@ -253,7 +253,7 @@ public class GioHangController {
                 sanPham.getId(),
                 sanPham.getTenSanPham(),
                 bienThe.getMaSku(),
-                bienThe.getMauSac(),
+                bienThe.getMauSacTen(),
                 bienThe.getRamGb(),
                 bienThe.getLuuTruGb(),
                 giaGoc,

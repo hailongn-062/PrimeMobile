@@ -92,17 +92,25 @@
         <div class="px-3 pb-3 pt-2 border-top">
             <form action="/admin/don-hang" method="get" class="row g-2 align-items-end">
                 <input type="hidden" name="trangThai" th:value="${filterTrangThai}">
-                <div class="col-12 col-sm-5 col-md-4">
+                <div class="col-12 col-sm-3 col-md-3">
                     <label class="form-label small fw-semibold mb-1">Mã đơn hàng</label>
                     <input type="text" class="form-control form-control-sm" name="maDonHang"
                            th:value="${filterMaDonHang}" placeholder="VD: DH2024001" id="filter-ma-don">
                 </div>
-                <div class="col-12 col-sm-5 col-md-4">
+                <div class="col-12 col-sm-3 col-md-3">
                     <label class="form-label small fw-semibold mb-1">Số điện thoại</label>
                     <input type="text" class="form-control form-control-sm" name="soDienThoai"
                            th:value="${filterSoDienThoai}" placeholder="0912345678" id="filter-sdt">
                 </div>
-                <div class="col-12 col-sm-2 col-md-4 d-flex gap-2">
+                <div class="col-12 col-sm-3 col-md-3">
+                    <label class="form-label small fw-semibold mb-1">Kênh bán</label>
+                    <select class="form-select form-select-sm" name="kenhBan">
+                        <option value="" th:selected="${filterKenhBan == null or filterKenhBan == ''}">Tất cả</option>
+                        <option value="online" th:selected="${filterKenhBan == 'online'}">Online</option>
+                        <option value="tai_quay" th:selected="${filterKenhBan == 'tai_quay'}">Tại quầy (POS)</option>
+                    </select>
+                </div>
+                <div class="col-12 col-sm-3 col-md-3 d-flex gap-2">
                     <button type="submit" class="btn btn-pm-primary btn-sm px-3 flex-fill">
                         <i class="fa fa-search me-1"></i>Lọc
                     </button>
@@ -141,7 +149,7 @@
                     </td>
                     <td>
                         <div class="fw-semibold"
-                             th:text="${dh.hoTenNguoiNhan ?: (dh.khachHang != null ? dh.khachHang.hoTen : 'Khách lẻ')}">
+                             th:text="${dh.hoTenNguoiNhan ?: (dh.tenKhachHang != null ? dh.tenKhachHang : 'Khách lẻ')}">
                             Tên khách
                         </div>
                         <div class="text-muted small" th:text="${dh.sdtNguoiNhan}">SĐT</div>
@@ -185,59 +193,12 @@
                         <span th:if="${dh.trangThaiThanhToan == 'da_hoan_tien'}"
                               class="badge rounded-pill bg-info text-dark">Đã hoàn tiền</span>
                     </td>
-                    <td class="text-center">
-                        <!-- Nút Xem chi tiết -->
+                    <td class="text-center align-middle" style="white-space: nowrap;">
                         <a th:href="@{/admin/don-hang/{id}(id=${dh.id})}"
                            class="btn btn-outline-primary btn-sm rounded-pill px-2 me-1"
                            title="Xem chi tiết">
-                            <i class="fa fa-eye"></i>
+                           <i class="fa fa-eye"></i> Xem
                         </a>
-
-                        <!-- Nút hành động theo trạng thái -->
-                        <th:block th:if="${dh.trangThai == 'cho_xac_nhan' and dh.trangThaiThanhToan != 'dang_chuyen_huong' and dh.trangThaiThanhToan != 'that_bai'}">
-                            <button class="btn btn-success btn-sm rounded-pill px-2 btn-xac-nhan-imei"
-                                    th:data-id="${dh.id}"
-                                    th:data-madon="${dh.maDonHang}"
-                                    title="Xác nhận đơn (chọn IMEI)">
-                                <i class="fa fa-check"></i>
-                            </button>
-                        </th:block>
-
-                        <th:block th:if="${dh.trangThai == 'da_xac_nhan'}">
-                            <button class="btn btn-primary btn-sm rounded-pill px-2 btn-chuyen-giao"
-                                    th:data-id="${dh.id}"
-                                    th:data-madon="${dh.maDonHang}"
-                                    title="Chuyển sang giao hàng">
-                                <i class="fa fa-truck"></i>
-                            </button>
-                        </th:block>
-
-                        <th:block th:if="${dh.trangThai == 'dang_giao'}">
-                            <button class="btn btn-success btn-sm rounded-pill px-2 btn-hoan-thanh"
-                                    th:data-id="${dh.id}"
-                                    th:data-madon="${dh.maDonHang}"
-                                    title="Hoàn thành giao hàng">
-                                <i class="fa fa-check-double"></i>
-                            </button>
-                            <button class="btn btn-outline-danger btn-sm rounded-pill px-2 ms-1 btn-giao-that-bai"
-                                    th:data-id="${dh.id}"
-                                    th:data-madon="${dh.maDonHang}"
-                                    title="Giao hàng thất bại">
-                                <i class="fa fa-times-circle"></i>
-                            </button>
-                        </th:block>
-
-
-
-                        <!-- Nút Hủy cho các trạng thái chờ xác nhận -->
-                        <th:block th:if="${dh.trangThai == 'cho_xac_nhan'}">
-                            <button class="btn btn-outline-danger btn-sm rounded-pill px-2 btn-huy-don"
-                                    th:data-id="${dh.id}"
-                                    th:data-madon="${dh.maDonHang}"
-                                    title="Hủy đơn">
-                                <i class="fa fa-times"></i>
-                            </button>
-                        </th:block>
                     </td>
                 </tr>
 

@@ -20,24 +20,24 @@ public interface PhamViKhuyenMaiRepository extends JpaRepository<PhamViKhuyenMai
     List<PhamViKhuyenMai> findByChuongTrinhKhuyenMaiId(Integer ctkmId);
 
     /**
-     * Tìm các phạm vi áp dụng cho chương trình khuyến mãi theo sản phẩm đang hoạt động.
+     * Tìm các phạm vi áp dụng cho chương trình khuyến mãi theo biến thể sản phẩm đang hoạt động.
      * <p>
      * Điều kiện lọc:
      * <ul>
-     *   <li>Sản phẩm phải khớp với {@code sanPhamId}.</li>
+     *   <li>Biến thể phải khớp với {@code bienTheId}.</li>
      *   <li>Chương trình khuyến mãi phải có loại {@code 'theo_san_pham'}.</li>
      *   <li>Chương trình khuyến mãi phải có trạng thái {@code 'dang_dien_ra'}.</li>
      * </ul>
      * <p>
      * Phương thức này được sử dụng trong {@code KhuyenMaiServiceImpl.tinhGiaSauKhuyenMai}
-     * để áp dụng giảm giá theo sản phẩm trong giỏ hàng/POS.
+     * để áp dụng giảm giá theo biến thể trong giỏ hàng/POS.
      *
-     * @param sanPhamId ID của sản phẩm cần kiểm tra.
-     * @return Danh sách phạm vi khuyến mãi theo sản phẩm đang áp dụng.
+     * @param bienTheId ID của biến thể cần kiểm tra.
+     * @return Danh sách phạm vi khuyến mãi theo biến thể đang áp dụng.
      */
     @Query("SELECT p FROM PhamViKhuyenMai p " +
-            "WHERE p.sanPham.id = :sanPhamId " +
+            "WHERE p.bienThe.id = :bienTheId " +
             "AND p.chuongTrinhKhuyenMai.trangThai = 'dang_dien_ra' " +
             "AND p.chuongTrinhKhuyenMai.loai = 'theo_san_pham'")
-    List<PhamViKhuyenMai> findActiveGiamGiaTrucTiepBySanPhamId(@Param("sanPhamId") Integer sanPhamId);
+    List<PhamViKhuyenMai> findActiveGiamGiaTrucTiepByBienTheId(@Param("bienTheId") Integer bienTheId);
 }

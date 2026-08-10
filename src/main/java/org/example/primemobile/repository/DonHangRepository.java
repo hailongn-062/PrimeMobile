@@ -26,17 +26,20 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
       WHERE (:trangThai IS NULL AND d.trangThai != 'don_hang_cho' OR d.trangThai = :trangThai)
         AND (:maDonHang  IS NULL OR d.maDonHang  LIKE CONCAT('%', :maDonHang,  '%'))
         AND (:soDienThoai IS NULL OR kh.soDienThoai LIKE CONCAT('%', :soDienThoai, '%'))
+        AND (:kenhBan IS NULL OR d.kenhBan = :kenhBan)
       """, countQuery = """
       SELECT COUNT(d) FROM DonHang d
       JOIN d.khachHang kh
       WHERE (:trangThai IS NULL AND d.trangThai != 'don_hang_cho' OR d.trangThai = :trangThai)
         AND (:maDonHang  IS NULL OR d.maDonHang  LIKE CONCAT('%', :maDonHang,  '%'))
         AND (:soDienThoai IS NULL OR kh.soDienThoai LIKE CONCAT('%', :soDienThoai, '%'))
+        AND (:kenhBan IS NULL OR d.kenhBan = :kenhBan)
       """)
   Page<DonHang> timKiemDonHang(
       @Param("trangThai") String trangThai,
       @Param("maDonHang") String maDonHang,
       @Param("soDienThoai") String soDienThoai,
+      @Param("kenhBan") String kenhBan,
       Pageable pageable);
 
   /**

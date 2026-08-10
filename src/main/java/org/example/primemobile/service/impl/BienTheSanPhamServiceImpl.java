@@ -189,10 +189,9 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
         validateThuocTinhTrungLap(existing.getSanPham().getId(), bienTheMoi, id);
 
         // Ghi đè các trường thông tin biến thể
-        if (bienTheMoi.getMauSac() != null && !bienTheMoi.getMauSac().isBlank()) {
-            existing.setMauSac(bienTheMoi.getMauSac().trim());
+        if (bienTheMoi.getMauSac() != null) {
+            existing.setMauSac(bienTheMoi.getMauSac());
         }
-        existing.setMaMauHex(bienTheMoi.getMaMauHex());
         if (bienTheMoi.getRamGb() != null)
             existing.setRamGb(bienTheMoi.getRamGb());
         if (bienTheMoi.getLuuTruGb() != null)
@@ -249,11 +248,8 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
         }
     }
 
-    /**
-     * Validate không cho phép tạo 2 biến thể có cùng RAM, ROM và Màu sắc trong cùng 1 sản phẩm.
-     */
     private void validateThuocTinhTrungLap(Integer sanPhamId, BienTheSanPham bienTheMoi, Integer excludeId) {
-        String mauSacMoi = bienTheMoi.getMauSac() != null ? bienTheMoi.getMauSac().trim().toLowerCase() : "";
+        Integer mauSacMoiId = bienTheMoi.getMauSac() != null ? bienTheMoi.getMauSac().getId() : null;
         Integer ramMoi = bienTheMoi.getRamGb() != null ? bienTheMoi.getRamGb() : 0;
         Integer romMoi = bienTheMoi.getLuuTruGb() != null ? bienTheMoi.getLuuTruGb() : 0;
 
@@ -263,13 +259,13 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
                 continue;
             }
             
-            String mauSacCu = v.getMauSac() != null ? v.getMauSac().trim().toLowerCase() : "";
+            Integer mauSacCuId = v.getMauSac() != null ? v.getMauSac().getId() : null;
             Integer ramCu = v.getRamGb() != null ? v.getRamGb() : 0;
             Integer romCu = v.getLuuTruGb() != null ? v.getLuuTruGb() : 0;
 
-            if (mauSacMoi.equals(mauSacCu) && ramMoi.equals(ramCu) && romMoi.equals(romCu)) {
+            if (mauSacMoiId != null && mauSacMoiId.equals(mauSacCuId) && ramMoi.equals(ramCu) && romMoi.equals(romCu)) {
                 throw new IllegalArgumentException("Biến thể với cấu hình " + (ramMoi > 0 ? ramMoi + "GB RAM - " : "") 
-                    + (romMoi > 0 ? romMoi + "GB ROM" : "") + " và màu sắc '" + v.getMauSac() + "' đã tồn tại.");
+                    + (romMoi > 0 ? romMoi + "GB ROM" : "") + " và màu sắc '" + v.getMauSacTen() + "' đã tồn tại.");
             }
         }
     }

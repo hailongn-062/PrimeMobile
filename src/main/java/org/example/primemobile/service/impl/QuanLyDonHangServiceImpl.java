@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -63,6 +64,8 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
         private final TonKhoRepository tonKhoRepository;
         private final NguoiDungRepository nguoiDungRepository;
         private final MayDienThoaiRepository mayDienThoaiRepository; // ✅ Thêm để kiểm tra IMEI
+        private final PhuongThucThanhToanRepository phuongThucThanhToanRepository;
+        private final ThanhToanRepository thanhToanRepository;
 
         // =========================================================================
         // 1. XEM DANH SÁCH & CHI TIẾT
@@ -76,16 +79,17 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
         @Override
         @Transactional(readOnly = true)
         public Page<DonHang> layDanhSachDonHang(String trangThai, String maDonHang,
-                        String soDienThoai, Pageable pageable) {
+                        String soDienThoai, String kenhBan, Pageable pageable) {
                 // Chuẩn hoá: chuỗi rỗng → null để query JPQL xử lý đúng điều kiện IS NULL
                 String tt = (trangThai != null && !trangThai.isBlank()) ? trangThai.trim() : null;
                 String ma = (maDonHang != null && !maDonHang.isBlank()) ? maDonHang.trim() : null;
                 String sdt = (soDienThoai != null && !soDienThoai.isBlank()) ? soDienThoai.trim() : null;
+                String kb = (kenhBan != null && !kenhBan.isBlank()) ? kenhBan.trim() : null;
 
-                log.debug("[QuanLyDonHang] Tìm kiếm — trangThai={}, maDonHang={}, soDienThoai={}, page={}",
-                                tt, ma, sdt, pageable.getPageNumber());
+                log.debug("[QuanLyDonHang] Tìm kiếm — trangThai={}, maDonHang={}, soDienThoai={}, kenhBan={}, page={}",
+                                tt, ma, sdt, kb, pageable.getPageNumber());
 
-                return donHangRepository.timKiemDonHang(tt, ma, sdt, pageable);
+                return donHangRepository.timKiemDonHang(tt, ma, sdt, kb, pageable);
         }
 
         /**
@@ -445,7 +449,7 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
          */
         @Override
         @Transactional
-        public DonHang capNhatTrangThai(Integer donHangId, String trangThaiMoi) {
+        public DonHang capNhatTrangThai(Integer donHangId, String trangThaiMoi, Integer phuongThucThanhToanId) {
 
                 log.info("[QuanLyDonHang] ▶ Cập nhật trạng thái — donHangId={}, trangThaiMoi={}",
                                 donHangId, trangThaiMoi);
@@ -471,6 +475,27 @@ public class QuanLyDonHangServiceImpl implements IQuanLyDonHangService {
                         if ("chua_thanh_toan".equals(donHang.getTrangThaiThanhToan())) {
                                 donHang.setTrangThaiThanhToan("da_thanh_toan");
                                 log.info("[QuanLyDonHang] Đã tự động chuyển trạng thái thanh toán sang 'da_thanh_toan' cho đơn [{}].", donHang.getMaDonHang());
+                        }
+
+                        // Lưu bản ghi ThanhToan nếu có phương thức
+                        if (phuongThucThanhToanId != null) {
+                                org.example.primemobile.entity.PhuongThucThanhToan pttt = phuongThucThanhToanRepository
+                                                .findById(phuongThucThanhToanId)
+                                                .orElse(null);
+                                if (pttt != null) {
+                                        BigDecimal soTien = donHang.getTongThanhToan() != null
+                                                ? donHang.getTongThanhToan()
+                                                : donHang.getTongTienHang();
+                                        org.example.primemobile.entity.ThanhToan thanhToan = org.example.primemobile.entity.ThanhToan.builder()
+                                                .donHang(donHang)
+                                                .phuongThucThanhToan(pttt)
+                                                .soTien(soTien)
+                                                .trangThai("thanh_cong")
+                                                .thoiGianThanhCong(java.time.LocalDateTime.now())
+                                                .build();
+                                        thanhToanRepository.save(thanhToan);
+                                        log.info("[QuanLyDonHang] Đã lưu bản ghi ThanhToan cho đơn [{}], phương thức ID = {}", donHang.getMaDonHang(), phuongThucThanhToanId);
+                                }
                         }
 
                         donHangRepository.save(donHang);

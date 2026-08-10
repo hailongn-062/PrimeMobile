@@ -71,7 +71,7 @@ public class AdminUIController {
         long sanPhamDangBan = sanPhamRepository.countByTrangThai("dang_ban");
         long donHangChoXacNhan = donHangRepository.countByTrangThai("cho_xac_nhan");
         
-        Page<DonHang> donHangGanDayPage = donHangRepository.timKiemDonHang(null, null, null, PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "ngayDat")));
+        Page<DonHang> donHangGanDayPage = donHangRepository.timKiemDonHang(null, null, null, null, PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "ngayDat")));
 
         model.addAttribute("donHangHomNay", donHangHomNay);
         model.addAttribute("doanhThuThangNay", doanhThuThangNay);

@@ -102,4 +102,30 @@ public class ChuongTrinhKhuyenMai {
     @OneToMany(mappedBy = "chuongTrinhKhuyenMai", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<PhamViKhuyenMai> phamViKhuyenMais = new ArrayList<>();
+
+    // -------------------------------------------------------------------------
+    // Helper Methods
+    // -------------------------------------------------------------------------
+    
+    /**
+     * TÃ­nh giÃ¡ sau giáº£m dá»±a trÃªn giÃ¡ gá»‘c vÃ  cÃ¡c quy táº¯c cá»§a CTKM (loáº¡i, giÃ¡ trá»‹, giáº£m tá»‘i Ä‘a).
+     * @param giaGoc GiÃ¡ bÃ¡n cá»§a sáº£n pháº©m/biáº¿n thá»ƒ
+     * @return GiÃ¡ sau khi Ä‘Ã£ trá»« khuyáº¿n mÃ£i
+     */
+    public BigDecimal tinhGiaSauKhuyenMai(BigDecimal giaGoc) {
+        if (giaGoc == null || this.giaTriUuDai == null) {
+            return giaGoc;
+        }
+
+        // Trong há»‡ thá»‘ng cá»§a PrimeMobile, giaTriUuDai luÃ´n lÃ  Pháº§n TrÄƒm (%).
+        BigDecimal mucGiam = giaGoc.multiply(this.giaTriUuDai).divide(BigDecimal.valueOf(100), 0, java.math.RoundingMode.HALF_UP);
+
+        // Náº¿u cÃ³ giá»›i háº¡n giáº£m tá»‘i Ä‘a thÃ¬ Ã¡p dá»¥ng
+        if (this.giamToiDa != null && mucGiam.compareTo(this.giamToiDa) > 0) {
+            mucGiam = this.giamToiDa;
+        }
+
+        BigDecimal giaSauGiam = giaGoc.subtract(mucGiam);
+        return giaSauGiam.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : giaSauGiam;
+    }
 }

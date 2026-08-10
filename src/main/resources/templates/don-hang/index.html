@@ -343,7 +343,7 @@
                 <div class="card-body bg-light rounded">
                     <div class="d-flex justify-content-between mb-2"><span class="text-muted">Tổng tiền chưa giảm</span><strong>${money(order.tongTienHang)}</strong></div>
                     <div class="d-flex justify-content-between mb-2"><span class="text-muted">Tiền giảm giá</span><strong class="text-success">-${money(order.tienGiamGia)}</strong></div>
-                    <div class="d-flex justify-content-between mb-2"><span class="text-muted">Phí vận chuyển</span><strong>${money(order.phiShip)}</strong></div>
+                    <div class="d-flex justify-content-between mb-2"><span class="text-muted">Phí vận chuyển</span><strong>${order.phiShip == 0 ? '<span class="text-success">Miễn phí</span>' : money(order.phiShip)}</strong></div>
                     <hr class="my-2">
                     <div class="d-flex justify-content-between align-items-end mt-2">
                         <span class="fw-bold">Thành tiền (sau giảm)</span>

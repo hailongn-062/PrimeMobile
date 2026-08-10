@@ -73,6 +73,15 @@ CREATE TABLE hang_san_xuat (
 );
 GO
 
+CREATE TABLE mau_sac (
+    id        INT           IDENTITY(1,1) PRIMARY KEY,
+    ten_mau   NVARCHAR(100) NOT NULL,
+    mo_ta     NVARCHAR(255) NULL,
+    ngay_tao  DATETIME2     NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT uq_ms_ten_mau UNIQUE (ten_mau)
+);
+GO
+
 CREATE TABLE san_pham (
                           id               INT           IDENTITY(1,1) PRIMARY KEY,
                           ma_san_pham      VARCHAR(50)   NOT NULL,
@@ -99,23 +108,23 @@ CREATE INDEX idx_sp_hang ON san_pham (hang_san_xuat_id, trang_thai);
 GO
 
 CREATE TABLE bien_the_san_pham (
-                                   id               INT           IDENTITY(1,1) PRIMARY KEY,
-                                   san_pham_id      INT           NOT NULL,
-                                   ma_sku           VARCHAR(100)  NOT NULL,
-                                   mau_sac          NVARCHAR(50)  NOT NULL,
-                                   ma_mau_hex       VARCHAR(7),
-                                   ram_gb           INT           NOT NULL,
-                                   luu_tru_gb       INT           NOT NULL,
-                                   loai_luu_tru     VARCHAR(20)   NOT NULL DEFAULT 'UFS',
-                                   gia_ban          DECIMAL(15,2) NOT NULL,
-                                   trong_luong_gram INT,
-                                   pin_mAh          INT,
-                                   trang_thai       VARCHAR(20)   NOT NULL DEFAULT 'con_hang',
-                                   ngay_tao         DATETIME2     NOT NULL DEFAULT GETDATE(),
-                                   updated_at       DATETIME2     NOT NULL DEFAULT GETDATE(),
-                                   CONSTRAINT uq_bt_ma_sku      UNIQUE (ma_sku),
-                                   CONSTRAINT chk_bt_trang_thai CHECK (trang_thai IN ('con_hang','het_hang','ngung_kinh_doanh')),
-                                   CONSTRAINT fk_bt_sp          FOREIGN KEY (san_pham_id) REFERENCES san_pham(id) ON DELETE CASCADE
+    id               INT           IDENTITY(1,1) PRIMARY KEY,
+    san_pham_id      INT           NOT NULL,
+    mau_sac_id       INT           NOT NULL,
+    ma_sku           VARCHAR(100)  NOT NULL,
+    ram_gb           INT           NOT NULL,
+    luu_tru_gb       INT           NOT NULL,
+    loai_luu_tru     VARCHAR(20)   NOT NULL DEFAULT 'UFS',
+    gia_ban          DECIMAL(15,2) NOT NULL,
+    trong_luong_gram INT,
+    pin_mAh          INT,
+    trang_thai       VARCHAR(20)   NOT NULL DEFAULT 'con_hang',
+    ngay_tao         DATETIME2     NOT NULL DEFAULT GETDATE(),
+    updated_at       DATETIME2     NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT uq_bt_ma_sku      UNIQUE (ma_sku),
+    CONSTRAINT chk_bt_trang_thai CHECK (trang_thai IN ('con_hang','het_hang','ngung_kinh_doanh')),
+    CONSTRAINT fk_bt_sp          FOREIGN KEY (san_pham_id) REFERENCES san_pham(id) ON DELETE CASCADE,
+    CONSTRAINT fk_bt_ms          FOREIGN KEY (mau_sac_id)  REFERENCES mau_sac(id)
 );
 GO
 
@@ -689,6 +698,23 @@ GO
 -- =====================================================
 -- 4. SẢN PHẨM & THÔNG SỐ (8 SẢN PHẨM)
 -- =====================================================
+
+-- =====================================================
+-- MÀU SẮC
+-- =====================================================
+INSERT INTO mau_sac (ten_mau, mo_ta) VALUES
+(N'Titan Tự Nhiên', N'Màu Titan Tự Nhiên'),
+(N'Titan Đen',      N'Màu Titan Đen'),
+(N'Xanh Dương',     N'Màu Xanh Dương'),
+(N'Xám Titan',      N'Màu Xám Titan'),
+(N'Vàng Titan',     N'Màu Vàng Titan'),
+(N'Xanh Icy',       N'Màu Xanh Icy'),
+(N'Đen',            N'Màu Đen'),
+(N'Tím',            N'Màu Tím'),
+(N'Xanh Sóng Biển', N'Màu Xanh Sóng Biển'),
+(N'Xanh Phát Sáng', N'Màu Xanh Phát Sáng');
+GO
+
 INSERT INTO san_pham (ma_san_pham, ten_san_pham, danh_muc_id, hang_san_xuat_id, mo_ta_ngan, nam_ra_mat) VALUES
 ('SP_IP15PM', N'iPhone 15 Pro Max', 1, 1, N'Khung Titanium siêu nhẹ, Camera 5x zoom quang học.', 2023),
 ('SP_IP14', N'iPhone 14', 1, 1, N'Màn hình Super Retina XDR, Pin bền bỉ.', 2022),
@@ -704,17 +730,17 @@ GO
 -- 5. BIẾN THỂ SẢN PHẨM (12 BIẾN THỂ)
 -- (Đã xóa cột gia_nhap và gia_khuyen_mai để khớp với DB chuẩn)
 -- =====================================================
-INSERT INTO bien_the_san_pham (san_pham_id, ma_sku, mau_sac, ma_mau_hex, ram_gb, luu_tru_gb, gia_ban, trang_thai) VALUES
-(1, 'IP15PM-256-NAT', N'Titan Tự Nhiên', '#B5B6B1', 8, 256, 29990000, 'con_hang'),
-(1, 'IP15PM-512-BLK', N'Titan Đen', '#4B4B4D', 8, 512, 35990000, 'con_hang'),
-(2, 'IP14-128-BLU', N'Xanh Dương', '#A3C6D3', 6, 128, 18490000, 'con_hang'),
-(3, 'S24U-256-GRY', N'Xám Titan', '#7D7A7D', 12, 256, 26990000, 'con_hang'),
-(3, 'S24U-512-YEL', N'Vàng Titan', '#E6DEB8', 12, 512, 31490000, 'con_hang'),
-(4, 'ZF5-256-BLU', N'Xanh Icy', '#A9BCD0', 12, 256, 34990000, 'con_hang'),
-(5, 'XM14-256-BLK', N'Đen', '#000000', 12, 256, 20990000, 'con_hang'),
-(6, 'RMN13-128-PUR', N'Tím', '#9D84B5', 8, 128, 7490000, 'het_hang'),
-(7, 'R11-256-GRN', N'Xanh Sóng Biển', '#7BA89D', 8, 256, 10990000, 'con_hang'),
-(8, 'A18-128-BLU', N'Xanh Phát Sáng', '#87CEEB', 4, 128, 3990000, 'con_hang');
+INSERT INTO bien_the_san_pham (san_pham_id, mau_sac_id, ma_sku, ram_gb, luu_tru_gb, gia_ban, trang_thai) VALUES
+(1, 1,  'IP15PM-256-NAT',  8,  256, 29990000, 'con_hang'),  -- iPhone 15 PM – Titan Tự Nhiên
+(1, 2,  'IP15PM-512-BLK',  8,  512, 35990000, 'con_hang'),  -- iPhone 15 PM – Titan Đen
+(2, 3,  'IP14-128-BLU',    6,  128, 18490000, 'con_hang'),  -- iPhone 14 – Xanh Dương
+(3, 4,  'S24U-256-GRY',   12,  256, 26990000, 'con_hang'),  -- S24 Ultra – Xám Titan
+(3, 5,  'S24U-512-YEL',   12,  512, 31490000, 'con_hang'),  -- S24 Ultra – Vàng Titan
+(4, 6,  'ZF5-256-BLU',    12,  256, 34990000, 'con_hang'),  -- Z Fold5 – Xanh Icy
+(5, 7,  'XM14-256-BLK',   12,  256, 20990000, 'con_hang'),  -- Xiaomi 14 – Đen
+(6, 8,  'RMN13-128-PUR',   8,  128,  7490000, 'het_hang'),  -- Redmi Note 13 – Tím
+(7, 9,  'R11-256-GRN',     8,  256, 10990000, 'con_hang'),  -- OPPO Reno11 – Xanh Sóng Biển
+(8, 10, 'A18-128-BLU',     4,  128,  3990000, 'con_hang');  -- OPPO A18 – Xanh Phát Sáng
 GO
 
 -- =====================================================
@@ -863,3 +889,16 @@ ALTER TABLE don_hang ADD CONSTRAINT chk_dh_trang_thai CHECK (
 
 
 ALTER TABLE dia_chi_khach_hang ADD ten_goi_nho NVARCHAR(255);
+
+-- Cú pháp dành cho SQL Server
+-- Xóa bảng cũ (do dữ liệu cũ map theo sản phẩm không còn dùng được, và để tránh lỗi constraint)
+DROP TABLE IF EXISTS pham_vi_khuyen_mai;
+
+-- Tạo lại bảng mới map theo bien_the_id
+CREATE TABLE pham_vi_khuyen_mai (
+                                    id INT IDENTITY(1,1) PRIMARY KEY,
+                                    ctkm_id INT NOT NULL,
+                                    bien_the_id INT NOT NULL,
+                                    CONSTRAINT fk_pvkm_ctkm FOREIGN KEY (ctkm_id) REFERENCES chuong_trinh_khuyen_mai(id) ON DELETE CASCADE,
+                                    CONSTRAINT fk_pvkm_bt FOREIGN KEY (bien_the_id) REFERENCES bien_the_san_pham(id)
+);

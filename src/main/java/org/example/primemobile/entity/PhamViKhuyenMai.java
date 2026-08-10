@@ -12,7 +12,7 @@ import lombok.*;
  * <p>
  * Quan há»‡:
  *  - N:1 vá»›i {@link ChuongTrinhKhuyenMai} (FK ctkm_id, ON DELETE CASCADE)
- *  - N:1 vá»›i {@link SanPham}              (FK san_pham_id, nullable)
+ *  - N:1 vá»›i {@link BienTheSanPham}      (FK bien_the_id, nullable)
  */
 @Entity
 @Table(name = "pham_vi_khuyen_mai")
@@ -40,14 +40,14 @@ public class PhamViKhuyenMai {
     private ChuongTrinhKhuyenMai chuongTrinhKhuyenMai;
 
     /**
-     * Sáº£n pháº©m cá»¥ thá»ƒ Ä‘Æ°á»£c Ã¡p dá»¥ng.
-     * NOT NULL â€“ má»—i báº£n ghi pháº¡m vi pháº£i gáº¯n vá»›i 1 sáº£n pháº©m cá»¥ thá»ƒ.
+     * Biến thể sản phẩm cụ thể được áp dụng.
+     * NOT NULL – mỗi bản ghi phạm vi phải gắn với 1 biến thể cụ thể.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
-            name = "san_pham_id",
+            name = "bien_the_id",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_pvkm_sp")
+            foreignKey = @ForeignKey(name = "fk_pvkm_bt")
     )
-    private SanPham sanPham;
+    private BienTheSanPham bienThe;
 }

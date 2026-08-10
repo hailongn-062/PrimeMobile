@@ -58,16 +58,13 @@ public class BienTheSanPham {
         @Column(name = "ma_sku", nullable = false, length = 100, unique = true)
         private String maSku;
 
-        /** TÃªn mÃ u sáº¯c (vÃ­ dá»¥: "Titan Äen", "Titan Tráº¯ng"). */
-        @Column(name = "mau_sac", nullable = false, length = 50)
-        private String mauSac;
-
         /**
-         * MÃ£ mÃ u hex Ä‘á»ƒ hiá»ƒn thá»‹ Ã´ mÃ u trÃªn UI (vÃ­ dá»¥: "#1C1C1E").
-         * Nullable náº¿u khÃ´ng cáº§n hiá»ƒn thá»‹ Ã´ mÃ u.
+         * Màu sắc của biến thể (thay thế cho text mau_sac và ma_mau_hex).
+         * NOT NULL.
          */
-        @Column(name = "ma_mau_hex", length = 7)
-        private String maMauHex;
+        @ManyToOne(fetch = FetchType.LAZY, optional = false)
+        @JoinColumn(name = "mau_sac_id", nullable = false, foreignKey = @ForeignKey(name = "fk_bt_ms"))
+        private MauSac mauSac;
 
         /** Dung lÆ°á»£ng RAM tÃ­nh báº±ng GB. */
         @Column(name = "ram_gb", nullable = false)
@@ -89,7 +86,7 @@ public class BienTheSanPham {
         @Column(name = "gia_ban", nullable = false, precision = 15, scale = 2)
         private BigDecimal giaBan;
 
-        /** Trá»ng lÆ°á»£ng mÃ¡y tÃ­nh báº±ng gram. */
+        /** Trá» ng lÆ°á»£ng mÃ¡y tÃ­nh báº±ng gram. */
         @Column(name = "trong_luong_gram")
         private Integer trongLuongGram;
 
@@ -108,18 +105,30 @@ public class BienTheSanPham {
         @Builder.Default
         private String trangThai = "con_hang";
 
-        /** Thá»i Ä‘iá»ƒm táº¡o báº£n ghi. */
+        /** Thá» i Ä‘iá»ƒm táº¡o báº£n ghi. */
         @Column(name = "ngay_tao", nullable = false, updatable = false)
         @Builder.Default
         private LocalDateTime ngayTao = LocalDateTime.now();
 
-        /** Thá»i Ä‘iá»ƒm cáº­p nháº­t báº£n ghi gáº§n nháº¥t. */
+        /** Thá» i Ä‘iá»ƒm cáº­p nháº­t báº£n ghi gáº§n nháº¥t. */
         @Column(name = "updated_at", nullable = false)
         @Builder.Default
         private LocalDateTime updatedAt = LocalDateTime.now();
 
+        @PreUpdate
+        protected void onUpdate() {
+                updatedAt = LocalDateTime.now();
+        }
+
+        /**
+         * Helper method để lấy tên màu sắc, tránh null pointer.
+         */
+        public String getMauSacTen() {
+                return this.mauSac != null ? this.mauSac.getTenMau() : "";
+        }
+
         // -------------------------------------------------------------------------
-        // Quan há»‡ 1-N: 1 BienTheSanPham â†’ nhiá»u MayDienThoai (IMEI tracking)
+        // Quan há»‡ 1-N: 1 BienTheSanPham â†’ nhiá» u MayDienThoai (IMEI tracking)
         // -------------------------------------------------------------------------
         @OneToMany(mappedBy = "bienTheSanPham", fetch = FetchType.LAZY)
         @Builder.Default

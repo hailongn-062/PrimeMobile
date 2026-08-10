@@ -46,27 +46,35 @@ public class QuanLyDonHangUIController {
     // =========================================================================
 
     @GetMapping
-    public String danhSach(
+    public String danhSachDonHang(
             @RequestParam(required = false) String trangThai,
             @RequestParam(required = false) String maDonHang,
             @RequestParam(required = false) String soDienThoai,
+            @RequestParam(required = false) String kenhBan,
             @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
             Model model,
             HttpSession session) {
 
         SessionUser currentUser = (SessionUser) session.getAttribute(SESSION_KEY);
-        log.info("[DonHangUI] Danh sách — user={}, trangThai={}, page={}",
+        log.info("[DonHangUI] Xem danh sách — user={}, trangThai={}, page={}",
                 currentUser != null ? currentUser.getEmail() : "?", trangThai, page);
 
+        // Mặc định sắp xếp mới nhất lên đầu
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayDat"));
+
         Page<DonHang> result = quanLyDonHangService.layDanhSachDonHang(
-                trangThai, maDonHang, soDienThoai,
-                PageRequest.of(page, PAGE_SIZE, Sort.by(Sort.Direction.DESC, "ngayDat"))
-        );
+                trangThai, maDonHang, soDienThoai, kenhBan, pageRequest);
+
+        // Map sang DTO để render view cho an toàn
+        List<DonHangChiTietDto> dtoList = result.getContent().stream()
+                .map(this::mapToDonHangChiTietDto)
+                .collect(Collectors.toList());
 
         model.addAttribute("currentUser",    currentUser);
         model.addAttribute("pageTitle",      "Quản lý Đơn hàng");
         model.addAttribute("activePage",     "don-hang");
-        model.addAttribute("danhSachDonHang", result.getContent());
+        model.addAttribute("danhSachDonHang", dtoList);
         model.addAttribute("tongSoTrang",    result.getTotalPages());
         model.addAttribute("trangHienTai",   result.getNumber());
         model.addAttribute("tongSoDonHang",  result.getTotalElements());
@@ -75,6 +83,7 @@ public class QuanLyDonHangUIController {
         model.addAttribute("filterTrangThai",   trangThai);
         model.addAttribute("filterMaDonHang",   maDonHang);
         model.addAttribute("filterSoDienThoai", soDienThoai);
+        model.addAttribute("filterKenhBan",     kenhBan);
 
         return "admin/don-hang/danh-sach";
     }
@@ -227,7 +236,7 @@ public class QuanLyDonHangUIController {
                 .thanhTien(chiTiet.getThanhTien())
                 .bienTheSanPhamId(bt != null ? bt.getId() : null)
                 .maSku(bt != null ? bt.getMaSku() : null)
-                .mauSac(bt != null ? bt.getMauSac() : null)
+                .mauSac(bt != null ? bt.getMauSacTen() : null)
                 .ramGb(bt != null ? bt.getRamGb() : null)
                 .luuTruGb(bt != null ? bt.getLuuTruGb() : null)
                 .tenSanPham(sp != null ? sp.getTenSanPham() : null)

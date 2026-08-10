@@ -27,17 +27,16 @@ import java.util.List;
 public interface IQuanLyDonHangService {
 
     /**
-     * Lấy danh sách đơn hàng có phân trang, hỗ trợ lọc nhiều tiêu chí.
+     * Lấy danh sách đơn hàng có phân trang và hỗ trợ lọc.
      *
-     * @param trangThai   Lọc theo trạng thái đơn (NULL = tất cả).
-     *                    Giá trị hợp lệ: "cho_xac_nhan" | "da_xac_nhan" | "dang_giao" | "da_hoan_thanh" | "da_huy"
-     * @param maDonHang   Tìm LIKE theo mã đơn hàng (NULL = bỏ qua).
-     * @param soDienThoai Tìm LIKE theo SĐT khách hàng (NULL = bỏ qua).
-     * @param pageable    Thông tin phân trang và sắp xếp.
-     * @return Trang kết quả {@link DonHang}.
+     * @param trangThai   Trạng thái đơn hàng (null để lấy tất cả).
+     * @param maDonHang   Mã đơn hàng (tìm kiếm gần đúng).
+     * @param soDienThoai Số điện thoại khách hàng (tìm kiếm gần đúng).
+     * @param kenhBan     Kênh bán hàng (online, tai_quay).
+     * @param pageable    Tham số phân trang (page, size, sort).
+     * @return Page chứa danh sách {@link DonHang}.
      */
-    Page<DonHang> layDanhSachDonHang(String trangThai, String maDonHang,
-                                     String soDienThoai, Pageable pageable);
+    Page<DonHang> layDanhSachDonHang(String trangThai, String maDonHang, String soDienThoai, String kenhBan, Pageable pageable);
 
     /**
      * Lấy chi tiết 1 đơn hàng kèm eager-load danh sách sản phẩm bên trong.
@@ -105,13 +104,14 @@ public interface IQuanLyDonHangService {
      * Tạm hoãn logic cộng điểm thưởng và cộng tong_chi_tieu.
      * Không viết code xử lý điểm ở đây cho đến khi có lệnh mới.
      *
-     * @param donHangId ID đơn hàng cần cập nhật trạng thái.
+     * @param donHangId   ID đơn hàng cần cập nhật.
      * @param trangThaiMoi Trạng thái mới muốn chuyển sang ("dang_giao" hoặc "da_hoan_thanh").
+     * @param phuongThucThanhToanId ID phương thức thanh toán (tùy chọn).
      * @return {@link DonHang} sau khi cập nhật.
-     * @throws IllegalArgumentException nếu chuyển trạng thái không hợp lệ theo luồng.
+     * @throws IllegalArgumentException      nếu luồng chuyển trạng thái không hợp lệ.
      * @throws jakarta.persistence.EntityNotFoundException nếu đơn hàng không tồn tại.
      */
-    DonHang capNhatTrangThai(Integer donHangId, String trangThaiMoi);
+    DonHang capNhatTrangThai(Integer donHangId, String trangThaiMoi, Integer phuongThucThanhToanId);
 
     /**
      * Hủy đơn hàng kèm hoàn kho nếu cần (system_rules.md §2.2.7).

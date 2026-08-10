@@ -40,16 +40,16 @@
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Đơn hàng tối thiểu (đ)</label>
                             <div class="input-group">
-                                <input type="number" class="form-control" th:field="*{donHangToiThieu}"
-                                       min="0" step="1000" placeholder="VD: 5000000" />
+                                <input type="text" inputmode="numeric" data-price-input="true" class="form-control" th:field="*{donHangToiThieu}"
+                                       placeholder="VD: 5000000" />
                                 <span class="input-group-text">đ</span>
                             </div>
                         </div>
                         <div class="col-md-6 mt-3">
                             <label class="form-label fw-semibold">Giảm tối đa (đ)</label>
                             <div class="input-group">
-                                <input type="number" class="form-control" th:field="*{giamToiDa}"
-                                       min="0" step="1000" placeholder="Để trống = không giới hạn" />
+                                <input type="text" inputmode="numeric" data-price-input="true" class="form-control" th:field="*{giamToiDa}"
+                                       placeholder="Để trống = không giới hạn" />
                                 <span class="input-group-text">đ</span>
                             </div>
                             <div class="form-text">Để trống nếu không giới hạn mức giảm.</div>

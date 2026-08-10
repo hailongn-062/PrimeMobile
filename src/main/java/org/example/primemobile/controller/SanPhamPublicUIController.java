@@ -152,7 +152,7 @@ public class SanPhamPublicUIController {
                     if (luuTruGbs != null && !luuTruGbs.isEmpty() && !luuTruGbs.contains(bt.getLuuTruGb())) match = false;
                     
                     // Color filter
-                    if (mauSacs != null && !mauSacs.isEmpty() && !mauSacs.contains(bt.getMauSac())) match = false;
+                    if (mauSacs != null && !mauSacs.isEmpty() && !mauSacs.contains(bt.getMauSacTen())) match = false;
 
                     if (match) {
                         hasMatchingVariant = true;
@@ -256,6 +256,10 @@ public class SanPhamPublicUIController {
     @GetMapping("/san-pham/{id}")
     public String chiTietSanPham(@PathVariable Integer id, Model model) {
         SanPham sanPham = sanPhamService.layTheoId(id);
+        if ("ngung_ban".equals(sanPham.getTrangThai())) {
+            model.addAttribute("pageTitle", "Sản phẩm ngừng kinh doanh");
+            return "san-pham/ngung-ban";
+        }
         if (!"dang_ban".equals(sanPham.getTrangThai())) {
             throw new EntityNotFoundException("Sản phẩm không còn được kinh doanh.");
         }
@@ -287,8 +291,7 @@ public class SanPhamPublicUIController {
             String ramStr = bt.getRamGb() != null ? bt.getRamGb() + "GB" : "0GB";
             String romStr = formatDungLuong(bt.getLuuTruGb());
             map.put("versionKey", ramStr + " - " + romStr);
-            map.put("mauSac", bt.getMauSac());
-            map.put("maMauHex", bt.getMaMauHex() != null ? bt.getMaMauHex() : "#e5e7eb");
+            map.put("mauSac", bt.getMauSacTen());
             map.put("giaBan", bt.getGiaBan());
             map.put("giaSauKM", giaSauKhuyenMaiTheoBienThe.getOrDefault(bt.getId(), bt.getGiaBan()));
             map.put("coTheBan", soLuongCoTheBanTheoBienThe.getOrDefault(bt.getId(), 0));

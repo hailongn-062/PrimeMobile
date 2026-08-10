@@ -76,6 +76,7 @@ public class QuanLyDonHangController {
             @RequestParam(required = false) String trangThai,
             @RequestParam(required = false) String maDonHang,
             @RequestParam(required = false) String soDienThoai,
+            @RequestParam(required = false) String kenhBan,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "20") int size,
             @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
@@ -87,7 +88,7 @@ public class QuanLyDonHangController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayDat"));
 
         Page<DonHang> ketQua = quanLyDonHangService.layDanhSachDonHang(
-                trangThai, maDonHang, soDienThoai, pageable);
+                trangThai, maDonHang, soDienThoai, kenhBan, pageable);
 
         // Build response wrapper với metadata phân trang
         Map<String, Object> response = new LinkedHashMap<>();
@@ -303,12 +304,13 @@ public class QuanLyDonHangController {
     public ResponseEntity<?> capNhatTrangThai(
             @PathVariable  Integer id,
             @RequestParam  String  trangThaiMoi,
+            @RequestParam(required = false) Integer phuongThucThanhToanId,
             @SessionAttribute("CURRENT_ADMIN") SessionUser sessionUser) {
 
         log.info("[QuanLyDonHang] ▶ Cập nhật trạng thái — donHangId={}, trangThaiMoi={}, nhanVienId={}",
                 id, trangThaiMoi, sessionUser.getId());
         try {
-            DonHang donHang = quanLyDonHangService.capNhatTrangThai(id, trangThaiMoi);
+            DonHang donHang = quanLyDonHangService.capNhatTrangThai(id, trangThaiMoi, phuongThucThanhToanId);
             log.info("[QuanLyDonHang] ✅ Cập nhật thành công — maDonHang={}, trangThai={}",
                     donHang.getMaDonHang(), donHang.getTrangThai());
             return ResponseEntity.ok(buildSuccessResponse(
@@ -571,7 +573,7 @@ public class QuanLyDonHangController {
                 .thanhTien(chiTiet.getThanhTien())
                 .bienTheSanPhamId(bt != null ? bt.getId() : null)
                 .maSku(bt != null ? bt.getMaSku() : null)
-                .mauSac(bt != null ? bt.getMauSac() : null)
+                .mauSac(bt != null ? bt.getMauSacTen() : null)
                 .ramGb(bt != null ? bt.getRamGb() : null)
                 .luuTruGb(bt != null ? bt.getLuuTruGb() : null)
                 .tenSanPham(sp != null ? sp.getTenSanPham() : null)

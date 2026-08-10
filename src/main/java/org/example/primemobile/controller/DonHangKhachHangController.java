@@ -401,7 +401,7 @@ public class DonHangKhachHangController {
         r.put("bienTheId", bienThe != null ? bienThe.getId() : null);
         r.put("sanPhamId", sanPham != null ? sanPham.getId() : null);
         r.put("tenSanPham", sanPham != null ? sanPham.getTenSanPham() : "Sản phẩm");
-        r.put("mauSac", bienThe != null ? bienThe.getMauSac() : null);
+        r.put("mauSac", bienThe != null ? bienThe.getMauSacTen() : null);
         r.put("ramGb", bienThe != null ? bienThe.getRamGb() : null);
         r.put("luuTruGb", bienThe != null ? bienThe.getLuuTruGb() : null);
         r.put("soLuong", chiTiet.getSoLuong());
@@ -454,7 +454,7 @@ public class DonHangKhachHangController {
         r.put("sanPhamId", sanPham != null ? sanPham.getId() : null);
         r.put("tenSanPham", sanPham != null ? sanPham.getTenSanPham() : "Sản phẩm");
         r.put("maSku", bienThe != null ? bienThe.getMaSku() : null);
-        r.put("mauSac", bienThe != null ? bienThe.getMauSac() : null);
+        r.put("mauSac", bienThe != null ? bienThe.getMauSacTen() : null);
         r.put("ramGb", bienThe != null ? bienThe.getRamGb() : null);
         r.put("luuTruGb", bienThe != null ? bienThe.getLuuTruGb() : null);
         r.put("soLuong", chiTiet.getSoLuong());

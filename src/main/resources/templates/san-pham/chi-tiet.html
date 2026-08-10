@@ -387,8 +387,8 @@
         
         activeVariants.forEach(v => {
             if (!colorMap.has(v.mauSac)) {
-                colorMap.set(v.mauSac, v.maMauHex);
-                allColors.push({ name: v.mauSac, hex: v.maMauHex });
+                colorMap.set(v.mauSac, true);
+                allColors.push({ name: v.mauSac });
             }
         });
 

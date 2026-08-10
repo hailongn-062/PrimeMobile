@@ -207,9 +207,8 @@ public class PosController {
             // (Đã loại bỏ việc gọi tiepTucDonHangCho vì thanhToanDonHang nay đã chấp nhận trực tiếp don_hang_cho)
 
             // ── Bước 3: Hoàn tất thanh toán, trừ tồn kho, lưu lịch sử ─────
-            // Mặc định phương thức thanh toán ID = 1 (Tiền mặt) vì POS cũ chưa truyền lên.
-            // Nếu có PTTT từ request, cần mở rộng PosThanhToanRequest.
-            Integer phuongThucThanhToanId = 1; 
+            // Lấy ID PTTT từ request, nếu null thì mặc định 1 (Tiền mặt)
+            Integer phuongThucThanhToanId = req.getPhuongThucThanhToanId() != null ? req.getPhuongThucThanhToanId() : 1; 
             donHang = banHangOfflineService.thanhToanDonHang(donHang.getId(), phuongThucThanhToanId);
 
             BigDecimal tienGiam = req.getTienGiam() != null ? req.getTienGiam() : BigDecimal.ZERO;
@@ -312,17 +311,20 @@ public class PosController {
         BigDecimal giaGoc = bt.getGiaBan(); // Giá bán gốc
         BigDecimal giaSauKM = khuyenMaiService.tinhGiaSauKhuyenMai(bt.getId(), BigDecimal.ZERO);
 
+        // Tính số lượng tồn thực tế (chỉ đếm IMEI có trạng thái 'trong_kho')
+        int soLuongThucTe = (int) mayDienThoaiRepository.countTrongKhoByBienThe(bt.getId());
+
         return BienThePosDto.builder()
                 .sanPhamId(sp.getId())
                 .bienTheId(bt.getId())
                 .tenSanPham(sp.getTenSanPham())
                 .maSku(bt.getMaSku())
-                .mauSac(bt.getMauSac())
+                .mauSac(bt.getMauSacTen())
                 .ramGb(bt.getRamGb())
                 .luuTruGb(bt.getLuuTruGb())
                 .giaGoc(giaGoc)          // Giá gốc (không khuyến mãi)
                 .giaBan(giaSauKM)        // Giá sau khuyến mãi
-                .tonKho(tonKho.getSoLuong())
+                .tonKho(soLuongThucTe)
                 .anhDaiDien(anhDaiDien)
                 .build();
     }

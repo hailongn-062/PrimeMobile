@@ -19,6 +19,9 @@
                     <a href="/admin/hang-san-xuat" class="btn btn-outline-secondary btn-sm me-2">
                         <i class="fa fa-industry"></i> Hãng SX
                     </a>
+                    <a href="/admin/mau-sac" class="btn btn-outline-secondary btn-sm me-2">
+                        <i class="fa fa-palette"></i> Màu sắc
+                    </a>
                     <a href="/admin/san-pham/form" class="btn btn-primary btn-sm">
                         <i class="fa fa-plus"></i> Thêm Sản Phẩm
                     </a>
@@ -80,6 +83,12 @@
                                 <a th:href="@{/admin/san-pham/form(id=${sp.id})}" class="btn btn-sm btn-outline-primary ms-1">
                                     <i class="fa fa-edit"></i> Sửa
                                 </a>
+                                <button th:if="${sp.trangThai == 'dang_ban'}" class="btn btn-sm btn-outline-danger ms-1" th:onclick="'toggleStatus(' + ${sp.id} + ', \'ngung_ban\')'">
+                                    <i class="fa fa-ban"></i> Ngừng bán
+                                </button>
+                                <button th:if="${sp.trangThai == 'ngung_ban'}" class="btn btn-sm btn-outline-success ms-1" th:onclick="'toggleStatus(' + ${sp.id} + ', \'dang_ban\')'">
+                                    <i class="fa fa-check-circle"></i> Mở bán
+                                </button>
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(sanPhamPage.content)}">
@@ -107,5 +116,24 @@
     </main>
 
     <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+    <script>
+        async function toggleStatus(spId, newStatus) {
+            const actionText = newStatus === 'ngung_ban' ? 'Ngừng kinh doanh' : 'Mở bán lại';
+            if (!confirm(`Bạn có chắc chắn muốn ${actionText} sản phẩm này?`)) return;
+            try {
+                const res = await fetch(`/api/admin/san-pham/${spId}/trang-thai?trangThai=${newStatus}`, {
+                    method: 'PATCH'
+                });
+                if (res.ok) {
+                    window.location.reload();
+                } else {
+                    const err = await res.json();
+                    alert(err.message || 'Có lỗi xảy ra');
+                }
+            } catch (e) {
+                alert('Không thể kết nối đến máy chủ');
+            }
+        }
+    </script>
 </body>
 </html>
