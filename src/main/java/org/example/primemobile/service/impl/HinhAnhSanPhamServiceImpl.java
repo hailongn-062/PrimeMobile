@@ -68,4 +68,27 @@ public class HinhAnhSanPhamServiceImpl implements IHinhAnhSanPhamService {
         hinhAnh.setLaAnhChinh(true);
         hinhAnhSanPhamRepository.save(hinhAnh);
     }
+
+    @Override
+    @Transactional
+    public void sapXepThuTu(List<Integer> ids) {
+        if (ids == null || ids.isEmpty()) return;
+        
+        Integer bienTheId = null;
+        for (int i = 0; i < ids.size(); i++) {
+            Integer id = ids.get(i);
+            HinhAnhSanPham hinhAnh = hinhAnhSanPhamRepository.findById(id)
+                    .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy ảnh: " + id));
+            
+            if (bienTheId == null) {
+                bienTheId = hinhAnh.getBienTheSanPham().getId();
+            } else if (!bienTheId.equals(hinhAnh.getBienTheSanPham().getId())) {
+                throw new IllegalArgumentException("Các ảnh không thuộc cùng một biến thể");
+            }
+            
+            hinhAnh.setThuTu(i);
+            hinhAnh.setLaAnhChinh(i == 0); // Ảnh đầu tiên là ảnh chính
+            hinhAnhSanPhamRepository.save(hinhAnh);
+        }
+    }
 }

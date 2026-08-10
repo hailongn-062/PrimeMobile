@@ -191,9 +191,56 @@ public class QuanLySanPhamUIController {
         return "redirect:/admin/san-pham/bien-the/" + bienTheId + "/hinh-anh";
     }
 
-    @GetMapping("/bien-the/hinh-anh/set-primary/{id}")
-    public String setPrimaryHinhAnh(@PathVariable("id") Integer id, @RequestParam("bienTheId") Integer bienTheId) {
-        hinhAnhSanPhamService.datLamAnhChinh(id);
-        return "redirect:/admin/san-pham/bien-the/" + bienTheId + "/hinh-anh";
+    @PostMapping("/bien-the/hinh-anh/reorder")
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<?> reorderHinhAnh(@RequestBody java.util.List<Integer> ids) {
+        try {
+            hinhAnhSanPhamService.sapXepThuTu(ids);
+            return org.springframework.http.ResponseEntity.ok().body(java.util.Map.of("success", true));
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/api/bien-the/{id}/hinh-anh")
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<?> getHinhAnhs(@PathVariable("id") Integer id) {
+        java.util.List<HinhAnhSanPham> list = hinhAnhSanPhamService.layTheoBienThe(id);
+        java.util.List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
+        for (HinhAnhSanPham img : list) {
+            result.add(java.util.Map.of(
+                "id", img.getId(),
+                "duongDan", img.getDuongDan(),
+                "laAnhChinh", img.getLaAnhChinh()
+            ));
+        }
+        return org.springframework.http.ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/api/bien-the/hinh-anh/upload")
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<?> uploadHinhAnh(@RequestParam("bienTheId") Integer bienTheId, 
+                                                                    @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            String fileUrl = fileStorageService.storeFile(file);
+            HinhAnhSanPham hinhAnh = new HinhAnhSanPham();
+            hinhAnh.setDuongDan(fileUrl);
+            hinhAnh.setLaAnhChinh(false);
+            hinhAnhSanPhamService.themAnh(bienTheId, hinhAnh);
+            return org.springframework.http.ResponseEntity.ok(java.util.Map.of("success", true));
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/api/bien-the/hinh-anh/{id}")
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<?> deleteHinhAnhAjax(@PathVariable("id") Integer id) {
+        try {
+            hinhAnhSanPhamService.xoaAnh(id);
+            return org.springframework.http.ResponseEntity.ok(java.util.Map.of("success", true));
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", e.getMessage()));
+        }
     }
 }

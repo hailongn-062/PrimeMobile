@@ -130,11 +130,16 @@ public class BienTheSanPhamController {
                                      @RequestBody BienTheSanPham bienTheSanPham) {
         log.info("[BienTheSanPhamController] Cập nhật biến thể — id={}", id);
         try {
-            return ResponseEntity.ok(bienTheSanPhamService.capNhat(id, bienTheSanPham));
+            BienTheSanPham updated = bienTheSanPhamService.capNhat(id, bienTheSanPham);
+            return ResponseEntity.ok(java.util.Map.of(
+                    "id", updated.getId(),
+                    "maSku", updated.getMaSku(),
+                    "message", "Cập nhật thành công"
+            ));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
         }
     }
 
@@ -157,11 +162,16 @@ public class BienTheSanPhamController {
                                           @RequestParam String trangThai) {
         log.info("[BienTheSanPhamController] Đổi trạng thái biến thể — id={}, trangThai={}", id, trangThai);
         try {
-            return ResponseEntity.ok(bienTheSanPhamService.doiTrangThai(id, trangThai));
+            BienTheSanPham updated = bienTheSanPhamService.doiTrangThai(id, trangThai);
+            return ResponseEntity.ok(java.util.Map.of(
+                    "id", updated.getId(),
+                    "trangThai", updated.getTrangThai(),
+                    "message", "Đổi trạng thái thành công"
+            ));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
         }
     }
 

@@ -3,6 +3,12 @@
 <head>
     <title th:text="${pageTitle} + ' - PrimeMobile'">Quản lý Ảnh Biến Thể</title>
     <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        .sortable-ghost { opacity: 0.4; background-color: #f8f9fa; }
+        .image-card-container { cursor: grab; }
+        .image-card-container:active { cursor: grabbing; }
+    </style>
 </head>
 <body>
     <th:block th:replace="~{layout/admin-layout :: sidebar}"></th:block>
@@ -64,10 +70,16 @@
                 </form>
 
                 <!-- Grid hiển thị ảnh -->
-                <h6 class="fw-bold mb-3 mt-4">Danh sách Hình Ảnh</h6>
-                <div class="row g-3">
-                    <div class="col-md-3 col-sm-4 col-6" th:each="anh : ${hinhAnhs}">
-                        <div class="card h-100 position-relative shadow-sm" th:classappend="${anh.laAnhChinh} ? 'border-primary border-2' : ''">
+                <!-- Grid hiển thị ảnh -->
+                <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+                    <h6 class="fw-bold mb-0">Danh sách Hình Ảnh (Kéo thả để sắp xếp, ảnh đầu tiên là ảnh chính)</h6>
+                    <button class="btn btn-sm btn-success d-none" id="btnSaveOrder" onclick="saveOrder()">
+                        <i class="fa fa-save"></i> Lưu Thứ Tự
+                    </button>
+                </div>
+                <div class="row g-3" id="imageGrid">
+                    <div class="col-md-3 col-sm-4 col-6 image-card-container" th:each="anh, iterStat : ${hinhAnhs}" th:attr="data-id=${anh.id}">
+                        <div class="card h-100 position-relative shadow-sm" th:classappend="${iterStat.index == 0} ? 'border-primary border-2' : ''">
                             <img th:src="${anh.duongDan}" class="card-img-top p-2" style="height: 150px; object-fit: contain;" alt="Ảnh sản phẩm"
                                  referrerpolicy="no-referrer"
                                  onerror="this.style.display='none';this.nextElementSibling.classList.remove('d-none');">
@@ -75,17 +87,14 @@
                                 <i class="fa fa-mobile-alt fa-3x opacity-50"></i>
                             </div>
                             
-                            <div th:if="${anh.laAnhChinh}" class="position-absolute top-0 start-0 badge bg-primary m-1">
+                            <div th:if="${iterStat.index == 0}" class="position-absolute top-0 start-0 badge bg-primary m-1 primary-badge">
+                                Ảnh chính
+                            </div>
+                            <div th:if="${iterStat.index != 0}" class="position-absolute top-0 start-0 badge bg-primary m-1 primary-badge d-none">
                                 Ảnh chính
                             </div>
 
-                            <div class="card-footer bg-white p-2 d-flex justify-content-between align-items-center border-top-0">
-                                <a th:if="${!anh.laAnhChinh}" th:href="@{/admin/san-pham/bien-the/hinh-anh/set-primary/{id}(id=${anh.id}, bienTheId=${bienThe.id})}" 
-                                   class="btn btn-xs btn-outline-success py-0 px-1" title="Đặt làm ảnh chính" style="font-size: 0.75rem;">
-                                    <i class="fa fa-star"></i> Đặt chính
-                                </a>
-                                <span th:if="${anh.laAnhChinh}"></span> <!-- Spacer -->
-                                
+                            <div class="card-footer bg-white p-2 d-flex justify-content-end align-items-center border-top-0">
                                 <a th:href="@{/admin/san-pham/bien-the/hinh-anh/delete/{id}(id=${anh.id}, bienTheId=${bienThe.id})}" 
                                    class="text-danger" title="Xóa ảnh"
                                    onclick="return confirm('Bạn có chắc muốn xóa ảnh này?');">
@@ -95,7 +104,7 @@
                         </div>
                     </div>
                     
-                    <div th:if="${#lists.isEmpty(hinhAnhs)}" class="col-12 text-center text-muted py-4 border rounded bg-light">
+                    <div th:if="${#lists.isEmpty(hinhAnhs)}" class="col-12 text-center text-muted py-4 border rounded bg-light no-images-msg">
                         Chưa có hình ảnh nào cho biến thể này.
                     </div>
                 </div>
@@ -122,6 +131,65 @@
                 previewContainer.classList.add('d-none');
             }
         });
+
+        // Initialize Sortable
+        const imageGrid = document.getElementById('imageGrid');
+        if (imageGrid && !imageGrid.querySelector('.no-images-msg')) {
+            new Sortable(imageGrid, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onEnd: function () {
+                    // Update UI immediately for primary image indicator
+                    updatePrimaryImageUI();
+                    // Show save button
+                    document.getElementById('btnSaveOrder').classList.remove('d-none');
+                }
+            });
+        }
+
+        function updatePrimaryImageUI() {
+            const cards = imageGrid.querySelectorAll('.image-card-container .card');
+            cards.forEach((card, index) => {
+                const badge = card.querySelector('.primary-badge');
+                if (index === 0) {
+                    card.classList.add('border-primary', 'border-2');
+                    if (badge) badge.classList.remove('d-none');
+                } else {
+                    card.classList.remove('border-primary', 'border-2');
+                    if (badge) badge.classList.add('d-none');
+                }
+            });
+        }
+
+        function saveOrder() {
+            const items = imageGrid.querySelectorAll('.image-card-container');
+            const ids = Array.from(items).map(item => parseInt(item.getAttribute('data-id')));
+            
+            const btn = document.getElementById('btnSaveOrder');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang lưu...';
+            btn.disabled = true;
+
+            fetch('/admin/san-pham/bien-the/hinh-anh/reorder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(ids)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    alert('Lưu thứ tự thành công!');
+                    btn.classList.add('d-none');
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            })
+            .catch(err => alert('Lỗi kết nối: ' + err))
+            .finally(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
     </script>
 </body>
 </html>

@@ -50,6 +50,18 @@
         .pm-color-name { font-size: 0.9rem; font-weight: 600; color: #0f172a; }
         .pm-color-price { font-size: 0.8rem; font-weight: 500; color: #64748b; }
         .pm-option-btn.active .pm-color-name, .pm-option-btn.active .pm-color-price { color: #ea580c; }
+        
+        /* Gallery Styles */
+        .gallery-main { position: relative; width: 100%; border-radius: 8px; overflow: hidden; background: #f9fbff; display: flex; align-items: center; justify-content: center; height: 360px; }
+        .gallery-main img { max-width: 100%; max-height: 330px; object-fit: contain; }
+        .gallery-arrow { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10; transition: all 0.2s; }
+        .gallery-arrow:hover { background: white; box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .gallery-arrow-prev { left: 10px; }
+        .gallery-arrow-next { right: 10px; }
+        .gallery-thumbnails { display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: thin; }
+        .gallery-thumb { width: 60px; height: 60px; border-radius: 6px; border: 2px solid transparent; cursor: pointer; padding: 2px; background: #f8fafc; flex-shrink: 0; }
+        .gallery-thumb img { width: 100%; height: 100%; object-fit: contain; border-radius: 4px; }
+        .gallery-thumb.active { border-color: var(--pm-primary); }
     </style>
 </head>
 <body>
@@ -65,22 +77,29 @@
     <section class="pm-panel p-3 p-lg-4 mb-4">
         <div class="row g-4">
             <div class="col-lg-6">
-                <div class="pm-main-image">
-                    <img th:if="${bienTheSanPhams != null and !#lists.isEmpty(bienTheSanPhams) and bienTheSanPhams[0].hinhAnhSanPhams != null and !#lists.isEmpty(bienTheSanPhams[0].hinhAnhSanPhams)}"
-                         th:src="${bienTheSanPhams[0].hinhAnhSanPhams[0].duongDan}"
-                         th:alt="${sanPham.tenSanPham}"
-                         th:attr="data-brand=${sanPham.hangSanXuat != null ? sanPham.hangSanXuat.tenHang : ''}"
-                         referrerpolicy="no-referrer"
-                         onerror="replaceProductImage(this)">
-                    <div th:if="${bienTheSanPhams != null and !#lists.isEmpty(bienTheSanPhams) and bienTheSanPhams[0].hinhAnhSanPhams != null and !#lists.isEmpty(bienTheSanPhams[0].hinhAnhSanPhams)}"
-                         class="pm-image-fallback d-none">
-                        <i class="fa fa-mobile-alt"></i>
-                        <strong th:text="${sanPham.hangSanXuat != null ? sanPham.hangSanXuat.tenHang : 'PrimeMobile'}">PrimeMobile</strong>
+                <!-- Gallery Section -->
+                <div class="gallery-container">
+                    <div class="gallery-main" id="gallery-main">
+                        <button class="gallery-arrow gallery-arrow-prev" onclick="prevImage()"><i class="fa fa-chevron-left"></i></button>
+                        <img id="main-product-image" 
+                             th:classappend="${bienTheSanPhams == null or #lists.isEmpty(bienTheSanPhams) or bienTheSanPhams[0].hinhAnhSanPhams == null or #lists.isEmpty(bienTheSanPhams[0].hinhAnhSanPhams)} ? 'd-none' : ''"
+                             th:src="${bienTheSanPhams != null and !#lists.isEmpty(bienTheSanPhams) and bienTheSanPhams[0].hinhAnhSanPhams != null and !#lists.isEmpty(bienTheSanPhams[0].hinhAnhSanPhams) ? bienTheSanPhams[0].hinhAnhSanPhams[0].duongDan : ''}"
+                             th:alt="${sanPham.tenSanPham}"
+                             th:attr="data-brand=${sanPham.hangSanXuat != null ? sanPham.hangSanXuat.tenHang : ''}"
+                             referrerpolicy="no-referrer"
+                             onerror="replaceProductImage(this)">
+                        
+                        <!-- Fallback when no image -->
+                        <div id="main-image-fallback" class="pm-image-fallback" 
+                             th:classappend="${bienTheSanPhams != null and !#lists.isEmpty(bienTheSanPhams) and bienTheSanPhams[0].hinhAnhSanPhams != null and !#lists.isEmpty(bienTheSanPhams[0].hinhAnhSanPhams)} ? 'd-none' : ''">
+                            <i class="fa fa-mobile-alt"></i>
+                            <strong th:text="${sanPham.hangSanXuat != null ? sanPham.hangSanXuat.tenHang : 'PrimeMobile'}">PrimeMobile</strong>
+                        </div>
+                        <button class="gallery-arrow gallery-arrow-next" onclick="nextImage()"><i class="fa fa-chevron-right"></i></button>
                     </div>
-                    <div th:unless="${bienTheSanPhams != null and !#lists.isEmpty(bienTheSanPhams) and bienTheSanPhams[0].hinhAnhSanPhams != null and !#lists.isEmpty(bienTheSanPhams[0].hinhAnhSanPhams)}"
-                         class="pm-image-fallback">
-                        <i class="fa fa-mobile-alt"></i>
-                        <strong th:text="${sanPham.hangSanXuat != null ? sanPham.hangSanXuat.tenHang : 'PrimeMobile'}">PrimeMobile</strong>
+                    
+                    <div class="gallery-thumbnails" id="gallery-thumbnails">
+                        <!-- Render by JS -->
                     </div>
                 </div>
             </div>
@@ -117,33 +136,15 @@
                         <!-- Render by JS -->
                     </div>
 
-                    <!-- Khu vực Thông tin biến thể đã chọn (Stock, Buy Buttons) -->
-                    <div class="pm-variant mt-3" id="selected-variant-info">
-                        <div class="d-flex flex-column flex-xl-row justify-content-between gap-3">
-                            <div>
-                                <div class="fw-bold" id="selected-variant-title">
-                                    <!-- Render by JS -->
-                                </div>
-                                <div class="small text-muted" id="selected-variant-sku">SKU</div>
-                                <div class="mt-2 d-flex flex-wrap gap-2 align-items-center" id="selected-variant-stock-status">
-                                    <!-- Render by JS -->
-                                </div>
-                            </div>
-                            <div class="text-xl-end d-flex flex-column justify-content-end align-items-xl-end">
-                                <div class="d-flex flex-wrap justify-content-xl-end align-items-center gap-2">
-                                    <div class="pm-qty" id="qty-container">
-                                        <button type="button" title="Giảm số lượng" onclick="stepQty(this, -1)">-</button>
-                                        <input type="number" value="1" min="1" id="qty-input" inputmode="numeric" aria-label="Số lượng">
-                                        <button type="button" title="Tăng số lượng" onclick="stepQty(this, 1)">+</button>
-                                    </div>
-                                    <button class="btn btn-pm btn-sm" id="btn-add-cart" type="button" onclick="addToCart(this, false)">
-                                        <i class="fa fa-cart-plus me-1"></i> Thêm
-                                    </button>
-                                    <button class="btn btn-buy btn-sm" id="btn-buy-now" type="button" onclick="addToCart(this, true)">
-                                        <i class="fa fa-credit-card me-1"></i> Mua ngay
-                                    </button>
-                                </div>
-                            </div>
+                    <!-- Khu vực Thông tin biến thể đã chọn (Buy Buttons) -->
+                    <div class="mt-4" id="selected-variant-info">
+                        <div class="d-flex flex-wrap gap-2 w-100">
+                            <button class="btn btn-success flex-grow-1 py-2 fw-bold text-white" id="btn-buy-now" type="button" onclick="addToCart(this, true)">
+                                MUA NGAY
+                            </button>
+                            <button class="btn btn-outline-success flex-grow-1 py-2 fw-bold" id="btn-add-cart" type="button" onclick="addToCart(this, false)">
+                                <i class="fa fa-cart-plus me-1"></i> Thêm vào giỏ
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -314,20 +315,31 @@
     // --- LOGIC XỬ LÝ BIẾN THỂ ĐỘNG ---
     let selectedVersion = null;
     let selectedColor = null;
+    let activeVariants = [];
 
     function initVariants() {
         if (!variantsData || variantsData.length === 0) return;
-        document.getElementById('product-variants-container').classList.remove('d-none');
+        activeVariants = variantsData.filter(v => v.trangThai !== 'ngung_kinh_doanh');
+        
         const emptyMsg = document.getElementById('product-empty-message');
+        const container = document.getElementById('product-variants-container');
+        
+        if (activeVariants.length === 0) {
+            if (emptyMsg) emptyMsg.classList.remove('d-none');
+            if (container) container.classList.add('d-none');
+            return;
+        }
+
+        if (container) container.classList.remove('d-none');
         if (emptyMsg) emptyMsg.classList.add('d-none');
 
         // Lấy danh sách Version (RAM/ROM) và Color độc nhất
-        const versions = [...new Set(variantsData.map(v => v.versionKey))];
+        const versions = [...new Set(activeVariants.map(v => v.versionKey))];
         
         // Mặc định chọn version đầu tiên và màu đầu tiên khả dụng của version đó
         if (versions.length > 0) {
             selectedVersion = versions[0];
-            const availableColors = variantsData.filter(v => v.versionKey === selectedVersion).map(v => v.mauSac);
+            const availableColors = activeVariants.filter(v => v.versionKey === selectedVersion).map(v => v.mauSac);
             if (availableColors.length > 0) {
                 selectedColor = availableColors[0];
             }
@@ -339,13 +351,13 @@
     }
 
     function renderVersionButtons() {
-        const versions = [...new Set(variantsData.map(v => v.versionKey))];
+        const versions = [...new Set(activeVariants.map(v => v.versionKey))];
         const container = document.getElementById('versions-container');
         container.innerHTML = '';
         
         versions.forEach(ver => {
             // Kiểm tra xem version này có bất kỳ biến thể nào còn hàng không
-            const isAvailable = variantsData.some(v => v.versionKey === ver && v.trangThai === 'con_hang' && v.coTheBan > 0);
+            const isAvailable = activeVariants.some(v => v.versionKey === ver && v.trangThai === 'con_hang' && v.coTheBan > 0);
             
             const btn = document.createElement('div');
             btn.className = `pm-option-btn ${selectedVersion === ver ? 'active' : ''} ${!isAvailable ? 'disabled' : ''}`;
@@ -354,7 +366,7 @@
                 selectedVersion = ver;
                 
                 // Khi đổi version, cần kiểm tra màu sắc đang chọn có khả dụng trong version mới không
-                const availableForNewVersion = variantsData.filter(v => v.versionKey === ver);
+                const availableForNewVersion = activeVariants.filter(v => v.versionKey === ver);
                 const colorStillExists = availableForNewVersion.some(v => v.mauSac === selectedColor);
                 if (!colorStillExists && availableForNewVersion.length > 0) {
                     selectedColor = availableForNewVersion[0].mauSac; // Tự động nhảy sang màu khác
@@ -373,7 +385,7 @@
         const allColors = [];
         const colorMap = new Map();
         
-        variantsData.forEach(v => {
+        activeVariants.forEach(v => {
             if (!colorMap.has(v.mauSac)) {
                 colorMap.set(v.mauSac, v.maMauHex);
                 allColors.push({ name: v.mauSac, hex: v.maMauHex });
@@ -385,7 +397,7 @@
         
         allColors.forEach(color => {
             // Kiểm tra xem màu này CÓ trong version đang chọn không, và có CÒN HÀNG không
-            const variantForColor = variantsData.find(v => v.versionKey === selectedVersion && v.mauSac === color.name);
+            const variantForColor = activeVariants.find(v => v.versionKey === selectedVersion && v.mauSac === color.name);
             const isAvailable = variantForColor && variantForColor.trangThai === 'con_hang' && variantForColor.coTheBan > 0;
             const doesNotExist = !variantForColor; // Màu này không sx cho version này
 
@@ -425,62 +437,34 @@
     }
 
     function updateSelectedVariantUI() {
-        const variant = variantsData.find(v => v.versionKey === selectedVersion && v.mauSac === selectedColor);
+        const variant = activeVariants.find(v => v.versionKey === selectedVersion && v.mauSac === selectedColor);
         
         const priceOldEl = document.getElementById('display-price-old');
         const priceEl = document.getElementById('display-price');
-        const titleEl = document.getElementById('selected-variant-title');
-        const skuEl = document.getElementById('selected-variant-sku');
-        const stockEl = document.getElementById('selected-variant-stock-status');
         
         const btnAdd = document.getElementById('btn-add-cart');
         const btnBuy = document.getElementById('btn-buy-now');
-        const qtyInput = document.getElementById('qty-input');
-        const qtyContainer = document.getElementById('qty-container');
 
         if (!variant) {
             priceEl.innerText = "Liên hệ";
             priceOldEl.classList.add('d-none');
-            titleEl.innerHTML = "Phiên bản không tồn tại";
-            skuEl.innerText = "";
-            stockEl.innerHTML = "";
             btnAdd.disabled = true;
             btnBuy.disabled = true;
-            qtyContainer.style.display = 'none';
             return;
         }
 
-        // Đổi hình ảnh chính
-        if (variant.hinhAnh) {
-            const mainImg = document.querySelector('.pm-main-image img');
-            if (mainImg) mainImg.src = variant.hinhAnh;
-        }
-
         // Cập nhật giá
-        priceEl.innerText = formatCurrency(variant.giaSauKM);
         if (variant.giaSauKM < variant.giaBan) {
             priceOldEl.innerText = formatCurrency(variant.giaBan);
             priceOldEl.classList.remove('d-none');
         } else {
             priceOldEl.classList.add('d-none');
         }
-
-        // Cập nhật thông tin text
-        titleEl.innerHTML = `<span class="pm-color-dot me-1" style="background-color:${variant.maMauHex}"></span> 
-                            <span>${variant.mauSac}</span> <span class="text-muted"> · ${variant.versionKey}</span>`;
-        skuEl.innerText = `SKU: ${variant.sku}`;
+        priceEl.innerText = formatCurrency(variant.giaSauKM);
 
         // Trạng thái tồn kho
         const canBuy = variant.trangThai === 'con_hang' && variant.coTheBan > 0;
         if (canBuy) {
-            stockEl.innerHTML = `
-                <span class="pm-stock-badge pm-stock-in"><i class="fa fa-check-circle"></i> Còn hàng</span>
-                <span class="small text-muted">Có thể đặt: <strong>${variant.coTheBan}</strong></span>
-            `;
-            qtyContainer.style.display = 'inline-grid';
-            qtyInput.max = variant.coTheBan;
-            if (Number(qtyInput.value) > variant.coTheBan) qtyInput.value = variant.coTheBan;
-            
             btnAdd.disabled = false;
             btnBuy.disabled = false;
             btnAdd.dataset.bienTheId = variant.id;
@@ -488,14 +472,88 @@
             btnBuy.dataset.bienTheId = variant.id;
             btnBuy.dataset.max = variant.coTheBan;
         } else {
-            stockEl.innerHTML = `
-                <span class="pm-stock-badge pm-stock-out"><i class="fa fa-times-circle"></i> Hết hàng</span>
-                <span class="small text-muted">Chỉ bán khi tồn kho lớn hơn ${minStock}.</span>
-            `;
-            qtyContainer.style.display = 'none';
             btnAdd.disabled = true;
             btnBuy.disabled = true;
         }
+
+        updateGallery(variant);
+    }
+
+    // --- LOGIC GALLERY HÌNH ẢNH ---
+    let currentImages = [];
+    let currentImageIndex = 0;
+
+    function updateGallery(variant) {
+        if (!variant || !variant.hinhAnhs || variant.hinhAnhs.length === 0) {
+            // Hiển thị fallback nếu không có ảnh nào
+            document.getElementById('main-product-image').classList.add('d-none');
+            document.getElementById('main-image-fallback').classList.remove('d-none');
+            document.getElementById('gallery-thumbnails').innerHTML = '';
+            document.querySelector('.gallery-arrow-prev').style.display = 'none';
+            document.querySelector('.gallery-arrow-next').style.display = 'none';
+            return;
+        }
+
+        currentImages = variant.hinhAnhs;
+        currentImageIndex = 0;
+
+        document.getElementById('main-image-fallback').classList.add('d-none');
+        const mainImg = document.getElementById('main-product-image');
+        mainImg.src = currentImages[0];
+        mainImg.dataset.fallbackApplied = 'false'; // Reset fallback
+        mainImg.classList.remove('d-none');
+
+        // Điều khiển nút mũi tên
+        const showArrows = currentImages.length > 1;
+        document.querySelector('.gallery-arrow-prev').style.display = showArrows ? 'flex' : 'none';
+        document.querySelector('.gallery-arrow-next').style.display = showArrows ? 'flex' : 'none';
+
+        // Render thumbnails
+        const thumbContainer = document.getElementById('gallery-thumbnails');
+        thumbContainer.innerHTML = '';
+        if (currentImages.length > 1) {
+            currentImages.forEach((src, idx) => {
+                const thumb = document.createElement('div');
+                thumb.className = `gallery-thumb ${idx === 0 ? 'active' : ''}`;
+                thumb.onclick = () => setImage(idx);
+                
+                const img = document.createElement('img');
+                img.src = src;
+                img.referrerPolicy = 'no-referrer';
+                thumb.appendChild(img);
+                
+                thumbContainer.appendChild(thumb);
+            });
+        }
+    }
+
+    function setImage(index) {
+        if (index < 0 || index >= currentImages.length) return;
+        currentImageIndex = index;
+        
+        const mainImg = document.getElementById('main-product-image');
+        mainImg.src = currentImages[currentImageIndex];
+        
+        // Cập nhật thumbnail active
+        const thumbs = document.querySelectorAll('.gallery-thumb');
+        thumbs.forEach((t, i) => {
+            if (i === currentImageIndex) t.classList.add('active');
+            else t.classList.remove('active');
+        });
+    }
+
+    function prevImage() {
+        if (currentImages.length <= 1) return;
+        let nextIdx = currentImageIndex - 1;
+        if (nextIdx < 0) nextIdx = currentImages.length - 1;
+        setImage(nextIdx);
+    }
+
+    function nextImage() {
+        if (currentImages.length <= 1) return;
+        let nextIdx = currentImageIndex + 1;
+        if (nextIdx >= currentImages.length) nextIdx = 0;
+        setImage(nextIdx);
     }
 
     // Khởi tạo giao diện
@@ -516,11 +574,10 @@
     });
 
     async function addToCart(button, buyNow) {
-        let soLuong;
-        try {
-            soLuong = readQty(button);
-        } catch (error) {
-            alert(error.message);
+        let soLuong = 1;
+
+        if (button.dataset.max && soLuong > parseInt(button.dataset.max)) {
+            alert('Số lượng vượt quá giới hạn!');
             return;
         }
 

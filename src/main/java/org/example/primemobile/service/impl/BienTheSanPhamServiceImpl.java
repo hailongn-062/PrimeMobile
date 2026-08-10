@@ -63,13 +63,39 @@ public class BienTheSanPhamServiceImpl implements IBienTheSanPhamService {
 
     /** {@inheritDoc} */
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<BienTheSanPham> layTheoSanPhamId(Integer sanPhamId) {
         // Validate sản phẩm tồn tại trước khi lấy biến thể
         if (!sanPhamRepository.existsById(sanPhamId)) {
             throw new EntityNotFoundException("Không tìm thấy sản phẩm có ID: " + sanPhamId);
         }
-        return bienTheSanPhamRepository.findBySanPhamId(sanPhamId);
+        
+        List<BienTheSanPham> variants = bienTheSanPhamRepository.findBySanPhamId(sanPhamId);
+        boolean changed = false;
+        
+        for (BienTheSanPham v : variants) {
+            if ("ngung_kinh_doanh".equals(v.getTrangThai())) {
+                continue;
+            }
+            
+            Integer totalStock = tonKhoRepository.findByBienTheSanPham(v)
+                                    .stream()
+                                    .mapToInt(tk -> tk.getSoLuong() != null ? tk.getSoLuong() : 0)
+                                    .sum();
+                                    
+            String expectedStatus = totalStock > 0 ? "con_hang" : "het_hang";
+            if (!expectedStatus.equals(v.getTrangThai())) {
+                v.setTrangThai(expectedStatus);
+                v.setUpdatedAt(LocalDateTime.now());
+                changed = true;
+            }
+        }
+        
+        if (changed) {
+            bienTheSanPhamRepository.saveAll(variants);
+        }
+        
+        return variants;
     }
 
     /**

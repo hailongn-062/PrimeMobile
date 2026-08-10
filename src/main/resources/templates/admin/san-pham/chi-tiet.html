@@ -18,21 +18,29 @@
             </a>
         </div>
         <div class="card-body">
-            <div class="row">
+            <!-- Hàng 1 -->
+            <div class="row mb-2">
                 <div class="col-md-4">
-                    <p><strong>Tên SP:</strong> <span th:text="${sanPham.tenSanPham}"></span></p>
-                    <p><strong>Mã SP:</strong> <span th:text="${sanPham.maSanPham}"></span></p>
+                    <p class="mb-1"><strong>Tên SP:</strong> <span th:text="${sanPham.tenSanPham}"></span></p>
                 </div>
                 <div class="col-md-4">
-                    <p><strong>Danh mục:</strong> <span th:text="${sanPham.danhMuc.tenDanhMuc}"></span></p>
-                    <p><strong>Hãng SX:</strong> <span th:text="${sanPham.hangSanXuat.tenHang}"></span></p>
+                    <p class="mb-1"><strong>Mã SP:</strong> <span th:text="${sanPham.maSanPham}"></span></p>
                 </div>
                 <div class="col-md-4">
-                    <p><strong>Trạng thái:</strong>
+                    <p class="mb-1"><strong>Trạng thái:</strong>
                         <span th:if="${sanPham.trangThai == 'dang_ban'}" class="badge bg-success">Đang bán</span>
                         <span th:if="${sanPham.trangThai == 'ngung_ban'}" class="badge bg-danger">Ngừng bán</span>
                         <span th:if="${sanPham.trangThai == 'sap_ra_mat'}" class="badge bg-warning text-dark">Sắp ra mắt</span>
                     </p>
+                </div>
+            </div>
+            <!-- Hàng 2 -->
+            <div class="row">
+                <div class="col-md-4">
+                    <p class="mb-0"><strong>Danh mục:</strong> <span th:text="${sanPham.danhMuc.tenDanhMuc}"></span></p>
+                </div>
+                <div class="col-md-4">
+                    <p class="mb-0"><strong>Hãng SX:</strong> <span th:text="${sanPham.hangSanXuat.tenHang}"></span></p>
                 </div>
             </div>
         </div>
@@ -109,8 +117,12 @@
                                 <td th:text="${ts.giaTri}"></td>
                                 <td th:text="${ts.thuTu}"></td>
                                 <td class="text-center">
+                                    <button class="btn btn-sm text-primary py-0 px-1 border-0 bg-transparent" title="Sửa" 
+                                            th:attr="onclick=|openEditSpecModal(${ts.id}, '${#strings.escapeJavaScript(ts.nhom)}', '${#strings.escapeJavaScript(ts.tenThongSo)}', '${#strings.escapeJavaScript(ts.giaTri)}', ${ts.thuTu})|">
+                                        <i class="fa fa-edit"></i>
+                                    </button>
                                     <a th:href="@{/admin/san-pham/thong-so/delete/{id}(id=${ts.id}, sanPhamId=${sanPham.id})}"
-                                       class="text-danger" title="Xóa"
+                                       class="text-danger py-0 px-1 d-inline-block" title="Xóa"
                                        onclick="return confirm('Bạn có chắc muốn xóa thông số này?');">
                                         <i class="fa fa-trash"></i>
                                     </a>
@@ -141,14 +153,32 @@
                         <div class="row g-3">
                             <div class="col-md-3">
                                 <label class="form-label small fw-bold">RAM <span class="text-danger">*</span></label>
-                                <select id="genRam" class="form-select form-select-sm">
-                                    <option value="4">4GB</option>
-                                    <option value="6">6GB</option>
-                                    <option value="8" selected>8GB</option>
-                                    <option value="12">12GB</option>
-                                    <option value="16">16GB</option>
-                                    <option value="24">24GB</option>
-                                </select>
+                                <div class="border rounded p-2" style="max-height: 120px; overflow-y: auto; background: #f8f9fa;">
+                                    <div class="form-check">
+                                        <input class="form-check-input gen-ram" type="checkbox" value="4" id="ram4">
+                                        <label class="form-check-label small" for="ram4">4GB</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input gen-ram" type="checkbox" value="6" id="ram6">
+                                        <label class="form-check-label small" for="ram6">6GB</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input gen-ram" type="checkbox" value="8" id="ram8" checked>
+                                        <label class="form-check-label small" for="ram8">8GB</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input gen-ram" type="checkbox" value="12" id="ram12">
+                                        <label class="form-check-label small" for="ram12">12GB</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input gen-ram" type="checkbox" value="16" id="ram16">
+                                        <label class="form-check-label small" for="ram16">16GB</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input gen-ram" type="checkbox" value="24" id="ram24">
+                                        <label class="form-check-label small" for="ram24">24GB</label>
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-md-5">
                                 <label class="form-label small fw-bold">ROM (Chọn nhiều) <span class="text-danger">*</span></label>
@@ -239,9 +269,18 @@
                                     <span th:if="${bt.trangThai == 'ngung_kinh_doanh'}" class="text-secondary small"><i class="fa fa-ban"></i> Ngừng KD</span>
                                 </td>
                                 <td class="text-end">
-                                    <a th:href="@{/admin/san-pham/bien-the/{id}/hinh-anh(id=${bt.id})}" class="btn btn-sm btn-outline-secondary py-0" title="Quản lý Ảnh">
-                                        <i class="fa fa-image"></i> Ảnh
-                                    </a>
+                                    <button class="btn btn-sm btn-outline-primary py-0 px-1 ms-1" title="Sửa" 
+                                            th:attr="onclick=|openEditVariantModal(${bt.id}, '${#strings.escapeJavaScript(bt.maSku)}', '${#strings.escapeJavaScript(bt.mauSac)}', ${bt.ramGb}, ${bt.luuTruGb}, ${bt.giaBan})|">
+                                        <i class="fa fa-edit"></i>
+                                    </button>
+                                    <button th:if="${bt.trangThai != 'ngung_kinh_doanh'}" class="btn btn-sm btn-outline-warning py-0 px-1 ms-1" title="Ẩn (Ngừng kinh doanh)"
+                                            th:attr="onclick=|toggleVariantStatus(${bt.id}, 'ngung_kinh_doanh')|">
+                                        <i class="fa fa-eye-slash"></i>
+                                    </button>
+                                    <button th:if="${bt.trangThai == 'ngung_kinh_doanh'}" class="btn btn-sm btn-outline-success py-0 px-1 ms-1" title="Hiện (Tiếp tục kinh doanh)"
+                                            th:attr="onclick=|toggleVariantStatus(${bt.id}, 'con_hang')|">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(bienTheSanPhams)}">
@@ -255,6 +294,128 @@
         </div>
     </div>
 </main>
+
+<!-- Modal Sửa Thông Số Kỹ Thuật -->
+<div class="modal fade" id="editSpecModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Sửa Thông Số Kỹ Thuật</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editSpecId">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Nhóm</label>
+                    <select id="editSpecNhom" class="form-select form-select-sm" required>
+                        <option value="Màn hình">Màn hình</option>
+                        <option value="Camera sau">Camera sau</option>
+                        <option value="Camera trước">Camera trước</option>
+                        <option value="Hệ điều hành & CPU">Hệ điều hành & CPU</option>
+                        <option value="Kết nối">Kết nối</option>
+                        <option value="Pin & Sạc">Pin & Sạc</option>
+                        <option value="Thông tin chung">Thông tin chung</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Tên thông số</label>
+                    <input type="text" id="editSpecTen" class="form-control form-control-sm" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Giá trị</label>
+                    <input type="text" id="editSpecGiaTri" class="form-control form-control-sm" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Thứ tự hiển thị</label>
+                    <input type="number" id="editSpecThuTu" class="form-control form-control-sm" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="saveEditSpec()">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Sửa Biến Thể -->
+<div class="modal fade" id="editVariantModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Quản lý Biến Thể</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editVarId">
+                <!-- Nav tabs -->
+                <ul class="nav nav-tabs mb-3" id="editVarTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info-pane" type="button" role="tab" aria-controls="info-pane" aria-selected="true">Thông tin chung</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="image-tab" data-bs-toggle="tab" data-bs-target="#image-pane" type="button" role="tab" aria-controls="image-pane" aria-selected="false">Quản lý Ảnh</button>
+                    </li>
+                </ul>
+
+                <!-- Tab panes -->
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="info-pane" role="tabpanel" aria-labelledby="info-tab">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold">Mã SKU</label>
+                                <input type="text" id="editVarSku" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold">Giá bán</label>
+                                <input type="number" id="editVarGiaBan" class="form-control form-control-sm" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label small fw-bold">Màu sắc</label>
+                                <input type="text" id="editVarMauSac" class="form-control form-control-sm" readonly>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label small fw-bold">RAM (GB)</label>
+                                <input type="number" id="editVarRam" class="form-control form-control-sm" readonly>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label small fw-bold">ROM (GB)</label>
+                                <input type="number" id="editVarRom" class="form-control form-control-sm" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="image-pane" role="tabpanel" aria-labelledby="image-tab">
+                        <div class="mb-3 bg-light p-3 border rounded">
+                            <label class="form-label small fw-bold">Thêm Ảnh từ Máy tính</label>
+                            <div class="d-flex gap-2">
+                                <input type="file" id="uploadVarImg" class="form-control form-control-sm" accept="image/*">
+                                <button type="button" class="btn btn-sm btn-primary" onclick="uploadVariantImage()">
+                                    <i class="fa fa-upload"></i> Tải lên
+                                </button>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="fw-bold mb-0">Danh sách Hình Ảnh (Kéo thả để sắp xếp)</h6>
+                            <button class="btn btn-sm btn-success d-none" id="btnSaveImgOrder" onclick="saveVariantImageOrder()">
+                                <i class="fa fa-save"></i> Lưu Thứ Tự
+                            </button>
+                        </div>
+                        <div class="row g-3" id="variantImageGrid">
+                            <!-- Render by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btnSaveVar" onclick="saveEditVariant()">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
 <script th:inline="javascript">
@@ -271,7 +432,7 @@
     /*[/]*/
     
     function generateVariants() {
-        const ram = document.getElementById('genRam').value;
+        const ramCheckboxes = document.querySelectorAll('.gen-ram:checked');
         const romCheckboxes = document.querySelectorAll('.gen-rom:checked');
         const colorText = document.getElementById('genColor').value.trim();
         
@@ -279,6 +440,10 @@
         const warningDiv = document.getElementById('bulkGenWarning');
         if (warningDiv) warningDiv.remove();
         
+        if (ramCheckboxes.length === 0) {
+            alert('Vui lòng chọn ít nhất 1 dung lượng RAM!');
+            return;
+        }
         if (romCheckboxes.length === 0) {
             alert('Vui lòng chọn ít nhất 1 dung lượng ROM!');
             return;
@@ -288,6 +453,7 @@
             return;
         }
         
+        const rams = Array.from(ramCheckboxes).map(cb => cb.value);
         const roms = Array.from(romCheckboxes).map(cb => cb.value);
         const colors = colorText.split(',').map(c => c.trim()).filter(c => c);
         
@@ -296,41 +462,43 @@
         let skippedCount = 0;
         
         // Render rows
-        roms.forEach(rom => {
-            colors.forEach(color => {
-                const isDuplicate = existingVariants.some(v => {
-                    const mauCu = (v.mauSac || "").trim().toLowerCase();
-                    const ramCu = v.ramGb || 0;
-                    const romCu = v.luuTruGb || 0;
-                    return mauCu === color.toLowerCase() && ramCu == parseInt(ram) && romCu == parseInt(rom);
+        rams.forEach(ram => {
+            roms.forEach(rom => {
+                colors.forEach(color => {
+                    const isDuplicate = existingVariants.some(v => {
+                        const mauCu = (v.mauSac || "").trim().toLowerCase();
+                        const ramCu = v.ramGb || 0;
+                        const romCu = v.luuTruGb || 0;
+                        return mauCu === color.toLowerCase() && ramCu == parseInt(ram) && romCu == parseInt(rom);
+                    });
+                    
+                    // Cũng kiểm tra xem đã được render vào bảng chưa
+                    const alreadyInTable = Array.from(tbody.querySelectorAll('tr')).some(tr => {
+                        const cRam = tr.querySelector('.v-ram').value;
+                        const cRom = tr.querySelector('.v-rom').value;
+                        const cColor = tr.querySelector('.v-color').value.trim().toLowerCase();
+                        return cColor === color.toLowerCase() && cRam == ram && cRom == rom;
+                    });
+                    
+                    if (isDuplicate || alreadyInTable) {
+                        skippedCount++;
+                        return; // Bỏ qua nếu bị trùng
+                    }
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="align-middle text-center"><input type="hidden" class="v-ram" value="${ram}">${ram}GB</td>
+                        <td class="align-middle text-center"><input type="hidden" class="v-rom" value="${rom}">${rom >= 1024 ? (rom/1024) + 'TB' : rom + 'GB'}</td>
+                        <td class="align-middle"><input type="hidden" class="v-color" value="${color}">${color}</td>
+                        <td><input type="text" class="form-control form-control-sm v-sku" placeholder="SKU" required></td>
+                        <td><input type="number" class="form-control form-control-sm v-price" placeholder="Giá bán" required></td>
+                        <td class="text-center align-middle">
+                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="this.closest('tr').remove()"><i class="fa fa-times"></i></button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                    addedCount++;
                 });
-                
-                // Cũng kiểm tra xem đã được render vào bảng chưa
-                const alreadyInTable = Array.from(tbody.querySelectorAll('tr')).some(tr => {
-                    const cRam = tr.querySelector('.v-ram').value;
-                    const cRom = tr.querySelector('.v-rom').value;
-                    const cColor = tr.querySelector('.v-color').value.trim().toLowerCase();
-                    return cColor === color.toLowerCase() && cRam == ram && cRom == rom;
-                });
-                
-                if (isDuplicate || alreadyInTable) {
-                    skippedCount++;
-                    return; // Bỏ qua nếu bị trùng
-                }
-                
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="align-middle text-center"><input type="hidden" class="v-ram" value="${ram}">${ram}GB</td>
-                    <td class="align-middle text-center"><input type="hidden" class="v-rom" value="${rom}">${rom >= 1024 ? (rom/1024) + 'TB' : rom + 'GB'}</td>
-                    <td class="align-middle"><input type="hidden" class="v-color" value="${color}">${color}</td>
-                    <td><input type="text" class="form-control form-control-sm v-sku" placeholder="SKU" required></td>
-                    <td><input type="number" class="form-control form-control-sm v-price" placeholder="Giá bán" required></td>
-                    <td class="text-center align-middle">
-                        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="this.closest('tr').remove()"><i class="fa fa-times"></i></button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-                addedCount++;
             });
         });
         
@@ -394,20 +562,288 @@
             body: JSON.stringify(data)
         })
         .then(res => res.json())
-        .then(res => {
-            if (res.success) {
-                window.location.reload();
+        .then(data => {
+            if (data.success || data.ok || (data.message && data.message.includes('thành công')) || (Array.isArray(data) && data.length > 0) || !data.error) {
+                alert('Lưu thành công!');
+                location.reload();
             } else {
-                alert('Lỗi: ' + res.message);
+                alert('Lỗi: ' + (data.message || 'Lỗi không xác định'));
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa fa-save"></i> LƯU TẤT CẢ';
             }
         })
         .catch(err => {
-            alert('Lỗi hệ thống: ' + err.message);
+            alert('Lỗi: ' + err.message);
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa fa-save"></i> LƯU TẤT CẢ';
+            btn.innerHTML = '<i class="fa fa-save"></i> Lưu Biến Thể';
         });
+    }
+
+    // --- Sửa Thông số Kỹ thuật ---
+    let editSpecModal;
+    let editVariantModal;
+    
+    document.addEventListener("DOMContentLoaded", function() {
+        editSpecModal = new bootstrap.Modal(document.getElementById('editSpecModal'));
+        editVariantModal = new bootstrap.Modal(document.getElementById('editVariantModal'));
+    });
+
+    function openEditSpecModal(id, nhom, ten, giaTri, thuTu) {
+        document.getElementById('editSpecId').value = id;
+        document.getElementById('editSpecNhom').value = nhom;
+        document.getElementById('editSpecTen').value = ten;
+        document.getElementById('editSpecGiaTri').value = giaTri;
+        document.getElementById('editSpecThuTu').value = thuTu;
+        editSpecModal.show();
+    }
+
+    function saveEditSpec() {
+        const id = document.getElementById('editSpecId').value;
+        const data = {
+            nhom: document.getElementById('editSpecNhom').value,
+            tenThongSo: document.getElementById('editSpecTen').value,
+            giaTri: document.getElementById('editSpecGiaTri').value,
+            thuTu: document.getElementById('editSpecThuTu').value
+        };
+
+        fetch('/api/admin/thong-so/chi-tiet/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json().then(json => ({ok: res.ok, data: json})))
+        .then(result => {
+            if(result.ok) {
+                alert('Cập nhật thành công!');
+                location.reload();
+            } else {
+                alert('Lỗi: ' + JSON.stringify(result.data));
+            }
+        })
+        .catch(err => alert('Lỗi kết nối: ' + err));
+    }
+
+    // --- Sửa và Đổi trạng thái Biến Thể ---
+    function openEditVariantModal(id, sku, mau, ram, rom, gia) {
+        document.getElementById('editVarId').value = id;
+        document.getElementById('editVarSku').value = sku;
+        document.getElementById('editVarMauSac').value = mau;
+        document.getElementById('editVarRam').value = ram;
+        document.getElementById('editVarRom').value = rom;
+        document.getElementById('editVarGiaBan').value = gia;
+        
+        // Reset and load images
+        const grid = document.getElementById('variantImageGrid');
+        grid.innerHTML = '<div class="col-12 text-center py-4"><i class="fa fa-spinner fa-spin fa-2x text-muted"></i></div>';
+        
+        // Reset info tab to active
+        const infoTab = new bootstrap.Tab(document.getElementById('info-tab'));
+        infoTab.show();
+
+        loadVariantImages(id);
+        
+        editVariantModal.show();
+    }
+
+    function loadVariantImages(id) {
+        const grid = document.getElementById('variantImageGrid');
+        fetch('/admin/san-pham/api/bien-the/' + id + '/hinh-anh')
+            .then(res => res.json())
+            .then(images => {
+                grid.innerHTML = '';
+                if (!images || images.length === 0) {
+                    grid.innerHTML = '<div class="col-12 text-center text-muted py-4 border rounded bg-light no-images-msg">Chưa có hình ảnh nào cho biến thể này.</div>';
+                } else {
+                    images.forEach((anh, idx) => {
+                        const isPrimary = idx === 0;
+                        const card = `
+                        <div class="col-md-3 col-sm-4 col-6 image-card-container" data-id="${anh.id}">
+                            <div class="card h-100 position-relative shadow-sm ${isPrimary ? 'border-primary border-2' : ''}">
+                                <img src="${anh.duongDan}" class="card-img-top p-2" style="height: 150px; object-fit: contain;" 
+                                     referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.classList.remove('d-none');">
+                                <div class="d-none align-items-center justify-content-center text-muted bg-light" style="height: 150px;">
+                                    <i class="fa fa-mobile-alt fa-3x opacity-50"></i>
+                                </div>
+                                <div class="position-absolute top-0 start-0 badge bg-primary m-1 primary-badge ${isPrimary ? '' : 'd-none'}">
+                                    Ảnh chính
+                                </div>
+                                <div class="card-footer bg-white p-2 d-flex justify-content-end align-items-center border-top-0">
+                                    <button class="btn btn-sm text-danger p-0" onclick="deleteVariantImage(${anh.id})">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>`;
+                        grid.innerHTML += card;
+                    });
+                    initSortable();
+                }
+            })
+            .catch(err => {
+                grid.innerHTML = '<div class="col-12 text-center text-danger py-4">Lỗi tải ảnh: ' + err.message + '</div>';
+            });
+    }
+
+    function initSortable() {
+        const grid = document.getElementById('variantImageGrid');
+        if (grid && !grid.querySelector('.no-images-msg')) {
+            // Load SortableJS if not already loaded (dynamically or assume it's included)
+            if (typeof Sortable !== 'undefined') {
+                new Sortable(grid, {
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function () {
+                        updatePrimaryImageUI();
+                        document.getElementById('btnSaveImgOrder').classList.remove('d-none');
+                    }
+                });
+            } else {
+                // Dynamically load SortableJS
+                const script = document.createElement('script');
+                script.src = "https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js";
+                script.onload = () => initSortable();
+                document.head.appendChild(script);
+            }
+        }
+    }
+
+    function updatePrimaryImageUI() {
+        const grid = document.getElementById('variantImageGrid');
+        const cards = grid.querySelectorAll('.image-card-container .card');
+        cards.forEach((card, index) => {
+            const badge = card.querySelector('.primary-badge');
+            if (index === 0) {
+                card.classList.add('border-primary', 'border-2');
+                if (badge) badge.classList.remove('d-none');
+            } else {
+                card.classList.remove('border-primary', 'border-2');
+                if (badge) badge.classList.add('d-none');
+            }
+        });
+    }
+
+    function uploadVariantImage() {
+        const id = document.getElementById('editVarId').value;
+        const fileInput = document.getElementById('uploadVarImg');
+        const file = fileInput.files[0];
+        if (!file) {
+            alert('Vui lòng chọn ảnh!');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('bienTheId', id);
+        formData.append('file', file);
+
+        fetch('/admin/san-pham/api/bien-the/hinh-anh/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                fileInput.value = '';
+                loadVariantImages(id);
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        })
+        .catch(err => alert('Lỗi kết nối: ' + err));
+    }
+
+    function deleteVariantImage(imageId) {
+        if (!confirm('Bạn có chắc muốn xóa ảnh này?')) return;
+        
+        fetch('/admin/san-pham/api/bien-the/hinh-anh/' + imageId, {
+            method: 'DELETE'
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const id = document.getElementById('editVarId').value;
+                loadVariantImages(id);
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        })
+        .catch(err => alert('Lỗi kết nối: ' + err));
+    }
+
+    function saveVariantImageOrder() {
+        const grid = document.getElementById('variantImageGrid');
+        const items = grid.querySelectorAll('.image-card-container');
+        const ids = Array.from(items).map(item => parseInt(item.getAttribute('data-id')));
+        
+        const btn = document.getElementById('btnSaveImgOrder');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+
+        fetch('/admin/san-pham/bien-the/hinh-anh/reorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(ids)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                btn.classList.add('d-none');
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        })
+        .catch(err => alert('Lỗi kết nối: ' + err))
+        .finally(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+    }
+
+    function saveEditVariant() {
+        const id = document.getElementById('editVarId').value;
+        const data = {
+            maSku: document.getElementById('editVarSku').value,
+            giaBan: document.getElementById('editVarGiaBan').value,
+            // the fields below are readonly, but included if needed by backend model validation, though in this case we'll just pull them from inputs.
+            mauSac: document.getElementById('editVarMauSac').value,
+            ramGb: document.getElementById('editVarRam').value,
+            luuTruGb: document.getElementById('editVarRom').value,
+            sanPhamId: sanPhamId
+        };
+
+        fetch('/api/admin/bien-the/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json().then(json => ({ok: res.ok, data: json})))
+        .then(result => {
+            if(result.ok) {
+                alert('Cập nhật biến thể thành công!');
+                location.reload();
+            } else {
+                alert('Lỗi: ' + (result.data.message || JSON.stringify(result.data)));
+            }
+        })
+        .catch(err => alert('Lỗi kết nối: ' + err));
+    }
+
+    function toggleVariantStatus(id, newStatus) {
+        let msg = newStatus === 'ngung_kinh_doanh' ? 'Bạn có chắc muốn Ẩn (ngừng kinh doanh) biến thể này?' : 'Bạn có chắc muốn Hiện lại biến thể này?';
+        if(!confirm(msg)) return;
+
+        fetch(`/api/admin/bien-the/${id}/trang-thai?trangThai=${newStatus}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => {
+            if(res.ok) {
+                location.reload();
+            } else {
+                res.json().then(data => alert('Lỗi: ' + (data.message || JSON.stringify(data))));
+            }
+        })
+        .catch(err => alert('Lỗi kết nối: ' + err));
     }
 </script>
 </body>

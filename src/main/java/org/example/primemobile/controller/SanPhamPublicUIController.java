@@ -294,11 +294,13 @@ public class SanPhamPublicUIController {
             map.put("coTheBan", soLuongCoTheBanTheoBienThe.getOrDefault(bt.getId(), 0));
             map.put("trangThai", bt.getTrangThai());
             
-            String hinhAnh = null;
+            List<String> hinhAnhs = new java.util.ArrayList<>();
             if (bt.getHinhAnhSanPhams() != null && !bt.getHinhAnhSanPhams().isEmpty()) {
-                hinhAnh = bt.getHinhAnhSanPhams().get(0).getDuongDan();
+                for (org.example.primemobile.entity.HinhAnhSanPham ha : bt.getHinhAnhSanPhams()) {
+                    hinhAnhs.add(ha.getDuongDan());
+                }
             }
-            map.put("hinhAnh", hinhAnh);
+            map.put("hinhAnhs", hinhAnhs);
             variantsJson.add(map);
         }
         

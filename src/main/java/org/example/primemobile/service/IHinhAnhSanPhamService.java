@@ -13,4 +13,6 @@ public interface IHinhAnhSanPhamService {
     void xoaAnh(Integer id);
 
     void datLamAnhChinh(Integer id);
+
+    void sapXepThuTu(List<Integer> ids);
 }
