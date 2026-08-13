@@ -19,4 +19,10 @@ public class ThongKeUIController {
         model.addAttribute("activePage", "thong-ke-san-pham");
         return "admin/thong-ke/thong-ke-san-pham";
     }
+
+    @GetMapping("/don-hang")
+    public String donHangPage(org.springframework.ui.Model model) {
+        model.addAttribute("activePage", "thong-ke-don-hang");
+        return "admin/thong-ke/thong-ke-don-hang";
+    }
 }

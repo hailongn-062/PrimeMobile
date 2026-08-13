@@ -1,9 +1,19 @@
 const ThongKeSanPham = (function() {
     
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     // State
     let currentDateRange = {
-        fromDate: moment().startOf('month').format('YYYY-MM-DD'),
-        toDate: moment().format('YYYY-MM-DD')
+        fromDate: formatDate(firstDay),
+        toDate: formatDate(today)
     };
     let chartInstance = null;
     let topSpPage = 0;
@@ -343,26 +353,22 @@ const ThongKeSanPham = (function() {
     };
 
     const initDateRangePicker = () => {
-        $('#dateRangePicker').daterangepicker({
-            startDate: moment().startOf('month'),
-            endDate: moment(),
-            ranges: {
-                'Hôm nay': [moment(), moment()],
-                'Hôm qua': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-                '7 Ngày qua': [moment().subtract(6, 'days'), moment()],
-                '30 Ngày qua': [moment().subtract(29, 'days'), moment()],
-                'Tháng này': [moment().startOf('month'), moment().endOf('month')],
-                'Tháng trước': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
-            },
-            locale: {
-                format: 'DD/MM/YYYY',
-                applyLabel: 'Áp dụng',
-                cancelLabel: 'Hủy',
-                customRangeLabel: 'Tùy chỉnh'
+        $('#startDate').val(currentDateRange.fromDate);
+        $('#endDate').val(currentDateRange.toDate);
+
+        $('#btnSearchDate').click(function() {
+            const start = $('#startDate').val();
+            const end = $('#endDate').val();
+            if(!start || !end) {
+                alert('Vui lòng chọn khoảng thời gian hợp lệ');
+                return;
             }
-        }, function(start, end) {
-            currentDateRange.fromDate = start.format('YYYY-MM-DD');
-            currentDateRange.toDate = end.format('YYYY-MM-DD');
+            if (start > end) {
+                alert('Từ ngày không được lớn hơn Đến ngày');
+                return;
+            }
+            currentDateRange.fromDate = start;
+            currentDateRange.toDate = end;
             loadAllTimeDependentData();
         });
     };

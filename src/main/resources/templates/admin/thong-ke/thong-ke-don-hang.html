@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin-layout :: adminHead}">
+    <title>Thống kê Đơn hàng - PrimeMobile</title>
+</head>
+<body th:with="activePage='thong-ke-don-hang'">
+
+<!-- Sidebar -->
+<div th:replace="~{layout/admin-layout :: sidebar}"></div>
+
+<!-- Topbar -->
+<div th:replace="~{layout/admin-layout :: topbar}"></div>
+
+<main id="pmContent">
+    <div class="container-fluid py-4">
+        <!-- Header & Date Picker -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="h3 mb-0 text-gray-800 fw-bold">Thống kê Đơn hàng</h2>
+            <div class="d-flex align-items-center gap-3">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fa fa-calendar-alt"></i></span>
+                    <input type="date" class="form-control" id="startDate" title="Từ ngày">
+                    <span class="input-group-text">-</span>
+                    <input type="date" class="form-control" id="endDate" title="Đến ngày">
+                    <button class="btn btn-primary" id="btnSearchDate">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="row g-4 mb-4" id="kpiContainer">
+            <!-- Loading Skeleton -->
+            <div class="col-xl-3 col-md-6 kpi-skeleton">
+                <div class="card border-0 shadow-sm h-100 placeholder-glow">
+                    <div class="card-body">
+                        <div class="placeholder col-8 mb-2"></div>
+                        <div class="placeholder col-6 h2 mb-0"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 kpi-skeleton">
+                <div class="card border-0 shadow-sm h-100 placeholder-glow">
+                    <div class="card-body">
+                        <div class="placeholder col-8 mb-2"></div>
+                        <div class="placeholder col-6 h2 mb-0"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 kpi-skeleton">
+                <div class="card border-0 shadow-sm h-100 placeholder-glow">
+                    <div class="card-body">
+                        <div class="placeholder col-8 mb-2"></div>
+                        <div class="placeholder col-6 h2 mb-0"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 kpi-skeleton">
+                <div class="card border-0 shadow-sm h-100 placeholder-glow">
+                    <div class="card-body">
+                        <div class="placeholder col-8 mb-2"></div>
+                        <div class="placeholder col-6 h2 mb-0"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Real KPIs (Hidden initially) -->
+            <div class="col-xl-3 col-md-6 kpi-real d-none">
+                <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+                    <div class="card-body">
+                        <div class="text-xs fw-bold text-primary text-uppercase mb-1">Tổng Số Đơn</div>
+                        <div class="h3 mb-0 fw-bold text-gray-800 pm-stat-value" id="kpiTongDon">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 kpi-real d-none">
+                <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+                    <div class="card-body">
+                        <div class="text-xs fw-bold text-success text-uppercase mb-1">Đơn Hoàn Thành</div>
+                        <div class="h3 mb-0 fw-bold text-gray-800 pm-stat-value" id="kpiDonHoanThanh">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 kpi-real d-none">
+                <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
+                    <div class="card-body">
+                        <div class="text-xs fw-bold text-danger text-uppercase mb-1">Đơn Đã Hủy</div>
+                        <div class="h3 mb-0 fw-bold text-gray-800 pm-stat-value" id="kpiDonHuy">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 kpi-real d-none">
+                <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
+                    <div class="card-body">
+                        <div class="text-xs fw-bold text-warning text-uppercase mb-1">Giao Thất Bại</div>
+                        <div class="h3 mb-0 fw-bold text-gray-800 pm-stat-value" id="kpiGiaoThatBai">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <!-- Order Status Donut Chart -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                        <h5 class="fw-bold mb-0">Tỷ lệ Trạng thái Đơn hàng</h5>
+                    </div>
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                        <div id="statusChartSkeleton" class="placeholder-glow w-100 text-center">
+                            <div class="placeholder rounded-circle" style="width: 200px; height: 200px;"></div>
+                        </div>
+                        <div class="chart-container w-100 d-none" id="statusChartContent" style="position: relative; height:250px;">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                        <div id="statusLegend" class="w-100 mt-3 d-none">
+                            <!-- JS will render status legend -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Failed Orders Table -->
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0 text-danger"><i class="fa fa-exclamation-triangle me-2"></i>Danh sách Đơn không thành công</h5>
+                        <div>
+                            <select id="filterFailedStatus" class="form-select form-select-sm">
+                                <option value="all">Tất cả</option>
+                                <option value="da_huy">Đã hủy</option>
+                                <option value="giao_that_bai">Giao thất bại</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Skeleton -->
+                        <div id="failedOrdersSkeleton">
+                            <div class="placeholder-glow mb-3"><span class="placeholder col-12 py-3"></span></div>
+                            <div class="placeholder-glow mb-3"><span class="placeholder col-12 py-3"></span></div>
+                            <div class="placeholder-glow mb-3"><span class="placeholder col-12 py-3"></span></div>
+                        </div>
+                        
+                        <!-- Content -->
+                        <div class="table-responsive d-none" id="failedOrdersContent">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Mã đơn</th>
+                                        <th>Khách hàng</th>
+                                        <th>Trạng thái</th>
+                                        <th class="text-end">Tổng tiền</th>
+                                        <th style="max-width: 200px;">Lý do / Ghi chú</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="failedOrdersTableBody">
+                                    <!-- JS will render here -->
+                                </tbody>
+                            </table>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <span class="text-muted small" id="failedOrdersTotal"></span>
+                                <nav><ul class="pagination pagination-sm mb-0" id="failedOrdersPagination"></ul></nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completed Orders Table -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0 text-success"><i class="fa fa-check-circle me-2"></i>Danh sách Đơn hoàn thành</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Skeleton -->
+                        <div id="completedOrdersSkeleton">
+                            <div class="placeholder-glow mb-3"><span class="placeholder col-12 py-3"></span></div>
+                            <div class="placeholder-glow mb-3"><span class="placeholder col-12 py-3"></span></div>
+                            <div class="placeholder-glow mb-3"><span class="placeholder col-12 py-3"></span></div>
+                        </div>
+                        
+                        <!-- Content -->
+                        <div class="table-responsive d-none" id="completedOrdersContent">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Mã đơn</th>
+                                        <th>Khách hàng</th>
+                                        <th>Trạng thái</th>
+                                        <th class="text-end">Tổng tiền</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="completedOrdersTableBody">
+                                    <!-- JS will render here -->
+                                </tbody>
+                            </table>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <span class="text-muted small" id="completedOrdersTotal"></span>
+                                <nav><ul class="pagination pagination-sm mb-0" id="completedOrdersPagination"></ul></nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<div th:replace="~{layout/admin-layout :: adminScripts}"></div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+
+<script th:src="@{/js/admin/thong-ke-don-hang.js(v=1.0)}"></script>
+<style>
+    .pm-stat-value { font-size: 1.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+</body>
+</html>
