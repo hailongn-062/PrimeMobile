@@ -264,7 +264,7 @@
 
             // Chỉ validate các trường bắt buộc: maSku, mauSac, giaBan
             if (!payload.maSku || !payload.mauSac || !payload.giaBan) {
-                alert('Vui lòng điền đủ các trường bắt buộc (Mã SKU, Màu sắc, Giá bán)!');
+                pmAlert('Vui lòng điền đủ các trường bắt buộc (Mã SKU, Màu sắc, Giá bán)!', 'warning');
                 return;
             }
 
@@ -279,21 +279,22 @@
                 });
 
                 if (res.ok) {
-                    alert('Lưu thành công!');
-                    bienTheModal.hide();
-                    loadData();
+                    pmAlert('Lưu thành công!', 'success').then(() => {
+                        bienTheModal.hide();
+                        loadData();
+                    });
                 } else {
                     const err = await res.text();
-                    alert('Lỗi: ' + err);
+                    pmAlert('Lỗi: ' + err, 'error');
                 }
             } catch (e) {
                 console.error(e);
-                alert('Đã xảy ra lỗi hệ thống!');
+                pmAlert('Đã xảy ra lỗi hệ thống!', 'error');
             }
         }
 
         async function toggleStatus(id, newStatus) {
-            if (!confirm('Bạn có chắc chắn muốn ngừng kinh doanh biến thể này?')) return;
+            if (!await pmConfirm('Bạn có chắc chắn muốn ngừng kinh doanh biến thể này?')) return;
 
             try {
                 const res = await fetch(`${API_URL}/${id}/trang-thai?trangThai=${newStatus}`, { method: 'PATCH' });
@@ -301,10 +302,10 @@
                     loadData();
                 } else {
                     const err = await res.text();
-                    alert('Lỗi: ' + err);
+                    pmAlert('Lỗi: ' + err, 'error');
                 }
             } catch (e) {
-                alert('Đã xảy ra lỗi!');
+                pmAlert('Đã xảy ra lỗi!', 'error');
             }
         }
     </script>

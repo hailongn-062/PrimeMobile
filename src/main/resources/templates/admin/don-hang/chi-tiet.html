@@ -297,26 +297,27 @@
                 <div class="p-3">
                     <div class="d-flex justify-content-between mb-2" style="font-size:.87rem;">
                         <span class="text-muted">Đơn hàng:</span>
-                        <span th:if="${donHang.trangThai == 'cho_xac_nhan'}" class="badge bg-warning text-dark">⏳ Chờ xác nhận</span>
-                        <span th:if="${donHang.trangThai == 'da_xac_nhan'}"  class="badge bg-info text-dark">✅ Đã xác nhận</span>
+                        <span th:if="${donHang.trangThai == 'cho_xac_nhan'}" class="badge bg-warning text-white">⏳ Chờ xác nhận</span>
+                        <span th:if="${donHang.trangThai == 'da_xac_nhan'}"  class="badge bg-info text-white">✅ Đã xác nhận</span>
                         <span th:if="${donHang.trangThai == 'dang_giao'}"    class="badge bg-primary">🚚 Đang giao</span>
                         <span th:if="${donHang.trangThai == 'da_hoan_thanh'}"      class="badge bg-success">📦 Đã hoàn thành</span>
                         <span th:if="${donHang.trangThai == 'da_huy'}"       class="badge bg-danger">❌ Đã hủy</span>
-                        <span th:if="${donHang.trangThai == 'cho_hoan_tien'}" class="badge bg-warning text-dark">⏳ Chờ hoàn tiền</span>
+                        <span th:if="${donHang.trangThai == 'giao_that_bai'}" class="badge bg-danger">❌ Giao thất bại</span>
+                        <span th:if="${donHang.trangThai == 'cho_hoan_tien'}" class="badge bg-warning text-white">⏳ Chờ hoàn tiền</span>
                     </div>
                     <div class="d-flex justify-content-between" style="font-size:.87rem;">
                         <span class="text-muted">Thanh toán:</span>
                         <span th:if="${donHang.trangThaiThanhToan == 'da_thanh_toan'}"      class="badge bg-success">Đã thanh toán</span>
                         <span th:if="${donHang.trangThaiThanhToan == 'chua_thanh_toan'}"    class="badge bg-secondary">Chưa thanh toán</span>
                         <span th:if="${donHang.trangThaiThanhToan == 'that_bai'}"           class="badge bg-danger">Thất bại</span>
-                        <span th:if="${donHang.trangThaiThanhToan == 'dang_chuyen_huong'}"  class="badge bg-warning text-dark">Đang xử lý</span>
-                        <span th:if="${donHang.trangThaiThanhToan == 'da_hoan_tien'}"       class="badge bg-info text-dark">Đã hoàn tiền</span>
+                        <span th:if="${donHang.trangThaiThanhToan == 'dang_chuyen_huong'}"  class="badge bg-warning text-white">Đang xử lý</span>
+                        <span th:if="${donHang.trangThaiThanhToan == 'da_hoan_tien'}"       class="badge bg-info text-white">Đã hoàn tiền</span>
                     </div>
                     <hr class="my-2">
                     <!-- Phương thức thanh toán -->
                     <div class="d-flex justify-content-between mb-2" style="font-size:.87rem;">
                         <span class="text-muted">Phương thức:</span>
-                        <span class="fw-semibold" th:text="${donHang.phuongThucThanhToan != null ? donHang.phuongThucThanhToan : '—'}">—</span>
+                        <span class="fw-semibold" th:text="${donHang.phuongThucThanhToan != null ? (donHang.phuongThucThanhToan == 'Tien mat' and donHang.trangThaiThanhToan == 'chua_thanh_toan' ? '-' : donHang.phuongThucThanhToan) : '—'}">—</span>
                     </div>
                     <!-- Chương trình giảm giá -->
                     <div class="d-flex justify-content-between mb-2" style="font-size:.87rem;" th:if="${donHang.tenKhuyenMai != null}">

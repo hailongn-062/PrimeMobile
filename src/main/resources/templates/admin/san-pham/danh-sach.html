@@ -74,7 +74,7 @@
                             <td>
                                 <span th:if="${sp.trangThai == 'dang_ban'}" class="badge bg-success">Đang bán</span>
                                 <span th:if="${sp.trangThai == 'ngung_ban'}" class="badge bg-danger">Ngừng bán</span>
-                                <span th:if="${sp.trangThai == 'sap_ra_mat'}" class="badge bg-warning text-dark">Sắp ra mắt</span>
+                                <span th:if="${sp.trangThai == 'sap_ra_mat'}" class="badge bg-warning text-white">Sắp ra mắt</span>
                             </td>
                             <td class="text-end pe-4">
                                 <a th:href="@{/admin/san-pham/{id}/chi-tiet(id=${sp.id})}" class="btn btn-sm btn-outline-info">
@@ -119,7 +119,7 @@
     <script>
         async function toggleStatus(spId, newStatus) {
             const actionText = newStatus === 'ngung_ban' ? 'Ngừng kinh doanh' : 'Mở bán lại';
-            if (!confirm(`Bạn có chắc chắn muốn ${actionText} sản phẩm này?`)) return;
+            if (!await pmConfirm(`Bạn có chắc chắn muốn ${actionText} sản phẩm này?`)) return;
             try {
                 const res = await fetch(`/api/admin/san-pham/${spId}/trang-thai?trangThai=${newStatus}`, {
                     method: 'PATCH'
@@ -128,10 +128,10 @@
                     window.location.reload();
                 } else {
                     const err = await res.json();
-                    alert(err.message || 'Có lỗi xảy ra');
+                    pmAlert(err.message || 'Có lỗi xảy ra', 'error');
                 }
             } catch (e) {
-                alert('Không thể kết nối đến máy chủ');
+                pmAlert('Không thể kết nối đến máy chủ', 'error');
             }
         }
     </script>

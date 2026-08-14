@@ -67,6 +67,11 @@
         /* Override SweetAlert2 colors globally */
         .swal2-styled.swal2-confirm { background-color: var(--pm-primary) !important; }
         .swal2-styled.swal2-cancel { background-color: var(--pm-muted, #64748b) !important; }
+        
+        .star-empty { color: #e5e7eb !important; }
+        .star-filled { color: #facc15 !important; }
+        .bg-warning.text-white { color: #fff !important; }
+        .bg-info.text-white { color: #fff !important; }
 
         * {
             box-sizing: border-box;
@@ -561,7 +566,7 @@
                 th:text="'Xin chào, ' + ${currentUser.hoTen ?: currentUser.email}">Xin chào</span>
             <!-- Nút đăng xuất -->
             <a href="/dang-xuat" class="btn-logout" id="btn-dang-xuat"
-                onclick="return confirm('Bạn có chắc muốn đăng xuất không?')">
+                onclick="event.preventDefault(); pmConfirm('Bạn có chắc muốn đăng xuất không?').then(ok => { if(ok) window.location.href='/dang-xuat'; })">
                 <i class="fa fa-sign-out-alt"></i>
                 <span class="d-none d-sm-inline">Đăng xuất</span>
             </a>
@@ -571,7 +576,35 @@
     <!-- Bootstrap JS + Toggle Script (nhúng qua fragment adminScripts) -->
     <th:block th:fragment="adminScripts">
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- SweetAlert2 -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script>
+            // Global Helpers for SweetAlert2
+            window.pmAlert = (msg, icon = 'info', title = '') => {
+                const defaultTitle = { 'success': 'Thành công', 'error': 'Lỗi', 'warning': 'Cảnh báo', 'info': 'Thông báo' };
+                return Swal.fire({
+                    icon: icon,
+                    title: title || defaultTitle[icon],
+                    text: msg,
+                    confirmButtonText: 'Đóng'
+                });
+            };
+
+            window.pmConfirm = (msg, title = 'Xác nhận') => {
+                return Swal.fire({
+                    title: title,
+                    text: msg,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: 'var(--pm-primary)',
+                    cancelButtonColor: 'var(--pm-muted, #64748b)',
+                    confirmButtonText: 'Xác nhận',
+                    cancelButtonText: 'Hủy'
+                }).then((result) => {
+                    return result.isConfirmed;
+                });
+            };
+
             // Toggle sidebar
             document.getElementById('btnToggleSidebar')?.addEventListener('click', function () {
                 document.body.classList.toggle('sidebar-collapsed');

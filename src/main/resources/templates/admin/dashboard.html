@@ -153,11 +153,13 @@
                                 </td>
                                 <td class="fw-bold text-danger" th:text="${#numbers.formatDecimal(dh.tongThanhToan, 0, 'COMMA', 0, 'POINT')} + 'đ'"></td>
                                 <td>
-                                    <span class="badge bg-warning text-dark" th:if="${dh.trangThai == 'cho_xac_nhan'}">Chờ xác nhận</span>
-                                    <span class="badge bg-info text-dark" th:if="${dh.trangThai == 'da_xac_nhan'}">Đã xác nhận</span>
+                                    <span class="badge bg-warning text-white" th:if="${dh.trangThai == 'cho_xac_nhan'}">Chờ xác nhận</span>
+                                    <span class="badge bg-info text-white" th:if="${dh.trangThai == 'da_xac_nhan'}">Đã xác nhận</span>
                                     <span class="badge bg-primary" th:if="${dh.trangThai == 'dang_giao'}">Đang giao</span>
                                     <span class="badge bg-success" th:if="${dh.trangThai == 'da_hoan_thanh'}">Hoàn thành</span>
                                     <span class="badge bg-danger" th:if="${dh.trangThai == 'da_huy'}">Đã hủy</span>
+                                    <span class="badge bg-danger" th:if="${dh.trangThai == 'giao_that_bai'}">Giao thất bại</span>
+                                    <span class="badge bg-warning text-white" th:if="${dh.trangThai == 'cho_hoan_tien'}">Chờ hoàn tiền</span>
                                 </td>
                                 <td class="text-end pe-3 text-muted" th:text="${#temporals.format(dh.ngayDat, 'dd/MM/yyyy HH:mm')}"></td>
                             </tr>

@@ -125,16 +125,17 @@ public interface ThongKeSanPhamRepository extends JpaRepository<SanPham, Integer
     @Query(value = """
         SELECT 
             bt.id as bienTheId,
-            bt.mau_sac + ' - ' + CAST(bt.luu_tru_gb AS VARCHAR) + 'GB' as tenBienThe,
+            ms.ten_mau + ' - ' + CAST(bt.luu_tru_gb AS VARCHAR) + 'GB' as tenBienThe,
             COALESCE(SUM(CASE WHEN d.trang_thai = 'da_hoan_thanh' AND d.ngay_dat >= :start AND d.ngay_dat < :end THEN ct.so_luong ELSE 0 END), 0) as soLuongBan,
             COALESCE(SUM(CASE WHEN d.trang_thai = 'da_hoan_thanh' AND d.ngay_dat >= :start AND d.ngay_dat < :end THEN ct.so_luong * ct.don_gia_ban ELSE 0 END), 0) as doanhThu,
             COALESCE(tk.so_luong, 0) as tonKho
         FROM bien_the_san_pham bt
+        LEFT JOIN mau_sac ms ON bt.mau_sac_id = ms.id
         LEFT JOIN chi_tiet_don_hang ct ON ct.bien_the_san_pham_id = bt.id
         LEFT JOIN don_hang d ON ct.don_hang_id = d.id
         LEFT JOIN ton_kho tk ON tk.bien_the_san_pham_id = bt.id
         WHERE bt.san_pham_id = :sanPhamId
-        GROUP BY bt.id, bt.mau_sac, bt.luu_tru_gb, tk.so_luong
+        GROUP BY bt.id, ms.ten_mau, bt.luu_tru_gb, tk.so_luong
         ORDER BY soLuongBan DESC
     """, nativeQuery = true)
     List<BienTheProjection> getVariantStats(@Param("sanPhamId") Integer sanPhamId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);

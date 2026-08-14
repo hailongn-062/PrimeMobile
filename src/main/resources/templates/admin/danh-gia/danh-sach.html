@@ -127,11 +127,11 @@
                     const date = new Date(review.ngayTao).toLocaleDateString('vi-VN');
                     let stars = '';
                     for (let i = 1; i <= 5; i++) {
-                        stars += i <= review.sao ? '<i class="fa-solid fa-star text-warning"></i>' : '<i class="fa-regular fa-star text-warning"></i>';
+                        stars += i <= review.sao ? '<i class="fa-solid fa-star star-filled"></i>' : '<i class="fa-regular fa-star star-empty"></i>';
                     }
                     
                     let statusBadge = '';
-                    if (review.trangThai === 'cho_duyet') statusBadge = '<span class="badge bg-warning text-dark">Chờ duyệt</span>';
+                    if (review.trangThai === 'cho_duyet') statusBadge = '<span class="badge bg-warning text-white">Chờ duyệt</span>';
                     else if (review.trangThai === 'da_duyet') statusBadge = '<span class="badge bg-success">Đã duyệt</span>';
                     else if (review.trangThai === 'an') statusBadge = '<span class="badge bg-secondary">Đã ẩn</span>';
 
@@ -196,24 +196,24 @@
         }
 
         async function approveReview(id) {
-            if (!confirm('Duyệt đánh giá này?')) return;
+            if (!await pmConfirm('Duyệt đánh giá này?')) return;
             try {
                 const res = await fetch(`/api/admin/danh-gia/${id}/duyet`, { method: 'PUT' });
                 if (!res.ok) throw new Error('Lỗi khi duyệt');
                 loadReviews(currentPage);
             } catch (err) {
-                alert(err.message);
+                pmAlert(err.message, 'error');
             }
         }
 
         async function hideReview(id) {
-            if (!confirm('Ẩn đánh giá này?')) return;
+            if (!await pmConfirm('Ẩn đánh giá này?')) return;
             try {
                 const res = await fetch(`/api/admin/danh-gia/${id}/an`, { method: 'PUT' });
                 if (!res.ok) throw new Error('Lỗi khi ẩn');
                 loadReviews(currentPage);
             } catch (err) {
-                alert(err.message);
+                pmAlert(err.message, 'error');
             }
         }
 

@@ -99,7 +99,7 @@
                                         <span th:case="'theo_don_hang'" class="badge bg-success loai-badge">
                                             <i class="fa fa-shopping-cart"></i> Theo Đơn Hàng
                                         </span>
-                                        <span th:case="'theo_san_pham'" class="badge bg-warning text-dark loai-badge">
+                                        <span th:case="'theo_san_pham'" class="badge bg-warning text-white loai-badge">
                                             <i class="fa fa-tag"></i> Theo Sản Phẩm
                                         </span>
                                         <span th:case="*" class="badge bg-secondary loai-badge" th:text="${ctkm.loai}"></span>
@@ -124,7 +124,7 @@
                                         <span th:case="'chua_bat_dau'" class="badge bg-secondary">Chưa bắt đầu</span>
                                         <span th:case="'dang_dien_ra'" class="badge bg-success">Đang diễn ra</span>
                                         <span th:case="'da_ket_thuc'" class="badge bg-dark">Đã kết thúc</span>
-                                        <span th:case="'tam_dung'" class="badge bg-warning text-dark">Tạm dừng</span>
+                                        <span th:case="'tam_dung'" class="badge bg-warning text-white">Tạm dừng</span>
                                         <span th:case="*" class="badge bg-secondary" th:text="${ctkm.trangThai}"></span>
                                     </th:block>
                                 </td>
@@ -170,14 +170,14 @@
                                        th:href="@{/admin/khuyen-mai/toggle-trang-thai/{id}(id=${ctkm.id})}"
                                        class="btn btn-sm btn-success ms-1"
                                        title="Mở lại chương trình"
-                                       onclick="return confirm('Mở lại chương trình này?')">
+                                       onclick="event.preventDefault(); pmConfirm('Mở lại chương trình này?').then(ok => { if(ok) window.location.href = this.href; });">
                                         <i class="fa fa-play me-1"></i> Mở lại
                                     </a>
                                     <a th:unless="${ctkm.trangThai == 'tam_dung'}"
                                        th:href="@{/admin/khuyen-mai/toggle-trang-thai/{id}(id=${ctkm.id})}"
                                        class="btn btn-sm btn-warning ms-1"
                                        title="Tạm dừng chương trình"
-                                       onclick="return confirm('Tạm dừng chương trình này?')">
+                                       onclick="event.preventDefault(); pmConfirm('Tạm dừng chương trình này?').then(ok => { if(ok) window.location.href = this.href; });">
                                         <i class="fa fa-pause me-1"></i> Tạm dừng
                                     </a>
                                 </td>

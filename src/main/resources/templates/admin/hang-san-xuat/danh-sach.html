@@ -48,7 +48,7 @@
                                 </a>
                                 <a th:href="@{/admin/hang-san-xuat/delete/{id}(id=${hsx.id})}" 
                                    class="btn btn-sm btn-outline-danger ms-1"
-                                   onclick="return confirm('Bạn có chắc muốn xóa hãng sản xuất này?');">
+                                   onclick="event.preventDefault(); pmConfirm('Bạn có chắc muốn xóa hãng sản xuất này?').then(ok => { if(ok) window.location.href = this.href; });">
                                     <i class="fa fa-trash"></i> Xóa
                                 </a>
                             </td>

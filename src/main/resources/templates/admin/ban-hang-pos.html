@@ -1267,7 +1267,7 @@
                     gap:.4rem;padding:.35rem .85rem;border-radius:8px;background:#FFF0F0;
                     color:#C0392B;border:1px solid #FECDD3;font-size:.8rem;font-weight:600;
                     text-decoration:none;transition:all .2s;"
-                    onclick="return confirm('Bạn có chắc muốn đăng xuất không?')" id="btn-dang-xuat">
+                    onclick="event.preventDefault(); pmConfirm('Bạn có chắc muốn đăng xuất không?').then(ok => { if(ok) window.location.href = this.href; });" id="btn-dang-xuat">
                     <i class="fa fa-sign-out-alt"></i>
                     <span class="d-none d-sm-inline">Đăng xuất</span>
                 </a>

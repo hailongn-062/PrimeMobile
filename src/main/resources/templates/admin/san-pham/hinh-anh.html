@@ -95,7 +95,7 @@
                             <div class="card-footer bg-white p-2 d-flex justify-content-end align-items-center border-top-0">
                                 <a th:href="@{/admin/san-pham/bien-the/hinh-anh/delete/{id}(id=${anh.id}, bienTheId=${bienThe.id})}" 
                                    class="text-danger" title="Xóa ảnh"
-                                   onclick="return confirm('Bạn có chắc muốn xóa ảnh này?');">
+                                   onclick="event.preventDefault(); pmConfirm('Bạn có chắc muốn xóa ảnh này?').then(ok => { if(ok) window.location.href = this.href; });">
                                     <i class="fa fa-trash"></i>
                                 </a>
                             </div>
@@ -176,13 +176,13 @@
             .then(res => res.json())
             .then(data => {
                 if(data.success) {
-                    alert('Lưu thứ tự thành công!');
+                    pmAlert('Lưu thứ tự thành công!', 'success');
                     btn.classList.add('d-none');
                 } else {
-                    alert('Lỗi: ' + data.message);
+                    pmAlert('Lỗi: ' + data.message, 'error');
                 }
             })
-            .catch(err => alert('Lỗi kết nối: ' + err))
+            .catch(err => pmAlert('Lỗi kết nối: ' + err, 'error'))
             .finally(() => {
                 btn.innerHTML = originalText;
                 btn.disabled = false;

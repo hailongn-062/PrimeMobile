@@ -354,11 +354,7 @@
                 if (bienTheId && khoId) {
                     openImeiModal(bienTheId, khoId, sku, tenKho);
                 } else {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Thiếu thông tin',
-                        text: 'Không tìm thấy ID của biến thể hoặc kho. Vui lòng cập nhật dữ liệu từ API.'
-                    });
+                    pmAlert('Không tìm thấy ID của biến thể hoặc kho. Vui lòng cập nhật dữ liệu từ API.', 'warning');
                 }
             }
         });

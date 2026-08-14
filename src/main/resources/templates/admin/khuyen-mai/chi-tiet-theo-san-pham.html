@@ -40,7 +40,7 @@
                     <span th:case="'chua_bat_dau'" class="badge bg-secondary fs-6">Chưa bắt đầu</span>
                     <span th:case="'dang_dien_ra'" class="badge bg-success fs-6">Đang diễn ra</span>
                     <span th:case="'da_ket_thuc'" class="badge bg-dark fs-6">Đã kết thúc</span>
-                    <span th:case="'tam_dung'" class="badge bg-warning text-dark fs-6">Tạm dừng</span>
+                    <span th:case="'tam_dung'" class="badge bg-warning text-white fs-6">Tạm dừng</span>
                 </th:block>
             </div>
             <div class="card-body">
@@ -208,7 +208,7 @@
                                 <td class="text-center">
                                     <a th:href="@{/admin/khuyen-mai/{id}/pham-vi/xoa/{pvId}(id=${ctkm.id}, pvId=${pv.id})}"
                                        class="btn btn-sm btn-outline-danger py-0 px-2"
-                                       onclick="return confirm('Xóa biến thể này khỏi phạm vi áp dụng?')">
+                                       onclick="event.preventDefault(); pmConfirm('Xóa biến thể này khỏi phạm vi áp dụng?').then(ok => { if(ok) window.location.href = this.href; });">
                                         <i class="fa fa-trash"></i>
                                     </a>
                                 </td>
@@ -227,8 +227,6 @@
     </main>
 
     <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
-    <!-- Thêm thư viện SweetAlert2 do layout mặc định chưa bao gồm -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -301,23 +299,12 @@
                 e.preventDefault();
                 const checkedBoxes = document.querySelectorAll('.variant-checkbox:checked');
                 if (checkedBoxes.length === 0) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Chưa chọn biến thể',
-                        text: 'Vui lòng chọn ít nhất 1 biến thể trước khi lưu!'
-                    });
+                    pmAlert('Vui lòng chọn ít nhất 1 biến thể trước khi lưu!', 'warning');
                     return false;
                 }
                 
-                Swal.fire({
-                    title: 'Xác nhận lưu',
-                    text: `Bạn sắp thêm ${checkedBoxes.length} biến thể vào chương trình khuyến mãi. Bạn có chắc chắn muốn tiếp tục?`,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Đồng ý',
-                    cancelButtonText: 'Hủy'
-                }).then((result) => {
-                    if (result.isConfirmed) {
+                pmConfirm(`Bạn sắp thêm ${checkedBoxes.length} biến thể vào chương trình khuyến mãi. Bạn có chắc chắn muốn tiếp tục?`).then((result) => {
+                    if (result) {
                         formThemNhieu.submit();
                     }
                 });

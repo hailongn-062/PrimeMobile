@@ -167,9 +167,9 @@
                     </td>
                     <td class="text-center">
                             <span th:if="${dh.trangThai == 'cho_xac_nhan'}"
-                                  class="badge rounded-pill bg-warning text-dark">⏳ Chờ xác nhận</span>
+                                  class="badge rounded-pill bg-warning text-white">⏳ Chờ xác nhận</span>
                         <span th:if="${dh.trangThai == 'da_xac_nhan'}"
-                              class="badge rounded-pill bg-info text-dark">✅ Đã xác nhận</span>
+                              class="badge rounded-pill bg-info text-white">✅ Đã xác nhận</span>
                         <span th:if="${dh.trangThai == 'dang_giao'}"
                               class="badge rounded-pill bg-primary">🚚 Đang giao</span>
                         <span th:if="${dh.trangThai == 'da_hoan_thanh'}"
@@ -179,7 +179,7 @@
                         <span th:if="${dh.trangThai == 'giao_that_bai'}"
                               class="badge rounded-pill bg-danger">❌ Giao thất bại</span>
                         <span th:if="${dh.trangThai == 'cho_hoan_tien'}"
-                              class="badge rounded-pill bg-warning text-dark">⏳ Chờ hoàn tiền</span>
+                              class="badge rounded-pill bg-warning text-white">⏳ Chờ hoàn tiền</span>
                     </td>
                     <td class="text-center">
                             <span th:if="${dh.trangThaiThanhToan == 'da_thanh_toan'}"
@@ -189,9 +189,9 @@
                         <span th:if="${dh.trangThaiThanhToan == 'that_bai'}"
                               class="badge rounded-pill bg-danger">Thất bại</span>
                         <span th:if="${dh.trangThaiThanhToan == 'dang_chuyen_huong'}"
-                              class="badge rounded-pill bg-warning text-dark">Đang TT</span>
+                              class="badge rounded-pill bg-warning text-white">Đang TT</span>
                         <span th:if="${dh.trangThaiThanhToan == 'da_hoan_tien'}"
-                              class="badge rounded-pill bg-info text-dark">Đã hoàn tiền</span>
+                              class="badge rounded-pill bg-info text-white">Đã hoàn tiền</span>
                     </td>
                     <td class="text-center align-middle" style="white-space: nowrap;">
                         <a th:href="@{/admin/don-hang/{id}(id=${dh.id})}"

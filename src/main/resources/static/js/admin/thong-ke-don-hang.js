@@ -162,7 +162,7 @@ const ThongKeDonHang = (function() {
                     if (item.trangThai === 'da_huy') {
                         badge = '<span class="badge bg-danger">Đã hủy</span>';
                     } else if (item.trangThai === 'giao_that_bai') {
-                        badge = '<span class="badge bg-warning text-dark">Giao thất bại</span>';
+                        badge = '<span class="badge bg-danger">Giao thất bại</span>';
                     } else {
                         badge = `<span class="badge bg-secondary">${item.trangThai}</span>`;
                     }

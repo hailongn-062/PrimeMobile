@@ -187,7 +187,7 @@
                                            th:class="${kh.trangThai == 'hoat_dong' ? 'btn-toggle-lock lock' : 'btn-toggle-lock unlock'}"
                                            th:title="${kh.trangThai == 'hoat_dong' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}"
                                            th:id="'btn-toggle-' + ${kh.id}"
-                                           onclick="return confirm(this.title + ' khách hàng này?')">
+                                           onclick="event.preventDefault(); const t = this.title; pmConfirm(t + ' khách hàng này?').then(ok => { if(ok) window.location.href = this.href; });">
                                             <i th:class="${kh.trangThai == 'hoat_dong' ? 'fa fa-lock' : 'fa fa-unlock'}"></i>
                                         </a>
                                     </th:block>

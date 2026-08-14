@@ -92,7 +92,7 @@
                                 <td id="lblDoanhThuOnline">-</td>
                             </tr>
                             <tr>
-                                <td><span class="badge bg-info text-dark">Offline</span></td>
+                                <td><span class="badge bg-info text-white">Offline</span></td>
                                 <td class="fw-bold" id="lblTyLeOffline">-</td>
                                 <td id="lblDoanhThuOffline">-</td>
                             </tr>
@@ -159,7 +159,7 @@
         const start = document.getElementById('startDate').value;
         const end = document.getElementById('endDate').value;
         if(!start || !end) {
-            alert('Vui lòng chọn khoảng thời gian');
+            pmAlert('Vui lòng chọn khoảng thời gian', 'warning');
             return;
         }
 
@@ -425,5 +425,6 @@
     });
 </script>
 
+<div th:replace="~{layout/admin-layout :: adminScripts}"></div>
 </body>
 </html>
