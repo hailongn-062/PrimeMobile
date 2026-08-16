@@ -93,7 +93,7 @@
                         </div>
                         <div class="mb-2">
                             <label class="form-label small fw-bold">Giá trị <span class="text-danger">*</span></label>
-                            <input type="text" name="giaTri" class="form-control form-control-sm" required placeholder="VD: 6.7 inch, 12MP..." />
+                            <textarea name="giaTri" class="form-control form-control-sm" rows="3" required placeholder="VD: 6.7 inch, 12MP..."></textarea>
                         </div>
                         <div class="mb-2">
                             <label class="form-label small fw-bold">Thứ tự hiển thị <span class="text-danger">*</span></label>
@@ -122,7 +122,7 @@
                             <tr th:each="ts : ${thongSoKyThuats}">
                                 <td th:text="${ts.nhom}"></td>
                                 <td th:text="${ts.tenThongSo}"></td>
-                                <td th:text="${ts.giaTri}"></td>
+                                <td th:text="${ts.giaTri}" style="white-space: pre-wrap;"></td>
                                 <td th:text="${ts.thuTu}"></td>
                                 <td class="text-center">
                                     <button class="btn btn-sm text-primary py-0 px-1 border-0 bg-transparent" title="Sửa" 
@@ -345,7 +345,7 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold">Giá trị</label>
-                    <input type="text" id="editSpecGiaTri" class="form-control form-control-sm" required>
+                    <textarea id="editSpecGiaTri" class="form-control form-control-sm" rows="3" required></textarea>
                 </div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold">Thứ tự hiển thị</label>

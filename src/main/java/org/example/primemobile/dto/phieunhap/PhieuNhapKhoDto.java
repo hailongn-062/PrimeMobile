@@ -31,6 +31,9 @@ public class PhieuNhapKhoDto {
     /** Tên nhà cung cấp (nếu có) */
     private String tenNhaCungCap;
 
+    /** Tên người tạo */
+    private String tenNguoiTao;
+
     /** Ngày nhập kho */
     private LocalDateTime ngayNhap;
 

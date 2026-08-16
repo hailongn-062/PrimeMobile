@@ -51,10 +51,9 @@ public class DanhMuc {
     @Column(name = "mo_ta", columnDefinition = "NVARCHAR(MAX)")
     private String moTa;
 
-    /** Thá»© tá»± hiá»ƒn thá»‹ trÃªn giao diá»‡n (DEFAULT 0). */
-    @Column(name = "thu_tu", nullable = false)
-    @Builder.Default
-    private Integer thuTu = 0;
+    /** Thá»© tá»± hiá»ƒn thá»‹ trÃªn giao diá»‡n. */
+    @Column(name = "thu_tu")
+    private Integer thuTu;
 
     /**
      * Tráº¡ng thÃ¡i kÃ­ch hoáº¡t (DEFAULT 1 = Ä‘ang hoáº¡t Ä‘á»™ng).

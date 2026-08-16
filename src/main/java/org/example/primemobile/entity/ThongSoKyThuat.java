@@ -62,10 +62,10 @@ public class ThongSoKyThuat {
     private String tenThongSo;
 
     /**
-     * GiÃ¡ trá»‹ cá»§a thÃ´ng sá»‘.
-     * VÃ­ dá»¥: "6.7 inch", "2796 x 1290 pixels", "Apple A17 Pro".
+     * Giá trị của thông số.
+     * Có thể chứa xuống dòng, tối đa 1000 ký tự.
      */
-    @Column(name = "gia_tri", nullable = false, length = 255)
+    @Column(name = "gia_tri", nullable = false, length = 1000)
     private String giaTri;
 
     /** Thá»© tá»± hiá»ƒn thá»‹ trong nhÃ³m (DEFAULT 0). */

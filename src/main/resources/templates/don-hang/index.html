@@ -169,6 +169,13 @@
         return new Date(value).toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit', year: 'numeric'});
     }
 
+    function formatDateTime(value) {
+        if (!value) return '';
+        const d = new Date(value);
+        const pad = n => n.toString().padStart(2, '0');
+        return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
     function esc(value) {
         return String(value ?? '').replace(/[&<>"']/g, ch => ({
             '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;'
@@ -210,6 +217,10 @@
                         Đơn hàng: <strong class="text-dark">#${esc(order.maDonHang)}</strong> 
                         <span class="mx-2">•</span> 
                         Ngày đặt hàng: <strong class="text-dark">${date(order.ngayDat)}</strong>
+                        ${order.trangThai === 'da_hoan_thanh' && order.ngayGiaoThucTe ? `
+                        <span class="mx-2">•</span> 
+                        Ngày giao thực tế: <strong class="text-dark">${formatDateTime(order.ngayGiaoThucTe)}</strong>
+                        ` : ''}
                     </div>
                     <div class="text-end">
                         <span class="badge text-bg-light border me-1">${esc(order.trangThaiThanhToanText)}</span>
@@ -296,10 +307,14 @@
                                 <strong>Thanh toán:</strong> 
                                 <span class="badge text-bg-light border">${esc(order.trangThaiThanhToanText)}</span>
                             </div>
-                            <hr class="my-2">
-                            <div class="mb-2">
+                            <div class="mb-2 mt-2">
                                 <strong>Phương thức:</strong> ${(order.phuongThucThanhToan === 'Tien mat' && order.trangThaiThanhToan === 'chua_thanh_toan') ? '-' : esc(order.phuongThucThanhToan || '—')}
                             </div>
+                            ${order.trangThai === 'da_hoan_thanh' && order.ngayGiaoThucTe ? `
+                            <div class="mb-2">
+                                <strong>Ngày giao thực tế:</strong> ${formatDateTime(order.ngayGiaoThucTe)}
+                            </div>
+                            ` : ''}
                             ${order.tenKhuyenMai ? `
                             <div>
                                 <strong>Khuyến mãi:</strong>

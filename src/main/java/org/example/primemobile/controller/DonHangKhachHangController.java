@@ -345,6 +345,7 @@ public class DonHangKhachHangController {
         r.put("id", donHang.getId());
         r.put("maDonHang", donHang.getMaDonHang());
         r.put("ngayDat", donHang.getNgayDat());
+        r.put("ngayGiaoThucTe", donHang.getNgayGiaoThucTe());
         r.put("trangThai", donHang.getTrangThai());
         r.put("trangThaiText", labelTrangThai(donHang.getTrangThai()));
         r.put("trangThaiThanhToan", donHang.getTrangThaiThanhToan());

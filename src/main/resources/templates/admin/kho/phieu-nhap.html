@@ -204,6 +204,7 @@
                                     <tr>
                                         <th>Mã phiếu</th>
                                         <th>Nhà cung cấp</th>
+                                        <th>Người tạo</th>
                                         <th>Ngày nhập</th>
                                         <th class="text-end">Tổng tiền</th>
                                         <th class="text-center">Hành động</th>
@@ -232,10 +233,13 @@
                     </div>
                     <div class="modal-body">
                         <div class="row mb-3">
-                            <div class="col-6">
+                            <div class="col-4">
                                 <p class="mb-1 text-muted small">Mã phiếu</p><strong id="modalMaPhieu">--</strong>
                             </div>
-                            <div class="col-6">
+                            <div class="col-4">
+                                <p class="mb-1 text-muted small">Người tạo</p><strong id="modalNguoiTao">--</strong>
+                            </div>
+                            <div class="col-4">
                                 <p class="mb-1 text-muted small">Ngày nhập</p><strong id="modalNgayNhap">--</strong>
                             </div>
                         </div>
@@ -857,6 +861,7 @@
                             <tr>
                                 <td class="fw-bold">PN-${pn.id}</td>
                                 <td>${pn.tenNhaCungCap ? pn.tenNhaCungCap : 'N/A'}</td>
+                                <td>${pn.tenNguoiTao ? pn.tenNguoiTao : 'N/A'}</td>
                                 <td>${new Date(pn.ngayNhap).toLocaleString('vi-VN')}</td>
                                 <td class="text-end fw-semibold text-danger">${formatVND(pn.tongTien)}</td>
                                 <td class="text-center"><button class="btn btn-sm btn-outline-info btn-view-detail" data-id="${pn.id}"><i class="fa fa-eye"></i> Xem chi tiết</button></td>
@@ -888,6 +893,7 @@
                         throw new Error('Không có dữ liệu chi tiết');
                     }
                     document.getElementById('modalMaPhieu').textContent = `PN-${data.id}`;
+                    document.getElementById('modalNguoiTao').textContent = data.tenNguoiTao || 'N/A';
                     document.getElementById('modalNgayNhap').textContent = new Date(data.ngayNhap).toLocaleString('vi-VN');
                     document.getElementById('modalTongTien').textContent = formatVND(data.tongTien);
                     let chiTietHtml = '';

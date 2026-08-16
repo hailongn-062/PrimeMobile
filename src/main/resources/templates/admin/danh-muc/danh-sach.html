@@ -23,7 +23,6 @@
                             <th>ID</th>
                             <th>Tên danh mục</th>
                             <th>Slug</th>
-                            <th>Thứ tự</th>
                             <th>Trạng thái</th>
                             <th class="text-end pe-4">Hành động</th>
                         </tr>
@@ -33,7 +32,6 @@
                             <td th:text="${dm.id}">1</td>
                             <td class="fw-bold" th:text="${dm.tenDanhMuc}">Điện thoại</td>
                             <td th:text="${dm.slug}">dien-thoai</td>
-                            <td th:text="${dm.thuTu}">1</td>
                             <td>
                                 <span th:if="${dm.kichHoat}" class="badge bg-success">Đang hoạt động</span>
                                 <span th:unless="${dm.kichHoat}" class="badge bg-secondary">Đã ẩn</span>
@@ -45,7 +43,7 @@
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(danhMucs)}">
-                            <td colspan="6" class="text-center py-3 text-muted">Chưa có danh mục nào.</td>
+                            <td colspan="5" class="text-center py-3 text-muted">Chưa có danh mục nào.</td>
                         </tr>
                     </tbody>
                 </table>

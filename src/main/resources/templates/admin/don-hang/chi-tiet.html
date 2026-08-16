@@ -313,9 +313,8 @@
                         <span th:if="${donHang.trangThaiThanhToan == 'dang_chuyen_huong'}"  class="badge bg-warning text-white">Đang xử lý</span>
                         <span th:if="${donHang.trangThaiThanhToan == 'da_hoan_tien'}"       class="badge bg-info text-white">Đã hoàn tiền</span>
                     </div>
-                    <hr class="my-2">
                     <!-- Phương thức thanh toán -->
-                    <div class="d-flex justify-content-between mb-2" style="font-size:.87rem;">
+                    <div class="d-flex justify-content-between mt-2 mb-2" style="font-size:.87rem;">
                         <span class="text-muted">Phương thức:</span>
                         <span class="fw-semibold" th:text="${donHang.phuongThucThanhToan != null ? (donHang.phuongThucThanhToan == 'Tien mat' and donHang.trangThaiThanhToan == 'chua_thanh_toan' ? '-' : donHang.phuongThucThanhToan) : '—'}">—</span>
                     </div>
@@ -327,15 +326,9 @@
                             (<span th:text="${#numbers.formatDecimal(donHang.tienGiamGia, 0, 'COMMA', 0, 'POINT')} + '₫'">0₫</span>)
                         </span>
                     </div>
-                    <hr class="my-2">
-                    <!-- Ẩn theo yêu cầu -->
-                    <div class="d-none justify-content-between" style="font-size:.82rem;">
-                        <span class="text-muted">Ngày giao dự kiến:</span>
-                        <span th:text="${donHang.ngayGiaoDuKien != null ? #temporals.format(donHang.ngayGiaoDuKien, 'dd/MM/yyyy') : '—'}">—</span>
-                    </div>
-                    <div class="d-none justify-content-between" style="font-size:.82rem;">
+                    <div class="d-flex justify-content-between mt-1 mb-1" style="font-size:.82rem;" th:if="${donHang.trangThai == 'da_hoan_thanh' and donHang.ngayGiaoThucTe != null}">
                         <span class="text-muted">Ngày giao thực tế:</span>
-                        <span th:text="${donHang.ngayGiaoThucTe != null ? #temporals.format(donHang.ngayGiaoThucTe, 'dd/MM/yyyy HH:mm') : '—'}">—</span>
+                        <span class="fw-semibold text-dark" th:text="${#temporals.format(donHang.ngayGiaoThucTe, 'dd/MM/yyyy HH:mm')}">—</span>
                     </div>
                 </div>
             </div>

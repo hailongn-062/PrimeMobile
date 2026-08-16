@@ -266,6 +266,7 @@ public class PhieuNhapKhoController {
                 .maPhieu(entity.getMaPhieu())
                 .tenKho(entity.getKho() != null ? entity.getKho().getTenKho() : "N/A")
                 .tenNhaCungCap(entity.getNhaCungCap() != null ? entity.getNhaCungCap().getTenNcc() : null)
+                .tenNguoiTao(entity.getNguoiTao() != null ? entity.getNguoiTao().getHoTen() : null)
                 .ngayNhap(entity.getNgayNhap())
                 .tongTien(entity.getTongTien())
                 .ghiChu(entity.getGhiChu());

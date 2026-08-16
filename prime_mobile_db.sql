@@ -58,7 +58,7 @@ CREATE TABLE danh_muc (
     ten_danh_muc NVARCHAR(100) NOT NULL,
     slug         VARCHAR(100)  NOT NULL,
     mo_ta        NVARCHAR(MAX),
-    thu_tu       INT           NOT NULL DEFAULT 0,
+    thu_tu       INT           NULL,
     kich_hoat    BIT           NOT NULL DEFAULT 1,
     CONSTRAINT uq_dm_ten  UNIQUE (ten_danh_muc),
     CONSTRAINT uq_dm_slug UNIQUE (slug)
@@ -681,11 +681,11 @@ GO
 -- =====================================================
 -- 2. DỮ LIỆU CƠ BẢN (Danh mục, Hãng, Kho, NCC)
 -- =====================================================
-INSERT INTO danh_muc (ten_danh_muc, slug, thu_tu) VALUES
-(N'Điện thoại cao cấp', 'dien-thoai-cao-cap', 1),
-(N'Điện thoại tầm trung', 'dien-thoai-tam-trung', 2),
-(N'Điện thoại gập', 'dien-thoai-gap', 3),
-(N'Điện thoại giá rẻ', 'dien-thoai-gia-re', 4);
+INSERT INTO danh_muc (ten_danh_muc, slug) VALUES
+(N'Điện thoại cao cấp', 'dien-thoai-cao-cap'),
+(N'Điện thoại tầm trung', 'dien-thoai-tam-trung'),
+(N'Điện thoại gập', 'dien-thoai-gap'),
+(N'Điện thoại giá rẻ', 'dien-thoai-gia-re');
 
 INSERT INTO hang_san_xuat (ten_hang, logo, quoc_gia) VALUES
 ('Apple', 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg', N'Mỹ'),
@@ -840,3 +840,23 @@ INSERT INTO bien_the_san_pham (san_pham_id, mau_sac_id, ma_sku, ram_gb, luu_tru_
 (18, (SELECT id FROM mau_sac WHERE ten_mau = N'Đen Lấp Lánh'),  'A79-128-BLK',   6, 128, 5990000,  'con_hang'),
 (18, (SELECT id FROM mau_sac WHERE ten_mau = N'Đen Lấp Lánh'),  'A79-256-BLK',   8, 256, 6990000,  'con_hang');
 GO
+
+
+-- 1. Xóa ràng buộc DEFAULT của cột thu_tu nếu có (SQL Server thường tự tạo tên constraint mặc định nếu bạn dùng DEFAULT 0, bạn cần tìm tên constraint đó hoặc chạy script dưới đây)
+DECLARE @ConstraintName nvarchar(200)
+SELECT @ConstraintName = Name FROM sys.default_constraints
+WHERE PARENT_OBJECT_ID = OBJECT_ID('danh_muc') AND PARENT_COLUMN_ID = (SELECT column_id FROM sys.columns WHERE NAME = 'thu_tu' AND object_id = OBJECT_ID('danh_muc'))
+
+IF @ConstraintName IS NOT NULL
+BEGIN
+    EXEC('ALTER TABLE danh_muc DROP CONSTRAINT ' + @ConstraintName)
+END
+
+-- 2. Thay đổi kiểu dữ liệu cột thành cho phép NULL
+ALTER TABLE danh_muc ALTER COLUMN thu_tu INT NULL;
+
+-- 3. Cập nhật toàn bộ dữ liệu hiện tại thành NULL (Tùy chọn)
+UPDATE danh_muc SET thu_tu = NULL;
+
+ALTER TABLE thong_so_ky_thuat 
+ALTER COLUMN gia_tri NVARCHAR(1000) NOT NULL;
