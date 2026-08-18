@@ -1,13 +1,19 @@
 package org.example.primemobile.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.example.primemobile.entity.BienTheSanPham;
+import org.example.primemobile.entity.HinhAnhSanPham;
 import org.example.primemobile.entity.SanPham;
+import org.example.primemobile.entity.BienTheSanPham;
+import org.example.primemobile.repository.HinhAnhSanPhamRepository;
 import org.example.primemobile.repository.SanPhamRepository;
+import org.example.primemobile.repository.TonKhoRepository;
+import org.example.primemobile.entity.TonKho;
+import org.example.primemobile.service.IKhuyenMaiService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,6 +37,9 @@ public class ChatBotController {
 
     private final SanPhamRepository sanPhamRepository;
     private final org.example.primemobile.service.IChatbotService chatbotService;
+    private final HinhAnhSanPhamRepository hinhAnhSanPhamRepository;
+    private final TonKhoRepository tonKhoRepository;
+    private final IKhuyenMaiService khuyenMaiService;
 
     @PostMapping({"", "/ask"})
     @Transactional
@@ -49,113 +58,101 @@ public class ChatBotController {
 
         org.example.primemobile.entity.CuocHoiThoai cuocHoiThoai = chatbotService.layHoacTaoCuocHoiThoai(khachHangId, sessionId);
         
-        String aiReply = chatbotService.guiTinNhan(cuocHoiThoai.getId(), rawMessage);
+        org.example.primemobile.dto.ChatbotResponseDto aiResponse = chatbotService.guiTinNhan(cuocHoiThoai.getId(), rawMessage, khachHangId);
 
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("success", true);
-        response.put("reply", aiReply);
+        response.put("reply", aiResponse.getReply());
         
-        String message = normalize(rawMessage);
-        response.put("products", recommendProducts(message));
-        response.put("quickReplies", quickReplies(message));
+        java.util.List<Map<String, Object>> products = new java.util.ArrayList<>();
+        if (aiResponse.getProductIds() != null && !aiResponse.getProductIds().isEmpty()) {
+            for (Integer pId : aiResponse.getProductIds()) {
+                sanPhamRepository.findById(pId).ifPresent(product -> {
+                    Optional<BienTheSanPham> variant = minVariant(product);
+                    if (variant.isPresent()) {
+                        BienTheSanPham bt = variant.get();
+                        BigDecimal price = bt.getGiaBan();
+                        BigDecimal salePrice = null;
+                        try {
+                            salePrice = khuyenMaiService.tinhGiaSauKhuyenMai(bt.getId(), null);
+                            if (salePrice != null && salePrice.compareTo(price) == 0) {
+                                salePrice = null;
+                            }
+                        } catch (Exception e) {}
+                        
+                        String imageUrl = null;
+                        try {
+                            imageUrl = getImageUrl(bt);
+                        } catch (Exception e) {}
+                        
+                        products.add(productDto(product, price, salePrice, imageUrl));
+                    }
+                });
+            }
+        }
+        
+        response.put("products", products);
         return ResponseEntity.ok(response);
     }
 
-    private List<Map<String, Object>> recommendProducts(String message) {
-        BigDecimal maxBudget = extractBudget(message);
-        String brand = extractBrand(message);
-        boolean shoppingIntent = maxBudget != null || brand != null
-                || containsAny(message, "camera", "chup anh", "anh dep", "pin", "choi game", "gaming", "man hinh");
+    @GetMapping("/history")
+    public ResponseEntity<?> layLichSu(jakarta.servlet.http.HttpSession session) {
+        org.example.primemobile.dto.auth.SessionKhachHang currentCustomer = 
+            (org.example.primemobile.dto.auth.SessionKhachHang) session.getAttribute("CURRENT_CUSTOMER");
+        Integer khachHangId = currentCustomer != null ? currentCustomer.getKhachHangId() : null;
+        String sessionId = session.getId();
 
-        if (!shoppingIntent) {
-            return List.of();
-        }
+        org.example.primemobile.entity.CuocHoiThoai cuocHoiThoai = chatbotService.layHoacTaoCuocHoiThoai(khachHangId, sessionId);
+        List<org.example.primemobile.entity.TinNhanChat> history = chatbotService.layLichSuTinNhan(cuocHoiThoai.getId());
 
-        return sanPhamRepository
-                .timKiemSanPhamPublic(null, null, null, PageRequest.of(0, 24, Sort.by(Sort.Direction.DESC, "ngayTao")))
-                .getContent()
-                .stream()
-                .filter(product -> matchesBrand(product, brand))
-                .map(product -> new java.util.AbstractMap.SimpleEntry<SanPham, Optional<BigDecimal>>(product, minPrice(product)))
-                .filter(entry -> entry.getValue().isPresent())
-                .filter(entry -> maxBudget == null || entry.getValue().get().compareTo(maxBudget) <= 0)
-                .sorted(Comparator.comparing(entry -> entry.getValue().get()))
-                .limit(4)
-                .map(entry -> productDto(entry.getKey(), entry.getValue().get()))
-                .toList();
+        List<Map<String, Object>> messages = history.stream().map(msg -> {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("vai", msg.getVai());
+            map.put("noiDung", msg.getNoiDung());
+            return map;
+        }).toList();
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+        response.put("messages", messages);
+        return ResponseEntity.ok(response);
     }
 
-    private boolean matchesBrand(SanPham product, String brand) {
-        if (brand == null) {
-            return true;
-        }
-        String productBrand = product.getHangSanXuat() != null ? normalize(product.getHangSanXuat().getTenHang()) : "";
-        String productName = normalize(product.getTenSanPham());
-        return productBrand.contains(brand) || productName.contains(brand);
-    }
-
-    private Map<String, Object> productDto(SanPham product, BigDecimal price) {
+    private Map<String, Object> productDto(SanPham product, BigDecimal price, BigDecimal salePrice, String imageUrl) {
         Map<String, Object> dto = new LinkedHashMap<>();
         dto.put("id", product.getId());
         dto.put("name", product.getTenSanPham());
         dto.put("brand", product.getHangSanXuat() != null ? product.getHangSanXuat().getTenHang() : "PrimeMobile");
         dto.put("price", price);
+        dto.put("salePrice", salePrice);
+        dto.put("image", imageUrl);
         dto.put("url", "/san-pham/" + product.getId());
         return dto;
     }
 
-    private Optional<BigDecimal> minPrice(SanPham product) {
+    private Optional<BienTheSanPham> minVariant(SanPham product) {
         if (product.getBienTheSanPhams() == null) {
             return Optional.empty();
         }
         return product.getBienTheSanPhams().stream()
-                .filter(variant -> "con_hang".equals(variant.getTrangThai()))
-                .map(BienTheSanPham::getGiaBan)
-                .filter(price -> price != null && price.compareTo(BigDecimal.ZERO) > 0)
-                .min(BigDecimal::compareTo);
+                .filter(variant -> {
+                    long totalStock = tonKhoRepository.findByBienTheSanPham(variant).stream()
+                            .mapToLong(TonKho::getSoLuong)
+                            .sum();
+                    return totalStock > 0;
+                })
+                .filter(variant -> variant.getGiaBan() != null && variant.getGiaBan().compareTo(BigDecimal.ZERO) > 0)
+                .min(Comparator.comparing(BienTheSanPham::getGiaBan));
     }
 
-    private BigDecimal extractBudget(String message) {
-        Matcher matcher = Pattern.compile("(duoi|tam|khoang|toi da)?\\s*(\\d{1,3})\\s*(trieu|tr)").matcher(message);
-        if (matcher.find()) {
-            return BigDecimal.valueOf(Long.parseLong(matcher.group(2))).multiply(BigDecimal.valueOf(1_000_000L));
-        }
-        if (containsAny(message, "re", "gia tot", "tiet kiem")) {
-            return BigDecimal.valueOf(10_000_000L);
-        }
-        return null;
+    private String getImageUrl(BienTheSanPham bt) {
+        List<HinhAnhSanPham> images = hinhAnhSanPhamRepository.findByBienTheSanPhamIdOrderByThuTuAsc(bt.getId());
+        if (images == null || images.isEmpty()) return null;
+        return images.stream()
+                .filter(img -> img.getLaAnhChinh() != null && img.getLaAnhChinh())
+                .findFirst()
+                .orElse(images.get(0))
+                .getDuongDan();
     }
 
-    private String extractBrand(String message) {
-        if (message.contains("iphone") || message.contains("apple")) return "apple";
-        if (message.contains("samsung")) return "samsung";
-        if (message.contains("xiaomi") || message.contains("redmi")) return "xiaomi";
-        if (message.contains("oppo")) return "oppo";
-        if (message.contains("vivo")) return "vivo";
-        return null;
-    }
-
-    private List<String> quickReplies(String message) {
-        if (containsAny(message, "bao hanh", "doi tra", "dat hang")) {
-            return List.of("iPhone dưới 30 triệu", "Máy giá tốt", "Liên hệ cửa hàng");
-        }
-        return List.of("Máy dưới 10 triệu", "iPhone", "Samsung camera đẹp", "Cách đặt hàng");
-    }
-
-    private boolean containsAny(String message, String... words) {
-        for (String word : words) {
-            if (message.contains(word)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private String normalize(String value) {
-        String normalized = Normalizer.normalize(value == null ? "" : value, Normalizer.Form.NFD)
-                .replace("đ", "d")
-                .replace("Đ", "D")
-                .replaceAll("\\p{M}", "");
-        return normalized.toLowerCase(Locale.ROOT).trim();
-    }
 }

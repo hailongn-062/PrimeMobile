@@ -85,9 +85,14 @@
                 <h1 class="h3 mb-1" style="font-weight:900;">Đơn hàng của tôi</h1>
                 <div class="text-muted">Theo dõi trạng thái và xem lại các sản phẩm đã đặt</div>
             </div>
-            <a href="/san-pham" class="btn btn-outline-secondary">
-                <i class="fa fa-arrow-left me-1"></i> Tiếp tục mua
-            </a>
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-secondary" id="open-chatbot-btn">
+                    <i class="fa fa-comments me-1"></i> Chat với AI
+                </button>
+                <a href="/san-pham" class="btn btn-outline-secondary">
+                    <i class="fa fa-arrow-left me-1"></i> Tiếp tục mua
+                </a>
+            </div>
         </div>
 
         <div class="alert alert-danger d-none" id="order-error"></div>
@@ -569,6 +574,16 @@
 
 
     loadOrders();
+
+    // Nút Chat với AI mở chatbot panel
+    document.getElementById('open-chatbot-btn')?.addEventListener('click', () => {
+        const chatbotToggle = document.getElementById('pm-chatbot-toggle');
+        if (chatbotToggle) chatbotToggle.click();
+        else {
+            const panel = document.getElementById('pm-chatbot');
+            if (panel) panel.classList.add('open');
+        }
+    });
 </script>
 </body>
 </html>

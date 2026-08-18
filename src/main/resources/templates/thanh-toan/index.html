@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,715 +11,972 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root { --pm-primary:#0d9488; --pm-primary-dark:#115e59; --pm-accent:#dc2626; --pm-bg:#f5f7fb; --pm-text:#0f172a; --pm-muted:#64748b; --pm-line:#e2e8f0; }
-        body { font-family:'Inter',sans-serif; background:var(--pm-bg); color:var(--pm-text); min-height:100vh; }
-        .pm-page { padding:28px 0 56px; }
-        .pm-shell { max-width:1180px; }
-        .pm-grid { display:grid; grid-template-columns:minmax(0,1fr) 372px; gap:18px; align-items:start; }
-        .pm-panel { background:#fff; border:1px solid var(--pm-line); border-radius:8px; box-shadow:0 10px 28px rgba(15,23,42,.06); overflow:hidden; }
-        .pm-panel-header { padding:16px 18px; border-bottom:1px solid var(--pm-line); font-weight:900; display:flex; align-items:center; justify-content:space-between; gap:12px; }
-        .pm-panel-body { padding:18px; }
-        .pm-option { border:1px solid var(--pm-line); border-radius:8px; padding:14px; margin-bottom:12px; cursor:pointer; transition:border-color .18s, box-shadow .18s, background .18s; }
-        .pm-option:hover { border-color:#99f6e4; background:#f8fffd; }
-        .pm-option:has(input:checked) { border-color:var(--pm-primary); box-shadow:0 0 0 3px rgba(13,148,136,.12); background:#f0fdfa; }
-        .pm-summary { padding:18px; position:sticky; top:96px; }
-        .pm-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; color:var(--pm-muted); }
-        .pm-total { color:#ea580c; font-size:1.5rem; font-weight:900; }
-        .pm-item { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; padding:12px 0; border-bottom:1px solid var(--pm-line); }
-        .pm-item:last-child { border-bottom:0; }
-        .pm-step { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:#0d9488; color:#fff; font-size:.8rem; font-weight:900; }
-        .btn-pm { background:var(--pm-primary); color:#fff; border:0; border-radius:8px; font-weight:900; }
-        .btn-pm:hover { background:var(--pm-primary-dark); color:#fff; }
-        .pm-muted { color:var(--pm-muted); }
-        .pm-price-old { color:#94a3b8; font-size:0.85rem; text-decoration:line-through; margin-right:6px; font-weight:500; }
-        .pm-success { display:none; border:1px solid #86efac; background:#f0fdf4; color:#166534; border-radius:8px; padding:16px; }
-        .pm-note { border:1px solid #fde68a; background:#fffbeb; color:#92400e; border-radius:8px; padding:12px; }
-        .pm-form-group { margin-bottom:14px; }
-        .pm-form-group label { font-size:.84rem; font-weight:800; color:#334155; margin-bottom:4px; display:block; }
-        .pm-form-control { width:100%; padding:10px 14px; border:1px solid var(--pm-line); border-radius:8px; font-size:.95rem; background:#fff; }
-        .pm-form-control:focus { border-color:var(--pm-primary); box-shadow:0 0 0 3px rgba(13,148,136,.13); outline:0; }
-        .pm-form-control[disabled] { background:#f1f5f9; cursor:not-allowed; }
-        textarea.form-control { border-radius:8px; border-color:#cbd5e1; }
-        textarea.form-control:focus { border-color:var(--pm-primary); box-shadow:0 0 0 3px rgba(13,148,136,.13); }
-        .pm-address-list { margin-bottom:12px; }
-        .pm-address-item { border:1px solid var(--pm-line); border-radius:8px; padding:12px 14px; margin-bottom:10px; cursor:pointer; transition:border-color .15s, background .15s; }
-        .pm-address-item:hover { border-color:#99f6e4; background:#f8fffd; }
-        .pm-address-item.active { border-color:var(--pm-primary); background:#f0fdfa; }
-        .pm-address-item .address-radio { margin-right:10px; }
-        .pm-btn-add-address { background:transparent; border:1px dashed var(--pm-primary); color:var(--pm-primary); border-radius:8px; padding:10px; width:100%; font-weight:800; transition:all .2s; }
-        .pm-btn-add-address:hover { background:var(--pm-primary); color:#fff; }
-        .pm-address-form { background:#f8fafc; border-radius:8px; padding:16px; margin-top:12px; border:1px solid var(--pm-line); }
-        .pm-address-form .pm-form-group:last-child { margin-bottom:0; }
-        .pm-ship-loader { display:inline-block; width:16px; height:16px; border:2px solid #e2e8f0; border-top-color:#0d9488; border-radius:50%; animation: spin .6s linear infinite; vertical-align:middle; margin-left:6px; }
-        @keyframes spin { to { transform:rotate(360deg); } }
-        @media (max-width: 992px) { .pm-grid { grid-template-columns:1fr; } .pm-summary { position:static; } }
+        :root {
+            --pm-primary: #0d9488;
+            --pm-primary-dark: #115e59;
+            --pm-accent: #dc2626;
+            --pm-bg: #f5f7fb;
+            --pm-text: #0f172a;
+            --pm-muted: #64748b;
+            --pm-line: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--pm-bg);
+            color: var(--pm-text);
+            min-height: 100vh;
+        }
+
+        .pm-page {
+            padding: 28px 0 56px;
+        }
+
+        .pm-shell {
+            max-width: 1180px;
+        }
+
+        .pm-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 372px;
+            gap: 18px;
+            align-items: start;
+        }
+
+        .pm-panel {
+            background: #fff;
+            border: 1px solid var(--pm-line);
+            border-radius: 8px;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, .06);
+            overflow: hidden;
+        }
+
+        .pm-panel-header {
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--pm-line);
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .pm-panel-body {
+            padding: 18px;
+        }
+
+        .pm-option {
+            border: 1px solid var(--pm-line);
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: border-color .18s, box-shadow .18s, background .18s;
+        }
+
+        .pm-option:hover {
+            border-color: #99f6e4;
+            background: #f8fffd;
+        }
+
+        .pm-option:has(input:checked) {
+            border-color: var(--pm-primary);
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, .12);
+            background: #f0fdfa;
+        }
+
+        .pm-summary {
+            padding: 18px;
+            position: sticky;
+            top: 96px;
+        }
+
+        .pm-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+            color: var(--pm-muted);
+        }
+
+        .pm-total {
+            color: #ea580c;
+            font-size: 1.5rem;
+            font-weight: 900;
+        }
+
+        .pm-item {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--pm-line);
+        }
+
+        .pm-item:last-child {
+            border-bottom: 0;
+        }
+
+        .pm-step {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #0d9488;
+            color: #fff;
+            font-size: .8rem;
+            font-weight: 900;
+        }
+
+        .btn-pm {
+            background: var(--pm-primary);
+            color: #fff;
+            border: 0;
+            border-radius: 8px;
+            font-weight: 900;
+        }
+
+        .btn-pm:hover {
+            background: var(--pm-primary-dark);
+            color: #fff;
+        }
+
+        .pm-muted {
+            color: var(--pm-muted);
+        }
+
+        .pm-price-old {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            text-decoration: line-through;
+            margin-right: 6px;
+            font-weight: 500;
+        }
+
+        .pm-success {
+            display: none;
+            border: 1px solid #86efac;
+            background: #f0fdf4;
+            color: #166534;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .pm-note {
+            border: 1px solid #fde68a;
+            background: #fffbeb;
+            color: #92400e;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .pm-form-group {
+            margin-bottom: 14px;
+        }
+
+        .pm-form-group label {
+            font-size: .84rem;
+            font-weight: 800;
+            color: #334155;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .pm-form-control {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--pm-line);
+            border-radius: 8px;
+            font-size: .95rem;
+            background: #fff;
+        }
+
+        .pm-form-control:focus {
+            border-color: var(--pm-primary);
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, .13);
+            outline: 0;
+        }
+
+        .pm-form-control[disabled] {
+            background: #f1f5f9;
+            cursor: not-allowed;
+        }
+
+        textarea.form-control {
+            border-radius: 8px;
+            border-color: #cbd5e1;
+        }
+
+        textarea.form-control:focus {
+            border-color: var(--pm-primary);
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, .13);
+        }
+
+        .pm-address-list {
+            margin-bottom: 12px;
+        }
+
+        .pm-address-item {
+            border: 1px solid var(--pm-line);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: border-color .15s, background .15s;
+        }
+
+        .pm-address-item:hover {
+            border-color: #99f6e4;
+            background: #f8fffd;
+        }
+
+        .pm-address-item.active {
+            border-color: var(--pm-primary);
+            background: #f0fdfa;
+        }
+
+        .pm-address-item .address-radio {
+            margin-right: 10px;
+        }
+
+        .pm-btn-add-address {
+            background: transparent;
+            border: 1px dashed var(--pm-primary);
+            color: var(--pm-primary);
+            border-radius: 8px;
+            padding: 10px;
+            width: 100%;
+            font-weight: 800;
+            transition: all .2s;
+        }
+
+        .pm-btn-add-address:hover {
+            background: var(--pm-primary);
+            color: #fff;
+        }
+
+        .pm-address-form {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+            border: 1px solid var(--pm-line);
+        }
+
+        .pm-address-form .pm-form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .pm-ship-loader {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e2e8f0;
+            border-top-color: #0d9488;
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+            vertical-align: middle;
+            margin-left: 6px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 992px) {
+            .pm-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pm-summary {
+                position: static;
+            }
+        }
     </style>
 </head>
+
 <body>
-<div th:replace="~{fragments/header :: navbar}"></div>
+    <div th:replace="~{fragments/header :: navbar}"></div>
 
-<main class="pm-page">
-    <div class="container pm-shell">
-        <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
-            <div>
-                <h1 class="h3 mb-1" style="font-weight:900;">Thanh toán</h1>
-                <div class="text-muted">Kiểm tra thông tin trước khi đặt hàng</div>
+    <main class="pm-page">
+        <div class="container pm-shell">
+            <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+                <div>
+                    <h1 class="h3 mb-1" style="font-weight:900;">Thanh toán</h1>
+                    <div class="text-muted">Kiểm tra thông tin trước khi đặt hàng</div>
+                </div>
+                <a href="/gio-hang" class="btn btn-outline-secondary">
+                    <i class="fa fa-arrow-left me-1"></i> Quay lại giỏ
+                </a>
             </div>
-            <a href="/gio-hang" class="btn btn-outline-secondary">
-                <i class="fa fa-arrow-left me-1"></i> Quay lại giỏ
-            </a>
-        </div>
 
-        <div class="pm-success mb-3" id="success-box">
-            <div class="fw-bold mb-1"><i class="fa fa-check-circle me-1"></i>Đặt hàng thành công</div>
-            <div id="success-message">Đơn hàng đã được tạo.</div>
-            <a href="/tra-cuu-don-hang" class="btn btn-sm btn-success mt-3">Xem đơn hàng</a>
-        </div>
+            <div class="pm-success mb-3" id="success-box">
+                <div class="fw-bold mb-1"><i class="fa fa-check-circle me-1"></i>Đặt hàng thành công</div>
+                <div id="success-message">Đơn hàng đã được tạo.</div>
+                <a href="/tra-cuu-don-hang" class="btn btn-sm btn-success mt-3">Xem đơn hàng</a>
+            </div>
 
-        <div class="pm-grid" id="checkout-grid">
-            <section class="d-grid gap-3">
-                <div class="pm-panel">
-                    <div class="pm-panel-header">
-                        <span><span class="pm-step me-2">1</span>Địa chỉ nhận hàng</span>
-                    </div>
-                    <div class="pm-panel-body" id="address-section">
-                        <!-- Danh sách địa chỉ có sẵn -->
-                        <div th:if="${not #lists.isEmpty(diaChis)}" id="address-list">
-                            <div th:each="dc, stat : ${diaChis}" class="pm-address-item position-relative"
-                                 th:classappend="${stat.index == 0} ? 'active' : ''"
-                                 onclick="selectAddress(this, ${dc.id})">
-                                <div class="d-flex align-items-start">
-                                    <input type="radio" name="diaChiGiaoId" class="address-radio mt-1"
-                                           th:value="${dc.id}"
-                                           th:data-district="${dc.quanHuyenId}"
-                                           th:data-ward="${dc.phuongXaCode}"
-                                           th:checked="${stat.index == 0}">
-                                    <div class="w-100">
-                                        <div class="d-flex justify-content-between flex-wrap">
-                                            <strong th:text="${dc.tenGoiNho}">Tên gợi nhớ</strong>
-                                            <span class="badge bg-success" th:if="${dc.macDinh}">Mặc định</span>
-                                        </div>
-                                        <div class="mb-1 small">
-                                            <span th:text="${currentCustomer.hoTen}">Tên</span> | <span th:text="${currentCustomer.soDienThoai}">SĐT</span>
-                                        </div>
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div class="pm-muted small pe-3">
-                                                <span th:text="${dc.diaChiChiTiet}">Địa chỉ</span>,
-                                                <span th:text="${dc.phuongXaTen}">Phường</span>,
-                                                <span th:text="${dc.quanHuyenTen}">Quận</span>,
-                                                <span th:text="${dc.tinhThanhTen}">Tỉnh</span>
+            <div class="pm-grid" id="checkout-grid">
+                <section class="d-grid gap-3">
+                    <div class="pm-panel">
+                        <div class="pm-panel-header">
+                            <span><span class="pm-step me-2">1</span>Địa chỉ nhận hàng</span>
+                        </div>
+                        <div class="pm-panel-body" id="address-section">
+                            <!-- Danh sách địa chỉ có sẵn -->
+                            <div th:if="${not #lists.isEmpty(diaChis)}" id="address-list">
+                                <div th:each="dc, stat : ${diaChis}" class="pm-address-item position-relative"
+                                    th:classappend="${stat.index == 0} ? 'active' : ''"
+                                    onclick="selectAddress(this, ${dc.id})">
+                                    <div class="d-flex align-items-start">
+                                        <input type="radio" name="diaChiGiaoId" class="address-radio mt-1"
+                                            th:value="${dc.id}" th:data-district="${dc.quanHuyenId}"
+                                            th:data-ward="${dc.phuongXaCode}" th:checked="${stat.index == 0}">
+                                        <div class="w-100">
+                                            <div class="d-flex justify-content-between flex-wrap">
+                                                <strong th:text="${dc.tenGoiNho}">Tên gợi nhớ</strong>
+                                                <span class="badge bg-success" th:if="${dc.macDinh}">Mặc định</span>
                                             </div>
-                                            <div class="text-end text-nowrap mt-1">
-                                                <a href="javascript:void(0)" class="text-danger small fw-bold me-3 text-decoration-none" th:onclick="'deleteAddress(event, ' + ${dc.id} + ')'">Xóa</a>
-                                                <a href="javascript:void(0)" class="text-success small fw-bold text-decoration-none" 
-                                                   th:data-id="${dc.id}" 
-                                                   th:data-ten="${dc.tenGoiNho}" 
-                                                   th:data-diachi="${dc.diaChiChiTiet}" 
-                                                   th:data-tinh="${dc.tinhThanhId}" 
-                                                   th:data-huyen="${dc.quanHuyenId}" 
-                                                   th:data-xa="${dc.phuongXaCode}" 
-                                                   th:data-macdinh="${dc.macDinh}"
-                                                   onclick="editAddress(event, this)">Cập nhật</a>
+                                            <div class="mb-1 small">
+                                                <span th:text="${currentCustomer.hoTen}">Tên</span> | <span
+                                                    th:text="${currentCustomer.soDienThoai}">SĐT</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div class="pm-muted small pe-3">
+                                                    <span th:text="${dc.diaChiChiTiet}">Địa chỉ</span>,
+                                                    <span th:text="${dc.phuongXaTen}">Phường</span>,
+                                                    <span th:text="${dc.quanHuyenTen}">Quận</span>,
+                                                    <span th:text="${dc.tinhThanhTen}">Tỉnh</span>
+                                                </div>
+                                                <div class="text-end text-nowrap mt-1">
+                                                    <a href="javascript:void(0)"
+                                                        class="text-danger small fw-bold me-3 text-decoration-none"
+                                                        th:onclick="'deleteAddress(event, ' + ${dc.id} + ')'">Xóa</a>
+                                                    <a href="javascript:void(0)"
+                                                        class="text-success small fw-bold text-decoration-none"
+                                                        th:data-id="${dc.id}" th:data-ten="${dc.tenGoiNho}"
+                                                        th:data-diachi="${dc.diaChiChiTiet}"
+                                                        th:data-tinh="${dc.tinhThanhId}"
+                                                        th:data-huyen="${dc.quanHuyenId}"
+                                                        th:data-xa="${dc.phuongXaCode}" th:data-macdinh="${dc.macDinh}"
+                                                        onclick="editAddress(event, this)">Cập nhật</a>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+                                <button class="pm-btn-add-address" id="btn-show-add-address" type="button"
+                                    data-bs-toggle="modal" data-bs-target="#addressModal" onclick="openAddressModal()">
+                                    <i class="fa fa-plus me-1"></i> Thêm địa chỉ mới
+                                </button>
                             </div>
-                            <button class="pm-btn-add-address" id="btn-show-add-address" type="button" data-bs-toggle="modal" data-bs-target="#addressModal" onclick="openAddressModal()">
-                                <i class="fa fa-plus me-1"></i> Thêm địa chỉ mới
-                            </button>
-                        </div>
 
-                        <!-- Khi chưa có địa chỉ -->
-                        <div id="add-address-form" th:if="${#lists.isEmpty(diaChis)}">
-                            <div class="pm-note mb-3">
-                                Bạn chưa có địa chỉ. Vui lòng thêm địa chỉ nhận hàng để tiếp tục.
-                            </div>
-                            <button class="btn btn-pm w-100" type="button" data-bs-toggle="modal" data-bs-target="#addressModal" onclick="openAddressModal()">
-                                <i class="fa fa-plus me-1"></i> Thêm địa chỉ mới
-                            </button>
-                        </div>
-
-
-                    </div>
-                </div>
-
-                <div class="pm-panel">
-                    <div class="pm-panel-header">
-                        <span><span class="pm-step me-2">2</span>Phương thức thanh toán</span>
-                    </div>
-                    <div class="pm-panel-body">
-                        <label class="pm-option d-block" th:each="pt, stat : ${phuongThucs}">
-                            <div class="d-flex gap-2 align-items-start">
-                                <input class="form-check-input mt-1" type="radio" name="phuongThucThanhToanId" th:value="${pt.id}" th:checked="${stat.index == 0}">
-                                <div>
-                                    <div class="fw-bold" th:text="${pt.tenPttt == 'Tien mat' ? 'Thanh toán khi nhận hàng' : pt.tenPttt}">COD</div>
+                            <!-- Khi chưa có địa chỉ -->
+                            <div id="add-address-form" th:if="${#lists.isEmpty(diaChis)}">
+                                <div class="pm-note mb-3">
+                                    Bạn chưa có địa chỉ. Vui lòng thêm địa chỉ nhận hàng để tiếp tục.
                                 </div>
+                                <button class="btn btn-pm w-100" type="button" data-bs-toggle="modal"
+                                    data-bs-target="#addressModal" onclick="openAddressModal()">
+                                    <i class="fa fa-plus me-1"></i> Thêm địa chỉ mới
+                                </button>
                             </div>
-                        </label>
-                        <label class="form-label fw-bold mt-2" for="ghiChu">Ghi chú</label>
-                        <textarea id="ghiChu" class="form-control" rows="3" placeholder="Ví dụ: gọi trước khi giao"></textarea>
-                    </div>
-                </div>
-            </section>
 
-            <aside class="pm-panel pm-summary">
-                <h2 class="h5 fw-bold mb-3">Đơn hàng</h2>
-                <div id="cart-loading" class="text-muted py-3"><i class="fa fa-spinner fa-spin me-1"></i>Đang tải giỏ hàng</div>
-                <div id="cart-items"></div>
-                <hr>
-                <div class="pm-row">
-                    <span>Số lượng</span>
-                    <strong id="summary-count">0</strong>
-                </div>
-                <div class="pm-row">
-                    <span>Tiền hàng</span>
-                    <strong id="summary-subtotal">0đ</strong>
-                </div>
-                <div class="pm-row">
-                    <span>Phí vận chuyển</span>
-                    <strong id="summary-ship">0đ</strong>
-                </div>
-                <div id="free-ship-message-container" class="text-end mb-2 d-none"></div>
-                <div class="pm-row text-success">
-                    <span>Mã giảm giá</span>
-                    <select id="ctkmSelect" class="form-select form-select-sm w-auto" style="max-width: 150px;">
-                        <option value="">-- Không chọn --</option>
-                    </select>
-                </div>
-                <div class="pm-row text-success">
-                    <span>Được giảm</span>
-                    <strong id="summary-discount">-0đ</strong>
-                </div>
-                <div class="d-flex align-items-end justify-content-between mb-3">
-                    <span class="text-muted">Tổng thanh toán</span>
-                    <span class="pm-total" id="summary-total">0đ</span>
-                </div>
-                <button class="btn btn-pm w-100 py-2" id="btn-place-order" th:disabled="${#lists.isEmpty(diaChis)}">
-                    <i class="fa fa-check me-1"></i> Đặt hàng
-                </button>
-                <div class="small text-danger mt-2 d-none" id="checkout-error"></div>
-            </aside>
-        </div>
-    </div>
-</main>
 
-<!-- Modal Address -->
-<div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold" id="addressModalLabel">Thêm địa chỉ mới</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="addressForm">
-                <div class="modal-body">
-                    <input type="hidden" id="addressId">
-                    <div class="mb-3">
-                        <label for="tenGoiNho" class="form-label text-muted small fw-bold mb-1">Đặt tên gợi nhớ <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="tenGoiNho" placeholder="Ví dụ: Nhà, Công ty..." required>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="provinceSelect" class="form-label text-muted small fw-bold mb-1">Tỉnh / Thành phố <span class="text-danger">*</span></label>
-                            <select id="provinceSelect" class="form-select" required>
-                                <option value="">-- Chọn tỉnh/thành --</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="districtSelect" class="form-label text-muted small fw-bold mb-1">Quận / Huyện <span class="text-danger">*</span></label>
-                            <select id="districtSelect" class="form-select" required disabled>
-                                <option value="">-- Chọn quận/huyện --</option>
-                            </select>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="wardSelect" class="form-label text-muted small fw-bold mb-1">Phường / Xã <span class="text-danger">*</span></label>
-                        <select id="wardSelect" class="form-select" required disabled>
-                            <option value="">-- Chọn phường/xã --</option>
+
+                    <div class="pm-panel">
+                        <div class="pm-panel-header">
+                            <span><span class="pm-step me-2">2</span>Phương thức thanh toán</span>
+                        </div>
+                        <div class="pm-panel-body">
+                            <label class="pm-option d-block" th:each="pt, stat : ${phuongThucs}">
+                                <div class="d-flex gap-2 align-items-start">
+                                    <input class="form-check-input mt-1" type="radio" name="phuongThucThanhToanId"
+                                        th:value="${pt.id}" th:checked="${stat.index == 0}">
+                                    <div>
+                                        <div class="fw-bold"
+                                            th:text="${pt.tenPttt == 'Tien mat' ? 'Thanh toán khi nhận hàng' : pt.tenPttt}">
+                                            COD</div>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="form-label fw-bold mt-2" for="ghiChu">Ghi chú</label>
+                            <textarea id="ghiChu" class="form-control" rows="3"
+                                placeholder="Ví dụ: gọi trước khi giao"></textarea>
+                        </div>
+                    </div>
+                </section>
+
+                <aside class="pm-panel pm-summary">
+                    <h2 class="h5 fw-bold mb-3">Đơn hàng</h2>
+                    <div id="cart-loading" class="text-muted py-3"><i class="fa fa-spinner fa-spin me-1"></i>Đang tải
+                        giỏ hàng</div>
+                    <div id="cart-items"></div>
+                    <hr>
+                    <div class="pm-row">
+                        <span>Số lượng</span>
+                        <strong id="summary-count">0</strong>
+                    </div>
+                    <div class="pm-row">
+                        <span>Tiền hàng</span>
+                        <strong id="summary-subtotal">0đ</strong>
+                    </div>
+                    <div class="pm-row">
+                        <span>Phí vận chuyển</span>
+                        <strong id="summary-ship">0đ</strong>
+                    </div>
+                    <div id="free-ship-message-container" class="text-end mb-2 d-none"></div>
+                    <div class="pm-row text-success">
+                        <span>Mã giảm giá</span>
+                        <select id="ctkmSelect" class="form-select form-select-sm w-auto" style="max-width: 150px;">
+                            <option value="">-- Không chọn --</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label for="diaChiChiTiet" class="form-label text-muted small fw-bold mb-1">Nhập địa chỉ nhà <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="diaChiChiTiet" placeholder="Số nhà, tên đường..." required>
+                    <div class="pm-row text-success">
+                        <span>Được giảm</span>
+                        <strong id="summary-discount">-0đ</strong>
                     </div>
-                    <div class="form-check form-switch mt-3">
-                        <input class="form-check-input" type="checkbox" role="switch" id="macDinh">
-                        <label class="form-check-label text-muted small fw-bold" for="macDinh">Đặt làm địa chỉ mặc định</label>
+                    <div class="d-flex align-items-end justify-content-between mb-3">
+                        <span class="text-muted">Tổng thanh toán</span>
+                        <span class="pm-total" id="summary-total">0đ</span>
                     </div>
+                    <button class="btn btn-pm w-100 py-2" id="btn-place-order" th:disabled="${#lists.isEmpty(diaChis)}">
+                        <i class="fa fa-check me-1"></i> Đặt hàng
+                    </button>
+                    <div class="small text-danger mt-2 d-none" id="checkout-error"></div>
+                </aside>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Address -->
+    <div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="addressModalLabel">Thêm địa chỉ mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-footer border-top-0 pt-0 pb-4 px-4 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn btn-outline-secondary m-0" data-bs-dismiss="modal">Hủy bỏ</button>
-                    <button type="submit" class="btn btn-success m-0" id="btnSaveAddress">Lưu địa chỉ</button>
-                </div>
-            </form>
+                <form id="addressForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="addressId">
+                        <div class="mb-3">
+                            <label for="tenGoiNho" class="form-label text-muted small fw-bold mb-1">Đặt tên gợi nhớ
+                                <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="tenGoiNho" placeholder="Ví dụ: Nhà, Công ty..."
+                                required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="provinceSelect" class="form-label text-muted small fw-bold mb-1">Tỉnh /
+                                    Thành phố <span class="text-danger">*</span></label>
+                                <select id="provinceSelect" class="form-select" required>
+                                    <option value="">-- Chọn tỉnh/thành --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="districtSelect" class="form-label text-muted small fw-bold mb-1">Quận /
+                                    Huyện <span class="text-danger">*</span></label>
+                                <select id="districtSelect" class="form-select" required disabled>
+                                    <option value="">-- Chọn quận/huyện --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="wardSelect" class="form-label text-muted small fw-bold mb-1">Phường / Xã <span
+                                    class="text-danger">*</span></label>
+                            <select id="wardSelect" class="form-select" required disabled>
+                                <option value="">-- Chọn phường/xã --</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="diaChiChiTiet" class="form-label text-muted small fw-bold mb-1">Nhập địa chỉ nhà
+                                <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="diaChiChiTiet"
+                                placeholder="Số nhà, tên đường..." required>
+                        </div>
+                        <div class="form-check form-switch mt-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="macDinh">
+                            <label class="form-check-label text-muted small fw-bold" for="macDinh">Đặt làm địa chỉ mặc
+                                định</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 pt-0 pb-4 px-4 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-outline-secondary m-0" data-bs-dismiss="modal">Hủy
+                            bỏ</button>
+                        <button type="submit" class="btn btn-success m-0" id="btnSaveAddress">Lưu địa chỉ</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-</div>
 
-<div th:replace="~{fragments/footer :: footer}"></div>
+    <div th:replace="~{fragments/footer :: footer}"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script th:inline="javascript">
-    const currentCustomerId = /*[[${currentCustomer.khachHangId}]]*/ null;
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script th:inline="javascript">
+        const currentCustomerId = /*[[${currentCustomer.khachHangId}]]*/ null;
 
-    // Biến lưu phí ship hiện tại
-    let currentShipFee = 0;
-    let isCalculatingShip = false;
+        // Biến lưu phí ship hiện tại
+        let currentShipFee = 0;
+        let isCalculatingShip = false;
 
-    const els = {
-        loading: document.getElementById('cart-loading'),
-        items: document.getElementById('cart-items'),
-        count: document.getElementById('summary-count'),
-        subtotal: document.getElementById('summary-subtotal'),
-        ship: document.getElementById('summary-ship'),
-        total: document.getElementById('summary-total'),
-        button: document.getElementById('btn-place-order'),
-        error: document.getElementById('checkout-error'),
-        btnSave2: document.getElementById('btn-save-address2'),
-        ctkmSelect: document.getElementById('ctkmSelect'),
-        discount: document.getElementById('summary-discount'),
-        success: document.getElementById('success-box'),
-        successMessage: document.getElementById('success-message'),
-        grid: document.getElementById('checkout-grid'),
-        badge: document.getElementById('cart-count'),
-        addressSection: document.getElementById('address-section')
-    };
+        const els = {
+            loading: document.getElementById('cart-loading'),
+            items: document.getElementById('cart-items'),
+            count: document.getElementById('summary-count'),
+            subtotal: document.getElementById('summary-subtotal'),
+            ship: document.getElementById('summary-ship'),
+            total: document.getElementById('summary-total'),
+            button: document.getElementById('btn-place-order'),
+            error: document.getElementById('checkout-error'),
+            btnSave2: document.getElementById('btn-save-address2'),
+            ctkmSelect: document.getElementById('ctkmSelect'),
+            discount: document.getElementById('summary-discount'),
+            success: document.getElementById('success-box'),
+            successMessage: document.getElementById('success-message'),
+            grid: document.getElementById('checkout-grid'),
+            badge: document.getElementById('cart-count'),
+            addressSection: document.getElementById('address-section')
+        };
 
-    function money(value) {
-        return Number(value || 0).toLocaleString('vi-VN') + 'đ';
-    }
-
-    function parseCurrency(text) {
-        const cleaned = String(text).replace(/[^0-9]/g, '');
-        return Number(cleaned) || 0;
-    }
-
-    function esc(value) {
-        return String(value ?? '').replace(/[&<>"']/g, ch => ({
-            '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;'
-        })[ch]);
-    }
-
-    function showError(message) {
-        els.error.textContent = message || 'Không thể đặt hàng.';
-        els.error.classList.remove('d-none');
-    }
-
-    // ── Gọi API GHN tính phí ship ──
-    async function fetchShippingFee(districtId, wardCode) {
-        if (!districtId || !wardCode) return 0;
-        if (isCalculatingShip) return currentShipFee;
-        isCalculatingShip = true;
-        try {
-            const url = `/api/public/giao-hang-nhanh/phi-ship?toDistrictId=${encodeURIComponent(districtId)}&toWardCode=${encodeURIComponent(wardCode)}`;
-            const response = await fetch(url, { credentials: 'include' });
-            if (!response.ok) throw new Error('API error');
-            const data = await response.json();
-            return data.phiShip || 0;
-        } catch (error) {
-            console.warn('GHN fee fallback to 0:', error);
-            return 0;
-        } finally {
-            isCalculatingShip = false;
+        function money(value) {
+            return Number(value || 0).toLocaleString('vi-VN') + 'đ';
         }
-    }
 
-    function updateShippingDisplay(fee) {
-        currentShipFee = fee;
-        const subtotalText = els.subtotal.textContent;
-        const subtotal = parseCurrency(subtotalText);
-        els.ship.textContent = money(fee);
-        els.total.textContent = money(subtotal + fee);
-    }
-
-    // ── Khi chọn địa chỉ (radio) ──
-    async function onAddressChange(radio) {
-        if (!radio || !radio.checked) return;
-        const district = radio.dataset.district;
-        const ward = radio.dataset.ward;
-        if (district && ward) {
-            els.ship.textContent = 'Đang tính...';
-            const fee = await fetchShippingFee(district, ward);
-            updateShippingDisplay(fee);
-        } else {
-            updateShippingDisplay(0);
+        function parseCurrency(text) {
+            const cleaned = String(text).replace(/[^0-9]/g, '');
+            return Number(cleaned) || 0;
         }
-        // Cập nhật active style
-        document.querySelectorAll('.pm-address-item').forEach(el => el.classList.remove('active'));
-        const parent = radio.closest('.pm-address-item');
-        if (parent) parent.classList.add('active');
-    }
 
-    // ── Lắng nghe sự kiện change trên radio địa chỉ ──
-    document.addEventListener('change', function(e) {
-        const radio = e.target.closest('input[name="diaChiGiaoId"]');
-        if (radio) {
-            onAddressChange(radio);
+        function esc(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+            })[ch]);
         }
-    });
 
-    let isEditing = false;
-    let editingId = null;
-
-    // Helper fetch data
-    async function fetchMasterData(url) {
-        try {
-            const res = await fetch(url, { credentials: 'include' });
-            if (!res.ok) throw new Error('Lỗi API');
-            const data = await res.json();
-            return data.data || [];
-        } catch (e) {
-            console.error(e);
-            return [];
+        function showError(message) {
+            els.error.textContent = message || 'Không thể đặt hàng.';
+            els.error.classList.remove('d-none');
         }
-    }
 
-    // ── Load provinces vào select ──
-    async function loadProvinces(selectedId = null) {
-        const provinceSelect = document.getElementById('provinceSelect');
-        if (!provinceSelect) return;
-        provinceSelect.innerHTML = '<option value="">-- Đang tải... --</option>';
-        const data = await fetchMasterData('/api/public/giao-hang-nhanh/provinces');
-        provinceSelect.innerHTML = '<option value="">-- Chọn tỉnh/thành --</option>';
-        data.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.ProvinceID;
-            opt.textContent = p.ProvinceName;
-            provinceSelect.appendChild(opt);
+        // ── Gọi API GHN tính phí ship ──
+        async function fetchShippingFee(districtId, wardCode) {
+            if (!districtId || !wardCode) return 0;
+            if (isCalculatingShip) return currentShipFee;
+            isCalculatingShip = true;
+            try {
+                const url = `/api/public/giao-hang-nhanh/phi-ship?toDistrictId=${encodeURIComponent(districtId)}&toWardCode=${encodeURIComponent(wardCode)}`;
+                const response = await fetch(url, { credentials: 'include' });
+                if (!response.ok) throw new Error('API error');
+                const data = await response.json();
+                return data.phiShip || 0;
+            } catch (error) {
+                console.warn('GHN fee fallback to 0:', error);
+                return 0;
+            } finally {
+                isCalculatingShip = false;
+            }
+        }
+
+        function updateShippingDisplay(fee) {
+            currentShipFee = fee;
+            recalcTotal();
+        }
+
+        // ── Khi chọn địa chỉ (radio) ──
+        async function onAddressChange(radio) {
+            if (!radio || !radio.checked) return;
+            const district = radio.dataset.district;
+            const ward = radio.dataset.ward;
+            if (district && ward) {
+                els.ship.textContent = 'Đang tính...';
+                const fee = await fetchShippingFee(district, ward);
+                updateShippingDisplay(fee);
+            } else {
+                updateShippingDisplay(0);
+            }
+            // Cập nhật active style
+            document.querySelectorAll('.pm-address-item').forEach(el => el.classList.remove('active'));
+            const parent = radio.closest('.pm-address-item');
+            if (parent) parent.classList.add('active');
+        }
+
+        // ── Lắng nghe sự kiện change trên radio địa chỉ ──
+        document.addEventListener('change', function (e) {
+            const radio = e.target.closest('input[name="diaChiGiaoId"]');
+            if (radio) {
+                onAddressChange(radio);
+            }
         });
-        if (selectedId) {
-            provinceSelect.value = selectedId;
-        }
-    }
 
-    // ── Load districts theo provinceId ──
-    async function loadDistricts(provinceId, selectedId = null) {
-        const districtSelect = document.getElementById('districtSelect');
-        const wardSelect = document.getElementById('wardSelect');
-        if (!districtSelect) return;
-        if (!provinceId) {
+        let isEditing = false;
+        let editingId = null;
+
+        // Helper fetch data
+        async function fetchMasterData(url) {
+            try {
+                const res = await fetch(url, { credentials: 'include' });
+                if (!res.ok) throw new Error('Lỗi API');
+                const data = await res.json();
+                return data.data || [];
+            } catch (e) {
+                console.error(e);
+                return [];
+            }
+        }
+
+        // ── Load provinces vào select ──
+        async function loadProvinces(selectedId = null) {
+            const provinceSelect = document.getElementById('provinceSelect');
+            if (!provinceSelect) return;
+            provinceSelect.innerHTML = '<option value="">-- Đang tải... --</option>';
+            const data = await fetchMasterData('/api/public/giao-hang-nhanh/provinces');
+            provinceSelect.innerHTML = '<option value="">-- Chọn tỉnh/thành --</option>';
+            data.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.ProvinceID;
+                opt.textContent = p.ProvinceName;
+                provinceSelect.appendChild(opt);
+            });
+            if (selectedId) {
+                provinceSelect.value = selectedId;
+            }
+        }
+
+        // ── Load districts theo provinceId ──
+        async function loadDistricts(provinceId, selectedId = null) {
+            const districtSelect = document.getElementById('districtSelect');
+            const wardSelect = document.getElementById('wardSelect');
+            if (!districtSelect) return;
+            if (!provinceId) {
+                districtSelect.innerHTML = '<option value="">-- Chọn quận/huyện --</option>';
+                districtSelect.disabled = true;
+                if (wardSelect) {
+                    wardSelect.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+                    wardSelect.disabled = true;
+                }
+                return;
+            }
+            districtSelect.innerHTML = '<option value="">-- Đang tải... --</option>';
+            districtSelect.disabled = false;
+            const data = await fetchMasterData(`/api/public/giao-hang-nhanh/districts?provinceId=${provinceId}`);
             districtSelect.innerHTML = '<option value="">-- Chọn quận/huyện --</option>';
-            districtSelect.disabled = true;
+            data.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.DistrictID;
+                opt.textContent = d.DistrictName;
+                districtSelect.appendChild(opt);
+            });
+            if (selectedId) {
+                districtSelect.value = selectedId;
+            }
+        }
+
+        // ── Load wards theo districtId ──
+        async function loadWards(districtId, selectedId = null) {
+            const wardSelect = document.getElementById('wardSelect');
+            if (!wardSelect) return;
+            if (!districtId) {
+                wardSelect.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+                wardSelect.disabled = true;
+                return;
+            }
+            wardSelect.innerHTML = '<option value="">-- Đang tải... --</option>';
+            wardSelect.disabled = false;
+            const data = await fetchMasterData(`/api/public/giao-hang-nhanh/wards?districtId=${districtId}`);
+            wardSelect.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+            data.forEach(w => {
+                const opt = document.createElement('option');
+                opt.value = w.WardCode;
+                opt.textContent = w.WardName;
+                wardSelect.appendChild(opt);
+            });
+            if (selectedId) {
+                wardSelect.value = selectedId;
+            }
+        }
+
+        document.getElementById('provinceSelect')?.addEventListener('change', function () {
+            loadDistricts(this.value);
+            const wardSelect = document.getElementById('wardSelect');
             if (wardSelect) {
                 wardSelect.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
                 wardSelect.disabled = true;
             }
-            return;
-        }
-        districtSelect.innerHTML = '<option value="">-- Đang tải... --</option>';
-        districtSelect.disabled = false;
-        const data = await fetchMasterData(`/api/public/giao-hang-nhanh/districts?provinceId=${provinceId}`);
-        districtSelect.innerHTML = '<option value="">-- Chọn quận/huyện --</option>';
-        data.forEach(d => {
-            const opt = document.createElement('option');
-            opt.value = d.DistrictID;
-            opt.textContent = d.DistrictName;
-            districtSelect.appendChild(opt);
         });
-        if (selectedId) {
-            districtSelect.value = selectedId;
-        }
-    }
 
-    // ── Load wards theo districtId ──
-    async function loadWards(districtId, selectedId = null) {
-        const wardSelect = document.getElementById('wardSelect');
-        if (!wardSelect) return;
-        if (!districtId) {
-            wardSelect.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
-            wardSelect.disabled = true;
-            return;
-        }
-        wardSelect.innerHTML = '<option value="">-- Đang tải... --</option>';
-        wardSelect.disabled = false;
-        const data = await fetchMasterData(`/api/public/giao-hang-nhanh/wards?districtId=${districtId}`);
-        wardSelect.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
-        data.forEach(w => {
-            const opt = document.createElement('option');
-            opt.value = w.WardCode;
-            opt.textContent = w.WardName;
-            wardSelect.appendChild(opt);
+        document.getElementById('districtSelect')?.addEventListener('change', function () {
+            loadWards(this.value);
         });
-        if (selectedId) {
-            wardSelect.value = selectedId;
+
+        function openAddressModal() {
+            isEditing = false;
+            editingId = null;
+            document.getElementById('addressModalLabel').innerText = 'Thêm địa chỉ mới';
+            document.getElementById('addressForm').reset();
+            document.getElementById('districtSelect').innerHTML = '<option value="">-- Chọn quận/huyện --</option>';
+            document.getElementById('districtSelect').disabled = true;
+            document.getElementById('wardSelect').innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+            document.getElementById('wardSelect').disabled = true;
+            loadProvinces();
         }
-    }
 
-    document.getElementById('provinceSelect')?.addEventListener('change', function() {
-        loadDistricts(this.value);
-        const wardSelect = document.getElementById('wardSelect');
-        if (wardSelect) {
-            wardSelect.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
-            wardSelect.disabled = true;
-        }
-    });
-
-    document.getElementById('districtSelect')?.addEventListener('change', function() {
-        loadWards(this.value);
-    });
-
-    function openAddressModal() {
-        isEditing = false;
-        editingId = null;
-        document.getElementById('addressModalLabel').innerText = 'Thêm địa chỉ mới';
-        document.getElementById('addressForm').reset();
-        document.getElementById('districtSelect').innerHTML = '<option value="">-- Chọn quận/huyện --</option>';
-        document.getElementById('districtSelect').disabled = true;
-        document.getElementById('wardSelect').innerHTML = '<option value="">-- Chọn phường/xã --</option>';
-        document.getElementById('wardSelect').disabled = true;
-        loadProvinces();
-    }
-
-    async function editAddress(e, btn) {
-        e.stopPropagation(); // Ngăn chọn radio button
-        try {
-            const id = btn.getAttribute('data-id');
-            isEditing = true;
-            editingId = id;
-            document.getElementById('addressModalLabel').innerText = 'Cập nhật địa chỉ';
-            document.getElementById('addressId').value = id;
-            document.getElementById('tenGoiNho').value = btn.getAttribute('data-ten') || '';
-            document.getElementById('diaChiChiTiet').value = btn.getAttribute('data-diachi') || '';
-            document.getElementById('macDinh').checked = btn.getAttribute('data-macdinh') === 'true';
-
-            const tinhId = btn.getAttribute('data-tinh');
-            const huyenId = btn.getAttribute('data-huyen');
-            const xaCode = btn.getAttribute('data-xa');
-
-            await loadProvinces(tinhId);
-            await loadDistricts(tinhId, huyenId);
-            await loadWards(huyenId, xaCode);
-
-            const modal = new bootstrap.Modal(document.getElementById('addressModal'));
-            modal.show();
-        } catch (err) {
-            Swal.fire('Lỗi', err.message, 'error');
-        }
-    }
-
-    async function deleteAddress(e, id) {
-        e.stopPropagation(); // Ngăn chọn radio button
-        const result = await Swal.fire({
-            title: 'Xóa địa chỉ?',
-            text: "Bạn có chắc chắn muốn xóa địa chỉ này không?",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc2626',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Đồng ý',
-            cancelButtonText: 'Hủy'
-        });
-        
-        if (result.isConfirmed) {
+        async function editAddress(e, btn) {
+            e.stopPropagation(); // Ngăn chọn radio button
             try {
-                const res = await fetch(`/api/public/dia-chi/${currentCustomerId}/${id}`, { method: 'DELETE' });
-                if (res.ok) {
-                    location.reload();
-                } else {
-                    const err = await res.text();
-                    Swal.fire('Lỗi', err || 'Không thể xóa', 'error');
-                }
+                const id = btn.getAttribute('data-id');
+                isEditing = true;
+                editingId = id;
+                document.getElementById('addressModalLabel').innerText = 'Cập nhật địa chỉ';
+                document.getElementById('addressId').value = id;
+                document.getElementById('tenGoiNho').value = btn.getAttribute('data-ten') || '';
+                document.getElementById('diaChiChiTiet').value = btn.getAttribute('data-diachi') || '';
+                document.getElementById('macDinh').checked = btn.getAttribute('data-macdinh') === 'true';
+
+                const tinhId = btn.getAttribute('data-tinh');
+                const huyenId = btn.getAttribute('data-huyen');
+                const xaCode = btn.getAttribute('data-xa');
+
+                await loadProvinces(tinhId);
+                await loadDistricts(tinhId, huyenId);
+                await loadWards(huyenId, xaCode);
+
+                const modal = new bootstrap.Modal(document.getElementById('addressModal'));
+                modal.show();
             } catch (err) {
                 Swal.fire('Lỗi', err.message, 'error');
             }
         }
-    }
 
-    function selectAddress(el, id) {
-        const radio = el.querySelector('input[type="radio"]');
-        if (radio) {
-            radio.checked = true;
-            onAddressChange(radio);
-        }
-    }
-
-    // ── Hàm xử lý submit form thêm/sửa địa chỉ ──
-    document.getElementById('addressForm')?.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const prov = document.getElementById('provinceSelect');
-        const dist = document.getElementById('districtSelect');
-        const ward = document.getElementById('wardSelect');
-        
-        const payload = {
-            tenGoiNho: document.getElementById('tenGoiNho').value.trim(),
-            diaChiChiTiet: document.getElementById('diaChiChiTiet').value.trim(),
-            tinhThanhId: prov.value ? parseInt(prov.value) : null,
-            quanHuyenId: dist.value ? parseInt(dist.value) : null,
-            phuongXaCode: ward.value,
-            tinhThanhTen: prov.options[prov.selectedIndex]?.text || '',
-            quanHuyenTen: dist.options[dist.selectedIndex]?.text || '',
-            phuongXaTen: ward.options[ward.selectedIndex]?.text || '',
-            macDinh: document.getElementById('macDinh').checked,
-            loaiDiaChi: 'nha_rieng'
-        };
-
-        if (!payload.tinhThanhId || !payload.quanHuyenId || !payload.phuongXaCode || !payload.diaChiChiTiet) {
-            alert('Vui lòng điền đầy đủ thông tin địa chỉ.');
-            return;
-        }
-
-        const url = isEditing 
-            ? `/api/public/dia-chi/${currentCustomerId}/${editingId}`
-            : `/api/public/dia-chi/${currentCustomerId}`;
-        
-        const method = isEditing ? 'PUT' : 'POST';
-        
-        const btn = document.getElementById('btnSaveAddress');
-        const oldText = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Đang lưu...';
-
-        try {
-            const res = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+        async function deleteAddress(e, id) {
+            e.stopPropagation(); // Ngăn chọn radio button
+            const result = await Swal.fire({
+                title: 'Xóa địa chỉ?',
+                text: "Bạn có chắc chắn muốn xóa địa chỉ này không?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Đồng ý',
+                cancelButtonText: 'Hủy'
             });
-            if (res.ok) {
-                location.reload();
-            } else {
-                const err = await res.text();
-                Swal.fire('Lỗi', err || 'Có lỗi xảy ra', 'error');
+
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`/api/public/dia-chi/${currentCustomerId}/${id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        location.reload();
+                    } else {
+                        const err = await res.text();
+                        Swal.fire('Lỗi', err || 'Không thể xóa', 'error');
+                    }
+                } catch (err) {
+                    Swal.fire('Lỗi', err.message, 'error');
+                }
+            }
+        }
+
+        function selectAddress(el, id) {
+            const radio = el.querySelector('input[type="radio"]');
+            if (radio) {
+                radio.checked = true;
+                onAddressChange(radio);
+            }
+        }
+
+        // ── Hàm xử lý submit form thêm/sửa địa chỉ ──
+        document.getElementById('addressForm')?.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const prov = document.getElementById('provinceSelect');
+            const dist = document.getElementById('districtSelect');
+            const ward = document.getElementById('wardSelect');
+
+            const payload = {
+                tenGoiNho: document.getElementById('tenGoiNho').value.trim(),
+                diaChiChiTiet: document.getElementById('diaChiChiTiet').value.trim(),
+                tinhThanhId: prov.value ? parseInt(prov.value) : null,
+                quanHuyenId: dist.value ? parseInt(dist.value) : null,
+                phuongXaCode: ward.value,
+                tinhThanhTen: prov.options[prov.selectedIndex]?.text || '',
+                quanHuyenTen: dist.options[dist.selectedIndex]?.text || '',
+                phuongXaTen: ward.options[ward.selectedIndex]?.text || '',
+                macDinh: document.getElementById('macDinh').checked,
+                loaiDiaChi: 'nha_rieng'
+            };
+
+            if (!payload.tinhThanhId || !payload.quanHuyenId || !payload.phuongXaCode || !payload.diaChiChiTiet) {
+                alert('Vui lòng điền đầy đủ thông tin địa chỉ.');
+                return;
+            }
+
+            const url = isEditing
+                ? `/api/public/dia-chi/${currentCustomerId}/${editingId}`
+                : `/api/public/dia-chi/${currentCustomerId}`;
+
+            const method = isEditing ? 'PUT' : 'POST';
+
+            const btn = document.getElementById('btnSaveAddress');
+            const oldText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Đang lưu...';
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    location.reload();
+                } else {
+                    const err = await res.text();
+                    Swal.fire('Lỗi', err || 'Có lỗi xảy ra', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = oldText;
+                }
+            } catch (err) {
+                Swal.fire('Lỗi', err.message, 'error');
                 btn.disabled = false;
                 btn.innerHTML = oldText;
             }
-        } catch (err) {
-            Swal.fire('Lỗi', err.message, 'error');
-            btn.disabled = false;
-            btn.innerHTML = oldText;
-        }
-    });
+        });
 
-    // ── Hàm fetch chung ──
-    async function fetchJson(url, options = {}) {
-        const response = await fetch(url, { credentials:'include', ...options });
-        const text = await response.text();
-        if (!response.ok) {
-            let message = text || 'Không thể xử lý yêu cầu.';
-            try {
-                const error = JSON.parse(text);
-                message = error.message || message;
-            } catch {
-                // Keep the plain response text when the server does not return JSON.
+        // ── Hàm fetch chung ──
+        async function fetchJson(url, options = {}) {
+            const response = await fetch(url, { credentials: 'include', ...options });
+            const text = await response.text();
+            if (!response.ok) {
+                let message = text || 'Không thể xử lý yêu cầu.';
+                try {
+                    const error = JSON.parse(text);
+                    message = error.message || message;
+                } catch {
+                    // Keep the plain response text when the server does not return JSON.
+                }
+                throw new Error(message);
             }
-            throw new Error(message);
+            return text ? JSON.parse(text) : null;
         }
-        return text ? JSON.parse(text) : null;
-    }
 
-    let currentDiscountFee = 0;
-    let selectedCtkmId = null;
-    let khuyenMais = [];
-    let currentSubtotal = 0;
-    let finalShipFeeForOrder = 0;
-    
-    async function loadKhuyenMai() {
-        try {
-            const res = await fetchJson('/api/public/khuyen-mai/don-hang');
-            if (res && res.data) {
-                khuyenMais = res.data;
-                const html = ['<option value="">-- Không chọn --</option>'];
-                khuyenMais.forEach(km => {
-                    let label = `[Giảm ${km.giaTriUuDai}%`;
-                    if (km.giamToiDa) label += ` - Tối đa ${money(km.giamToiDa)}`;
-                    label += `] ${esc(km.tenCtkm)} (Từ ${money(km.donHangToiThieu)})`;
-                    html.push(`<option value="${km.id}">${label}</option>`);
-                });
-                els.ctkmSelect.innerHTML = html.join('');
-            }
-        } catch (e) {
-            console.error('Lỗi tải mã giảm giá:', e);
-        }
-    }
-    
-    els.ctkmSelect.addEventListener('change', function() {
-        const id = this.value;
-        selectedCtkmId = id ? Number(id) : null;
-        recalcTotal();
-    });
-    
-    async function recalcTotal() {
-        currentDiscountFee = 0;
-        
-        if (selectedCtkmId && currentSubtotal > 0) {
+        let currentDiscountFee = 0;
+        let selectedCtkmId = null;
+        let khuyenMais = [];
+        let currentSubtotal = 0;
+        let finalShipFeeForOrder = 0;
+
+        async function loadKhuyenMai() {
             try {
-                const res = await fetch(`/api/public/khuyen-mai/tinh-toan?tongTien=${encodeURIComponent(currentSubtotal)}&ctkmId=${encodeURIComponent(selectedCtkmId)}`);
-                const data = await res.json();
-                
-                if (data.success) {
-                    currentDiscountFee = data.data.tienGiam || 0;
-                } else {
-                    alert(data.message || 'Mã giảm giá không hợp lệ.');
+                const res = await fetchJson('/api/public/khuyen-mai/don-hang');
+                if (res && res.data) {
+                    khuyenMais = res.data;
+                    const html = ['<option value="">-- Không chọn --</option>'];
+                    khuyenMais.forEach(km => {
+                        let label = `[Giảm ${km.giaTriUuDai}%`;
+                        if (km.giamToiDa) label += ` - Tối đa ${money(km.giamToiDa)}`;
+                        label += `] ${esc(km.tenCtkm)} (Từ ${money(km.donHangToiThieu)})`;
+                        html.push(`<option value="${km.id}">${label}</option>`);
+                    });
+                    els.ctkmSelect.innerHTML = html.join('');
+                }
+            } catch (e) {
+                console.error('Lỗi tải mã giảm giá:', e);
+            }
+        }
+
+        els.ctkmSelect.addEventListener('change', function () {
+            const id = this.value;
+            selectedCtkmId = id ? Number(id) : null;
+            recalcTotal();
+        });
+
+        async function recalcTotal() {
+            currentDiscountFee = 0;
+
+            if (selectedCtkmId && currentSubtotal > 0) {
+                try {
+                    const res = await fetch(`/api/public/khuyen-mai/tinh-toan?tongTien=${encodeURIComponent(currentSubtotal)}&ctkmId=${encodeURIComponent(selectedCtkmId)}`);
+                    const data = await res.json();
+
+                    if (data.success) {
+                        currentDiscountFee = data.data.tienGiam || 0;
+                    } else {
+                        alert(data.message || 'Mã giảm giá không hợp lệ.');
+                        els.ctkmSelect.value = '';
+                        selectedCtkmId = null;
+                    }
+                } catch (err) {
+                    console.error('Lỗi tính khuyến mãi:', err);
                     els.ctkmSelect.value = '';
                     selectedCtkmId = null;
                 }
-            } catch (err) {
-                console.error('Lỗi tính khuyến mãi:', err);
-                els.ctkmSelect.value = '';
-                selectedCtkmId = null;
             }
-        }
-        
-        let discountedSubtotal = currentSubtotal - currentDiscountFee;
-        finalShipFeeForOrder = currentShipFee;
-        let isFreeShip = false;
-        
-        if (discountedSubtotal >= 30000000) {
-            finalShipFeeForOrder = 0;
-            isFreeShip = true;
-        }
 
-        els.discount.textContent = '-' + money(currentDiscountFee);
-        
-        const freeShipContainer = document.getElementById('free-ship-message-container');
-        
-        if (isFreeShip) {
-            els.ship.innerHTML = `<del class="text-muted small me-2">${money(currentShipFee)}</del>0đ`;
-            if (freeShipContainer) {
-                freeShipContainer.innerHTML = `<span class="text-success small fw-semibold fst-italic" style="animation: fadeIn 0.5s;">🎉 Đơn trên 30 triệu được freeship!</span>`;
-                freeShipContainer.classList.remove('d-none');
+            let discountedSubtotal = currentSubtotal - currentDiscountFee;
+            finalShipFeeForOrder = currentShipFee;
+            let isFreeShip = false;
+
+            if (discountedSubtotal >= 30000000) {
+                finalShipFeeForOrder = 0;
+                isFreeShip = true;
             }
-        } else {
-            els.ship.textContent = money(finalShipFeeForOrder);
-            if (freeShipContainer) {
-                freeShipContainer.classList.add('d-none');
-                freeShipContainer.innerHTML = '';
+
+            els.discount.textContent = '-' + money(currentDiscountFee);
+
+            const freeShipContainer = document.getElementById('free-ship-message-container');
+
+            if (isFreeShip) {
+                els.ship.innerHTML = `<del class="text-muted small me-2">${money(currentShipFee)}</del>0đ`;
+                if (freeShipContainer) {
+                    freeShipContainer.innerHTML = `<span class="text-success small fw-semibold fst-italic" style="animation: fadeIn 0.5s;">🎉 Đơn trên 30 triệu được freeship!</span>`;
+                    freeShipContainer.classList.remove('d-none');
+                }
+            } else {
+                els.ship.textContent = money(finalShipFeeForOrder);
+                if (freeShipContainer) {
+                    freeShipContainer.classList.add('d-none');
+                    freeShipContainer.innerHTML = '';
+                }
             }
+
+            els.total.textContent = money(Math.max(0, discountedSubtotal + finalShipFeeForOrder));
         }
 
-        els.total.textContent = money(Math.max(0, discountedSubtotal + finalShipFeeForOrder));
-    }
+        function renderCart(cart) {
+            const items = cart?.items || [];
+            const subtotal = Number(cart?.tongTienTamTinh || 0);
+            currentSubtotal = subtotal;
 
-    function renderCart(cart) {
-        const items = cart?.items || [];
-        const subtotal = Number(cart?.tongTienTamTinh || 0);
-        currentSubtotal = subtotal;
-        
-        els.loading.classList.add('d-none');
-        els.count.textContent = String(cart?.soLuongSanPham || 0);
-        els.subtotal.textContent = money(subtotal);
-        els.ship.textContent = money(currentShipFee);
-        recalcTotal();
-        if (els.badge) els.badge.textContent = String(cart?.soLuongSanPham || 0);
+            els.loading.classList.add('d-none');
+            els.count.textContent = String(cart?.soLuongSanPham || 0);
+            els.subtotal.textContent = money(subtotal);
+            recalcTotal();
+            if (els.badge) els.badge.textContent = String(cart?.soLuongSanPham || 0);
 
-        if (!items.length) {
-            els.items.innerHTML = '<div class="pm-note mb-0">Giỏ hàng đang trống.</div>';
-            els.button.disabled = true;
-            return;
-        }
-
-        els.items.innerHTML = items.map(item => {
-            const giaGoc = item.giaGoc || 0;
-            const giaSauKM = item.giaSauKhuyenMai || giaGoc;
-            let priceHtml = '';
-            if (giaSauKM < giaGoc) {
-                priceHtml = `<span class="pm-price-old">${money(giaGoc)}</span> `;
+            if (!items.length) {
+                els.items.innerHTML = '<div class="pm-note mb-0">Giỏ hàng đang trống.</div>';
+                els.button.disabled = true;
+                return;
             }
-            priceHtml += `<span class="fw-bold text-danger">${money(giaSauKM)}</span>`;
-            return `
+
+            els.items.innerHTML = items.map(item => {
+                const giaGoc = item.giaGoc || 0;
+                const giaSauKM = item.giaSauKhuyenMai || giaGoc;
+                let priceHtml = '';
+                if (giaSauKM < giaGoc) {
+                    priceHtml = `<span class="pm-price-old">${money(giaGoc)}</span> `;
+                }
+                priceHtml += `<span class="fw-bold text-danger">${money(giaSauKM)}</span>`;
+                return `
                 <div class="pm-item">
                     <div>
                         <div class="fw-bold">${esc(item.tenSanPham)}</div>
@@ -728,136 +986,137 @@
                     <div class="fw-bold text-end">${money(item.thanhTien)}</div>
                 </div>
             `;
-        }).join('');
-    }
-
-    async function loadCart() {
-        try {
-            const cart = await fetchJson(`/api/public/gio-hang?khachHangId=${encodeURIComponent(currentCustomerId)}`);
-            renderCart(cart);
-            // Sau khi load cart, tính phí ship cho địa chỉ mặc định (nếu có)
-            const defaultRadio = document.querySelector('input[name="diaChiGiaoId"]:checked');
-            if (defaultRadio) {
-                await onAddressChange(defaultRadio);
-            } else {
-                updateShippingDisplay(0);
-            }
-            // Load promotions
-            await loadKhuyenMai();
-        } catch (error) {
-            els.loading.innerHTML = `<span class="text-danger">${esc(error.message)}</span>`;
-            els.button.disabled = true;
-        }
-    }
-
-    // ── Xử lý đặt hàng (hỗ trợ cả COD và VNPay) ──
-    async function placeOrder() {
-        const diaChi = document.querySelector('input[name="diaChiGiaoId"]:checked');
-        const ptttRadio = document.querySelector('input[name="phuongThucThanhToanId"]:checked');
-        if (!diaChi || !ptttRadio) {
-            showError('Vui lòng chọn địa chỉ và phương thức thanh toán.');
-            return;
+            }).join('');
         }
 
-        // Lấy tên phương thức thanh toán từ label
-        const ptttLabel = ptttRadio.closest('.pm-option');
-        const ptttName = ptttLabel ? ptttLabel.querySelector('.fw-bold')?.textContent?.trim() : '';
-        const isVnPay = ptttName && (ptttName === 'VNPay' || ptttName.includes('VNPay'));
-
-        els.error.classList.add('d-none');
-        els.button.disabled = true;
-        const oldText = els.button.innerHTML;
-        els.button.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Đang xử lý...';
-
-        try {
-            if (isVnPay) {
-                // ── THANH TOÁN VNPay ──
-                const result = await fetchJson('/api/public/dat-hang/vnpay', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        khachHangId: currentCustomerId,
-                        sessionId: null,
-                        diaChiGiaoId: Number(diaChi.value),
-                        phuongThucThanhToanId: Number(ptttRadio.value),
-                        ctkmId: selectedCtkmId,
-                        phiShip: finalShipFeeForOrder,
-                        ghiChu: document.getElementById('ghiChu').value.trim() || null
-                    })
-                });
-
-                // Redirect đến VNPay
-                if (result.paymentUrl) {
-                    window.location.href = result.paymentUrl;
+        async function loadCart() {
+            try {
+                const cart = await fetchJson(`/api/public/gio-hang?khachHangId=${encodeURIComponent(currentCustomerId)}`);
+                renderCart(cart);
+                // Sau khi load cart, tính phí ship cho địa chỉ mặc định (nếu có)
+                const defaultRadio = document.querySelector('input[name="diaChiGiaoId"]:checked');
+                if (defaultRadio) {
+                    await onAddressChange(defaultRadio);
                 } else {
-                    throw new Error('Không nhận được URL thanh toán từ VNPay.');
+                    updateShippingDisplay(0);
                 }
-            } else {
-                // ── THANH TOÁN COD hoặc các phương thức khác ──
-                const result = await fetchJson('/api/public/dat-hang', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        khachHangId: currentCustomerId,
-                        sessionId: null,
-                        diaChiGiaoId: Number(diaChi.value),
-                        phuongThucThanhToanId: Number(ptttRadio.value),
-                        ctkmId: selectedCtkmId,
-                        phiShip: finalShipFeeForOrder,
-                        ghiChu: document.getElementById('ghiChu').value.trim() || null
-                    })
-                });
-
-                sessionStorage.setItem('pm_cart_count', '0');
-                if (els.badge) els.badge.textContent = '0';
-                els.grid.style.display = 'none';
-                els.successMessage.textContent = `Mã đơn hàng: ${result.maDonHang}. PrimeMobile sẽ xác nhận đơn trong thời gian sớm nhất.`;
-                els.success.style.display = 'block';
+                // Load promotions
+                await loadKhuyenMai();
+            } catch (error) {
+                els.loading.innerHTML = `<span class="text-danger">${esc(error.message)}</span>`;
+                els.button.disabled = true;
             }
-        } catch (error) {
-            showError(error.message);
-            els.button.disabled = false;
-            els.button.innerHTML = oldText;
         }
-    }
 
-    els.button.addEventListener('click', async function(e) {
-        e.preventDefault();
-        const result = await Swal.fire({
-            icon: 'question',
-            title: 'Xác nhận đặt hàng',
-            text: 'Bạn có chắc chắn muốn đặt đơn hàng này?',
-            showCancelButton: true,
-            confirmButtonText: '<i class="fa fa-check"></i> Đặt hàng ngay',
-            cancelButtonText: 'Hủy bỏ',
-            confirmButtonColor: '#0d9488'
+        // ── Xử lý đặt hàng (hỗ trợ cả COD và VNPay) ──
+        async function placeOrder() {
+            const diaChi = document.querySelector('input[name="diaChiGiaoId"]:checked');
+            const ptttRadio = document.querySelector('input[name="phuongThucThanhToanId"]:checked');
+            if (!diaChi || !ptttRadio) {
+                showError('Vui lòng chọn địa chỉ và phương thức thanh toán.');
+                return;
+            }
+
+            // Lấy tên phương thức thanh toán từ label
+            const ptttLabel = ptttRadio.closest('.pm-option');
+            const ptttName = ptttLabel ? ptttLabel.querySelector('.fw-bold')?.textContent?.trim() : '';
+            const isVnPay = ptttName && (ptttName === 'VNPay' || ptttName.includes('VNPay'));
+
+            els.error.classList.add('d-none');
+            els.button.disabled = true;
+            const oldText = els.button.innerHTML;
+            els.button.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Đang xử lý...';
+
+            try {
+                if (isVnPay) {
+                    // ── THANH TOÁN VNPay ──
+                    const result = await fetchJson('/api/public/dat-hang/vnpay', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            khachHangId: currentCustomerId,
+                            sessionId: null,
+                            diaChiGiaoId: Number(diaChi.value),
+                            phuongThucThanhToanId: Number(ptttRadio.value),
+                            ctkmId: selectedCtkmId,
+                            phiShip: finalShipFeeForOrder,
+                            ghiChu: document.getElementById('ghiChu').value.trim() || null
+                        })
+                    });
+
+                    // Redirect đến VNPay
+                    if (result.paymentUrl) {
+                        window.location.href = result.paymentUrl;
+                    } else {
+                        throw new Error('Không nhận được URL thanh toán từ VNPay.');
+                    }
+                } else {
+                    // ── THANH TOÁN COD hoặc các phương thức khác ──
+                    const result = await fetchJson('/api/public/dat-hang', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            khachHangId: currentCustomerId,
+                            sessionId: null,
+                            diaChiGiaoId: Number(diaChi.value),
+                            phuongThucThanhToanId: Number(ptttRadio.value),
+                            ctkmId: selectedCtkmId,
+                            phiShip: finalShipFeeForOrder,
+                            ghiChu: document.getElementById('ghiChu').value.trim() || null
+                        })
+                    });
+
+                    sessionStorage.setItem('pm_cart_count', '0');
+                    if (els.badge) els.badge.textContent = '0';
+                    els.grid.style.display = 'none';
+                    els.successMessage.textContent = `Mã đơn hàng: ${result.maDonHang}. PrimeMobile sẽ xác nhận đơn trong thời gian sớm nhất.`;
+                    els.success.style.display = 'block';
+                }
+            } catch (error) {
+                showError(error.message);
+                els.button.disabled = false;
+                els.button.innerHTML = oldText;
+            }
+        }
+
+        els.button.addEventListener('click', async function (e) {
+            e.preventDefault();
+            const result = await Swal.fire({
+                icon: 'question',
+                title: 'Xác nhận đặt hàng',
+                text: 'Bạn có chắc chắn muốn đặt đơn hàng này?',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-check"></i> Đặt hàng ngay',
+                cancelButtonText: 'Hủy bỏ',
+                confirmButtonColor: '#0d9488'
+            });
+            if (result.isConfirmed) {
+                placeOrder();
+            }
         });
-        if (result.isConfirmed) {
-            placeOrder();
-        }
-    });
 
-    // ── Khi load trang: load provinces cho form chính (nếu chưa có địa chỉ) ──
-    document.addEventListener('DOMContentLoaded', function() {
-        // Nếu chưa có địa chỉ, load provinces cho form chính
-        if (document.getElementById('provinceSelect')) {
-            loadProvinces('provinceSelect', 'districtSelect', 'wardSelect');
-        }
-        // Nếu đã có địa chỉ, form ẩn sẽ được load khi bấm nút
-        loadKhuyenMai().then(loadCart);
-    });
+        // ── Khi load trang: load provinces cho form chính (nếu chưa có địa chỉ) ──
+        document.addEventListener('DOMContentLoaded', function () {
+            // Nếu chưa có địa chỉ, load provinces cho form chính
+            if (document.getElementById('provinceSelect')) {
+                loadProvinces('provinceSelect', 'districtSelect', 'wardSelect');
+            }
+            // Nếu đã có địa chỉ, form ẩn sẽ được load khi bấm nút
+            loadKhuyenMai().then(loadCart);
+        });
 
-    // Hàm chọn địa chỉ (click vào item)
-    function selectAddress(element, addressId) {
-        const radio = element.querySelector('input[name="diaChiGiaoId"]');
-        if (radio) {
-            radio.checked = true;
-            // Trigger change event
-            const event = new Event('change', { bubbles: true });
-            radio.dispatchEvent(event);
+        // Hàm chọn địa chỉ (click vào item)
+        function selectAddress(element, addressId) {
+            const radio = element.querySelector('input[name="diaChiGiaoId"]');
+            if (radio) {
+                radio.checked = true;
+                // Trigger change event
+                const event = new Event('change', { bubbles: true });
+                radio.dispatchEvent(event);
+            }
         }
-    }
-    window.selectAddress = selectAddress;
-</script>
+        window.selectAddress = selectAddress;
+    </script>
 </body>
+
 </html>

@@ -7,5 +7,5 @@ import java.util.List;
 public interface IChatbotService {
     CuocHoiThoai layHoacTaoCuocHoiThoai(Integer khachHangId, String sessionId);
     List<TinNhanChat> layLichSuTinNhan(Integer cuocHoiThoaiId);
-    String guiTinNhan(Integer cuocHoiThoaiId, String message);
+    org.example.primemobile.dto.ChatbotResponseDto guiTinNhan(Integer cuocHoiThoaiId, String message, Integer khachHangId);
 }

@@ -25,13 +25,17 @@
         .pm-chatbot-msg { max-width:88%; margin-bottom:10px; padding:10px 12px; border-radius:8px; line-height:1.45; font-size:.9rem; }
         .pm-chatbot-msg.bot { background:#fff; color:#0f172a; border:1px solid #e2e8f0; }
         .pm-chatbot-msg.user { margin-left:auto; background:#0d9488; color:#fff; }
-        .pm-chatbot-products { display:grid; gap:8px; margin:6px 0 10px; }
-        .pm-chatbot-product { background:#fff; color:#0f172a; border:1px solid #e2e8f0; border-radius:8px; padding:10px; text-decoration:none; }
-        .pm-chatbot-product:hover { color:#0f172a; border-color:#0d9488; }
-        .pm-chatbot-product strong { display:block; font-size:.86rem; margin-bottom:3px; }
-        .pm-chatbot-product span { color:#ea580c; font-weight:800; font-size:.86rem; }
-        .pm-chatbot-quick { display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 12px; background:#f8fafc; }
-        .pm-chatbot-quick button { border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:999px; padding:6px 10px; font-size:.78rem; font-weight:700; }
+        .pm-chatbot-products { display:flex; flex-direction:column; gap:8px; margin:6px 0 10px; }
+        .pm-chatbot-product { background:#fff; color:#0f172a; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; text-decoration:none; display:flex; align-items:center; gap:10px; }
+        .pm-chatbot-product:hover { color:#0f172a; border-color:#0d9488; box-shadow:0 2px 8px rgba(13,148,136,.13); }
+        .pm-chatbot-product-img { width:56px; height:56px; object-fit:contain; border-radius:6px; background:#f8fafc; flex-shrink:0; border:1px solid #f1f5f9; display:flex; align-items:center; justify-content:center; color:#94a3b8; }
+        .pm-chatbot-product-info { flex:1; min-width:0; overflow:hidden; }
+        .pm-chatbot-product .pm-chatbot-product-info strong { display:block; width:100%; font-size:.86rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:2px; color:#0f172a; }
+        .pm-chatbot-product-info .brand-variants { color:#64748b; font-size:.76rem; margin-bottom:3px; }
+        .pm-chatbot-product-info .price-row { display:flex; align-items:center; gap:6px; }
+        .pm-chatbot-product-info .price-sale { color:#ea580c; font-weight:800; font-size:.88rem; }
+        .pm-chatbot-product-info .price-original { color:#94a3b8; font-size:.76rem; text-decoration:line-through; }
+        .pm-chatbot-product-info .price-original { color:#94a3b8; font-size:.76rem; text-decoration:line-through; }
         .pm-chatbot-form { display:flex; gap:8px; padding:12px; border-top:1px solid #e2e8f0; background:#fff; }
         .pm-chatbot-form input { flex:1; min-width:0; border:1px solid #cbd5e1; border-radius:8px; padding:10px 12px; font-size:.9rem; outline:0; }
         .pm-chatbot-form input:focus { border-color:#0d9488; box-shadow:0 0 0 3px rgba(13,148,136,.13); }
@@ -112,7 +116,6 @@
                 </button>
             </div>
             <div class="pm-chatbot-body" id="pm-chatbot-body"></div>
-            <div class="pm-chatbot-quick" id="pm-chatbot-quick"></div>
             <form class="pm-chatbot-form" id="pm-chatbot-form">
                 <input id="pm-chatbot-input" type="text" autocomplete="off" placeholder="Bạn cần tư vấn gì?">
                 <button type="submit" title="Gửi"><i class="fa fa-paper-plane"></i></button>
@@ -129,10 +132,9 @@
             const body = document.getElementById('pm-chatbot-body');
             const form = document.getElementById('pm-chatbot-form');
             const input = document.getElementById('pm-chatbot-input');
-            const quick = document.getElementById('pm-chatbot-quick');
             const toggle = document.getElementById('pm-chatbot-toggle');
             const close = document.getElementById('pm-chatbot-close');
-            if (!root || !body || !form || !input || !quick || !toggle || !close) return;
+            if (!root || !body || !form || !input || !toggle || !close) return;
 
             const money = value => Number(value || 0).toLocaleString('vi-VN') + 'đ';
             const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
@@ -144,6 +146,7 @@
                 item.className = `pm-chatbot-msg ${type}`;
                 item.innerHTML = esc(text);
                 body.appendChild(item);
+                limitMessages();
                 body.scrollTop = body.scrollHeight;
             }
 
@@ -153,17 +156,34 @@
                 wrap.className = 'pm-chatbot-products';
                 wrap.innerHTML = products.map(product => `
                     <a class="pm-chatbot-product" href="${esc(product.url)}">
-                        <strong>${esc(product.name)}</strong>
-                        <small>${esc(product.brand || 'PrimeMobile')}</small><br>
-                        <span>${money(product.price)}</span>
+                        ${product.image 
+                            ? `<img class="pm-chatbot-product-img" src="${esc(product.image)}" alt="${esc(product.name)}" onerror="this.outerHTML='<div class=\\'pm-chatbot-product-img\\'><i class=\\'fa fa-mobile-alt fa-2x\\'></i></div>'">`
+                            : `<div class="pm-chatbot-product-img"><i class="fa fa-mobile-alt fa-2x"></i></div>`
+                        }
+                        <div class="pm-chatbot-product-info">
+                            <strong title="${esc(product.name)}">${esc(product.name)}</strong>
+                            <div class="brand-variants">${esc(product.brand || 'PrimeMobile')}</div>
+                            <div class="price-row">
+                                <span class="price-sale">${product.salePrice ? money(product.salePrice) : money(product.price)}</span>
+                                ${product.salePrice ? `<span class="price-original">${money(product.price)}</span>` : ''}
+                            </div>
+                        </div>
                     </a>
                 `).join('');
                 body.appendChild(wrap);
+                limitMessages();
                 body.scrollTop = body.scrollHeight;
             }
 
-            function renderQuick(replies = []) {
-                quick.innerHTML = replies.map(reply => `<button type="button">${esc(reply)}</button>`).join('');
+            function limitMessages() {
+                const limit = 20; // 10 cặp
+                const items = body.children;
+                if (items.length > limit) {
+                    const diff = items.length - limit;
+                    for (let i = 0; i < diff; i++) {
+                        body.removeChild(items[0]);
+                    }
+                }
             }
 
             async function ask(message) {
@@ -188,7 +208,6 @@
                     const data = await ask(trimmed);
                     addMessage(data.reply || 'Mình chưa hiểu rõ câu hỏi. Bạn thử hỏi theo hãng, giá hoặc nhu cầu nhé.');
                     renderProducts(data.products || []);
-                    renderQuick(data.quickReplies || []);
                 } catch (error) {
                     addMessage('Hiện mình chưa trả lời được. Bạn có thể liên hệ hotline 1900 1234 để được hỗ trợ nhanh.');
                 } finally {
@@ -198,12 +217,22 @@
                 }
             }
 
-            toggle.addEventListener('click', () => {
+            toggle.addEventListener('click', async () => {
                 root.classList.add('open');
                 if (!body.dataset.ready) {
                     body.dataset.ready = 'true';
-                    addMessage('Chào bạn, mình có thể tư vấn chọn điện thoại theo hãng, giá hoặc nhu cầu sử dụng.');
-                    renderQuick(['Máy dưới 10 triệu', 'iPhone', 'Samsung camera đẹp', 'Cách đặt hàng']);
+                    try {
+                        const history = await fetch('/api/public/chatbot/history').then(r => r.json());
+                        if (history.messages && history.messages.length > 0) {
+                            history.messages.forEach(msg => {
+                                addMessage(msg.noiDung, msg.vai === 'user' ? 'user' : 'bot');
+                            });
+                        } else {
+                            addMessage('Chào bạn, mình có thể tư vấn chọn điện thoại theo hãng, giá hoặc nhu cầu sử dụng.');
+                        }
+                    } catch (e) {
+                        addMessage('Chào bạn, mình có thể tư vấn chọn điện thoại theo hãng, giá hoặc nhu cầu sử dụng.');
+                    }
                 }
                 input.focus();
             });
@@ -211,10 +240,6 @@
             form.addEventListener('submit', event => {
                 event.preventDefault();
                 send(input.value);
-            });
-            quick.addEventListener('click', event => {
-                const button = event.target.closest('button');
-                if (button) send(button.textContent || '');
             });
         })();
     </script>
