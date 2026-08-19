@@ -815,7 +815,7 @@
             };
 
             if (!payload.tinhThanhId || !payload.quanHuyenId || !payload.phuongXaCode || !payload.diaChiChiTiet) {
-                alert('Vui lòng điền đầy đủ thông tin địa chỉ.');
+                Swal.fire({ icon: 'warning', title: 'Thiếu thông tin', text: 'Vui lòng điền đầy đủ thông tin địa chỉ.', confirmButtonColor: '#f59e0b' });
                 return;
             }
 
@@ -910,7 +910,7 @@
                     if (data.success) {
                         currentDiscountFee = data.data.tienGiam || 0;
                     } else {
-                        alert(data.message || 'Mã giảm giá không hợp lệ.');
+                        Swal.fire({ icon: 'warning', title: 'Lỗi mã giảm giá', text: data.message || 'Mã giảm giá không hợp lệ.', confirmButtonColor: '#f59e0b' });
                         els.ctkmSelect.value = '';
                         selectedCtkmId = null;
                     }

@@ -135,7 +135,17 @@ public class DanhGiaServiceImpl implements IDanhGiaService {
     @Override
     @Transactional(readOnly = true)
     public Page<DanhGiaSanPham> timKiemVaLocDanhGia(String tuKhoa, String trangThai, Integer sao, java.time.LocalDateTime tuNgay, java.time.LocalDateTime denNgay, Pageable pageable) {
-        return danhGiaRepository.timKiemVaLocDanhGia(tuKhoa, trangThai, sao, tuNgay, denNgay, pageable);
+        Page<DanhGiaSanPham> page = danhGiaRepository.timKiemVaLocDanhGia(tuKhoa, trangThai, sao, tuNgay, denNgay, pageable);
+        page.getContent().forEach(dg -> {
+            if (dg.getDonHang() != null && dg.getDonHang().getChiTietDonHangs() != null) {
+                String variantStr = dg.getDonHang().getChiTietDonHangs().stream()
+                    .filter(ct -> ct.getBienTheSanPham() != null && ct.getBienTheSanPham().getSanPham().getId().equals(dg.getSanPham().getId()))
+                    .map(ct -> ct.getBienTheSanPham().getRamGb() + "GB RAM - " + ct.getBienTheSanPham().getLuuTruGb() + "GB - " + ct.getBienTheSanPham().getMauSacTen())
+                    .collect(java.util.stream.Collectors.joining(", "));
+                dg.setTenBienTheMua(variantStr);
+            }
+        });
+        return page;
     }
 
     @Override

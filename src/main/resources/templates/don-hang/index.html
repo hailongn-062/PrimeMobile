@@ -147,6 +147,7 @@
 <div th:replace="~{fragments/footer :: footer}"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     const els = {
         loading: document.getElementById('orders-loading'),
@@ -488,7 +489,16 @@
     }
 
     async function cancelOrder(id) {
-        if (!confirm('Bạn muốn hủy đơn hàng này?')) return;
+        const result = await Swal.fire({
+            icon: 'question',
+            title: 'Hủy đơn hàng?',
+            text: 'Bạn có chắc chắn muốn hủy đơn hàng này?',
+            showCancelButton: true,
+            confirmButtonText: 'Đồng ý',
+            cancelButtonText: 'Không',
+            confirmButtonColor: '#dc2626'
+        });
+        if (!result.isConfirmed) return;
         const button = document.querySelector(`[data-action="cancel"][data-id="${CSS.escape(String(id))}"]`);
         const oldText = button?.innerHTML;
         if (button) {
@@ -513,7 +523,16 @@
     }
 
     async function switchCod(id) {
-        if (!confirm('Bạn muốn đổi sang thanh toán bằng tiền mặt khi nhận hàng (COD)?')) return;
+        const result = await Swal.fire({
+            icon: 'question',
+            title: 'Đổi phương thức?',
+            text: 'Bạn muốn đổi sang thanh toán bằng tiền mặt khi nhận hàng (COD)?',
+            showCancelButton: true,
+            confirmButtonText: 'Đồng ý',
+            cancelButtonText: 'Không',
+            confirmButtonColor: '#0d9488'
+        });
+        if (!result.isConfirmed) return;
         const button = document.querySelector(`[data-action="switch-cod"][data-id="${CSS.escape(String(id))}"]`);
         const oldText = button?.innerHTML;
         if (button) {
@@ -522,10 +541,10 @@
         }
         try {
             const data = await fetchJson(`/api/public/don-hang-cua-toi/${encodeURIComponent(id)}/doi-sang-cod`, { method: 'PUT' });
-            alert(data.message || 'Đổi sang COD thành công!');
+            Swal.fire({ icon: 'success', title: 'Thành công!', text: data.message || 'Đổi sang COD thành công!', timer: 1500, showConfirmButton: false });
             loadOrders();
         } catch (error) {
-            alert('Lỗi: ' + error.message);
+            Swal.fire({ icon: 'error', title: 'Lỗi!', text: error.message || 'Không thể đổi phương thức thanh toán.', confirmButtonColor: '#dc2626' });
             if (button) {
                 button.disabled = false;
                 button.innerHTML = oldText;
@@ -546,7 +565,7 @@
                 window.location.href = data.vnpUrl;
             }
         } catch (error) {
-            alert('Lỗi: ' + error.message);
+            Swal.fire({ icon: 'error', title: 'Lỗi!', text: error.message || 'Không thể tạo lại giao dịch VNPay.', confirmButtonColor: '#dc2626' });
             if (button) {
                 button.disabled = false;
                 button.innerHTML = oldText;

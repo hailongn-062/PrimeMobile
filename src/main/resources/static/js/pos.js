@@ -31,6 +31,10 @@
 let allProducts = [];   // Danh sách sản phẩm từ API (không đổi sau load)
 let filteredProducts = []; // Sau khi search filter
 
+// Pagination state
+let currentPage = 1;
+const PAGE_SIZE = 10;
+
 /**
  * Cart item structure:
  * {
@@ -137,6 +141,7 @@ function resolveDOM() {
     DOM = {
         inputSearch: el('inputSearch'),
         productGrid: el('product-grid'),
+        posPagination: el('pos-pagination'),
         productStatus: el('product-status'),
         cartItemsWrap: el('cart-items-wrap'),
         cartEmptyMsg: el('cart-empty-msg'),
@@ -218,6 +223,7 @@ async function loadProducts() {
         allProducts = await res.json();
         filteredProducts = [...allProducts];
         showProductStatus('hidden');
+        currentPage = 1;
         renderProducts(filteredProducts);
 
     } catch (err) {
@@ -300,7 +306,55 @@ function renderProducts(list) {
     }
 
     const grouped = groupProducts(list);
-    DOM.productGrid.innerHTML = grouped.map(g => buildGroupCardHtml(g)).join('');
+    
+    // Pagination logic
+    const totalPages = Math.ceil(grouped.length / PAGE_SIZE);
+    
+    // Ensure currentPage is within bounds
+    if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+    
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    const endIndex = startIndex + PAGE_SIZE;
+    
+    // Get items for current page
+    const pagedGroups = grouped.slice(startIndex, endIndex);
+
+    DOM.productGrid.innerHTML = pagedGroups.map(g => buildGroupCardHtml(g)).join('');
+    
+    // Render pagination controls
+    renderPagination(grouped.length, totalPages);
+}
+
+function renderPagination(totalItems, totalPages) {
+    if (!DOM.posPagination) return;
+    
+    if (totalPages <= 1) {
+        DOM.posPagination.style.display = 'none';
+        return;
+    }
+    
+    DOM.posPagination.style.display = 'flex';
+    
+    DOM.posPagination.innerHTML = `
+        <button class="pos-page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})">
+            <i class="fa fa-chevron-left"></i>
+        </button>
+        <div class="pos-page-info">Trang ${currentPage} / ${totalPages}</div>
+        <button class="pos-page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})">
+            <i class="fa fa-chevron-right"></i>
+        </button>
+    `;
+}
+
+function changePage(newPage) {
+    currentPage = newPage;
+    renderProducts(filteredProducts);
+    
+    // Scroll to top of product grid
+    if (DOM.productGrid) {
+        DOM.productGrid.scrollTop = 0;
+    }
 }
 
 /** Tạo HTML cho 1 group card (Layout ngang) */
@@ -921,10 +975,12 @@ function initSearch() {
             filteredProducts = [...allProducts];
         } else {
             filteredProducts = allProducts.filter(p =>
-                p.tenSanPham.toLowerCase().includes(q)
+                p.tenSanPham.toLowerCase().includes(q) ||
+                (p.maSku && p.maSku.toLowerCase().includes(q))
             );
         }
 
+        currentPage = 1;
         renderProducts(filteredProducts);
     }, SEARCH_DEBOUNCE_MS));
 }
@@ -2763,6 +2819,7 @@ window.addToCart = addToCart;
 window.removeFromCart = removeFromCart;
 window.changeQty = changeQty;
 window.loadProducts = loadProducts;
+window.changePage = changePage;
 window.addEventListener('beforeunload', () => { if (cart.length > 0) navigator.sendBeacon('/api/admin/pos/nha-tat-ca-imei'); });
 
 

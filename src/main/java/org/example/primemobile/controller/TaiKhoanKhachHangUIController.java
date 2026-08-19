@@ -23,6 +23,7 @@ public class TaiKhoanKhachHangUIController {
     private final DiaChiKhachHangRepository diaChiKhachHangRepository;
     private final org.example.primemobile.service.IYeuThichService yeuThichService;
     private final KhachHangRepository khachHangRepository;
+    private final org.example.primemobile.service.IKhuyenMaiService khuyenMaiService;
 
     @GetMapping({"/toi", "/dia-chi"})
     public String taiKhoan(HttpServletRequest request, Model model) {
@@ -49,7 +50,21 @@ public class TaiKhoanKhachHangUIController {
 
         model.addAttribute("pageTitle", "Sản phẩm yêu thích");
         model.addAttribute("currentCustomer", currentCustomer);
-        model.addAttribute("danhSachYeuThich", yeuThichService.layDanhSach(currentCustomer.getKhachHangId()));
+        
+        var danhSachYeuThich = yeuThichService.layDanhSach(currentCustomer.getKhachHangId());
+        model.addAttribute("danhSachYeuThich", danhSachYeuThich);
+
+        java.util.Map<Integer, java.math.BigDecimal> giaSauKhuyenMaiTheoSanPham = new java.util.HashMap<>();
+        for (var yt : danhSachYeuThich) {
+            var sp = yt.getSanPham();
+            if (sp != null && sp.getBienTheSanPhams() != null && !sp.getBienTheSanPhams().isEmpty()) {
+                var firstBt = sp.getBienTheSanPhams().get(0);
+                java.math.BigDecimal giaSauKM = khuyenMaiService.tinhGiaSauKhuyenMai(firstBt.getId(), null);
+                giaSauKhuyenMaiTheoSanPham.put(sp.getId(), giaSauKM != null ? giaSauKM : firstBt.getGiaBan());
+            }
+        }
+        model.addAttribute("giaSauKhuyenMaiTheoSanPham", giaSauKhuyenMaiTheoSanPham);
+
         return "tai-khoan/yeu-thich";
     }
 

@@ -105,14 +105,18 @@ public class DanhGiaSanPham {
         /**
          * Tráº¡ng thÃ¡i kiá»ƒm duyá»‡t (DEFAULT 'cho_duyet').
          * GiÃ¡ trá»‹ há»£p lá»‡: "cho_duyet" | "da_duyet" | "an"
-         * NhÃ¢n viÃªn cÃ³ quyá»n duyá»‡t/áº©n Ä‘Ã¡nh giÃ¡.
+         * NhÃ¢n viÃªn cÃ³ quyá» n duyá»‡t/áº©n Ä‘Ã¡nh giÃ¡.
          */
         @Column(name = "trang_thai", nullable = false, length = 15)
         @Builder.Default
         private String trangThai = "cho_duyet";
 
-        /** Thá»i Ä‘iá»ƒm táº¡o Ä‘Ã¡nh giÃ¡. */
+        /** Thá» i Ä‘iá»ƒm táº¡o Ä‘Ã¡nh giÃ¡. */
         @Column(name = "ngay_tao", nullable = false, updatable = false)
         @Builder.Default
         private LocalDateTime ngayTao = LocalDateTime.now();
+
+        /** Chuỗi chứa tên các biến thể đã mua (không lưu vào DB, dùng để trả về API). */
+        @Transient
+        private String tenBienTheMua;
 }

@@ -6,6 +6,8 @@
     <th:block th:replace="~{layout/admin-layout :: adminHead}"></th:block>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
     <style>
         .table-pnk th {
             background-color: #f8f9fa;
@@ -19,33 +21,25 @@
             font-size: 1.1rem;
         }
 
-        .gia-input-wrapper .form-control.is-invalid {
-            border-color: #dc3545 !important;
-            background-color: #fff0f0 !important;
-        }
-
-        .gia-input-wrapper .form-control.is-valid {
-            border-color: #198754 !important;
-            background-color: #f0fff4 !important;
+        .gia-input-wrapper {
+            position: relative;
         }
 
         .gia-warning-msg {
             font-size: 0.75rem;
             font-weight: 600;
-            margin-top: 3px;
             padding: 2px 6px;
             border-radius: 4px;
+            margin-top: 2px;
             display: inline-block;
         }
 
         .gia-warning-msg.danger {
-            color: #721c24;
-            background-color: #f8d7da;
+            color: #dc3545;
         }
 
         .gia-warning-msg.success {
-            color: #155724;
-            background-color: #d4edda;
+            color: #198754;
         }
 
         .table-pnk td,
@@ -133,7 +127,7 @@
                                             <th style="width: 15%">Số lượng <span class="text-danger">*</span></th>
                                             <th style="width: 25%">Đơn giá nhập <span class="text-danger">*</span></th>
                                             <th style="width: 15%">Giá bán tham khảo</th>
-                                            <th style="width: 5%" class="text-end">Thành tiền</th>
+                                            <th style="width: 130px;" class="text-end">Thành tiền</th>
                                             <th style="width: 5%" class="text-center">Xóa</th>
                                         </tr>
                                     </thead>
@@ -168,11 +162,12 @@
                                             <table class="table table-bordered table-sm align-middle text-center" id="previewTable">
                                                 <thead class="table-light">
                                                     <tr>
-                                                        <th>Biến thể (SKU)</th>
-                                                        <th>SL Đặt</th>
-                                                        <th>SL Excel</th>
-                                                        <th>Trạng thái</th>
-                                                        <th style="width: 30%">Danh sách IMEI</th>
+                                                        <th style="width: 20%">Biến thể (SKU)</th>
+                                                        <th style="width: 8%">SL Đặt</th>
+                                                        <th style="width: 8%">SL Excel</th>
+                                                        <th style="width: 14%">Trạng thái</th>
+                                                        <th style="width: 25%">IMEI 1</th>
+                                                        <th style="width: 25%">IMEI 2</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="previewBody">
@@ -287,9 +282,14 @@
                     <div class="gia-warning-msg"></div>
                 </div>
             </td>
-            <td><span class="ref-price"><i class="fa fa-tag me-1"></i>Giá bán: <strong
-                        class="gia-ban-ref">---</strong></span></td>
-            <td class="text-end fw-semibold text-danger thanh-tien-cell align-middle">0 đ</td>
+            <td>
+                <input type="text" class="form-control form-control-sm gia-ban-ref text-center text-muted fw-bold" value="---" readonly style="background-color: #f8f9fa;">
+            </td>
+            <td class="text-end align-middle">
+                <div class="thanh-tien-wrapper" style="width: 130px; overflow: hidden; white-space: nowrap; margin-left: auto;">
+                    <span class="fw-semibold text-danger thanh-tien-cell">0 đ</span>
+                </div>
+            </td>
             <td class="text-center align-middle">
                 <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" title="Xóa dòng"><i
                         class="fa fa-trash"></i></button>
@@ -326,26 +326,60 @@
             function formatVND(n) { return new Intl.NumberFormat('vi-VN').format(n) + ' đ'; }
             function parsePrice(str) { return parseFloat(str.toString().replace(/\./g, '')) || 0; }
 
+            // Khởi tạo Tom Select cho một thẻ select
+            function initTomSelect(selectEl) {
+                new TomSelect(selectEl, {
+                    create: false,
+                    sortField: {
+                        field: "text",
+                        direction: "asc"
+                    },
+                    placeholder: "-- Tìm / Chọn SKU --",
+                    searchField: ['text', 'value'], // Cho phép tìm theo cả text (tên) và value (SKU)
+                    dropdownParent: "body", // Tránh bị cắt bởi thẻ div table-responsive
+                    onChange: function(value) {
+                        const row = selectEl.closest('.chi-tiet-row');
+                        if (row) {
+                            if (isDuplicateSku(value, row)) {
+                                Swal.fire('Trùng sản phẩm', 'Sản phẩm này đã được chọn ở dòng khác!', 'warning');
+                                this.setValue(''); // Reset Tom Select
+                                value = ''; // Đặt lại value thành rỗng sau khi reset
+                            }
+                            
+                            // Ép buộc đồng bộ giá trị xuống thẻ <select> ẩn ngay lập tức
+                            selectEl.value = value; 
+                            
+                            // Truyền trực tiếp ID để validate (tránh rủi ro đọc DOM bị trễ)
+                            validateGiaNhap(row, value);
+                            calculateTotal();
+                        }
+                    }
+                });
+            }
+
             // ─── Validate đơn giá nhập so với giá bán ───
-            function validateGiaNhap(row) {
+            function validateGiaNhap(row, overrideBienTheId = null) {
                 const skuSelect = row.querySelector('.sku-select');
                 const giaInput = row.querySelector('.gia-input');
                 const warningMsg = row.querySelector('.gia-warning-msg');
                 const giaBanRef = row.querySelector('.gia-ban-ref');
 
-                const bienTheId = skuSelect.value;
+                // Dùng giá trị override nếu có, nếu không thì lấy từ thẻ select
+                const bienTheId = overrideBienTheId !== null ? overrideBienTheId : skuSelect.value;
                 // Đọc giá bán từ lookup map được render bởi Thymeleaf — chắc chắn không có vấn đề DOM attribute
                 const giaBan = bienTheId ? (parseFloat(bienTheGiaBanMap[bienTheId]) || 0) : 0;
                 const giaNhap = parsePrice(giaInput.value);
 
-                // Cập nhật giá bán tham khảo (nếu tồn tại)
+                // Cập nhật giá bán tham khảo (dạng input)
                 if (giaBanRef) {
                     if (giaBan > 0) {
-                        giaBanRef.textContent = formatVND(giaBan);
-                        giaBanRef.className = '';
+                        giaBanRef.value = formatVND(giaBan);
+                        giaBanRef.classList.remove('text-muted');
+                        giaBanRef.classList.add('text-dark');
                     } else {
-                        giaBanRef.textContent = '---';
-                        giaBanRef.className = 'no-price';
+                        giaBanRef.value = '---';
+                        giaBanRef.classList.add('text-muted');
+                        giaBanRef.classList.remove('text-dark');
                     }
                 }
 
@@ -400,31 +434,20 @@
                     calculateTotal();
                     validateGiaNhap(this.closest('.chi-tiet-row'));
                 });
-                clone.querySelector(".sku-select").addEventListener("change", function () {
-                    const row = this.closest('.chi-tiet-row');
-                    const selectedId = this.value;
-                    if (isDuplicateSku(selectedId, row)) {
-                        Swal.fire('Trùng sản phẩm', 'Sản phẩm này đã được chọn ở dòng khác!', 'warning');
-                        this.value = ''; // Reset
-                    }
-                    // Giữ nguyên giá nhập, chỉ cập nhật validate
-                    validateGiaNhap(row);
-                    calculateTotal();
-                });
+                // Xóa lắng nghe change cũ đi vì đã xử lý trực tiếp trong onChange của Tom Select
                 clone.querySelector(".btn-remove-row").addEventListener("click", function (e) {
                     e.target.closest("tr").remove();
                     calculateTotal();
                 });
                 chiTietBody.appendChild(clone);
+                
+                // Khởi tạo Tom Select sau khi đưa vào DOM
+                const newSelect = chiTietBody.querySelector('.chi-tiet-row:last-child .sku-select');
+                initTomSelect(newSelect);
+
                 calculateTotal();
                 // Validate nếu đã chọn SKU
-                const firstRow = chiTietBody.querySelector('.chi-tiet-row:last-child');
-                if (firstRow) {
-                    const skuSelect = firstRow.querySelector('.sku-select');
-                    if (skuSelect.value) {
-                        validateGiaNhap(firstRow);
-                    }
-                }
+                validateGiaNhap(chiTietBody.querySelector('.chi-tiet-row:last-child'));
             }
 
             // ─── Tính tổng tiền ───
@@ -434,8 +457,20 @@
                     const sl = parseInt(row.querySelector(".sl-input").value) || 0;
                     const gia = parsePrice(row.querySelector(".gia-input").value);
                     const thanhTien = sl * gia;
-                    row.querySelector(".thanh-tien-cell").textContent = formatVND(thanhTien);
+                    const cell = row.querySelector(".thanh-tien-cell");
+                    cell.textContent = formatVND(thanhTien);
                     total += thanhTien;
+                    
+                    // Tự động thu nhỏ chữ nếu bị tràn
+                    const wrapper = cell.closest('.thanh-tien-wrapper');
+                    if(wrapper) {
+                        wrapper.style.fontSize = "1rem"; // reset
+                        let fontSize = 1.0;
+                        while(wrapper.scrollWidth > wrapper.clientWidth && fontSize > 0.6) {
+                            fontSize -= 0.05;
+                            wrapper.style.fontSize = fontSize + "rem";
+                        }
+                    }
                 });
                 tongTienLabel.textContent = formatVND(total);
             }
@@ -497,6 +532,23 @@
                     const skuSelect = row.querySelector(".sku-select");
                     const optionElement = skuSelect.options[skuSelect.selectedIndex];
                     const skuString = optionElement ? optionElement.getAttribute('data-sku') : null;
+
+                    // KIỂM TRA CHẾ ĐỘ EXCEL
+                    if (window.validatedImeisBySku && Object.keys(window.validatedImeisBySku).length > 0) {
+                        const imeiRecords = window.validatedImeisBySku[skuString];
+                        
+                        // Kiểm tra đã đúng với sku chưa
+                        if (!imeiRecords) {
+                            Swal.fire('Lỗi Biến thể', `Biến thể <b>${skuString || 'Trống'}</b> ở dòng ${i + 1} không có trong dữ liệu file Excel đã tải lên.<br>Vui lòng chọn đúng SKU hoặc tải lại file!`, 'error');
+                            hasError = true; break;
+                        }
+                        
+                        // Kiểm tra số lượng
+                        if (soLuong !== imeiRecords.length) {
+                            Swal.fire('Lỗi số lượng IMEI', `Biến thể <b>${skuString}</b> ở dòng ${i + 1} có số lượng nhập (${soLuong}) không khớp với số lượng IMEI hợp lệ từ file Excel (${imeiRecords.length}).<br>Vui lòng kiểm tra lại bảng đối chiếu (hoặc xóa dòng này và Import lại)!`, 'error');
+                            hasError = true; break;
+                        }
+                    }
 
                     chiTiets.push({
                         bienTheSanPhamId: parseInt(bienTheId),
@@ -610,19 +662,21 @@
                                 if(!row || row.length < 1) continue;
                                 
                                 const rawSku = row[0];
-                                const rawImei = row[1];
+                                const rawImei1 = row[1];
+                                const rawImei2 = row[2]; // Cột C (IMEI 2)
                                 
                                 if(!rawSku || typeof rawSku !== 'string' || rawSku.trim() === '') continue;
                                 
                                 const sku = rawSku.trim().toUpperCase();
-                                const imei = rawImei ? String(rawImei).trim() : null;
+                                const imei1 = rawImei1 ? String(rawImei1).trim() : null;
+                                const imei2 = rawImei2 ? String(rawImei2).trim() : null;
 
                                 if(!validSkuSet.has(sku)) {
                                     invalidSkus.add(sku);
                                 } else {
                                     if(!skuToImeiMap[sku]) skuToImeiMap[sku] = [];
-                                    if(imei && imei !== '') {
-                                        skuToImeiMap[sku].push(imei);
+                                    if(imei1 || imei2) { // Có IMEI1 hoặc IMEI2 đều được tính là 1 sản phẩm
+                                        skuToImeiMap[sku].push({ imei1, imei2 });
                                     }
                                 }
                             }
@@ -632,11 +686,8 @@
                                 return;
                             }
 
-                            // Xóa các dòng trống cũ
-                            document.querySelectorAll('#chi-tiet-body tr').forEach(row => {
-                                const skuSel = row.querySelector('.sku-select');
-                                if(!skuSel.value) row.remove();
-                            });
+                            // Xóa sạch bảng trước khi lấp đầy dữ liệu mới từ Excel
+                            chiTietBody.innerHTML = '';
 
                             let addedCount = 0;
                             for (const [sku, imeis] of Object.entries(skuToImeiMap)) {
@@ -661,32 +712,21 @@
                                     addedCount++;
                                 } else {
                                     // Nếu chưa có, thêm dòng mới
-                                    const clone = document.importNode(document.getElementById("rowTemplate").content, true);
-                                    clone.querySelector(".sku-select").value = id;
-                                    clone.querySelector(".sl-input").value = soLuong;
-
-                                    clone.querySelector(".sl-input").addEventListener("input", calculateTotal);
-                                    clone.querySelector(".gia-input").addEventListener("input", function () {
-                                        calculateTotal();
-                                        validateGiaNhap(this.closest('.chi-tiet-row'));
-                                    });
-                                    clone.querySelector(".sku-select").addEventListener("change", function () {
-                                        const row = this.closest('.chi-tiet-row');
-                                        const selectedId = this.value;
-                                        if (isDuplicateSku(selectedId, row)) {
-                                            Swal.fire('Trùng sản phẩm', 'Sản phẩm này đã được chọn ở dòng khác!', 'warning');
-                                            this.value = ''; // Reset
-                                        }
-                                        validateGiaNhap(row);
-                                        calculateTotal();
-                                    });
-                                    clone.querySelector(".btn-remove-row").addEventListener("click", function (e) {
-                                        e.target.closest("tr").remove();
-                                        calculateTotal();
-                                    });
+                                    addRow();
+                                    const newRow = chiTietBody.querySelector('.chi-tiet-row:last-child');
                                     
-                                    chiTietBody.appendChild(clone);
-                                    validateGiaNhap(chiTietBody.querySelector('.chi-tiet-row:last-child'));
+                                    // Gán giá trị bằng TomSelect API
+                                    const selectEl = newRow.querySelector('.sku-select');
+                                    if (selectEl.tomselect) {
+                                        selectEl.tomselect.setValue(id);
+                                    } else {
+                                        selectEl.value = id;
+                                    }
+
+                                    newRow.querySelector(".sl-input").value = soLuong;
+                                    
+                                    // Validate ngay
+                                    validateGiaNhap(newRow);
                                     addedCount++;
                                 }
                             }
@@ -727,8 +767,10 @@
                             
                             // 3. Xử lý kết quả Validate
                             apiData.skuStatuses.forEach(st => {
-                                // Extract imei1 string for display purposes only
-                                const extractedImeis = st.validRecords ? st.validRecords.map(r => r.imei1) : [];
+                                // Tách 2 danh sách imei1 và imei2
+                                const extractedImeis1 = st.validRecords ? st.validRecords.map(r => r.imei1 || '') : [];
+                                const extractedImeis2 = st.validRecords ? st.validRecords.map(r => r.imei2 || '') : [];
+                                
                                 // Luôn lưu toàn bộ Object validRecords để gửi về Backend (đúng format)
                                 window.validatedImeisBySku[st.sku] = st.validRecords || [];
                                 
@@ -741,14 +783,16 @@
                                 if (st.errorRecords && st.errorRecords.length > 0) {
                                     errorHtml = `<div class="text-start mt-2" style="font-size: 0.8rem; color: #dc3545; max-height: 100px; overflow-y: auto;">`;
                                     st.errorRecords.forEach(errRec => {
-                                        errorHtml += `Dòng ${errRec.rowIndex}: ${errRec.errors.join(', ')}<br>`;
+                                        const i1 = errRec.imei1 || '';
+                                        const i2 = errRec.imei2 || '';
+                                        const displayImei = (i1 && i2) ? `${i1} / ${i2}` : (i1 || i2 || 'Trống');
+                                        errorHtml += `IMEI [${displayImei}]: ${errRec.errors.join(', ')}<br>`;
                                     });
                                     errorHtml += `</div>`;
                                 }
 
-                                const imeiDisplayHtml = `<div style="max-height: 150px; overflow-y: auto; text-align: left; padding: 5px; font-size: 0.9em;">
-                                    ${extractedImeis.join('<br>')}
-                                </div>`;
+                                const imei1Html = `<div style="max-height: 150px; overflow-y: auto; text-align: left; padding: 5px; font-size: 0.9em;">${extractedImeis1.join('<br>')}</div>`;
+                                const imei2Html = `<div style="max-height: 150px; overflow-y: auto; text-align: left; padding: 5px; font-size: 0.9em;">${extractedImeis2.join('<br>')}</div>`;
 
                                 previewBody.innerHTML += `
                                     <tr>
@@ -759,7 +803,8 @@
                                             <span class="badge ${badgeClass}">${st.statusText}</span>
                                             ${errorHtml}
                                         </td>
-                                        <td>${imeiDisplayHtml}</td>
+                                        <td>${imei1Html}</td>
+                                        <td>${imei2Html}</td>
                                     </tr>
                                 `;
                             });

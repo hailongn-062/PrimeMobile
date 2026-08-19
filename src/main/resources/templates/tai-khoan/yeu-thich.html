@@ -29,7 +29,7 @@
         .pm-product-img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #f8fafc; }
         .pm-product-info { padding: 12px; display: flex; flex-direction: column; flex-grow: 1; }
         .pm-product-name { font-weight: 700; font-size: 0.95rem; line-height: 1.4; margin-bottom: 8px; color: var(--pm-text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .pm-btn-remove { position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.9); border: none; width: 32px; height: 32px; border-radius: 50%; color: var(--pm-accent); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .pm-btn-remove { position: absolute; bottom: 8px; right: 8px; background: rgba(255,255,255,0.9); border: none; width: 32px; height: 32px; border-radius: 50%; color: var(--pm-accent); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .pm-btn-remove:hover { background: var(--pm-accent); color: white; }
         @media (max-width: 992px) { .pm-grid { grid-template-columns:1fr; } }
     </style>
@@ -89,8 +89,20 @@
                                     <th:block th:with="anhDaiDien=${(yt.sanPham.bienTheSanPhams != null and !yt.sanPham.bienTheSanPhams.isEmpty() and yt.sanPham.bienTheSanPhams[0].hinhAnhSanPhams != null and !yt.sanPham.bienTheSanPhams[0].hinhAnhSanPhams.isEmpty()) ? yt.sanPham.bienTheSanPhams[0].hinhAnhSanPhams[0].duongDan : '/img/placeholder.png'}">
                                         <img th:src="${anhDaiDien}" alt="Product" class="pm-product-img">
                                     </th:block>
-                                    <div class="pm-product-info">
+                                    <div class="pm-product-info" style="padding-right: 44px;">
                                         <div class="pm-product-name" th:text="${yt.sanPham.tenSanPham}">Tên sản phẩm</div>
+                                        
+                                        <div class="mb-2" th:with="giaGoc=${yt.sanPham.bienTheSanPhams != null and !#lists.isEmpty(yt.sanPham.bienTheSanPhams) ? yt.sanPham.bienTheSanPhams[0].giaBan : null},
+                                                      giaSauKM=${giaSauKhuyenMaiTheoSanPham != null ? giaSauKhuyenMaiTheoSanPham[yt.sanPham.id] : giaGoc}">
+                                            <div th:if="${giaGoc != null}">
+                                                <span th:if="${giaSauKM != null and giaSauKM < giaGoc}" class="text-decoration-line-through text-muted small me-2">
+                                                    <span th:text="${#numbers.formatDecimal(giaGoc, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                                                </span>
+                                                <div class="text-danger fw-bold" th:text="${#numbers.formatDecimal(giaSauKM, 0, 'COMMA', 0, 'POINT')} + 'đ'"></div>
+                                            </div>
+                                            <div th:unless="${giaGoc != null}" class="text-muted small">Liên hệ báo giá</div>
+                                        </div>
+
                                         <div class="text-muted small mt-auto" th:text="'Thêm lúc: ' + ${#temporals.format(yt.ngayThem, 'dd/MM/yyyy HH:mm')}">Thêm lúc</div>
                                     </div>
                                 </a>
@@ -109,12 +121,22 @@
 
 <div th:replace="~{fragments/footer :: footer}"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    function removeFromWishlist(sanPhamId, event) {
+    async function removeFromWishlist(sanPhamId, event) {
         event.preventDefault();
         event.stopPropagation();
         
-        if (!confirm('Bạn có chắc chắn muốn gỡ sản phẩm này khỏi danh sách yêu thích?')) return;
+        const result = await Swal.fire({
+            icon: 'question',
+            title: 'Bỏ yêu thích?',
+            text: 'Bạn có chắc chắn muốn gỡ sản phẩm này khỏi danh sách yêu thích?',
+            showCancelButton: true,
+            confirmButtonText: 'Đồng ý',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#dc2626'
+        });
+        if (!result.isConfirmed) return;
         
         fetch(`/api/khach-hang/yeu-thich/${sanPhamId}`, {
             method: 'POST',
@@ -130,12 +152,12 @@
                     window.location.reload(); 
                 }
             } else {
-                alert('Có lỗi xảy ra, vui lòng thử lại.');
+                Swal.fire({ icon: 'error', title: 'Lỗi!', text: 'Có lỗi xảy ra, vui lòng thử lại.', confirmButtonColor: '#dc2626' });
             }
         })
         .catch(err => {
             console.error(err);
-            alert('Lỗi kết nối.');
+            Swal.fire({ icon: 'error', title: 'Lỗi!', text: 'Lỗi kết nối.', confirmButtonColor: '#dc2626' });
         });
     }
 </script>

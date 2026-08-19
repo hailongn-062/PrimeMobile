@@ -338,6 +338,7 @@
 <div th:replace="~{fragments/footer :: footer}"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js"></script>
 <script>
     function brandFallbackImage(img) {
@@ -374,8 +375,14 @@
                     method: 'POST'
                 }).then(response => {
                     if (response.status === 401) {
-                        alert('Vui lòng đăng nhập để sử dụng tính năng này.');
-                        window.location.href = '/dang-nhap';
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Cần đăng nhập',
+                            text: 'Vui lòng đăng nhập để sử dụng tính năng này.',
+                            confirmButtonColor: '#0d9488'
+                        }).then(() => {
+                            window.location.href = '/dang-nhap';
+                        });
                         return;
                     }
                     if (response.ok) {
