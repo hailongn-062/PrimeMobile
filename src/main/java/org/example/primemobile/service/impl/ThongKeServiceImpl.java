@@ -182,6 +182,7 @@ public class ThongKeServiceImpl implements ThongKeService {
                     .doanhThuOffline(data != null ? defaultZero(data.getDoanhThuOffline()) : BigDecimal.ZERO)
                     .soDonHang(data != null ? defaultZero(data.getSoDon()) : 0)
                     .soDonHuy(data != null ? defaultZero(data.getDonHuy()) : 0)
+                    .soDonGiaoThatBai(data != null ? defaultZero(data.getDonGiaoThatBai()) : 0)
                     .build());
 
             currentDate = currentDate.minusDays(1);

@@ -28,6 +28,7 @@ public interface ThongKeRepository extends JpaRepository<DonHang, Integer> {
         BigDecimal getDoanhThuOnline();
         BigDecimal getDoanhThuOffline();
         Integer getDonHuy();
+        Integer getDonGiaoThatBai();
     }
 
     interface ThongKeKenh {
@@ -53,7 +54,8 @@ public interface ThongKeRepository extends JpaRepository<DonHang, Integer> {
             COUNT(CASE WHEN d.trang_thai != 'don_hang_cho' THEN 1 ELSE NULL END) as soDon,
             SUM(CASE WHEN d.kenh_ban = 'online' AND d.trang_thai = 'da_hoan_thanh' THEN d.tong_thanh_toan ELSE 0 END) as doanhThuOnline,
             SUM(CASE WHEN d.kenh_ban != 'online' AND d.trang_thai = 'da_hoan_thanh' THEN d.tong_thanh_toan ELSE 0 END) as doanhThuOffline,
-            COUNT(CASE WHEN d.trang_thai = 'da_huy' THEN 1 ELSE NULL END) as donHuy
+            COUNT(CASE WHEN d.trang_thai = 'da_huy' THEN 1 ELSE NULL END) as donHuy,
+            COUNT(CASE WHEN d.trang_thai = 'giao_that_bai' THEN 1 ELSE NULL END) as donGiaoThatBai
         FROM don_hang d
         WHERE d.ngay_dat >= :start AND d.ngay_dat < :end
         GROUP BY CONVERT(VARCHAR(10), d.ngay_dat, 120)

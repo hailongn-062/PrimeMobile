@@ -332,7 +332,7 @@
                             <div th:if="${not #lists.isEmpty(diaChis)}" id="address-list">
                                 <div th:each="dc, stat : ${diaChis}" class="pm-address-item position-relative"
                                     th:classappend="${stat.index == 0} ? 'active' : ''"
-                                    onclick="selectAddress(this, ${dc.id})">
+                                    th:onclick="'selectAddress(this, ' + ${dc.id} + ')'">
                                     <div class="d-flex align-items-start">
                                         <input type="radio" name="diaChiGiaoId" class="address-radio mt-1"
                                             th:value="${dc.id}" th:data-district="${dc.quanHuyenId}"
@@ -527,7 +527,7 @@
 
         // Biến lưu phí ship hiện tại
         let currentShipFee = 0;
-        let isCalculatingShip = false;
+        let shipRequestCounter = 0;
 
         const els = {
             loading: document.getElementById('cart-loading'),
@@ -571,19 +571,19 @@
         // ── Gọi API GHN tính phí ship ──
         async function fetchShippingFee(districtId, wardCode) {
             if (!districtId || !wardCode) return 0;
-            if (isCalculatingShip) return currentShipFee;
-            isCalculatingShip = true;
+            const currentReqId = ++shipRequestCounter;
             try {
                 const url = `/api/public/giao-hang-nhanh/phi-ship?toDistrictId=${encodeURIComponent(districtId)}&toWardCode=${encodeURIComponent(wardCode)}`;
                 const response = await fetch(url, { credentials: 'include' });
                 if (!response.ok) throw new Error('API error');
                 const data = await response.json();
+                // Tránh lỗi race condition khi bấm nhanh: nếu có request mới hơn đang chạy thì bỏ qua
+                if (currentReqId !== shipRequestCounter) return currentShipFee;
                 return data.phiShip || 0;
             } catch (error) {
                 console.warn('GHN fee fallback to 0:', error);
+                if (currentReqId !== shipRequestCounter) return currentShipFee;
                 return 0;
-            } finally {
-                isCalculatingShip = false;
             }
         }
 
@@ -785,13 +785,7 @@
             }
         }
 
-        function selectAddress(el, id) {
-            const radio = el.querySelector('input[type="radio"]');
-            if (radio) {
-                radio.checked = true;
-                onAddressChange(radio);
-            }
-        }
+
 
         // ── Hàm xử lý submit form thêm/sửa địa chỉ ──
         document.getElementById('addressForm')?.addEventListener('submit', async function (e) {
@@ -1000,8 +994,6 @@
                 } else {
                     updateShippingDisplay(0);
                 }
-                // Load promotions
-                await loadKhuyenMai();
             } catch (error) {
                 els.loading.innerHTML = `<span class="text-danger">${esc(error.message)}</span>`;
                 els.button.disabled = true;
@@ -1099,7 +1091,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             // Nếu chưa có địa chỉ, load provinces cho form chính
             if (document.getElementById('provinceSelect')) {
-                loadProvinces('provinceSelect', 'districtSelect', 'wardSelect');
+                loadProvinces();
             }
             // Nếu đã có địa chỉ, form ẩn sẽ được load khi bấm nút
             loadKhuyenMai().then(loadCart);

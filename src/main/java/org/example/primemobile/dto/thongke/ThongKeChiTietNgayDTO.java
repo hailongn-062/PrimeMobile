@@ -18,4 +18,5 @@ public class ThongKeChiTietNgayDTO {
     private BigDecimal doanhThuOnline;
     private BigDecimal doanhThuOffline;
     private Integer soDonHuy;
+    private Integer soDonGiaoThatBai;
 }

@@ -213,24 +213,13 @@
                     <input type="checkbox" value="512" th:checked="${luuTruGbs != null and #lists.contains(luuTruGbs, 512)}">
                     <span>512GB</span>
                 </label>
+                <label class="pm-filter-checkbox">
+                    <input type="checkbox" value="1024" th:checked="${luuTruGbs != null and #lists.contains(luuTruGbs, 1024)}">
+                    <span>1TB</span>
+                </label>
             </div>
 
-            <!-- Màu sắc -->
-            <div class="pm-filter-title mt-4">Màu sắc</div>
-            <div class="d-flex flex-column gap-1 mb-3 pm-checkbox-group pm-color-group">
-                <label class="pm-filter-checkbox">
-                    <input type="checkbox" value="Đen" th:checked="${mauSacs != null and #lists.contains(mauSacs, 'Đen')}">
-                    <span>Đen</span>
-                </label>
-                <label class="pm-filter-checkbox">
-                    <input type="checkbox" value="Trắng" th:checked="${mauSacs != null and #lists.contains(mauSacs, 'Trắng')}">
-                    <span>Trắng</span>
-                </label>
-                <label class="pm-filter-checkbox">
-                    <input type="checkbox" value="Xám" th:checked="${mauSacs != null and #lists.contains(mauSacs, 'Xám')}">
-                    <span>Xám</span>
-                </label>
-            </div>
+
         </aside>
 
         <section>
@@ -466,14 +455,12 @@
             });
         });
 
-        // --- 2. Checkboxes for ROM and Color ---
+        // --- 2. Checkboxes for ROM ---
         function applyCheckboxFilters() {
             let selectedRoms = Array.from(document.querySelectorAll('.pm-rom-group input[type="checkbox"]:checked')).map(cb => cb.value);
-            let selectedColors = Array.from(document.querySelectorAll('.pm-color-group input[type="checkbox"]:checked')).map(cb => cb.value);
             
             window.location.href = updateUrlParameters(window.location.href, {
-                'luuTruGbs': selectedRoms.length > 0 ? selectedRoms.join(',') : null,
-                'mauSacs': selectedColors.length > 0 ? selectedColors.join(',') : null
+                'luuTruGbs': selectedRoms.length > 0 ? selectedRoms.join(',') : null
             });
         }
 

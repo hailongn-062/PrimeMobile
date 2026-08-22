@@ -9,6 +9,11 @@
     <th:block th:replace="~{layout/admin-layout :: topbar}"></th:block>
 
     <main id="pmContent">
+        <div class="mb-3">
+            <a href="/admin/san-pham" class="text-decoration-none text-muted fw-semibold" style="font-size: 0.9rem;">
+                <i class="fa fa-arrow-left me-1"></i> Quay lại danh sách
+            </a>
+        </div>
         <!-- Hiển thị thông báo lỗi nếu có -->
         <div th:if="${error != null}" class="alert alert-danger" role="alert" th:text="${error}">
             Lỗi khi xóa hãng sản xuất.

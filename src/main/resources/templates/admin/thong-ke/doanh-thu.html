@@ -119,10 +119,11 @@
                     <th>Online</th>
                     <th>Offline</th>
                     <th class="text-end pe-3">Đơn hủy</th>
+                    <th class="text-end pe-3">Đơn giao thất bại</th>
                 </tr>
                 </thead>
                 <tbody id="detailTableBody">
-                    <tr><td colspan="6" class="text-center placeholder-glow"><span class="placeholder col-12"></span></td></tr>
+                    <tr><td colspan="7" class="text-center placeholder-glow"><span class="placeholder col-12"></span></td></tr>
                 </tbody>
             </table>
         </div>
@@ -190,7 +191,7 @@
         document.getElementById('pieChartLegend').style.display = 'none';
         
 
-        document.getElementById('detailTableBody').innerHTML = '<tr><td colspan="6" class="placeholder-glow"><span class="placeholder col-12"></span></td></tr>';
+        document.getElementById('detailTableBody').innerHTML = '<tr><td colspan="7" class="placeholder-glow"><span class="placeholder col-12"></span></td></tr>';
     }
 
     const fetchKPI = (query) => {
@@ -395,13 +396,17 @@
                 const tbody = document.getElementById('detailTableBody');
                 tbody.innerHTML = '';
                 if(data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Không có dữ liệu</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Không có dữ liệu</td></tr>';
                     return;
                 }
                 
                 data.forEach(item => {
                     const cancelBadge = item.soDonHuy > 0 
                         ? `<span class="badge bg-danger rounded-pill">${item.soDonHuy}</span>`
+                        : `<span class="badge bg-light text-dark rounded-pill">0</span>`;
+                    
+                    const failBadge = item.soDonGiaoThatBai > 0 
+                        ? `<span class="badge bg-danger rounded-pill">${item.soDonGiaoThatBai}</span>`
                         : `<span class="badge bg-light text-dark rounded-pill">0</span>`;
                         
                     const tr = `
@@ -412,6 +417,7 @@
                             <td>${formatMoney(item.doanhThuOnline)}</td>
                             <td>${formatMoney(item.doanhThuOffline)}</td>
                             <td class="text-end pe-3">${cancelBadge}</td>
+                            <td class="text-end pe-3">${failBadge}</td>
                         </tr>
                     `;
                     tbody.insertAdjacentHTML('beforeend', tr);
