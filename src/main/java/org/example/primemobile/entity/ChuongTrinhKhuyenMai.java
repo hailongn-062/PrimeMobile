@@ -80,10 +80,12 @@ public class ChuongTrinhKhuyenMai {
 
     /** NgÃ y giá»  báº¯t Ä‘áº§u chÆ°Æ¡ng trÃ¬nh. */
     @Column(name = "ngay_bat_dau", nullable = false)
+    @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
     private LocalDateTime ngayBatDau;
 
     /** NgÃ y giá»  káº¿t thÃºc chÆ°Æ¡ng trÃ¬nh. */
     @Column(name = "ngay_ket_thuc", nullable = false)
+    @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
     private LocalDateTime ngayKetThuc;
 
     /**

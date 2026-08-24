@@ -70,10 +70,7 @@
                 <!-- Grid hiển thị ảnh -->
                 <!-- Grid hiển thị ảnh -->
                 <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
-                    <h6 class="fw-bold mb-0">Danh sách Hình Ảnh (Kéo thả để sắp xếp, ảnh đầu tiên là ảnh chính)</h6>
-                    <button class="btn btn-sm btn-success d-none" id="btnSaveOrder" onclick="saveOrder()">
-                        <i class="fa fa-save"></i> Lưu Thứ Tự
-                    </button>
+                    <h6 class="fw-bold mb-0">Danh sách Hình Ảnh (Kéo thả để sắp xếp, ảnh đầu tiên là ảnh chính) <span id="savingIndicator" class="ms-2 text-primary d-none"><i class="fa fa-spinner fa-spin"></i> Đang lưu...</span></h6>
                 </div>
                 <div class="row g-3" id="imageGrid">
                     <div class="col-md-3 col-sm-4 col-6 image-card-container" th:each="anh, iterStat : ${hinhAnhs}" th:attr="data-id=${anh.id}">
@@ -139,8 +136,8 @@
                 onEnd: function () {
                     // Update UI immediately for primary image indicator
                     updatePrimaryImageUI();
-                    // Show save button
-                    document.getElementById('btnSaveOrder').classList.remove('d-none');
+                    // Auto save order
+                    saveOrder();
                 }
             });
         }
@@ -163,10 +160,8 @@
             const items = imageGrid.querySelectorAll('.image-card-container');
             const ids = Array.from(items).map(item => parseInt(item.getAttribute('data-id')));
             
-            const btn = document.getElementById('btnSaveOrder');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang lưu...';
-            btn.disabled = true;
+            const savingIndicator = document.getElementById('savingIndicator');
+            if (savingIndicator) savingIndicator.classList.remove('d-none');
 
             fetch('/admin/san-pham/bien-the/hinh-anh/reorder', {
                 method: 'POST',
@@ -175,17 +170,13 @@
             })
             .then(res => res.json())
             .then(data => {
-                if(data.success) {
-                    pmAlert('Lưu thứ tự thành công!', 'success');
-                    btn.classList.add('d-none');
-                } else {
+                if(!data.success) {
                     pmAlert('Lỗi: ' + data.message, 'error');
                 }
             })
             .catch(err => pmAlert('Lỗi kết nối: ' + err, 'error'))
             .finally(() => {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+                if (savingIndicator) savingIndicator.classList.add('d-none');
             });
         }
     </script>

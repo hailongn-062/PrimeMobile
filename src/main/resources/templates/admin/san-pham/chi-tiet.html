@@ -481,11 +481,7 @@
                                 </div>
                             </div>
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="fw-bold mb-0">Danh sách Hình Ảnh (Kéo thả để sắp xếp)</h6>
-                                <button class="btn btn-sm btn-success d-none" id="btnSaveImgOrder"
-                                    onclick="saveVariantImageOrder()">
-                                    <i class="fa fa-save"></i> Lưu Thứ Tự
-                                </button>
+                                <h6 class="fw-bold mb-0">Danh sách Hình Ảnh (Kéo thả để sắp xếp) <span id="savingVarImgIndicator" class="ms-2 text-primary d-none"><i class="fa fa-spinner fa-spin"></i> Đang lưu...</span></h6>
                             </div>
                             <div class="row g-3" id="variantImageGrid">
                                 <!-- Render by JS -->
@@ -815,7 +811,7 @@
                         ghostClass: 'sortable-ghost',
                         onEnd: function () {
                             updatePrimaryImageUI();
-                            document.getElementById('btnSaveImgOrder').classList.remove('d-none');
+                            saveVariantImageOrder();
                         }
                     });
                 } else {
@@ -895,10 +891,8 @@
             const items = grid.querySelectorAll('.image-card-container');
             const ids = Array.from(items).map(item => parseInt(item.getAttribute('data-id')));
 
-            const btn = document.getElementById('btnSaveImgOrder');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
-            btn.disabled = true;
+            const savingIndicator = document.getElementById('savingVarImgIndicator');
+            if (savingIndicator) savingIndicator.classList.remove('d-none');
 
             fetch('/admin/san-pham/bien-the/hinh-anh/reorder', {
                 method: 'POST',
@@ -907,16 +901,13 @@
             })
                 .then(res => res.json())
                 .then(data => {
-                    if (data.success) {
-                        btn.classList.add('d-none');
-                    } else {
+                    if (!data.success) {
                         pmAlert('Lỗi: ' + data.message, 'error');
                     }
                 })
                 .catch(err => pmAlert('Lỗi kết nối: ' + err, 'error'))
                 .finally(() => {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
+                    if (savingIndicator) savingIndicator.classList.add('d-none');
                 });
         }
 

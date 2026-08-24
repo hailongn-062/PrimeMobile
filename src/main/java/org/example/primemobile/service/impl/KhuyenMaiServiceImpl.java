@@ -75,8 +75,15 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
             entity.setDonHangToiThieu(ctkm.getDonHangToiThieu());
             entity.setGiamToiDa(ctkm.getGiamToiDa());
 
-            if (ctkm.getTrangThai() != null && !ctkm.getTrangThai().isBlank()) {
-                entity.setTrangThai(ctkm.getTrangThai());
+            if (!"tam_dung".equals(entity.getTrangThai())) {
+                LocalDateTime now = LocalDateTime.now();
+                if (now.isBefore(entity.getNgayBatDau())) {
+                    entity.setTrangThai("chua_bat_dau");
+                } else if (now.isAfter(entity.getNgayKetThuc())) {
+                    entity.setTrangThai("da_ket_thuc");
+                } else {
+                    entity.setTrangThai("dang_dien_ra");
+                }
             }
 
             ChuongTrinhKhuyenMai saved = ctkmRepo.save(entity);
@@ -85,8 +92,13 @@ public class KhuyenMaiServiceImpl implements IKhuyenMaiService {
 
         } else {
             // === THÊM MỚI ===
-            if (ctkm.getTrangThai() == null || ctkm.getTrangThai().isBlank()) {
+            LocalDateTime now = LocalDateTime.now();
+            if (now.isBefore(ctkm.getNgayBatDau())) {
                 ctkm.setTrangThai("chua_bat_dau");
+            } else if (now.isAfter(ctkm.getNgayKetThuc())) {
+                ctkm.setTrangThai("da_ket_thuc");
+            } else {
+                ctkm.setTrangThai("dang_dien_ra");
             }
             ChuongTrinhKhuyenMai saved = ctkmRepo.save(ctkm);
             log.info("[KhuyenMai] Tạo mới CTKM id={} loai={} ten={}", saved.getId(), saved.getLoai(),

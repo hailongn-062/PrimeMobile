@@ -201,12 +201,17 @@ public class KhuyenMaiUIController {
     // ══════════════════════════════════════════════════════════════════════
 
     @GetMapping("/toggle-trang-thai/{id}")
-    public String toggleTrangThai(@PathVariable Integer id, RedirectAttributes ra) {
+    public String toggleTrangThai(@PathVariable Integer id, 
+                                  @RequestHeader(value = "Referer", required = false) String referer, 
+                                  RedirectAttributes ra) {
         try {
             khuyenMaiService.toggleTrangThai(id);
             ra.addFlashAttribute("successMessage", "Đã cập nhật trạng thái chương trình khuyến mãi.");
         } catch (Exception e) {
             ra.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
+        if (referer != null && !referer.isEmpty()) {
+            return "redirect:" + referer;
         }
         return "redirect:/admin/khuyen-mai";
     }

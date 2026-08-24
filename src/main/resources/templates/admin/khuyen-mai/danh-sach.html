@@ -83,7 +83,7 @@
                                 <th class="text-center" style="width:110px">Giá trị (%)</th>
                                 <th style="width:180px">Thời gian</th>
                                 <th class="text-center" style="width:110px">Trạng thái</th>
-                                <th class="text-end pe-3" style="width:160px">Thao tác</th>
+                                <th class="text-end pe-3" style="width:180px">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -128,58 +128,64 @@
                                         <span th:case="*" class="badge bg-secondary" th:text="${ctkm.trangThai}"></span>
                                     </th:block>
                                 </td>
-                                <td class="text-end pe-3">
-                                    <!-- Nút Sửa - điều hướng về đúng form theo loai -->
-                                    <th:block th:switch="${ctkm.loai}">
-                                        <a th:case="'theo_don_hang'"
-                                           th:href="@{/admin/khuyen-mai/form/theo-don-hang(id=${ctkm.id})}"
-                                           class="btn btn-sm btn-outline-primary me-1" title="Sửa">
-                                            <i class="fa fa-edit"></i>
-                                        </a>
-                                        <a th:case="'theo_san_pham'"
-                                           th:href="@{/admin/khuyen-mai/form/theo-san-pham(id=${ctkm.id})}"
-                                           class="btn btn-sm btn-outline-primary me-1" title="Sửa">
-                                            <i class="fa fa-edit"></i>
-                                        </a>
-                                        <a th:case="*"
-                                           th:href="@{/admin/khuyen-mai/form/theo-san-pham(id=${ctkm.id})}"
-                                           class="btn btn-sm btn-outline-primary me-1" title="Sửa">
-                                            <i class="fa fa-edit"></i>
-                                        </a>
-                                    </th:block>
-                                    <!-- Nút Chi tiết - điều hướng đúng view theo loai -->
-                                    <th:block th:switch="${ctkm.loai}">
-                                        <a th:case="'theo_don_hang'"
-                                           th:href="@{/admin/khuyen-mai/chi-tiet/theo-don-hang/{id}(id=${ctkm.id})}"
-                                           class="btn btn-sm btn-outline-info" title="Quản lý chi tiết">
-                                            <i class="fa fa-list"></i>
-                                        </a>
-                                        <a th:case="'theo_san_pham'"
-                                           th:href="@{/admin/khuyen-mai/chi-tiet/theo-san-pham/{id}(id=${ctkm.id})}"
-                                           class="btn btn-sm btn-outline-info" title="Quản lý chi tiết">
-                                            <i class="fa fa-list"></i>
-                                        </a>
-                                        <a th:case="*"
-                                           th:href="@{/admin/khuyen-mai/chi-tiet/theo-san-pham/{id}(id=${ctkm.id})}"
-                                           class="btn btn-sm btn-outline-info" title="Chi tiết">
-                                            <i class="fa fa-list"></i>
-                                        </a>
-                                    </th:block>
-                                    <!-- Nút Tạm dừng / Mở lại -->
-                                    <a th:if="${ctkm.trangThai == 'tam_dung'}"
-                                       th:href="@{/admin/khuyen-mai/toggle-trang-thai/{id}(id=${ctkm.id})}"
-                                       class="btn btn-sm btn-success ms-1"
-                                       title="Mở lại chương trình"
-                                       onclick="event.preventDefault(); pmConfirm('Mở lại chương trình này?').then(ok => { if(ok) window.location.href = this.href; });">
-                                        <i class="fa fa-play me-1"></i> Mở lại
-                                    </a>
-                                    <a th:unless="${ctkm.trangThai == 'tam_dung'}"
-                                       th:href="@{/admin/khuyen-mai/toggle-trang-thai/{id}(id=${ctkm.id})}"
-                                       class="btn btn-sm btn-warning ms-1"
-                                       title="Tạm dừng chương trình"
-                                       onclick="event.preventDefault(); pmConfirm('Tạm dừng chương trình này?').then(ok => { if(ok) window.location.href = this.href; });">
-                                        <i class="fa fa-pause me-1"></i> Tạm dừng
-                                    </a>
+                                <td class="pe-3">
+                                    <div class="d-flex flex-column gap-1 align-items-end">
+                                        <div class="d-flex gap-1 justify-content-end">
+                                            <!-- Nút Sửa - điều hướng về đúng form theo loai -->
+                                            <th:block th:switch="${ctkm.loai}">
+                                                <a th:case="'theo_don_hang'"
+                                                   th:href="@{/admin/khuyen-mai/form/theo-don-hang(id=${ctkm.id})}"
+                                                   class="btn btn-sm btn-outline-primary" title="Sửa">
+                                                    <i class="fa fa-edit"></i>
+                                                </a>
+                                                <a th:case="'theo_san_pham'"
+                                                   th:href="@{/admin/khuyen-mai/form/theo-san-pham(id=${ctkm.id})}"
+                                                   class="btn btn-sm btn-outline-primary" title="Sửa">
+                                                    <i class="fa fa-edit"></i>
+                                                </a>
+                                                <a th:case="*"
+                                                   th:href="@{/admin/khuyen-mai/form/theo-san-pham(id=${ctkm.id})}"
+                                                   class="btn btn-sm btn-outline-primary" title="Sửa">
+                                                    <i class="fa fa-edit"></i>
+                                                </a>
+                                            </th:block>
+                                            <!-- Nút Chi tiết - điều hướng đúng view theo loai -->
+                                            <th:block th:switch="${ctkm.loai}">
+                                                <a th:case="'theo_don_hang'"
+                                                   th:href="@{/admin/khuyen-mai/chi-tiet/theo-don-hang/{id}(id=${ctkm.id})}"
+                                                   class="btn btn-sm btn-outline-info" title="Quản lý chi tiết">
+                                                    <i class="fa fa-list"></i>
+                                                </a>
+                                                <a th:case="'theo_san_pham'"
+                                                   th:href="@{/admin/khuyen-mai/chi-tiet/theo-san-pham/{id}(id=${ctkm.id})}"
+                                                   class="btn btn-sm btn-outline-info" title="Quản lý chi tiết">
+                                                    <i class="fa fa-list"></i>
+                                                </a>
+                                                <a th:case="*"
+                                                   th:href="@{/admin/khuyen-mai/chi-tiet/theo-san-pham/{id}(id=${ctkm.id})}"
+                                                   class="btn btn-sm btn-outline-info" title="Chi tiết">
+                                                    <i class="fa fa-list"></i>
+                                                </a>
+                                            </th:block>
+                                        </div>
+                                        <div style="min-width: 90px">
+                                            <!-- Nút Tạm dừng / Mở lại -->
+                                            <a th:if="${ctkm.trangThai == 'tam_dung'}"
+                                               th:href="@{/admin/khuyen-mai/toggle-trang-thai/{id}(id=${ctkm.id})}"
+                                               class="btn btn-sm btn-success w-100"
+                                               title="Mở lại chương trình"
+                                               onclick="event.preventDefault(); pmConfirm('Mở lại chương trình này?').then(ok => { if(ok) window.location.href = this.href; });">
+                                                <i class="fa fa-play me-1"></i> Mở lại
+                                            </a>
+                                            <a th:unless="${ctkm.trangThai == 'tam_dung'}"
+                                               th:href="@{/admin/khuyen-mai/toggle-trang-thai/{id}(id=${ctkm.id})}"
+                                               class="btn btn-sm btn-warning text-white w-100"
+                                               title="Tạm dừng chương trình"
+                                               onclick="event.preventDefault(); pmConfirm('Tạm dừng chương trình này?').then(ok => { if(ok) window.location.href = this.href; });">
+                                                <i class="fa fa-pause me-1"></i> Tạm dừng
+                                            </a>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(ctkmList)}">
