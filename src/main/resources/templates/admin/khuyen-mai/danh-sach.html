@@ -106,7 +106,7 @@
                                     </th:block>
                                 </td>
                                 <td class="text-center fw-bold text-danger">
-                                    <div th:text="${ctkm.giaTriUuDai != null ? ctkm.giaTriUuDai + '%' : '—'}"></div>
+                                    <div th:text="${ctkm.giaTriUuDai != null ? ctkm.giaTriUuDai.stripTrailingZeros().toPlainString() + '%' : '—'}"></div>
                                     <div th:if="${ctkm.giamToiDa != null}" class="text-muted small fw-normal">
                                         (Tối đa: <span th:text="${#numbers.formatDecimal(ctkm.giamToiDa, 0, 'COMMA', 0, 'POINT')}"></span>đ)
                                     </div>

@@ -136,10 +136,11 @@ public class BienTheSanPham {
         private List<MayDienThoai> mayDienThoais = new ArrayList<>();
 
         // -------------------------------------------------------------------------
-        // Quan há»‡ 1-N: 1 BienTheSanPham â†’ nhiá»u HinhAnhSanPham (ON DELETE
+        // Quan há»‡ 1-N: 1 BienTheSanPham â†’ nhiá» u HinhAnhSanPham (ON DELETE
         // CASCADE)
         // -------------------------------------------------------------------------
         @OneToMany(mappedBy = "bienTheSanPham", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+        @OrderBy("thuTu ASC")
         @Builder.Default
         private List<HinhAnhSanPham> hinhAnhSanPhams = new ArrayList<>();
 }

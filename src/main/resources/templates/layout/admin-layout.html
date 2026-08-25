@@ -618,15 +618,51 @@
             // XỬ LÝ ĐỊNH DẠNG SỐ TIỀN TOÀN CỤC (GLOBAL)
             // ==========================================
             document.addEventListener("DOMContentLoaded", function () {
+                // Helper: parse và format giá trị ban đầu của price input
+                // Thymeleaf render BigDecimal dạng "5000000.00" — cần lấy phần nguyên rồi format VN
+                function initPriceInput(input) {
+                    let raw = input.value.trim();
+                    if (raw === '') return;
+                    // Thymeleaf render BigDecimal theo chuẩn Java: "5000000.00" (dấu '.' là thập phân)
+                    // KHÔNG dùng replace(/\./g,'') vì sẽ xóa cả dấu thập phân → nhân 100!
+                    // Phân biệt hai dạng:
+                    //   - Java BigDecimal: "5000000.00" → đúng 1 dấu chấm, 1-2 chữ số sau chấm
+                    //   - VN-formatted:   "5.000.000"  → nhiều dấu chấm hoặc không có phần thập phân
+                    let parsed;
+                    if (/^\d+\.\d{1,2}$/.test(raw)) {
+                        // Java BigDecimal format: parseFloat xử lý đúng
+                        parsed = parseFloat(raw);
+                    } else {
+                        // VN-formatted (hoặc số nguyên): xóa dấu chấm phân nghìn rồi parse
+                        parsed = parseInt(raw.replace(/\./g, '').replace(/,/g, ''), 10);
+                    }
+                    if (!isNaN(parsed) && isFinite(parsed)) {
+                        input.value = new Intl.NumberFormat('vi-VN').format(Math.round(parsed));
+                    } else {
+                        input.value = '';
+                    }
+                }
+
+                // Khởi tạo tất cả price input hiện có trên trang
+                document.querySelectorAll('input[data-price-input="true"]').forEach(initPriceInput);
+
+                // Khởi tạo tất cả percentage input hiện có trên trang (xóa trailing zeros)
+                document.querySelectorAll('input[data-pct-input="true"]').forEach(input => {
+                    if (input.value) {
+                        let val = parseFloat(input.value);
+                        if (!isNaN(val)) input.value = val;
+                    }
+                });
+
                 // 1. Lắng nghe sự kiện gõ phím trên tất cả thẻ có data-price-input
                 document.body.addEventListener('input', function (e) {
                     if (e.target.matches('input[data-price-input="true"]')) {
                         let value = e.target.value;
-                        // Xóa hết ký tự không phải số
+                        // Xóa hết ký tự không phải số (dấu chấm VN đã là phân nghìn, loại bỏ hết)
                         value = value.replace(/[^0-9]/g, '');
                         if (value !== '') {
                             // Định dạng lại theo chuẩn VN (có dấu chấm)
-                            e.target.value = new Intl.NumberFormat('vi-VN').format(value);
+                            e.target.value = new Intl.NumberFormat('vi-VN').format(parseInt(value, 10));
                         } else {
                             e.target.value = '';
                         }
@@ -640,7 +676,7 @@
                         const priceInputs = form.querySelectorAll('input[data-price-input="true"]');
                         priceInputs.forEach(input => {
                             if (input.value) {
-                                // Gỡ bỏ dấu chấm trước khi trình duyệt thực sự gửi đi
+                                // Gỡ bỏ dấu chấm phân nghìn kiểu VN trước khi gửi
                                 input.value = input.value.replace(/\./g, '');
                             }
                         });

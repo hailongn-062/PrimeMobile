@@ -51,7 +51,7 @@
                     </div>
                     <div class="col-md-3">
                         <p class="mb-1 text-muted small">Giảm</p>
-                        <strong class="text-danger fs-5" th:text="${ctkm.giaTriUuDai + '%'}"></strong>
+                        <strong class="text-danger fs-5" th:text="${ctkm.giaTriUuDai != null ? ctkm.giaTriUuDai.stripTrailingZeros().toPlainString() + '%' : '—'}"></strong>
                     </div>
                     <div class="col-md-3" th:if="${ctkm.giamToiDa != null}">
                         <p class="mb-1 text-muted small">Giảm tối đa</p>
