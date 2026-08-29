@@ -60,6 +60,7 @@
                             <th>Tên Sản Phẩm</th>
                             <th>Danh mục</th>
                             <th>Hãng SX</th>
+                            <th>SL Tồn</th>
                             <th>Trạng thái</th>
                             <th class="text-end pe-4">Thao tác</th>
                         </tr>
@@ -71,6 +72,7 @@
                             <td class="fw-bold" th:text="${sp.tenSanPham}">iPhone 15</td>
                             <td th:text="${sp.danhMuc.tenDanhMuc}">Điện thoại</td>
                             <td th:text="${sp.hangSanXuat.tenHang}">Apple</td>
+                            <td class="fw-bold" th:text="${tonKhoMap != null and tonKhoMap.containsKey(sp.id) ? tonKhoMap.get(sp.id) : 0}">0</td>
                             <td>
                                 <span th:if="${sp.trangThai == 'dang_ban'}" class="badge bg-success">Đang bán</span>
                                 <span th:if="${sp.trangThai == 'ngung_ban'}" class="badge bg-danger">Ngừng bán</span>
@@ -92,7 +94,7 @@
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(sanPhamPage.content)}">
-                            <td colspan="7" class="text-center py-3 text-muted">Không có sản phẩm nào.</td>
+                            <td colspan="8" class="text-center py-3 text-muted">Không có sản phẩm nào.</td>
                         </tr>
                     </tbody>
                 </table>

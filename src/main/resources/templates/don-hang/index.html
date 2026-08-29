@@ -232,15 +232,33 @@
                 </div>
                 
                 <div class="px-3 pt-2 pb-1">
-                    ${(order.chiTiet || []).map(item => `
+                    ${(order.chiTiet || []).map(item => {
+                        const variantParts = [];
+                        if (item.mauSac) variantParts.push(item.mauSac.toUpperCase());
+                        if (item.ramGb || item.luuTruGb) {
+                            variantParts.push(`${item.ramGb || 0}GB/${item.luuTruGb || 0}GB`);
+                        }
+                        const variantLabel = variantParts.join(' ');
+                        const fullName = variantLabel 
+                            ? `${esc(item.tenSanPham)} ${variantLabel}` 
+                            : esc(item.tenSanPham);
+                            
+                        const showOriginalPrice = item.giaGoc && item.giaGoc > item.donGiaBan;
+                        
+                        return `
                         <div class="d-flex align-items-center gap-3 py-2" style="${(order.chiTiet || []).indexOf(item) !== 0 ? 'border-top: 1px solid #f1f5f9;' : ''}">
                             ${item.anhChinh ? `<img src="${item.anhChinh}" alt="${esc(item.tenSanPham)}" style="width:60px; height:60px; object-fit:cover; border-radius:4px; border:1px solid #eee;">` : `<div style="width:60px; height:60px; background:#f1f5f9; border-radius:4px; display:flex; align-items:center; justify-content:center; color:#94a3b8;"><i class="fa fa-image fa-lg"></i></div>`}
                             <div class="flex-grow-1">
-                                <a href="/san-pham/${item.sanPhamId}" class="pm-product-link fw-bold text-dark text-uppercase" style="font-size: 0.95rem;">${esc(item.tenSanPham)}</a>
-                                <div class="fw-bold text-dark mt-1">${money(item.donGiaBan)} <span class="fw-normal text-muted ms-2">x${item.soLuong}</span></div>
+                                <a href="/san-pham/${item.sanPhamId}" class="pm-product-link fw-bold text-dark text-uppercase" style="font-size: 0.95rem;">${fullName}</a>
+                                <div class="fw-bold text-dark mt-1">
+                                    ${money(item.donGiaBan)} 
+                                    ${showOriginalPrice ? `<span class="text-muted text-decoration-line-through small ms-2">${money(item.giaGoc)}</span>` : ''}
+                                    <span class="fw-normal text-muted ms-2">x${item.soLuong}</span>
+                                </div>
                             </div>
                         </div>
-                    `).join('')}
+                        `;
+                    }).join('')}
                 </div>
                 
                 <div class="px-3 pb-3 pt-1 d-flex flex-column align-items-end gap-2 bg-white rounded-bottom">

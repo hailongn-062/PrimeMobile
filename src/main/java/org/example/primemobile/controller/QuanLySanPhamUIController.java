@@ -13,6 +13,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.example.primemobile.repository.TonKhoRepository;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/admin/san-pham")
@@ -27,6 +33,7 @@ public class QuanLySanPhamUIController {
     private final IHinhAnhSanPhamService hinhAnhSanPhamService;
     private final IFileStorageService fileStorageService;
     private final IMauSacService mauSacService;
+    private final TonKhoRepository tonKhoRepository;
 
     @GetMapping
     public String index(
@@ -40,7 +47,21 @@ public class QuanLySanPhamUIController {
         Pageable pageable = PageRequest.of(page, size, Sort.by("ngayTao").descending());
         Page<SanPham> sanPhamPage = sanPhamService.layDanhSach(tuKhoa, danhMucId, hangSanXuatId, pageable);
 
+        // Tính tồn kho cho trang hiện tại
+        List<Integer> sanPhamIds = sanPhamPage.getContent()
+                .stream().map(SanPham::getId).collect(Collectors.toList());
+
+        Map<Integer, Long> tonKhoMap = new HashMap<>();
+        if (!sanPhamIds.isEmpty()) {
+            tonKhoRepository.tongTonKhoTheoSanPhamIds(sanPhamIds).forEach(row -> {
+                Integer spId = (Integer) row[0];
+                Number tongTon = (Number) row[1];
+                tonKhoMap.put(spId, tongTon != null ? tongTon.longValue() : 0L);
+            });
+        }
+
         model.addAttribute("sanPhamPage", sanPhamPage);
+        model.addAttribute("tonKhoMap", tonKhoMap);
         model.addAttribute("danhMucs", danhMucService.layDanhSachKichHoat());
         model.addAttribute("hangSanXuats", hangSanXuatService.layTatCa());
         model.addAttribute("tuKhoa", tuKhoa);

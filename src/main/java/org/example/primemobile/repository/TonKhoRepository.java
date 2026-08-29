@@ -104,4 +104,18 @@ public interface TonKhoRepository extends JpaRepository<TonKho, Integer> {
             """)
     List<Object[]> tongTonKhoTheoBienTheIds(@Param("khoId") Integer khoId,
                                             @Param("bienTheIds") List<Integer> bienTheIds);
+
+    /**
+     * Tổng tồn kho theo danh sách sản phẩm (tổng tất cả biến thể, tổng tất cả kho).
+     * Dùng cho cột SL Tồn trong danh sách sản phẩm admin.
+     * @return Mảng [sanPhamId, tongSoLuong]
+     */
+    @Query("""
+        SELECT bt.sanPham.id, COALESCE(SUM(t.soLuong), 0)
+        FROM TonKho t
+        JOIN t.bienTheSanPham bt
+        WHERE bt.sanPham.id IN :sanPhamIds
+        GROUP BY bt.sanPham.id
+        """)
+    List<Object[]> tongTonKhoTheoSanPhamIds(@Param("sanPhamIds") List<Integer> sanPhamIds);
 }

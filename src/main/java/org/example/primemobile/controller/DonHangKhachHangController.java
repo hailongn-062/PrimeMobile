@@ -407,6 +407,7 @@ public class DonHangKhachHangController {
         r.put("luuTruGb", bienThe != null ? bienThe.getLuuTruGb() : null);
         r.put("soLuong", chiTiet.getSoLuong());
         r.put("donGiaBan", valueOrZero(chiTiet.getDonGiaBan()));
+        r.put("giaGoc", bienThe != null ? valueOrZero(bienThe.getGiaBan()) : valueOrZero(chiTiet.getDonGiaBan()));
         r.put("thanhTien", chiTiet.getThanhTien() != null
                 ? chiTiet.getThanhTien()
                 : valueOrZero(chiTiet.getDonGiaBan()).multiply(BigDecimal.valueOf(chiTiet.getSoLuong())));

@@ -127,6 +127,7 @@
                 <tr>
                     <th class="ps-3" style="width:140px;">Mã đơn hàng</th>
                     <th>Khách hàng</th>
+                    <th style="width:100px;">Kênh bán</th>
                     <th style="width:160px;">Ngày đặt</th>
                     <th class="text-end" style="width:140px;">Tổng thanh toán</th>
                     <th class="text-center" style="width:140px;">Trạng thái</th>
@@ -145,6 +146,14 @@
                             Tên khách
                         </div>
                         <div class="text-muted small" th:text="${dh.sdtNguoiNhan}">SĐT</div>
+                    </td>
+                    <td class="text-center">
+                        <span th:if="${dh.kenhBan == 'online'}" class="badge bg-info text-white">
+                            <i class="fa fa-globe me-1"></i>Online
+                        </span>
+                        <span th:if="${dh.kenhBan == 'tai_quay'}" class="badge bg-secondary">
+                            <i class="fa fa-store me-1"></i>Tại quầy
+                        </span>
                     </td>
                     <td>
                         <div th:text="${#temporals.format(dh.ngayDat, 'dd/MM/yyyy')}">01/01/2024</div>
@@ -196,7 +205,7 @@
 
                 <!-- Empty state -->
                 <tr th:if="${#lists.isEmpty(danhSachDonHang)}">
-                    <td colspan="7" class="text-center py-5 text-muted">
+                    <td colspan="8" class="text-center py-5 text-muted">
                         <i class="fa fa-inbox fa-3x d-block mb-3 opacity-25"></i>
                         Không có đơn hàng nào phù hợp với bộ lọc.
                     </td>
@@ -213,18 +222,18 @@
             <nav>
                 <ul class="pagination pagination-sm mb-0">
                     <li class="page-item" th:classappend="${trangHienTai == 0} ? 'disabled'">
-                        <a class="page-link" th:href="@{/admin/don-hang(page=${trangHienTai - 1}, trangThai=${filterTrangThai}, maDonHang=${filterMaDonHang}, soDienThoai=${filterSoDienThoai})}">
+                        <a class="page-link" th:href="@{/admin/don-hang(page=${trangHienTai - 1}, trangThai=${filterTrangThai}, maDonHang=${filterMaDonHang}, soDienThoai=${filterSoDienThoai}, kenhBan=${filterKenhBan})}">
                             &laquo;
                         </a>
                     </li>
                     <li class="page-item" th:each="i : ${#numbers.sequence(0, tongSoTrang - 1)}"
                         th:classappend="${i == trangHienTai} ? 'active'">
                         <a class="page-link"
-                           th:href="@{/admin/don-hang(page=${i}, trangThai=${filterTrangThai}, maDonHang=${filterMaDonHang}, soDienThoai=${filterSoDienThoai})}"
+                           th:href="@{/admin/don-hang(page=${i}, trangThai=${filterTrangThai}, maDonHang=${filterMaDonHang}, soDienThoai=${filterSoDienThoai}, kenhBan=${filterKenhBan})}"
                            th:text="${i + 1}">1</a>
                     </li>
                     <li class="page-item" th:classappend="${trangHienTai >= tongSoTrang - 1} ? 'disabled'">
-                        <a class="page-link" th:href="@{/admin/don-hang(page=${trangHienTai + 1}, trangThai=${filterTrangThai}, maDonHang=${filterMaDonHang}, soDienThoai=${filterSoDienThoai})}">
+                        <a class="page-link" th:href="@{/admin/don-hang(page=${trangHienTai + 1}, trangThai=${filterTrangThai}, maDonHang=${filterMaDonHang}, soDienThoai=${filterSoDienThoai}, kenhBan=${filterKenhBan})}">
                             &raquo;
                         </a>
                     </li>
