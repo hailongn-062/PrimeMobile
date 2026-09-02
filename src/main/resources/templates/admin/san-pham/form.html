@@ -59,14 +59,31 @@
                     <div class="row">
                         <!-- Năm ra mắt -->
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Năm ra mắt</label>
-                            <input type="number" class="form-control" th:field="*{namRaMat}" placeholder="VD: 2024" />
+                            <label class="form-label fw-bold">Năm ra mắt <span class="text-danger">*</span></label>
+                            <input type="number"
+                                   id="inputNamRaMat"
+                                   class="form-control"
+                                   th:field="*{namRaMat}"
+                                   required
+                                   min="1990"
+                                   th:max="${#temporals.year(#temporals.createNow())}"
+                                   placeholder="VD: 2024" />
                         </div>
                         
                         <!-- Trạng thái -->
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Trạng thái <span class="text-danger">*</span></label>
-                            <select class="form-select" th:field="*{trangThai}" required>
+
+                            <!-- THÊM MỚI: cố định "Đang bán", không cho chọn -->
+                            <th:block th:if="${sanPham.id == null}">
+                                <input type="hidden" th:field="*{trangThai}" value="dang_ban" />
+                                <div class="form-control bg-light text-success fw-semibold">
+                                    <i class="fa fa-circle-check me-1"></i> Đang bán
+                                </div>
+                            </th:block>
+
+                            <!-- SỬA: vẫn cho chọn trạng thái -->
+                            <select class="form-select" th:field="*{trangThai}" th:if="${sanPham.id != null}">
                                 <option value="dang_ban">Đang bán</option>
                                 <option value="ngung_ban">Ngừng bán</option>
                             </select>
@@ -92,5 +109,26 @@
     </main>
 
     <th:block th:replace="~{layout/admin-layout :: adminScripts}"></th:block>
+    <script>
+        // Validate năm ra mắt trước khi submit
+        document.querySelector('form').addEventListener('submit', function (e) {
+            const input = document.getElementById('inputNamRaMat');
+            const val = parseInt(input.value, 10);
+            const namHienTai = new Date().getFullYear();
+
+            if (!input.value || isNaN(val)) {
+                e.preventDefault();
+                pmAlert('Năm ra mắt không được để trống.', 'warning');
+                input.focus();
+                return;
+            }
+
+            if (val < 1990 || val > namHienTai) {
+                e.preventDefault();
+                pmAlert('Năm ra mắt phải từ năm 1990 đến hiện tại', 'warning');
+                input.focus();
+            }
+        });
+    </script>
 </body>
 </html>
